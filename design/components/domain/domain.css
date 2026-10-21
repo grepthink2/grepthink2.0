@@ -516,7 +516,6 @@
 .gt-tm-row { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; column-gap: 12px; align-items: start; min-height: 44px; padding: 10px 0; box-sizing: border-box; }
 .gt-tm-row + .gt-tm-row { border-top: 1px solid var(--gt-border-subtle); }
 .gt-tm-row__tile { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-top: 1px; flex-shrink: 0; border-radius: var(--gt-radius-sm); background: var(--gt-sched-meeting-soft); color: var(--gt-sched-meeting-text); }
-.gt-tm-row__tile--alert { background: var(--gt-error-soft); color: var(--gt-error-text); }
 .gt-tm-row__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 2px; }
 .gt-tm-row__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .gt-tm-row__title { font-size: 14px; font-weight: var(--gt-weight-semibold); line-height: 1.35; min-width: 0; overflow-wrap: anywhere; text-wrap: pretty; }
@@ -531,20 +530,13 @@
 .gt-tm-row__place--link:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
 .gt-tm-row__note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--gt-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gt-tm-row__actions { display: flex; align-items: center; gap: 4px; justify-self: end; }
-.gt-tm__btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 10px; border: none; border-radius: var(--gt-radius-sm); background: transparent; color: var(--gt-text-secondary); font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
-.gt-tm__btn:hover:not(:disabled) { background: var(--gt-surface-muted); color: var(--gt-text-primary); }
-.gt-tm__btn--danger:hover:not(:disabled) { background: var(--gt-error-soft); color: var(--gt-error-text); }
-.gt-tm__btn:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-.gt-tm__btn:disabled { opacity: 0.45; cursor: not-allowed; }
 /* row states — past dims the content, never the actions */
 .gt-tm-row--past .gt-tm-row__tile, .gt-tm-row--past .gt-tm-row__title, .gt-tm-row--past .gt-tm-row__when, .gt-tm-row--past .gt-tm-row__note { opacity: 0.55; }
 .gt-tm-row--editing { display: block; padding: 6px 0; }
-.gt-tm-row--confirm { align-items: center; margin: 4px 0; padding: 10px 12px; background: var(--gt-surface-muted); border-radius: var(--gt-radius-sm); }
-.gt-tm-row + .gt-tm-row--confirm, .gt-tm-row--confirm + .gt-tm-row { border-top-color: transparent; }
-.gt-tm-row--confirm .gt-tm-row__main { padding-top: 0; }
-.gt-tm-row__confirm-text { margin: 0; font-size: 13px; line-height: 1.45; color: var(--gt-text-primary); overflow-wrap: anywhere; }
-.gt-tm-row__error { margin: 2px 0 0; font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-error); }
 /* past toggle (manage: "Past (n)" · card: "Past meetings (n)") */
+/* delete confirm: the shared InlineConfirm in the list slot */
+.gt-tm__confirm { display: flex; flex-direction: column; gap: 8px; }
+.gt-tm__confirm + .gt-tm-row { border-top-color: transparent; }
 .gt-tm__past { margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--gt-border-subtle); }
 .gt-tm__past-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px 0 4px; border: none; border-radius: var(--gt-radius-sm); background: transparent; font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
 .gt-tm__past-toggle:hover { background: var(--gt-surface-muted); color: var(--gt-text-primary); }
@@ -578,7 +570,6 @@
 .gt-tmform__grid { display: grid; gap: 12px; }
 .gt-tmform__grid--when { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); }
 .gt-tmform__grid--place { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
-.gt-tmform__campus { color: var(--gt-text-secondary); }
 .gt-tmform__foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 2px; }
 
 /* phone (< 768px) */
@@ -588,11 +579,10 @@
   .gt-tm-row { grid-template-columns: 24px minmax(0, 1fr); row-gap: 8px; }
   .gt-tm-row__tile { width: 24px; height: 24px; }
   .gt-tm-row__actions { grid-column: 2 / -1; justify-self: stretch; }
-  .gt-tm-row__actions .gt-tm__btn, .gt-tm-row__actions .gt-button { flex: 1; min-height: 44px; }
+  .gt-tm-row__actions .gt-button { flex: 1; }
   .gt-tmform__grid--when { grid-template-columns: 1fr 1fr; }
   .gt-tmform__grid--when > :first-child { grid-column: 1 / -1; }
   .gt-tmform__grid--place { grid-template-columns: 1fr; }
-  .gt-tmform .gt-input, .gt-tmform .gt-select__control { min-height: 44px; }
-  .gt-tmform__foot .gt-button { flex: 1; min-height: 44px; }
+  .gt-tmform__foot .gt-button { flex: 1; }
 }
-@media (prefers-reduced-motion: reduce) { .gt-tm__btn, .gt-tm__past-toggle, .gt-tm__past-toggle svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .gt-tm__past-toggle, .gt-tm__past-toggle svg { transition: none; } }

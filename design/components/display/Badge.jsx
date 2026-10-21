@@ -38,6 +38,9 @@ export const BADGE_STATUS = {
   'request.incoming': ['warning', 'Incoming'], 'request.invitation': ['warning', 'Invitation'], 'request.pending': ['info', 'Pending'], 'request.denied': ['error', 'Denied'],
   'health.excellent': ['success', 'Excellent'], 'health.warning': ['warning', 'Warning'], 'health.poor': ['error', 'Poor'],
   'sentiment.positive': ['success', 'Positive'], 'sentiment.neutral': ['neutral', 'Neutral'], 'sentiment.negative': ['error', 'Negative'],
+  'signups.open': ['success', 'Sign-ups open'], 'signups.closed': ['neutral', 'Sign-ups closed'],
+  'slot.free': ['success', 'Free'], 'slot.yours': ['info', 'Your team'], 'slot.past': ['neutral', 'Past'],
+  'review.no_review_ta': ['warning', 'No Review TA'], 'review.no_product_owner': ['warning', 'No Product Owner'],
   live: ['info', 'Live'],
 };
 

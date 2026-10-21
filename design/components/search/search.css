@@ -91,7 +91,8 @@
 /* scope chips */
 .gt-palette__scopes { display: flex; align-items: center; gap: 6px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--gt-border-subtle); flex-shrink: 0; }
 .gt-palette__scopes::-webkit-scrollbar { display: none; }
-/* scope chips are the shared FilterChip (sm) — navigation.css */
+/* scope chips are the shared FilterChipGroup (single, sm) — navigation.css; one scrolling row here */
+.gt-palette__scopes .gt-filter-chips { flex-wrap: nowrap; }
 
 /* results */
 .gt-palette__body { flex: 1; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; }

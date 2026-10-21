@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnalyticsIcon } from './ChartLegend.jsx';
 import { fmtRange } from './ChartTooltip.jsx';
+import { FilterChip, FilterChipGroup } from '../navigation/FilterChip.jsx';
 
 export const RANGE_PRESETS = [
   { value: '7d', label: '7d' },
@@ -17,11 +18,11 @@ function isoDaysAgo(days, from = new Date()) {
 
 /**
  * The one filter row (.gt-filter) above everything it scopes. Institution Select
- * only when the viewer may see several; class Select ("All classes" first); range
- * chips 7d · 30d · 90d · Class to date · All · Custom (32px, radius 20, active =
- * solid green). "Class to date" is enabled only with a class selected. "Custom"
- * opens a popover (From, To, Apply); once applied the chip reads
- * "Custom: Sep 1 – Sep 30". While Apply is disabled the panel's last row says why
+ * only when the viewer may see several; class Select ("All classes" first); the range as a
+ * single-choice FilterChipGroup (7d · 30d · 90d · Class to date · All — a radio group: one tab
+ * stop, arrows move and select), then a separate "Custom…" chip button after the group. "Class to
+ * date" is enabled only with a class selected. "Custom…" opens a popover (From, To, Apply); once
+ * applied it reads "Custom: Sep 1 – Sep 30" and no preset is checked. While Apply is disabled the panel's last row says why
  * ("Dates must fall between 2000 and 2100" · "A range may span at most 2 years" ·
  * "To must be on or after From"). Every control is disabled during the very first load.
  * State belongs in the URL.
@@ -54,7 +55,7 @@ export function AnalyticsFilterRow({
   const emit = (patch) => onChange && onChange({ institutionId, classId, range, ...patch });
   const pick = (preset) => emit({ range: { preset } });
   const applyCustom = () => { emit({ range: { preset: 'custom', from, to } }); setOpen(false); };
-  const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${fmtRange(range.from, range.to)}` : 'Custom';
+  const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${fmtRange(range.from, range.to)}` : 'Custom…';
   // Why Apply is disabled — shown beside it in the panel's last row (copy verbatim from the revision block).
   const reason = (() => {
     if (!from || !to) return null;
@@ -83,37 +84,29 @@ export function AnalyticsFilterRow({
         [<option key="" value="">All classes</option>, ...classes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)])}
       <div className="gt-filter__field">
         <span className="gt-filter__label">Range</span>
-        <div className="gt-filter__chips" role="group" aria-label="Date range">
-          {RANGE_PRESETS.map((p) => {
-            const needsClass = p.value === 'class' && !classId;
-            const active = range.preset === p.value;
-            return (
-              <button
-                key={p.value}
-                type="button"
-                className={['gt-filter-chip', active ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' ')}
-                aria-pressed={active}
-                disabled={disabled || needsClass}
-                title={needsClass ? 'Select a class first' : undefined}
-                onClick={() => pick(p.value)}
-              >
-                {p.label}
-              </button>
-            );
-          })}
+        <div className="gt-filter__chips">
+          <FilterChipGroup
+            type="single"
+            ariaLabel="Date range"
+            value={range.preset}
+            onChange={pick}
+            options={RANGE_PRESETS.map((p) => {
+              const needsClass = p.value === 'class' && !classId;
+              return { value: p.value, label: p.label, disabled: disabled || needsClass, title: needsClass ? 'Select a class first' : undefined };
+            })}
+          />
           <span className="gt-filter__custom" ref={popRef}>
-            <button
-              type="button"
-              className={['gt-filter-chip', range.preset === 'custom' ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' ')}
-              aria-pressed={range.preset === 'custom'}
+            <FilterChip
+              selected={range.preset === 'custom'}
+              aria-pressed={undefined}
               aria-haspopup="dialog"
               aria-expanded={open}
+              icon={<AnalyticsIcon name="calendar" size={13} />}
               disabled={disabled}
               onClick={() => setOpen((o) => !o)}
             >
-              <AnalyticsIcon name="calendar" size={13} />
               {customLabel}
-            </button>
+            </FilterChip>
             {open && (
               <div className="gt-popover gt-popover--bottom gt-popover--start gt-filter__pop" role="dialog" aria-label="Custom range">
                 <span className="gt-filter__pop-title">Custom range</span>

@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"f99f13606536","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"68279de737d2","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"ec2ba22cc62e","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"1bd9c31bd783","components/display/Badge.jsx":"3406477885b9","components/display/Card.jsx":"20fccaca912d","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/ProgressBar.jsx":"96a9fb62d8d8","components/display/StatCard.jsx":"ff84e549fe3d","components/display/Table.jsx":"f196bd3798dc","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"7027c617b708","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"d3569d566cf4","components/domain/TeamMeetingsList.jsx":"af2eb2deea8a","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"88cf54fdcde7","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"cd685fcbac42","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"1f50042cf900","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"60ad184229da","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"89d114172de6","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"cf036fdceb2d","components/primitives/Button.jsx":"ba6702d7ba2a","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"d4f9be568d2d","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07a0823811df","components/primitives/FieldShell.jsx":"f0ed60c486ad","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"22e8f2143962","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"d093abac703d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/Screens.jsx":"bcd8910fc7c4","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/TeamMeetingsScreen.jsx":"ee83a4b3e148","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"ZoomRoomField","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsHeader","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsIcon","sourcePath":"components/finalreviews/FinalReviewsIcon.jsx"},{"name":"SLOT_MINUTES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"SLOT_POST_MAX","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_LENSES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_REASONS","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FinalReviewsModel","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"PostSlotsDrawer","sourcePath":"components/finalreviews/PostSlotsDrawer.jsx"},{"name":"ReviewWorkspaceHeader","sourcePath":"components/finalreviews/ReviewWorkspaceHeader.jsx"},{"name":"SlotActionDialog","sourcePath":"components/finalreviews/SlotActionDialog.jsx"},{"name":"SlotBoard","sourcePath":"components/finalreviews/SlotBoard.jsx"},{"name":"SlotRow","sourcePath":"components/finalreviews/SlotRow.jsx"},{"name":"SlotTime","sourcePath":"components/finalreviews/SlotTime.jsx"},{"name":"TeamReview","sourcePath":"components/finalreviews/TeamReview.jsx"},{"name":"UnbookedTeams","sourcePath":"components/finalreviews/UnbookedTeams.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Slider","sourcePath":"components/primitives/Slider.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"012797c0b2c0","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"68279de737d2","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"ec2ba22cc62e","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"1bd9c31bd783","components/display/Badge.jsx":"e3e5eb99080f","components/display/Card.jsx":"20fccaca912d","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/ProgressBar.jsx":"96a9fb62d8d8","components/display/StatCard.jsx":"ff84e549fe3d","components/display/Table.jsx":"f196bd3798dc","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"97fcc971789d","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"2d0da52858ed","components/domain/TeamMeetingsList.jsx":"f5e826f35d8c","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"88cf54fdcde7","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"cd685fcbac42","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"1f50042cf900","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/finalreviews/FinalReviewsHeader.jsx":"b481dc32397b","components/finalreviews/FinalReviewsIcon.jsx":"5f999d24929b","components/finalreviews/FinalReviewsModel.jsx":"5b257ede1bef","components/finalreviews/PostSlotsDrawer.jsx":"9cbf8dd9a984","components/finalreviews/ReviewWorkspaceHeader.jsx":"5dc779d2ba54","components/finalreviews/SlotActionDialog.jsx":"9f7d30684170","components/finalreviews/SlotBoard.jsx":"c38113917512","components/finalreviews/SlotRow.jsx":"dcf8b1319a32","components/finalreviews/SlotTime.jsx":"68241f5e84df","components/finalreviews/TeamReview.jsx":"7233f71ccb63","components/finalreviews/UnbookedTeams.jsx":"155846fe8db2","components/finalreviews/finalReviewsData.js":"93059c906883","components/finalreviews/finalReviewsSrcLoader.js":"041f63efb75b","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"e54f7e490d62","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"89d114172de6","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"cf036fdceb2d","components/primitives/Button.jsx":"0cf89801fd2e","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"d4f9be568d2d","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07a0823811df","components/primitives/FieldShell.jsx":"f0ed60c486ad","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"57702d48c675","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Slider.jsx":"8e230095da85","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"3bc5a84c066f","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/FinalReviewsScreen.jsx":"1bcbdc6636d1","ui_kits/grepthink/FinalReviewsStates.jsx":"14f8a1ddebf8","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/TeamMeetingsScreen.jsx":"3b3ac80ccc85","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"boardCounts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"boardFilters","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"confirmCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"countsText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"errorCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtSlotWhen","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"freeSlotGroups","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupSlots","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"historyRows","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hourlyStarts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"indexTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isReviewJoinable","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isStaffLens","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"lensOf","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"matchesFilter","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"offsetIso","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"poCanChange","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postedMessage","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postingDraft","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"reviewCountdown","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"reviewingText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"showTeamReviewCard","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotEnd","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotPhase","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotView","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"successCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewState","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"unbookedTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"useTooltipDismiss","sourcePath":"components/display/Tooltip.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"whenText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneNote","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
 
 (() => {
 
@@ -418,220 +418,6 @@ function ChartTooltip({
 }
 Object.assign(__ds_scope, { useMeasure, fmtCompact, fmtPct, fmtDelta, fmtWeek, fmtRange, niceScale, useChartTip, ChartFormat, ChartTooltip });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartTooltip.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/AnalyticsFilterRow.jsx
-try { (() => {
-const RANGE_PRESETS = [{
-  value: '7d',
-  label: '7d'
-}, {
-  value: '30d',
-  label: '30d'
-}, {
-  value: '90d',
-  label: '90d'
-}, {
-  value: 'class',
-  label: 'Class to date'
-}, {
-  value: 'all',
-  label: 'All'
-}];
-function isoDaysAgo(days, from = new Date()) {
-  const d = new Date(from);
-  d.setUTCDate(d.getUTCDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-/**
- * The one filter row (.gt-filter) above everything it scopes. Institution Select
- * only when the viewer may see several; class Select ("All classes" first); range
- * chips 7d · 30d · 90d · Class to date · All · Custom (32px, radius 20, active =
- * solid green). "Class to date" is enabled only with a class selected. "Custom"
- * opens a popover (From, To, Apply); once applied the chip reads
- * "Custom: Sep 1 – Sep 30". While Apply is disabled the panel's last row says why
- * ("Dates must fall between 2000 and 2100" · "A range may span at most 2 years" ·
- * "To must be on or after From"). Every control is disabled during the very first load.
- * State belongs in the URL.
- */
-function AnalyticsFilterRow({
-  institutions = [],
-  institutionId,
-  classes = [],
-  classId = '',
-  range = {
-    preset: '30d'
-  },
-  onChange,
-  disabled = false,
-  today,
-  className = ''
-}) {
-  const [open, setOpen] = React.useState(false);
-  const [from, setFrom] = React.useState(range.from || isoDaysAgo(30, today));
-  const [to, setTo] = React.useState(range.to || isoDaysAgo(0, today));
-  const popRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!open) return undefined;
-    const key = e => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    const down = e => {
-      if (popRef.current && !popRef.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('keydown', key);
-    document.addEventListener('mousedown', down);
-    return () => {
-      document.removeEventListener('keydown', key);
-      document.removeEventListener('mousedown', down);
-    };
-  }, [open]);
-  const emit = patch => onChange && onChange({
-    institutionId,
-    classId,
-    range,
-    ...patch
-  });
-  const pick = preset => emit({
-    range: {
-      preset
-    }
-  });
-  const applyCustom = () => {
-    emit({
-      range: {
-        preset: 'custom',
-        from,
-        to
-      }
-    });
-    setOpen(false);
-  };
-  const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${__ds_scope.fmtRange(range.from, range.to)}` : 'Custom';
-  // Why Apply is disabled — shown beside it in the panel's last row (copy verbatim from the revision block).
-  const reason = (() => {
-    if (!from || !to) return null;
-    const y1 = Number(from.slice(0, 4)),
-      y2 = Number(to.slice(0, 4));
-    if (y1 < 2000 || y1 > 2100 || y2 < 2000 || y2 > 2100) return 'Dates must fall between 2000 and 2100';
-    if (to < from) return 'To must be on or after From';
-    if ((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000 + 1 > 731) return 'A range may span at most 2 years';
-    return null;
-  })();
-  const select = (label, value, onSelect, children) => /*#__PURE__*/React.createElement("div", {
-    className: "gt-filter__field"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__label"
-  }, label), /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__select gt-select"
-  }, /*#__PURE__*/React.createElement("select", {
-    className: "gt-select__control",
-    value: value,
-    onChange: onSelect,
-    disabled: disabled,
-    "aria-label": label
-  }, children), /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: "chevron-down",
-    size: 14,
-    className: "gt-select__chevron"
-  })));
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-filter', disabled ? 'gt-filter--disabled' : '', className].filter(Boolean).join(' '),
-    role: "group",
-    "aria-label": "Filters",
-    "aria-disabled": disabled || undefined
-  }, institutions.length > 1 && select('Institution', institutionId || '', e => emit({
-    institutionId: e.target.value
-  }), institutions.map(i => /*#__PURE__*/React.createElement("option", {
-    key: i.id,
-    value: i.id
-  }, i.name))), select('Class', classId || '', e => emit({
-    classId: e.target.value,
-    range: range.preset === 'class' && !e.target.value ? {
-      preset: '30d'
-    } : range
-  }), [/*#__PURE__*/React.createElement("option", {
-    key: "",
-    value: ""
-  }, "All classes"), ...classes.map(c => /*#__PURE__*/React.createElement("option", {
-    key: c.id,
-    value: c.id
-  }, c.label))]), /*#__PURE__*/React.createElement("div", {
-    className: "gt-filter__field"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__label"
-  }, "Range"), /*#__PURE__*/React.createElement("div", {
-    className: "gt-filter__chips",
-    role: "group",
-    "aria-label": "Date range"
-  }, RANGE_PRESETS.map(p => {
-    const needsClass = p.value === 'class' && !classId;
-    const active = range.preset === p.value;
-    return /*#__PURE__*/React.createElement("button", {
-      key: p.value,
-      type: "button",
-      className: ['gt-filter-chip', active ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' '),
-      "aria-pressed": active,
-      disabled: disabled || needsClass,
-      title: needsClass ? 'Select a class first' : undefined,
-      onClick: () => pick(p.value)
-    }, p.label);
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__custom",
-    ref: popRef
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: ['gt-filter-chip', range.preset === 'custom' ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' '),
-    "aria-pressed": range.preset === 'custom',
-    "aria-haspopup": "dialog",
-    "aria-expanded": open,
-    disabled: disabled,
-    onClick: () => setOpen(o => !o)
-  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: "calendar",
-    size: 13
-  }), customLabel), open && /*#__PURE__*/React.createElement("div", {
-    className: "gt-popover gt-popover--bottom gt-popover--start gt-filter__pop",
-    role: "dialog",
-    "aria-label": "Custom range"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__pop-title"
-  }, "Custom range"), /*#__PURE__*/React.createElement("div", {
-    className: "gt-filter__dates"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "gt-filter__date"
-  }, "From", /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    value: from,
-    onChange: e => setFrom(e.target.value)
-  })), /*#__PURE__*/React.createElement("label", {
-    className: "gt-filter__date"
-  }, "To", /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    value: to,
-    onChange: e => setTo(e.target.value)
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "gt-filter__foot"
-  }, reason && /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter__reason",
-    role: "status"
-  }, reason), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-button gt-button--ghost gt-button--sm",
-    onClick: () => setOpen(false)
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__label"
-  }, "Cancel")), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-button gt-button--primary gt-button--sm gt-filter__apply",
-    onClick: applyCustom,
-    disabled: !from || !to || !!reason
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__label"
-  }, "Apply"))))))));
-}
-Object.assign(__ds_scope, { RANGE_PRESETS, AnalyticsFilterRow });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/AnalyticsFilterRow.jsx", error: String((e && e.message) || e) }); }
 
 // components/analytics/BarsBySprint.jsx
 try { (() => {
@@ -2592,6 +2378,13 @@ const BADGE_STATUS = {
   'sentiment.positive': ['success', 'Positive'],
   'sentiment.neutral': ['neutral', 'Neutral'],
   'sentiment.negative': ['error', 'Negative'],
+  'signups.open': ['success', 'Sign-ups open'],
+  'signups.closed': ['neutral', 'Sign-ups closed'],
+  'slot.free': ['success', 'Free'],
+  'slot.yours': ['info', 'Your team'],
+  'slot.past': ['neutral', 'Past'],
+  'review.no_review_ta': ['warning', 'No Review TA'],
+  'review.no_product_owner': ['warning', 'No Product Owner'],
   live: ['info', 'Live']
 };
 
@@ -3266,11 +3059,94 @@ Object.assign(__ds_scope, { Tag });
 
 // components/display/Tooltip.jsx
 try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * Esc hides a tooltip's bubble while it is up (WCAG 1.4.13: content that hover or focus shows can be
+ * dismissed without moving the pointer or focus). Adopted from the codebase
+ * (`components/Tooltip/useTooltipDismiss.ts`, PR #259). The CSS puts the bubble up while the tooltip
+ * is hovered or something inside it has keyboard focus; `handlers`, spread on the `.gt-tooltip`
+ * element, follow the same two things: the pointer entering and leaving, and focus that counts as
+ * keyboard focus the way browsers decide `:focus-visible` — it arrived after a key rather than a
+ * click, or a key was pressed while it was there.
+ *
+ * The key is heard on `window` in the capture phase, ahead of every other listener, and stopped only
+ * when a bubble was up: a dialog or popover around the tooltip stays open, and the next Esc is theirs.
+ *
+ * Activating the control also hides the bubble (a mouse or pen press, or Enter or Space on it): its
+ * label has been read, and the first Esc then reaches what the press opened, such as a menu. A touch
+ * press keeps it, since a tap is how a phone shows a bubble. `dismissed` adds `gt-tooltip--dismissed`
+ * until the pointer enters again or focus arrives by keyboard; the focus a press brings does not
+ * bring it back. IconButton passes `enabled` false while it shows no bubble.
+ */
+const plainKey = e => !e.ctrlKey && !e.metaKey && !e.altKey;
+/** How the last interaction came ('key' | 'pointer'), followed from load so early keyboard focus counts. One record per page. */
+const lastInput = typeof window !== 'undefined' && window.__gtTooltipInput || {
+  last: 'pointer'
+};
+if (typeof window !== 'undefined' && !window.__gtTooltipInput) {
+  window.__gtTooltipInput = lastInput;
+  window.addEventListener('keydown', e => {
+    if (plainKey(e)) lastInput.last = 'key';
+  }, true);
+  window.addEventListener('pointerdown', () => {
+    lastInput.last = 'pointer';
+  }, true);
+}
+function useTooltipDismiss(enabled = true) {
+  const [dismissed, setDismissed] = React.useState(false);
+  const hovered = React.useRef(false);
+  const keyboardFocused = React.useRef(false);
+  React.useEffect(() => {
+    if (!enabled) {
+      hovered.current = false;
+      keyboardFocused.current = false;
+      return undefined;
+    }
+    if (dismissed) return undefined;
+    const onKeyDown = e => {
+      if (e.key !== 'Escape' || e.isComposing || !(hovered.current || keyboardFocused.current)) return;
+      e.stopPropagation();
+      setDismissed(true);
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [enabled, dismissed]);
+  const handlers = React.useMemo(() => ({
+    onPointerEnter: () => {
+      hovered.current = true;
+      setDismissed(false);
+    },
+    onPointerLeave: () => {
+      hovered.current = false;
+    },
+    onPointerDown: e => {
+      if (e.pointerType !== 'touch') setDismissed(true);
+    },
+    onFocus: () => {
+      keyboardFocused.current = lastInput.last === 'key';
+      if (lastInput.last === 'key') setDismissed(false);
+    },
+    onBlur: () => {
+      keyboardFocused.current = false;
+    },
+    // after the window listener has decided about this key: an Esc that turns the bubble on here was not stopped, and the next one is
+    onKeyDown: e => {
+      if (!plainKey(e)) return;
+      keyboardFocused.current = true;
+      if (e.key === 'Enter' || e.key === ' ') setDismissed(true);
+    }
+  }), []);
+  return {
+    dismissed,
+    handlers
+  };
+}
+
 /**
  * Hover / focus tooltip: a dark bubble, small and quiet, shown at once by CSS instead of after
- * the browser's `title` delay. `focusable={false}` when the trigger sits inside another control
- * (the codebase's addition) — the bubble then shows when that control has keyboard focus.
- * Short one-line labels only; explanations are InfoPopovers.
+ * the browser's `title` delay. Esc hides an open bubble (useTooltipDismiss). `focusable={false}`
+ * when the trigger sits inside another control (the codebase's addition) — the bubble then shows
+ * when that control has keyboard focus. Short one-line labels only; explanations are InfoPopovers.
  */
 function Tooltip({
   content,
@@ -3280,9 +3156,13 @@ function Tooltip({
   className = ''
 }) {
   const id = React.useId();
-  return /*#__PURE__*/React.createElement("span", {
-    className: ['gt-tooltip', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("span", {
+  const {
+    dismissed,
+    handlers
+  } = useTooltipDismiss();
+  return /*#__PURE__*/React.createElement("span", _extends({
+    className: ['gt-tooltip', dismissed ? 'gt-tooltip--dismissed' : '', className].filter(Boolean).join(' ')
+  }, handlers), /*#__PURE__*/React.createElement("span", {
     className: "gt-tooltip__trigger",
     tabIndex: focusable ? 0 : undefined,
     "aria-describedby": id
@@ -3292,7 +3172,7 @@ function Tooltip({
     id: id
   }, content));
 }
-Object.assign(__ds_scope, { Tooltip });
+Object.assign(__ds_scope, { useTooltipDismiss, Tooltip });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Tooltip.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/UnreadBadge.jsx
@@ -4537,7188 +4417,976 @@ function ToastStack({
 Object.assign(__ds_scope, { Toast, ToastStack });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Toast.jsx", error: String((e && e.message) || e) }); }
 
-// components/figma-reference/Arrow.jsx
+// components/finalreviews/FinalReviewsIcon.jsx
 try { (() => {
-// figma node: 1214:1126 Arrow (8 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "direction=" + __venc(p.direction) + '|' + "variant=" + __venc(p.variant);
-function Arrow(_p = {}) {
-  const props = {
-    ..._p,
-    direction: _p.direction ?? "up",
-    variant: _p.variant ?? "pixelised"
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 7,
-    height: 4,
-    viewBox: "0 0 7 4",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 1,
-      width: 7,
-      height: 4
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 7 4 L 0 4 L 0 3 L 1 3 L 1 2 L 2 2 L 2 1 L 3 1 L 3 0 L 4 0 L 4 1 L 5 1 L 5 2 L 6 2 L 6 3 L 7 3 L 7 4 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 7,
-    height: 4,
-    viewBox: "0 0 7 4",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 1,
-      width: 7,
-      height: 4
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 7 4 L 0 4 L 3.5 0 L 7 4 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 7,
-    height: 4,
-    viewBox: "0 0 7 4",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 2,
-      width: 7,
-      height: 4
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 7 0 L 7 1 L 6 1 L 6 2 L 5 2 L 5 3 L 4 3 L 4 4 L 3 4 L 3 3 L 2 3 L 2 2 L 1 2 L 1 1 L 0 1 L 0 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 7,
-    height: 4,
-    viewBox: "0 0 7 4",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 2,
-      width: 7,
-      height: 4
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 7 0 L 3.5 4 L 0 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 4,
-    height: 7,
-    viewBox: "0 0 4 7",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 1,
-      top: 0,
-      width: 4,
-      height: 7
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 4 0 L 4 7 L 3 7 L 3 6 L 2 6 L 2 5 L 1 5 L 1 4 L 0 4 L 0 3 L 1 3 L 1 2 L 2 2 L 2 1 L 3 1 L 3 0 L 4 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 4,
-    height: 7,
-    viewBox: "0 0 4 7",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 1,
-      top: 0,
-      width: 4,
-      height: 7
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 4 0 L 4 7 L 0 3.5 L 4 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body6 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 4,
-    height: 7,
-    viewBox: "0 0 4 7",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 0,
-      width: 4,
-      height: 7
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 7 L 1 7 L 1 6 L 2 6 L 2 5 L 3 5 L 3 4 L 4 4 L 4 3 L 3 3 L 3 2 L 2 2 L 2 1 L 1 1 L 1 0 L 0 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body7 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 7,
-      height: 7,
-      position: "relative",
-      color: "rgb(80,80,80)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 4,
-    height: 7,
-    viewBox: "0 0 4 7",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 0,
-      width: 4,
-      height: 7
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 7 L 4 3.5 L 0 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: Direction=Up, Variant=Pixelised
-    "direction=up|variant=pixelised": __body0,
-    // figma: Direction=Up, Variant=AntiAlias
-    "direction=up|variant=antialias": __body1,
-    // figma: Direction=Down, Variant=Pixelised
-    "direction=down|variant=pixelised": __body2,
-    // figma: Direction=Down, Variant=AntiAlias
-    "direction=down|variant=antialias": __body3,
-    // figma: Direction=Left, Variant=Pixelised
-    "direction=left|variant=pixelised": __body4,
-    // figma: Direction=Left, Variant=AntiAlias
-    "direction=left|variant=antialias": __body5,
-    // figma: Direction=Right, Variant=Pixelised
-    "direction=right|variant=pixelised": __body6,
-    // figma: Direction=Right, Variant=AntiAlias
-    "direction=right|variant=antialias": __body7
-  };
-  return (__impls[__vkey(props)] ?? __body0)();
-}
-Object.assign(__ds_scope, { Arrow, __ds_default_components_figma_reference_Arrow_1o7zqms: Arrow });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Arrow.jsx", error: String((e && e.message) || e) }); }
+/* Lucide paths (24 viewBox, stroke 2, round caps) — the production app imports lucide-react. */
+const PATHS = {
+  'clipboard-check': '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  'calendar-plus': '<path d="M8 2v4"/><path d="M16 2v4"/><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><path d="M3 10h18"/><path d="M16 19h6"/><path d="M19 16v6"/>',
+  video: '<path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  ellipsis: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  'arrow-left': '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'user-plus': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  'arrow-right-left': '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>',
+  'calendar-x': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m14 14-4 4"/><path d="m10 14 4 4"/>',
+  'calendar-clock': '<path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 17.5 16 16.3V14"/><circle cx="16" cy="16" r="6"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  pencil: '<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/>'
+};
 
-// components/figma-reference/ButtonContentArea.jsx
-try { (() => {
-// figma node: 198:63 Button - Content Area (144 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "size=" + __venc(p.size) + '|' + "style2=" + __venc(p.style2) + '|' + "labelType=" + __venc(p.labelType) + '|' + "enabled=" + __venc(p.enabled) + '|' + "destructive=" + __venc(p.destructive);
-function ButtonContentArea(_p = {}) {
-  const props = {
-    ..._p,
-    label: _p.label ?? "Play",
-    symbol: _p.symbol ?? "􀊄",
-    size: _p.size ?? "sm",
-    style2: _p.style2 ?? "bordered - prominent",
-    labelType: _p.labelType ?? "symbol + text",
-    enabled: _p.enabled ?? true,
-    destructive: _p.destructive ?? true
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)"
-    }
-  }, props.symbol));
-  const __body6 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body7 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body8 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body9 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body10 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body11 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body12 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body13 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body14 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)"
-    }
-  }, props.symbol));
-  const __body15 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-red)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body16 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-red)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body17 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-red)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body18 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body19 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body20 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body21 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body22 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body23 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body24 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body25 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body26 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body27 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body28 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body29 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body30 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body31 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body32 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body33 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body34 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body35 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body36 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body37 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body38 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body39 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body40 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body41 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,56,60,0.5)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body42 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body43 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body44 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.2)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body45 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body46 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body47 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body48 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body49 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body50 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(255,56,60,0.14)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-red)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body51 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body52 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body53 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-red)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body54 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body55 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body56 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body57 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body58 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body59 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)"
-    }
-  }, props.symbol));
-  const __body60 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body61 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body62 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)"
-    }
-  }, props.symbol));
-  const __body63 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body64 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body65 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body66 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--labels-primary)"
-    }
-  }, props.symbol));
-  const __body67 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)"
-    }
-  }, props.symbol));
-  const __body68 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)"
-    }
-  }, props.symbol));
-  const __body69 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body70 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body71 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)"
-    }
-  }, props.symbol));
-  const __body72 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 50,
-      height: 50,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-blue)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 50,
-      height: 50,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body73 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 34,
-      height: 34,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-blue)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 34,
-      height: 34,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body74 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 28,
-      height: 28,
-      borderRadius: 500,
-      backgroundColor: "var(--accents-blue)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 28,
-      height: 28,
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)"
-    }
-  }, props.symbol));
-  const __body75 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body76 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body77 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body78 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body79 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body80 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body81 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 73,
-      height: 50,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body82 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 57,
-      height: 34,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body83 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 49,
-      height: 28,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body84 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body85 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body86 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body87 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body88 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body89 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body90 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body91 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body92 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body93 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body94 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body95 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body96 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body97 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body98 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body99 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body100 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body101 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(60,60,67,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body102 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 92,
-      height: 50,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body103 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 75,
-      height: 34,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body104 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 66,
-      height: 28,
-      opacity: 0.2,
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "rgba(255,255,255,0.3)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body105 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 12,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body106 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body107 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 40,
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body108 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body109 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body110 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--labels-primary)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body111 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body112 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body113 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "rgba(118,118,128,0.12)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--accents-blue)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body114 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "14px 20px 14px 20px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 17,
-      whiteSpace: "nowrap",
-      lineHeight: "22px",
-      letterSpacing: "-0.430px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body115 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 4,
-      padding: "7px 14px 7px 14px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __body116 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      borderRadius: 1000,
-      backgroundColor: "var(--accents-blue)",
-      display: "flex",
-      flexDirection: "row",
-      gap: 3,
-      padding: "4px 10px 4px 10px",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.symbol), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"SF Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 15,
-      whiteSpace: "nowrap",
-      lineHeight: "20px",
-      letterSpacing: "-0.230px",
-      color: "var(--grays-white)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.label));
-  const __impls = {
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=lg|style2=borderless|labelType=symbol|enabled=false|destructive=true": __body0,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=md|style2=borderless|labelType=symbol|enabled=false|destructive=true": __body1,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=sm|style2=borderless|labelType=symbol|enabled=false|destructive=true": __body2,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=true": __body3,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=true": __body4,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=true": __body5,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=lg|style2=bordered|labelType=symbol|enabled=false|destructive=true": __body3,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=md|style2=bordered|labelType=symbol|enabled=false|destructive=true": __body4,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=sm|style2=bordered|labelType=symbol|enabled=false|destructive=true": __body5,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=true": __body6,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=true": __body7,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=true": __body8,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=lg|style2=borderless|labelType=symbol|enabled=true|destructive=true": __body9,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=md|style2=borderless|labelType=symbol|enabled=true|destructive=true": __body10,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=sm|style2=borderless|labelType=symbol|enabled=true|destructive=true": __body11,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=true": __body12,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=true": __body13,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=true": __body14,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=lg|style2=bordered|labelType=symbol|enabled=true|destructive=true": __body12,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=md|style2=bordered|labelType=symbol|enabled=true|destructive=true": __body13,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=sm|style2=bordered|labelType=symbol|enabled=true|destructive=true": __body14,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=true": __body15,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=true": __body16,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=true": __body17,
-    // figma: Size=Large, Style=Borderless, Label Type=Text, Enabled=False, Destructive=True
-    "size=lg|style2=borderless|labelType=text|enabled=false|destructive=true": __body18,
-    // figma: Size=Medium, Style=Borderless, Label Type=Text, Enabled=False, Destructive=True
-    "size=md|style2=borderless|labelType=text|enabled=false|destructive=true": __body19,
-    // figma: Size=Small, Style=Borderless, Label Type=Text, Enabled=False, Destructive=True
-    "size=sm|style2=borderless|labelType=text|enabled=false|destructive=true": __body20,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=text|enabled=false|destructive=true": __body21,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=text|enabled=false|destructive=true": __body22,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=text|enabled=false|destructive=true": __body23,
-    // figma: Size=Large, Style=Bordered, Label Type=Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered|labelType=text|enabled=false|destructive=true": __body21,
-    // figma: Size=Medium, Style=Bordered, Label Type=Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered|labelType=text|enabled=false|destructive=true": __body22,
-    // figma: Size=Small, Style=Bordered, Label Type=Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered|labelType=text|enabled=false|destructive=true": __body23,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=text|enabled=false|destructive=true": __body24,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=text|enabled=false|destructive=true": __body25,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=text|enabled=false|destructive=true": __body26,
-    // figma: Size=Large, Style=Borderless, Label Type=Text, Enabled=True, Destructive=True
-    "size=lg|style2=borderless|labelType=text|enabled=true|destructive=true": __body27,
-    // figma: Size=Medium, Style=Borderless, Label Type=Text, Enabled=True, Destructive=True
-    "size=md|style2=borderless|labelType=text|enabled=true|destructive=true": __body28,
-    // figma: Size=Small, Style=Borderless, Label Type=Text, Enabled=True, Destructive=True
-    "size=sm|style2=borderless|labelType=text|enabled=true|destructive=true": __body29,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=text|enabled=true|destructive=true": __body30,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=text|enabled=true|destructive=true": __body31,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=text|enabled=true|destructive=true": __body32,
-    // figma: Size=Large, Style=Bordered, Label Type=Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered|labelType=text|enabled=true|destructive=true": __body30,
-    // figma: Size=Medium, Style=Bordered, Label Type=Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered|labelType=text|enabled=true|destructive=true": __body31,
-    // figma: Size=Small, Style=Bordered, Label Type=Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered|labelType=text|enabled=true|destructive=true": __body32,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=text|enabled=true|destructive=true": __body33,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=text|enabled=true|destructive=true": __body34,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=text|enabled=true|destructive=true": __body35,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=lg|style2=borderless|labelType=symbol + text|enabled=false|destructive=true": __body36,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=md|style2=borderless|labelType=symbol + text|enabled=false|destructive=true": __body37,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=sm|style2=borderless|labelType=symbol + text|enabled=false|destructive=true": __body38,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=true": __body39,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=true": __body40,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=true": __body41,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered|labelType=symbol + text|enabled=false|destructive=true": __body39,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered|labelType=symbol + text|enabled=false|destructive=true": __body40,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered|labelType=symbol + text|enabled=false|destructive=true": __body41,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=true": __body42,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=true": __body43,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=true": __body44,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=lg|style2=borderless|labelType=symbol + text|enabled=true|destructive=true": __body45,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=md|style2=borderless|labelType=symbol + text|enabled=true|destructive=true": __body46,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=sm|style2=borderless|labelType=symbol + text|enabled=true|destructive=true": __body47,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=true": __body48,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=true": __body49,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=true": __body50,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered|labelType=symbol + text|enabled=true|destructive=true": __body48,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered|labelType=symbol + text|enabled=true|destructive=true": __body49,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered|labelType=symbol + text|enabled=true|destructive=true": __body50,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=lg|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=true": __body51,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=md|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=true": __body52,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=True
-    "size=sm|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=true": __body53,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=lg|style2=borderless|labelType=symbol|enabled=false|destructive=false": __body54,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=md|style2=borderless|labelType=symbol|enabled=false|destructive=false": __body55,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=sm|style2=borderless|labelType=symbol|enabled=false|destructive=false": __body56,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=false": __body57,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=false": __body58,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=symbol|enabled=false|destructive=false": __body59,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=lg|style2=bordered|labelType=symbol|enabled=false|destructive=false": __body57,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=md|style2=bordered|labelType=symbol|enabled=false|destructive=false": __body58,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=sm|style2=bordered|labelType=symbol|enabled=false|destructive=false": __body59,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=false": __body60,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=false": __body61,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=symbol|enabled=false|destructive=false": __body62,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=lg|style2=borderless|labelType=symbol|enabled=true|destructive=false": __body63,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=md|style2=borderless|labelType=symbol|enabled=true|destructive=false": __body64,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=sm|style2=borderless|labelType=symbol|enabled=true|destructive=false": __body65,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=false": __body66,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=false": __body67,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=symbol|enabled=true|destructive=false": __body68,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=lg|style2=bordered|labelType=symbol|enabled=true|destructive=false": __body69,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=md|style2=bordered|labelType=symbol|enabled=true|destructive=false": __body70,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=sm|style2=bordered|labelType=symbol|enabled=true|destructive=false": __body71,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=false": __body72,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=false": __body73,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=symbol|enabled=true|destructive=false": __body74,
-    // figma: Size=Large, Style=Borderless, Label Type=Text, Enabled=False, Destructive=False
-    "size=lg|style2=borderless|labelType=text|enabled=false|destructive=false": __body75,
-    // figma: Size=Medium, Style=Borderless, Label Type=Text, Enabled=False, Destructive=False
-    "size=md|style2=borderless|labelType=text|enabled=false|destructive=false": __body76,
-    // figma: Size=Small, Style=Borderless, Label Type=Text, Enabled=False, Destructive=False
-    "size=sm|style2=borderless|labelType=text|enabled=false|destructive=false": __body77,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=text|enabled=false|destructive=false": __body78,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=text|enabled=false|destructive=false": __body79,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=text|enabled=false|destructive=false": __body80,
-    // figma: Size=Large, Style=Bordered, Label Type=Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered|labelType=text|enabled=false|destructive=false": __body78,
-    // figma: Size=Medium, Style=Bordered, Label Type=Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered|labelType=text|enabled=false|destructive=false": __body79,
-    // figma: Size=Small, Style=Bordered, Label Type=Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered|labelType=text|enabled=false|destructive=false": __body80,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=text|enabled=false|destructive=false": __body81,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=text|enabled=false|destructive=false": __body82,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=text|enabled=false|destructive=false": __body83,
-    // figma: Size=Large, Style=Borderless, Label Type=Text, Enabled=True, Destructive=False
-    "size=lg|style2=borderless|labelType=text|enabled=true|destructive=false": __body84,
-    // figma: Size=Medium, Style=Borderless, Label Type=Text, Enabled=True, Destructive=False
-    "size=md|style2=borderless|labelType=text|enabled=true|destructive=false": __body85,
-    // figma: Size=Small, Style=Borderless, Label Type=Text, Enabled=True, Destructive=False
-    "size=sm|style2=borderless|labelType=text|enabled=true|destructive=false": __body86,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=text|enabled=true|destructive=false": __body87,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=text|enabled=true|destructive=false": __body88,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=text|enabled=true|destructive=false": __body89,
-    // figma: Size=Large, Style=Bordered, Label Type=Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered|labelType=text|enabled=true|destructive=false": __body90,
-    // figma: Size=Medium, Style=Bordered, Label Type=Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered|labelType=text|enabled=true|destructive=false": __body91,
-    // figma: Size=Small, Style=Bordered, Label Type=Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered|labelType=text|enabled=true|destructive=false": __body92,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=text|enabled=true|destructive=false": __body93,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=text|enabled=true|destructive=false": __body94,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=text|enabled=true|destructive=false": __body95,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=lg|style2=borderless|labelType=symbol + text|enabled=false|destructive=false": __body96,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=md|style2=borderless|labelType=symbol + text|enabled=false|destructive=false": __body97,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=sm|style2=borderless|labelType=symbol + text|enabled=false|destructive=false": __body98,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=false": __body99,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=false": __body100,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=symbol + text|enabled=false|destructive=false": __body101,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered|labelType=symbol + text|enabled=false|destructive=false": __body99,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered|labelType=symbol + text|enabled=false|destructive=false": __body100,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered|labelType=symbol + text|enabled=false|destructive=false": __body101,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=false": __body102,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=false": __body103,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=False, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=symbol + text|enabled=false|destructive=false": __body104,
-    // figma: Size=Large, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=lg|style2=borderless|labelType=symbol + text|enabled=true|destructive=false": __body105,
-    // figma: Size=Medium, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=md|style2=borderless|labelType=symbol + text|enabled=true|destructive=false": __body106,
-    // figma: Size=Small, Style=Borderless, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=sm|style2=borderless|labelType=symbol + text|enabled=true|destructive=false": __body107,
-    // figma: Size=Large, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=false": __body108,
-    // figma: Size=Medium, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=false": __body109,
-    // figma: Size=Small, Style=Bordered - Secondary, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - secondary|labelType=symbol + text|enabled=true|destructive=false": __body110,
-    // figma: Size=Large, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered|labelType=symbol + text|enabled=true|destructive=false": __body111,
-    // figma: Size=Medium, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered|labelType=symbol + text|enabled=true|destructive=false": __body112,
-    // figma: Size=Small, Style=Bordered, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered|labelType=symbol + text|enabled=true|destructive=false": __body113,
-    // figma: Size=Large, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=lg|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=false": __body114,
-    // figma: Size=Medium, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=md|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=false": __body115,
-    // figma: Size=Small, Style=Bordered - Prominent, Label Type=Symbol + Text, Enabled=True, Destructive=False
-    "size=sm|style2=bordered - prominent|labelType=symbol + text|enabled=true|destructive=false": __body116
-  };
-  return (__impls[__vkey(props)] ?? __body53)();
-}
-Object.assign(__ds_scope, { ButtonContentArea, __ds_default_components_figma_reference_ButtonContentArea_h5vfnd: ButtonContentArea });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/ButtonContentArea.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/DAvatars223.jsx
-try { (() => {
-// figma node: 602:481 3D Avatars / 22
-function DAvatars223(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 120,
-      height: 120,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fig-asset-74debf751b71f111",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 120,
-      height: 120
-    }
-  }));
-}
-Object.assign(__ds_scope, { DAvatars223, __ds_default_components_figma_reference_DAvatars223_1kcp8eu: DAvatars223 });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/DAvatars223.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/DAvatars63.jsx
-try { (() => {
-// figma node: 602:462 3D Avatars / 6
-function DAvatars63(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 120,
-      height: 120,
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fig-asset-a0b846e76cae6700",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      width: 120,
-      height: 120
-    }
-  }));
-}
-Object.assign(__ds_scope, { DAvatars63, __ds_default_components_figma_reference_DAvatars63_1hd6zm0: DAvatars63 });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/DAvatars63.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/DateInactive.jsx
-try { (() => {
-// figma node: 602:10006 Date/inactive
-function DateInactive(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 30,
-      height: 30,
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"Avenir Next LT Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 600,
-      fontSize: 16,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "18px",
-      color: "rgb(74,86,96)",
-      flexShrink: 0
-    }
-  }, props.text1 ?? "1"));
-}
-Object.assign(__ds_scope, { DateInactive, __ds_default_components_figma_reference_DateInactive_1e59ynu: DateInactive });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/DateInactive.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/DateActive.jsx
-try { (() => {
-// figma node: 602:10010 Date/active
-function DateActive(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      height: 30,
-      flexShrink: 0,
-      alignSelf: "stretch",
-      width: "auto"
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    text1: "19"
-  })));
-}
-Object.assign(__ds_scope, { DateActive, __ds_default_components_figma_reference_DateActive_ek2uo3: DateActive });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/DateActive.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/Favorite.jsx
-try { (() => {
-// figma node: 492:161 favorite
-function Favorite(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 24,
-      height: 24,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--schemes-on-surface)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 20,
-    height: 18.350,
-    viewBox: "0 0 20 18.350",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 2.65,
-      width: 20,
-      height: 18.35
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 10 18.35 L 8.55 17.05 C 6.867 15.533 5.475 14.225 4.375 13.125 C 3.275 12.025 2.4 11.042 1.75 10.175 C 1.1 9.292 0.642 8.483 0.375 7.75 C 0.125 7.017 0 6.267 0 5.5 C 0 3.933 0.525 2.625 1.575 1.575 C 2.625 0.525 3.933 0 5.5 0 C 6.367 0 7.192 0.183 7.975 0.55 C 8.758 0.917 9.433 1.433 10 2.1 C 10.567 1.433 11.242 0.917 12.025 0.55 C 12.808 0.183 13.633 0 14.5 0 C 16.067 0 17.375 0.525 18.425 1.575 C 19.475 2.625 20 3.933 20 5.5 C 20 6.267 19.867 7.017 19.6 7.75 C 19.35 8.483 18.9 9.292 18.25 10.175 C 17.6 11.042 16.725 12.025 15.625 13.125 C 14.525 14.225 13.133 15.533 11.45 17.05 L 10 18.35 Z M 10 15.65 C 11.6 14.217 12.917 12.992 13.95 11.975 C 14.983 10.942 15.8 10.05 16.4 9.3 C 17 8.533 17.417 7.858 17.65 7.275 C 17.883 6.675 18 6.083 18 5.5 C 18 4.5 17.667 3.667 17 3 C 16.333 2.333 15.5 2 14.5 2 C 13.717 2 12.992 2.225 12.325 2.675 C 11.658 3.108 11.2 3.667 10.95 4.35 L 9.05 4.35 C 8.8 3.667 8.342 3.108 7.675 2.675 C 7.008 2.225 6.283 2 5.5 2 C 4.5 2 3.667 2.333 3 3 C 2.333 3.667 2 4.5 2 5.5 C 2 6.083 2.117 6.675 2.35 7.275 C 2.583 7.858 3 8.533 3.6 9.3 C 4.2 10.05 5.017 10.942 6.05 11.975 C 7.083 12.992 8.4 14.217 10 15.65 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-}
-Object.assign(__ds_scope, { Favorite, __ds_default_components_figma_reference_Favorite_1vevnex: Favorite });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Favorite.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/Grid.jsx
-try { (() => {
-// figma node: 492:60 Grid (6 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "size=" + __venc(p.size);
-function Grid(_p = {}) {
-  const props = {
-    ..._p,
-    size: _p.size ?? "20"
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 48,
-      height: 48,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 36,
-    height: 36,
-    viewBox: "0 0 36 36",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 6,
-      width: 36,
-      height: 36
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -2 C -1.105 -2 -2 -1.105 -2 0 L 0 0 Z M 14 0 L 16 0 C 16 -1.105 15.105 -2 14 -2 L 14 0 Z M 14 14 L 14 16 C 15.105 16 16 15.105 16 14 L 14 14 Z M 0 14 L -2 14 C -2 15.105 -1.105 16 0 16 L 0 14 Z M 22 0 L 22 -2 C 20.895 -2 20 -1.105 20 0 L 22 0 Z M 36 0 L 38 0 C 38 -1.105 37.105 -2 36 -2 L 36 0 Z M 36 14 L 36 16 C 37.105 16 38 15.105 38 14 L 36 14 Z M 22 14 L 20 14 C 20 15.105 20.895 16 22 16 L 22 14 Z M 22 22 L 22 20 C 20.895 20 20 20.895 20 22 L 22 22 Z M 36 22 L 38 22 C 38 20.895 37.105 20 36 20 L 36 22 Z M 36 36 L 36 38 C 37.105 38 38 37.105 38 36 L 36 36 Z M 22 36 L 20 36 C 20 37.105 20.895 38 22 38 L 22 36 Z M 0 22 L 0 20 C -1.105 20 -2 20.895 -2 22 L 0 22 Z M 14 22 L 16 22 C 16 20.895 15.105 20 14 20 L 14 22 Z M 14 36 L 14 38 C 15.105 38 16 37.105 16 36 L 14 36 Z M 0 36 L -2 36 C -2 37.105 -1.105 38 0 38 L 0 36 Z M 0 0 L 0 2 L 14 2 L 14 0 L 14 -2 L 0 -2 L 0 0 Z M 14 0 L 12 0 L 12 14 L 14 14 L 16 14 L 16 0 L 14 0 Z M 14 14 L 14 12 L 0 12 L 0 14 L 0 16 L 14 16 L 14 14 Z M 0 14 L 2 14 L 2 0 L 0 0 L -2 0 L -2 14 L 0 14 Z M 22 0 L 22 2 L 36 2 L 36 0 L 36 -2 L 22 -2 L 22 0 Z M 36 0 L 34 0 L 34 14 L 36 14 L 38 14 L 38 0 L 36 0 Z M 36 14 L 36 12 L 22 12 L 22 14 L 22 16 L 36 16 L 36 14 Z M 22 14 L 24 14 L 24 0 L 22 0 L 20 0 L 20 14 L 22 14 Z M 22 22 L 22 24 L 36 24 L 36 22 L 36 20 L 22 20 L 22 22 Z M 36 22 L 34 22 L 34 36 L 36 36 L 38 36 L 38 22 L 36 22 Z M 36 36 L 36 34 L 22 34 L 22 36 L 22 38 L 36 38 L 36 36 Z M 22 36 L 24 36 L 24 22 L 22 22 L 20 22 L 20 36 L 22 36 Z M 0 22 L 0 24 L 14 24 L 14 22 L 14 20 L 0 20 L 0 22 Z M 14 22 L 12 22 L 12 36 L 14 36 L 16 36 L 16 22 L 14 22 Z M 14 36 L 14 34 L 0 34 L 0 36 L 0 38 L 14 38 L 14 36 Z M 0 36 L 2 36 L 2 22 L 0 22 L -2 22 L -2 36 L 0 36 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 12,
-    height: 12,
-    viewBox: "0 0 12 12",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 2,
-      width: 12,
-      height: 12
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -0.8 C -0.442 -0.8 -0.8 -0.442 -0.8 0 L 0 0 Z M 4.667 0 L 5.467 0 C 5.467 -0.442 5.108 -0.8 4.667 -0.8 L 4.667 0 Z M 4.667 4.667 L 4.667 5.467 C 5.108 5.467 5.467 5.108 5.467 4.667 L 4.667 4.667 Z M 0 4.667 L -0.8 4.667 C -0.8 5.108 -0.442 5.467 0 5.467 L 0 4.667 Z M 7.333 0 L 7.333 -0.8 C 6.892 -0.8 6.533 -0.442 6.533 0 L 7.333 0 Z M 12 0 L 12.8 0 C 12.8 -0.442 12.442 -0.8 12 -0.8 L 12 0 Z M 12 4.667 L 12 5.467 C 12.442 5.467 12.8 5.108 12.8 4.667 L 12 4.667 Z M 7.333 4.667 L 6.533 4.667 C 6.533 5.108 6.892 5.467 7.333 5.467 L 7.333 4.667 Z M 7.333 7.333 L 7.333 6.533 C 6.892 6.533 6.533 6.892 6.533 7.333 L 7.333 7.333 Z M 12 7.333 L 12.8 7.333 C 12.8 6.892 12.442 6.533 12 6.533 L 12 7.333 Z M 12 12 L 12 12.8 C 12.442 12.8 12.8 12.442 12.8 12 L 12 12 Z M 7.333 12 L 6.533 12 C 6.533 12.442 6.892 12.8 7.333 12.8 L 7.333 12 Z M 0 7.333 L 0 6.533 C -0.442 6.533 -0.8 6.892 -0.8 7.333 L 0 7.333 Z M 4.667 7.333 L 5.467 7.333 C 5.467 6.892 5.108 6.533 4.667 6.533 L 4.667 7.333 Z M 4.667 12 L 4.667 12.8 C 5.108 12.8 5.467 12.442 5.467 12 L 4.667 12 Z M 0 12 L -0.8 12 C -0.8 12.442 -0.442 12.8 0 12.8 L 0 12 Z M 0 0 L 0 0.8 L 4.667 0.8 L 4.667 0 L 4.667 -0.8 L 0 -0.8 L 0 0 Z M 4.667 0 L 3.867 0 L 3.867 4.667 L 4.667 4.667 L 5.467 4.667 L 5.467 0 L 4.667 0 Z M 4.667 4.667 L 4.667 3.867 L 0 3.867 L 0 4.667 L 0 5.467 L 4.667 5.467 L 4.667 4.667 Z M 0 4.667 L 0.8 4.667 L 0.8 0 L 0 0 L -0.8 0 L -0.8 4.667 L 0 4.667 Z M 7.333 0 L 7.333 0.8 L 12 0.8 L 12 0 L 12 -0.8 L 7.333 -0.8 L 7.333 0 Z M 12 0 L 11.2 0 L 11.2 4.667 L 12 4.667 L 12.8 4.667 L 12.8 0 L 12 0 Z M 12 4.667 L 12 3.867 L 7.333 3.867 L 7.333 4.667 L 7.333 5.467 L 12 5.467 L 12 4.667 Z M 7.333 4.667 L 8.133 4.667 L 8.133 0 L 7.333 0 L 6.533 0 L 6.533 4.667 L 7.333 4.667 Z M 7.333 7.333 L 7.333 8.133 L 12 8.133 L 12 7.333 L 12 6.533 L 7.333 6.533 L 7.333 7.333 Z M 12 7.333 L 11.2 7.333 L 11.2 12 L 12 12 L 12.8 12 L 12.8 7.333 L 12 7.333 Z M 12 12 L 12 11.2 L 7.333 11.2 L 7.333 12 L 7.333 12.8 L 12 12.8 L 12 12 Z M 7.333 12 L 8.133 12 L 8.133 7.333 L 7.333 7.333 L 6.533 7.333 L 6.533 12 L 7.333 12 Z M 0 7.333 L 0 8.133 L 4.667 8.133 L 4.667 7.333 L 4.667 6.533 L 0 6.533 L 0 7.333 Z M 4.667 7.333 L 3.867 7.333 L 3.867 12 L 4.667 12 L 5.467 12 L 5.467 7.333 L 4.667 7.333 Z M 4.667 12 L 4.667 11.2 L 0 11.2 L 0 12 L 0 12.8 L 4.667 12.8 L 4.667 12 Z M 0 12 L 0.8 12 L 0.8 7.333 L 0 7.333 L -0.8 7.333 L -0.8 12 L 0 12 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 20,
-      height: 20,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 15,
-    height: 15,
-    viewBox: "0 0 15 15",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2.5,
-      top: 2.5,
-      width: 15,
-      height: 15
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -1 C -0.552 -1 -1 -0.552 -1 0 L 0 0 Z M 5.833 0 L 6.833 0 C 6.833 -0.552 6.386 -1 5.833 -1 L 5.833 0 Z M 5.833 5.833 L 5.833 6.833 C 6.386 6.833 6.833 6.386 6.833 5.833 L 5.833 5.833 Z M 0 5.833 L -1 5.833 C -1 6.386 -0.552 6.833 0 6.833 L 0 5.833 Z M 9.167 0 L 9.167 -1 C 8.614 -1 8.167 -0.552 8.167 0 L 9.167 0 Z M 15 0 L 16 0 C 16 -0.552 15.552 -1 15 -1 L 15 0 Z M 15 5.833 L 15 6.833 C 15.552 6.833 16 6.386 16 5.833 L 15 5.833 Z M 9.167 5.833 L 8.167 5.833 C 8.167 6.386 8.614 6.833 9.167 6.833 L 9.167 5.833 Z M 9.167 9.167 L 9.167 8.167 C 8.614 8.167 8.167 8.614 8.167 9.167 L 9.167 9.167 Z M 15 9.167 L 16 9.167 C 16 8.614 15.552 8.167 15 8.167 L 15 9.167 Z M 15 15 L 15 16 C 15.552 16 16 15.552 16 15 L 15 15 Z M 9.167 15 L 8.167 15 C 8.167 15.552 8.614 16 9.167 16 L 9.167 15 Z M 0 9.167 L 0 8.167 C -0.552 8.167 -1 8.614 -1 9.167 L 0 9.167 Z M 5.833 9.167 L 6.833 9.167 C 6.833 8.614 6.386 8.167 5.833 8.167 L 5.833 9.167 Z M 5.833 15 L 5.833 16 C 6.386 16 6.833 15.552 6.833 15 L 5.833 15 Z M 0 15 L -1 15 C -1 15.552 -0.552 16 0 16 L 0 15 Z M 0 0 L 0 1 L 5.833 1 L 5.833 0 L 5.833 -1 L 0 -1 L 0 0 Z M 5.833 0 L 4.833 0 L 4.833 5.833 L 5.833 5.833 L 6.833 5.833 L 6.833 0 L 5.833 0 Z M 5.833 5.833 L 5.833 4.833 L 0 4.833 L 0 5.833 L 0 6.833 L 5.833 6.833 L 5.833 5.833 Z M 0 5.833 L 1 5.833 L 1 0 L 0 0 L -1 0 L -1 5.833 L 0 5.833 Z M 9.167 0 L 9.167 1 L 15 1 L 15 0 L 15 -1 L 9.167 -1 L 9.167 0 Z M 15 0 L 14 0 L 14 5.833 L 15 5.833 L 16 5.833 L 16 0 L 15 0 Z M 15 5.833 L 15 4.833 L 9.167 4.833 L 9.167 5.833 L 9.167 6.833 L 15 6.833 L 15 5.833 Z M 9.167 5.833 L 10.167 5.833 L 10.167 0 L 9.167 0 L 8.167 0 L 8.167 5.833 L 9.167 5.833 Z M 9.167 9.167 L 9.167 10.167 L 15 10.167 L 15 9.167 L 15 8.167 L 9.167 8.167 L 9.167 9.167 Z M 15 9.167 L 14 9.167 L 14 15 L 15 15 L 16 15 L 16 9.167 L 15 9.167 Z M 15 15 L 15 14 L 9.167 14 L 9.167 15 L 9.167 16 L 15 16 L 15 15 Z M 9.167 15 L 10.167 15 L 10.167 9.167 L 9.167 9.167 L 8.167 9.167 L 8.167 15 L 9.167 15 Z M 0 9.167 L 0 10.167 L 5.833 10.167 L 5.833 9.167 L 5.833 8.167 L 0 8.167 L 0 9.167 Z M 5.833 9.167 L 4.833 9.167 L 4.833 15 L 5.833 15 L 6.833 15 L 6.833 9.167 L 5.833 9.167 Z M 5.833 15 L 5.833 14 L 0 14 L 0 15 L 0 16 L 5.833 16 L 5.833 15 Z M 0 15 L 1 15 L 1 9.167 L 0 9.167 L -1 9.167 L -1 15 L 0 15 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 24,
-      height: 24,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 18,
-    height: 18,
-    viewBox: "0 0 18 18",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3,
-      top: 3,
-      width: 18,
-      height: 18
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -1.25 C -0.69 -1.25 -1.25 -0.69 -1.25 0 L 0 0 Z M 7 0 L 8.25 0 C 8.25 -0.69 7.69 -1.25 7 -1.25 L 7 0 Z M 7 7 L 7 8.25 C 7.69 8.25 8.25 7.69 8.25 7 L 7 7 Z M 0 7 L -1.25 7 C -1.25 7.69 -0.69 8.25 0 8.25 L 0 7 Z M 11 0 L 11 -1.25 C 10.31 -1.25 9.75 -0.69 9.75 0 L 11 0 Z M 18 0 L 19.25 0 C 19.25 -0.69 18.69 -1.25 18 -1.25 L 18 0 Z M 18 7 L 18 8.25 C 18.69 8.25 19.25 7.69 19.25 7 L 18 7 Z M 11 7 L 9.75 7 C 9.75 7.69 10.31 8.25 11 8.25 L 11 7 Z M 11 11 L 11 9.75 C 10.31 9.75 9.75 10.31 9.75 11 L 11 11 Z M 18 11 L 19.25 11 C 19.25 10.31 18.69 9.75 18 9.75 L 18 11 Z M 18 18 L 18 19.25 C 18.69 19.25 19.25 18.69 19.25 18 L 18 18 Z M 11 18 L 9.75 18 C 9.75 18.69 10.31 19.25 11 19.25 L 11 18 Z M 0 11 L 0 9.75 C -0.69 9.75 -1.25 10.31 -1.25 11 L 0 11 Z M 7 11 L 8.25 11 C 8.25 10.31 7.69 9.75 7 9.75 L 7 11 Z M 7 18 L 7 19.25 C 7.69 19.25 8.25 18.69 8.25 18 L 7 18 Z M 0 18 L -1.25 18 C -1.25 18.69 -0.69 19.25 0 19.25 L 0 18 Z M 0 0 L 0 1.25 L 7 1.25 L 7 0 L 7 -1.25 L 0 -1.25 L 0 0 Z M 7 0 L 5.75 0 L 5.75 7 L 7 7 L 8.25 7 L 8.25 0 L 7 0 Z M 7 7 L 7 5.75 L 0 5.75 L 0 7 L 0 8.25 L 7 8.25 L 7 7 Z M 0 7 L 1.25 7 L 1.25 0 L 0 0 L -1.25 0 L -1.25 7 L 0 7 Z M 11 0 L 11 1.25 L 18 1.25 L 18 0 L 18 -1.25 L 11 -1.25 L 11 0 Z M 18 0 L 16.75 0 L 16.75 7 L 18 7 L 19.25 7 L 19.25 0 L 18 0 Z M 18 7 L 18 5.75 L 11 5.75 L 11 7 L 11 8.25 L 18 8.25 L 18 7 Z M 11 7 L 12.25 7 L 12.25 0 L 11 0 L 9.75 0 L 9.75 7 L 11 7 Z M 11 11 L 11 12.25 L 18 12.25 L 18 11 L 18 9.75 L 11 9.75 L 11 11 Z M 18 11 L 16.75 11 L 16.75 18 L 18 18 L 19.25 18 L 19.25 11 L 18 11 Z M 18 18 L 18 16.75 L 11 16.75 L 11 18 L 11 19.25 L 18 19.25 L 18 18 Z M 11 18 L 12.25 18 L 12.25 11 L 11 11 L 9.75 11 L 9.75 18 L 11 18 Z M 0 11 L 0 12.25 L 7 12.25 L 7 11 L 7 9.75 L 0 9.75 L 0 11 Z M 7 11 L 5.75 11 L 5.75 18 L 7 18 L 8.25 18 L 8.25 11 L 7 11 Z M 7 18 L 7 16.75 L 0 16.75 L 0 18 L 0 19.25 L 7 19.25 L 7 18 Z M 0 18 L 1.25 18 L 1.25 11 L 0 11 L -1.25 11 L -1.25 18 L 0 18 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 32,
-      height: 32,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 24,
-    height: 24,
+/** The final-review family's lucide-shaped glyph (decorative: `aria-hidden`). */
+function FinalReviewsIcon({
+  name,
+  size = 16,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
     viewBox: "0 0 24 24",
     fill: "none",
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 4,
-      width: 24,
-      height: 24
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+    focusable: "false",
+    className: className,
+    dangerouslySetInnerHTML: {
+      __html: PATHS[name] || PATHS['clipboard-check']
     }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -1.5 C -0.828 -1.5 -1.5 -0.828 -1.5 0 L 0 0 Z M 9.333 0 L 10.833 0 C 10.833 -0.828 10.162 -1.5 9.333 -1.5 L 9.333 0 Z M 9.333 9.333 L 9.333 10.833 C 10.162 10.833 10.833 10.162 10.833 9.333 L 9.333 9.333 Z M 0 9.333 L -1.5 9.333 C -1.5 10.162 -0.828 10.833 0 10.833 L 0 9.333 Z M 14.667 0 L 14.667 -1.5 C 13.838 -1.5 13.167 -0.828 13.167 0 L 14.667 0 Z M 24 0 L 25.5 0 C 25.5 -0.828 24.828 -1.5 24 -1.5 L 24 0 Z M 24 9.333 L 24 10.833 C 24.828 10.833 25.5 10.162 25.5 9.333 L 24 9.333 Z M 14.667 9.333 L 13.167 9.333 C 13.167 10.162 13.838 10.833 14.667 10.833 L 14.667 9.333 Z M 14.667 14.667 L 14.667 13.167 C 13.838 13.167 13.167 13.838 13.167 14.667 L 14.667 14.667 Z M 24 14.667 L 25.5 14.667 C 25.5 13.838 24.828 13.167 24 13.167 L 24 14.667 Z M 24 24 L 24 25.5 C 24.828 25.5 25.5 24.828 25.5 24 L 24 24 Z M 14.667 24 L 13.167 24 C 13.167 24.828 13.838 25.5 14.667 25.5 L 14.667 24 Z M 0 14.667 L 0 13.167 C -0.828 13.167 -1.5 13.838 -1.5 14.667 L 0 14.667 Z M 9.333 14.667 L 10.833 14.667 C 10.833 13.838 10.162 13.167 9.333 13.167 L 9.333 14.667 Z M 9.333 24 L 9.333 25.5 C 10.162 25.5 10.833 24.828 10.833 24 L 9.333 24 Z M 0 24 L -1.5 24 C -1.5 24.828 -0.828 25.5 0 25.5 L 0 24 Z M 0 0 L 0 1.5 L 9.333 1.5 L 9.333 0 L 9.333 -1.5 L 0 -1.5 L 0 0 Z M 9.333 0 L 7.833 0 L 7.833 9.333 L 9.333 9.333 L 10.833 9.333 L 10.833 0 L 9.333 0 Z M 9.333 9.333 L 9.333 7.833 L 0 7.833 L 0 9.333 L 0 10.833 L 9.333 10.833 L 9.333 9.333 Z M 0 9.333 L 1.5 9.333 L 1.5 0 L 0 0 L -1.5 0 L -1.5 9.333 L 0 9.333 Z M 14.667 0 L 14.667 1.5 L 24 1.5 L 24 0 L 24 -1.5 L 14.667 -1.5 L 14.667 0 Z M 24 0 L 22.5 0 L 22.5 9.333 L 24 9.333 L 25.5 9.333 L 25.5 0 L 24 0 Z M 24 9.333 L 24 7.833 L 14.667 7.833 L 14.667 9.333 L 14.667 10.833 L 24 10.833 L 24 9.333 Z M 14.667 9.333 L 16.167 9.333 L 16.167 0 L 14.667 0 L 13.167 0 L 13.167 9.333 L 14.667 9.333 Z M 14.667 14.667 L 14.667 16.167 L 24 16.167 L 24 14.667 L 24 13.167 L 14.667 13.167 L 14.667 14.667 Z M 24 14.667 L 22.5 14.667 L 22.5 24 L 24 24 L 25.5 24 L 25.5 14.667 L 24 14.667 Z M 24 24 L 24 22.5 L 14.667 22.5 L 14.667 24 L 14.667 25.5 L 24 25.5 L 24 24 Z M 14.667 24 L 16.167 24 L 16.167 14.667 L 14.667 14.667 L 13.167 14.667 L 13.167 24 L 14.667 24 Z M 0 14.667 L 0 16.167 L 9.333 16.167 L 9.333 14.667 L 9.333 13.167 L 0 13.167 L 0 14.667 Z M 9.333 14.667 L 7.833 14.667 L 7.833 24 L 9.333 24 L 10.833 24 L 10.833 14.667 L 9.333 14.667 Z M 9.333 24 L 9.333 22.5 L 0 22.5 L 0 24 L 0 25.5 L 9.333 25.5 L 9.333 24 Z M 0 24 L 1.5 24 L 1.5 14.667 L 0 14.667 L -1.5 14.667 L -1.5 24 L 0 24 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 40,
-      height: 40,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 30,
-    height: 30,
-    viewBox: "0 0 30 30",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 5,
-      width: 30,
-      height: 30
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 0 L 0 -1.75 C -0.966 -1.75 -1.75 -0.966 -1.75 0 L 0 0 Z M 11.667 0 L 13.417 0 C 13.417 -0.966 12.633 -1.75 11.667 -1.75 L 11.667 0 Z M 11.667 11.667 L 11.667 13.417 C 12.633 13.417 13.417 12.633 13.417 11.667 L 11.667 11.667 Z M 0 11.667 L -1.75 11.667 C -1.75 12.633 -0.966 13.417 0 13.417 L 0 11.667 Z M 18.333 0 L 18.333 -1.75 C 17.367 -1.75 16.583 -0.966 16.583 0 L 18.333 0 Z M 30 0 L 31.75 0 C 31.75 -0.966 30.966 -1.75 30 -1.75 L 30 0 Z M 30 11.667 L 30 13.417 C 30.966 13.417 31.75 12.633 31.75 11.667 L 30 11.667 Z M 18.333 11.667 L 16.583 11.667 C 16.583 12.633 17.367 13.417 18.333 13.417 L 18.333 11.667 Z M 18.333 18.333 L 18.333 16.583 C 17.367 16.583 16.583 17.367 16.583 18.333 L 18.333 18.333 Z M 30 18.333 L 31.75 18.333 C 31.75 17.367 30.966 16.583 30 16.583 L 30 18.333 Z M 30 30 L 30 31.75 C 30.966 31.75 31.75 30.966 31.75 30 L 30 30 Z M 18.333 30 L 16.583 30 C 16.583 30.966 17.367 31.75 18.333 31.75 L 18.333 30 Z M 0 18.333 L 0 16.583 C -0.966 16.583 -1.75 17.367 -1.75 18.333 L 0 18.333 Z M 11.667 18.333 L 13.417 18.333 C 13.417 17.367 12.633 16.583 11.667 16.583 L 11.667 18.333 Z M 11.667 30 L 11.667 31.75 C 12.633 31.75 13.417 30.966 13.417 30 L 11.667 30 Z M 0 30 L -1.75 30 C -1.75 30.966 -0.966 31.75 0 31.75 L 0 30 Z M 0 0 L 0 1.75 L 11.667 1.75 L 11.667 0 L 11.667 -1.75 L 0 -1.75 L 0 0 Z M 11.667 0 L 9.917 0 L 9.917 11.667 L 11.667 11.667 L 13.417 11.667 L 13.417 0 L 11.667 0 Z M 11.667 11.667 L 11.667 9.917 L 0 9.917 L 0 11.667 L 0 13.417 L 11.667 13.417 L 11.667 11.667 Z M 0 11.667 L 1.75 11.667 L 1.75 0 L 0 0 L -1.75 0 L -1.75 11.667 L 0 11.667 Z M 18.333 0 L 18.333 1.75 L 30 1.75 L 30 0 L 30 -1.75 L 18.333 -1.75 L 18.333 0 Z M 30 0 L 28.25 0 L 28.25 11.667 L 30 11.667 L 31.75 11.667 L 31.75 0 L 30 0 Z M 30 11.667 L 30 9.917 L 18.333 9.917 L 18.333 11.667 L 18.333 13.417 L 30 13.417 L 30 11.667 Z M 18.333 11.667 L 20.083 11.667 L 20.083 0 L 18.333 0 L 16.583 0 L 16.583 11.667 L 18.333 11.667 Z M 18.333 18.333 L 18.333 20.083 L 30 20.083 L 30 18.333 L 30 16.583 L 18.333 16.583 L 18.333 18.333 Z M 30 18.333 L 28.25 18.333 L 28.25 30 L 30 30 L 31.75 30 L 31.75 18.333 L 30 18.333 Z M 30 30 L 30 28.25 L 18.333 28.25 L 18.333 30 L 18.333 31.75 L 30 31.75 L 30 30 Z M 18.333 30 L 20.083 30 L 20.083 18.333 L 18.333 18.333 L 16.583 18.333 L 16.583 30 L 18.333 30 Z M 0 18.333 L 0 20.083 L 11.667 20.083 L 11.667 18.333 L 11.667 16.583 L 0 16.583 L 0 18.333 Z M 11.667 18.333 L 9.917 18.333 L 9.917 30 L 11.667 30 L 13.417 30 L 13.417 18.333 L 11.667 18.333 Z M 11.667 30 L 11.667 28.25 L 0 28.25 L 0 30 L 0 31.75 L 11.667 31.75 L 11.667 30 Z M 0 30 L 1.75 30 L 1.75 18.333 L 0 18.333 L -1.75 18.333 L -1.75 30 L 0 30 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: Size=48
-    "size=48": __body0,
-    // figma: Size=16
-    "size=16": __body1,
-    // figma: Size=20
-    "size=20": __body2,
-    // figma: Size=24
-    "size=24": __body3,
-    // figma: Size=32
-    "size=32": __body4,
-    // figma: Size=40
-    "size=40": __body5
-  };
-  return (__impls[__vkey(props)] ?? __body2)();
+  });
 }
-Object.assign(__ds_scope, { Grid, __ds_default_components_figma_reference_Grid_1jn14sv: Grid });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Grid.jsx", error: String((e && e.message) || e) }); }
+FinalReviewsIcon.names = Object.keys(PATHS);
+Object.assign(__ds_scope, { FinalReviewsIcon });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/FinalReviewsIcon.jsx", error: String((e && e.message) || e) }); }
 
-// components/figma-reference/Icons.jsx
+// components/finalreviews/finalReviewsData.js
 try { (() => {
-// figma node: 602:9983 Icons (8 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "icon=" + __venc(p.icon);
-function Icons(_p = {}) {
-  const props = {
-    ..._p,
-    icon: _p.icon ?? "check-bold"
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
+/* Sample data for the final-review slot sign-up (C2) — verbatim from the brief's sample-data.json
+   (uploads/2026-10-20-final-review-signup/), in the API's own shapes, plus two generated variants.
+   Kit-only: the codebase reads the real endpoints (brief §8). */
+window.GT_FINAL_REVIEWS_SAMPLE = {
+  "about": "Sample data for the C2 final-review sign-up round (brief: README.md in this folder). One class at UC Santa Cruz in the API's shapes (brief section 8). Ids are readable stand-ins for UUIDs; people, teams and the Zoom link are made up. Times are instants in UTC; the campus zone is America/Los_Angeles, PST (UTC-8) in December, so 17:00Z is 9:00 AM on campus.",
+  "class": {
+    "id": "c-cse115a-f26",
+    "label": "CSE 115A · Fall 2026",
+    "school": "UC Santa Cruz",
+    "school_zone": "America/Los_Angeles",
+    "instructor": {
+      "user_id": "u-dana-whitfield",
+      "name": "Dana Whitfield"
     }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 2.667,
-    height: 10.667,
-    viewBox: "0 0 2.667 10.667",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 6.667,
-      top: 2.667,
-      width: 2.667,
-      height: 10.667
+  },
+  "clocks": {
+    "booking_week": {
+      "now": "2026-11-30T18:00:00Z",
+      "note": "Mon Nov 30, 10:00 AM PT. Sign-ups open; 7 of 10 teams have booked."
+    },
+    "review_day": {
+      "now": "2026-12-07T17:20:00Z",
+      "note": "Mon Dec 7, 9:20 AM PT. Render with signups_open false (the instructor closed sign-ups on Friday). Trailhead's review is live; Night Owls' becomes joinable at 9:50 AM."
+    },
+    "after": {
+      "now": "2026-12-09T20:00:00Z",
+      "note": "Wed Dec 9, 12:00 PM PT. Every review is past."
     }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 1.333 8 C 1.687 8 2.026 8.14 2.276 8.391 C 2.526 8.641 2.667 8.98 2.667 9.333 C 2.667 9.687 2.526 10.026 2.276 10.276 C 2.026 10.526 1.687 10.667 1.333 10.667 C 0.98 10.667 0.641 10.526 0.391 10.276 C 0.14 10.026 0 9.687 0 9.333 C 0 8.98 0.14 8.641 0.391 8.391 C 0.641 8.14 0.98 8 1.333 8 Z M 1.333 4 C 1.687 4 2.026 4.14 2.276 4.391 C 2.526 4.641 2.667 4.98 2.667 5.333 C 2.667 5.687 2.526 6.026 2.276 6.276 C 2.026 6.526 1.687 6.667 1.333 6.667 C 0.98 6.667 0.641 6.526 0.391 6.276 C 0.14 6.026 0 5.687 0 5.333 C 0 4.98 0.14 4.641 0.391 4.391 C 0.641 4.14 0.98 4 1.333 4 L 1.333 4 Z M 1.333 0 C 1.687 0 2.026 0.14 2.276 0.391 C 2.526 0.641 2.667 0.98 2.667 1.333 C 2.667 1.687 2.526 2.026 2.276 2.276 C 2.026 2.526 1.687 2.667 1.333 2.667 C 0.98 2.667 0.641 2.526 0.391 2.276 C 0.14 2.026 0 1.687 0 1.333 C 0 0.98 0.14 0.641 0.391 0.391 C 0.641 0.14 0.98 0 1.333 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
+  },
+  "viewer_zones": {
+    "campus": "America/Los_Angeles",
+    "abroad": "Asia/Kolkata",
+    "note": "In India (GMT+5:30) the 9:00 AM PT slot reads 10:30 PM the same day; the 3:00 PM PT slot reads 4:30 AM the next day."
+  },
+  "review_slots_staff": {
+    "class_id": "c-cse115a-f26",
+    "signups_open": true,
+    "slots": [{
+      "id": "s-1207-0900",
+      "starts_at": "2026-12-07T17:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-trailhead",
+        "name": "Trailhead"
+      }
+    }, {
+      "id": "s-1207-1000",
+      "starts_at": "2026-12-07T18:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-night-owls",
+        "name": "Night Owls"
+      }
+    }, {
+      "id": "s-1207-1100",
+      "starts_at": "2026-12-07T19:00:00+00:00",
+      "duration_minutes": 60,
+      "team": null
+    }, {
+      "id": "s-1207-1300",
+      "starts_at": "2026-12-07T21:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-redwood-labs",
+        "name": "Redwood Labs"
+      }
+    }, {
+      "id": "s-1207-1400",
+      "starts_at": "2026-12-07T22:00:00+00:00",
+      "duration_minutes": 60,
+      "team": null
+    }, {
+      "id": "s-1207-1500",
+      "starts_at": "2026-12-07T23:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-tidepool",
+        "name": "Tidepool"
+      }
+    }, {
+      "id": "s-1208-0900",
+      "starts_at": "2026-12-08T17:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-lighthouse",
+        "name": "Lighthouse"
+      }
+    }, {
+      "id": "s-1208-1000",
+      "starts_at": "2026-12-08T18:00:00+00:00",
+      "duration_minutes": 60,
+      "team": null
+    }, {
+      "id": "s-1208-1100",
+      "starts_at": "2026-12-08T19:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-seabright",
+        "name": "Seabright"
+      }
+    }, {
+      "id": "s-1208-1300",
+      "starts_at": "2026-12-08T21:00:00+00:00",
+      "duration_minutes": 60,
+      "team": null
+    }, {
+      "id": "s-1208-1400",
+      "starts_at": "2026-12-08T22:00:00+00:00",
+      "duration_minutes": 60,
+      "team": {
+        "project_id": "p-fog-city",
+        "name": "Fog City"
+      }
+    }, {
+      "id": "s-1208-1500",
+      "starts_at": "2026-12-08T23:00:00+00:00",
+      "duration_minutes": 60,
+      "team": null
+    }],
+    "my_team": null,
+    "unbooked_teams": [{
+      "project_id": "p-arboretum",
+      "name": "Arboretum",
+      "product_owner": null
+    }, {
+      "project_id": "p-slug-scheduler",
+      "name": "Slug Scheduler",
+      "product_owner": {
+        "user_id": "u-ana-ruiz",
+        "name": "Ana Ruiz"
+      }
+    }, {
+      "project_id": "p-wharf-rats",
+      "name": "Wharf Rats",
+      "product_owner": {
+        "user_id": "u-jordan-lee",
+        "name": "Jordan Lee"
+      }
+    }],
+    "review_zoom_url": "https://zoom.example.edu/j/123456789"
+  },
+  "students": {
+    "note": "Students get the staff payload's class_id, signups_open and slots, with unbooked_teams [] and review_zoom_url null, plus the my_team of their case below. my_team.product_owner is the field the C2 implementation adds (brief section 8).",
+    "product_owner_not_booked": {
+      "viewer": {
+        "user_id": "u-ana-ruiz",
+        "name": "Ana Ruiz"
+      },
+      "my_team": {
+        "project_id": "p-slug-scheduler",
+        "name": "Slug Scheduler",
+        "is_product_owner": true,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-ana-ruiz",
+          "name": "Ana Ruiz"
+        }
+      }
+    },
+    "product_owner_booked": {
+      "viewer": {
+        "user_id": "u-kai-moreno",
+        "name": "Kai Moreno"
+      },
+      "my_team": {
+        "project_id": "p-trailhead",
+        "name": "Trailhead",
+        "is_product_owner": true,
+        "slot_id": "s-1207-0900",
+        "starts_at": "2026-12-07T17:00:00+00:00",
+        "zoom_url": "https://zoom.example.edu/j/123456789",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen"
+        },
+        "review_ta": {
+          "user_id": "u-luis-ortega",
+          "name": "Luis Ortega"
+        },
+        "product_owner": {
+          "user_id": "u-kai-moreno",
+          "name": "Kai Moreno"
+        }
+      }
+    },
+    "member_booked_no_review_ta": {
+      "viewer": {
+        "user_id": "u-noor-haddad",
+        "name": "Noor Haddad"
+      },
+      "my_team": {
+        "project_id": "p-redwood-labs",
+        "name": "Redwood Labs",
+        "is_product_owner": false,
+        "slot_id": "s-1207-1300",
+        "starts_at": "2026-12-07T21:00:00+00:00",
+        "zoom_url": "https://zoom.example.edu/j/123456789",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen"
+        },
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-eli-brooks",
+          "name": "Eli Brooks"
+        }
+      }
+    },
+    "member_not_booked": {
+      "viewer": {
+        "user_id": "u-rio-santos",
+        "name": "Rio Santos"
+      },
+      "my_team": {
+        "project_id": "p-wharf-rats",
+        "name": "Wharf Rats",
+        "is_product_owner": false,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-jordan-lee",
+          "name": "Jordan Lee"
+        }
+      }
+    },
+    "member_no_product_owner": {
+      "viewer": {
+        "user_id": "u-tess-park",
+        "name": "Tess Park"
+      },
+      "my_team": {
+        "project_id": "p-arboretum",
+        "name": "Arboretum",
+        "is_product_owner": false,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": null
+      }
+    },
+    "no_team": {
+      "viewer": {
+        "user_id": "u-lee-student",
+        "name": "Lee Student"
+      },
+      "my_team": null
     }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 12.613,
-    height: 10.360,
-    viewBox: "0 0 12.613 10.360",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 1.86,
-      top: 3.253,
-      width: 12.613,
-      height: 10.36
+  },
+  "final_review_schedule": {
+    "class_id": "c-cse115a-f26",
+    "review_zoom_url": "https://zoom.example.edu/j/123456789",
+    "review_period_open": true,
+    "my_review_count": 0,
+    "teams": [{
+      "project_id": "p-trailhead",
+      "name": "Trailhead",
+      "final_review_at": "2026-12-07T17:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-maya-chen",
+        "name": "Maya Chen",
+        "email": "maya.chen@example.edu"
+      },
+      "review_ta": {
+        "user_id": "u-luis-ortega",
+        "name": "Luis Ortega",
+        "email": "luis.ortega@example.edu",
+        "claimed_at": "2026-11-30T17:05:00+00:00"
+      }
+    }, {
+      "project_id": "p-night-owls",
+      "name": "Night Owls",
+      "final_review_at": "2026-12-07T18:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-luis-ortega",
+        "name": "Luis Ortega",
+        "email": "luis.ortega@example.edu"
+      },
+      "review_ta": {
+        "user_id": "u-maya-chen",
+        "name": "Maya Chen",
+        "email": "maya.chen@example.edu",
+        "claimed_at": "2026-11-30T17:05:00+00:00"
+      }
+    }, {
+      "project_id": "p-redwood-labs",
+      "name": "Redwood Labs",
+      "final_review_at": "2026-12-07T21:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-maya-chen",
+        "name": "Maya Chen",
+        "email": "maya.chen@example.edu"
+      },
+      "review_ta": null
+    }, {
+      "project_id": "p-tidepool",
+      "name": "Tidepool",
+      "final_review_at": "2026-12-07T23:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-priya-nair",
+        "name": "Priya Nair",
+        "email": "priya.nair@example.edu"
+      },
+      "review_ta": {
+        "user_id": "u-sam-okafor",
+        "name": "Sam Okafor",
+        "email": "sam.okafor@example.edu",
+        "claimed_at": "2026-11-30T17:05:00+00:00"
+      }
+    }, {
+      "project_id": "p-lighthouse",
+      "name": "Lighthouse",
+      "final_review_at": "2026-12-08T17:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-sam-okafor",
+        "name": "Sam Okafor",
+        "email": "sam.okafor@example.edu"
+      },
+      "review_ta": null
+    }, {
+      "project_id": "p-seabright",
+      "name": "Seabright",
+      "final_review_at": "2026-12-08T19:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-luis-ortega",
+        "name": "Luis Ortega",
+        "email": "luis.ortega@example.edu"
+      },
+      "review_ta": {
+        "user_id": "u-priya-nair",
+        "name": "Priya Nair",
+        "email": "priya.nair@example.edu",
+        "claimed_at": "2026-11-30T17:05:00+00:00"
+      }
+    }, {
+      "project_id": "p-fog-city",
+      "name": "Fog City",
+      "final_review_at": "2026-12-08T22:00:00+00:00",
+      "home_ta": {
+        "user_id": "u-priya-nair",
+        "name": "Priya Nair",
+        "email": "priya.nair@example.edu"
+      },
+      "review_ta": null
+    }, {
+      "project_id": "p-arboretum",
+      "name": "Arboretum",
+      "final_review_at": null,
+      "home_ta": null,
+      "review_ta": null
+    }, {
+      "project_id": "p-slug-scheduler",
+      "name": "Slug Scheduler",
+      "final_review_at": null,
+      "home_ta": {
+        "user_id": "u-sam-okafor",
+        "name": "Sam Okafor",
+        "email": "sam.okafor@example.edu"
+      },
+      "review_ta": null
+    }, {
+      "project_id": "p-wharf-rats",
+      "name": "Wharf Rats",
+      "final_review_at": null,
+      "home_ta": {
+        "user_id": "u-maya-chen",
+        "name": "Maya Chen",
+        "email": "maya.chen@example.edu"
+      },
+      "review_ta": null
+    }]
+  },
+  "ta_viewer": {
+    "viewer": {
+      "user_id": "u-maya-chen",
+      "name": "Maya Chen"
+    },
+    "my_review_count": 1,
+    "note": "A TA gets the same two payloads as the instructor; final-reviews differs only in my_review_count. Maya Chen is the Home TA of Trailhead, Redwood Labs and Wharf Rats, and the Review TA of Night Owls."
+  },
+  "class_tas": {
+    "tas": [{
+      "id": "u-luis-ortega",
+      "name": "Luis Ortega",
+      "email": "luis.ortega@example.edu",
+      "projects": [{
+        "id": "p-night-owls",
+        "name": "Night Owls"
+      }, {
+        "id": "p-seabright",
+        "name": "Seabright"
+      }]
+    }, {
+      "id": "u-maya-chen",
+      "name": "Maya Chen",
+      "email": "maya.chen@example.edu",
+      "projects": [{
+        "id": "p-redwood-labs",
+        "name": "Redwood Labs"
+      }, {
+        "id": "p-trailhead",
+        "name": "Trailhead"
+      }, {
+        "id": "p-wharf-rats",
+        "name": "Wharf Rats"
+      }]
+    }, {
+      "id": "u-priya-nair",
+      "name": "Priya Nair",
+      "email": "priya.nair@example.edu",
+      "projects": [{
+        "id": "p-fog-city",
+        "name": "Fog City"
+      }, {
+        "id": "p-tidepool",
+        "name": "Tidepool"
+      }]
+    }, {
+      "id": "u-sam-okafor",
+      "name": "Sam Okafor",
+      "email": "sam.okafor@example.edu",
+      "projects": [{
+        "id": "p-lighthouse",
+        "name": "Lighthouse"
+      }, {
+        "id": "p-slug-scheduler",
+        "name": "Slug Scheduler"
+      }]
+    }]
+  },
+  "empty_class": {
+    "note": "No slots posted yet and sign-ups closed: every team is without a slot.",
+    "review_slots_staff": {
+      "class_id": "c-cse115a-f26",
+      "signups_open": false,
+      "slots": [],
+      "my_team": null,
+      "unbooked_teams": [{
+        "project_id": "p-arboretum",
+        "name": "Arboretum",
+        "product_owner": null
+      }, {
+        "project_id": "p-fog-city",
+        "name": "Fog City",
+        "product_owner": null
+      }, {
+        "project_id": "p-lighthouse",
+        "name": "Lighthouse",
+        "product_owner": null
+      }, {
+        "project_id": "p-night-owls",
+        "name": "Night Owls",
+        "product_owner": null
+      }, {
+        "project_id": "p-redwood-labs",
+        "name": "Redwood Labs",
+        "product_owner": {
+          "user_id": "u-eli-brooks",
+          "name": "Eli Brooks"
+        }
+      }, {
+        "project_id": "p-seabright",
+        "name": "Seabright",
+        "product_owner": null
+      }, {
+        "project_id": "p-slug-scheduler",
+        "name": "Slug Scheduler",
+        "product_owner": {
+          "user_id": "u-ana-ruiz",
+          "name": "Ana Ruiz"
+        }
+      }, {
+        "project_id": "p-tidepool",
+        "name": "Tidepool",
+        "product_owner": null
+      }, {
+        "project_id": "p-trailhead",
+        "name": "Trailhead",
+        "product_owner": {
+          "user_id": "u-kai-moreno",
+          "name": "Kai Moreno"
+        }
+      }, {
+        "project_id": "p-wharf-rats",
+        "name": "Wharf Rats",
+        "product_owner": {
+          "user_id": "u-jordan-lee",
+          "name": "Jordan Lee"
+        }
+      }],
+      "review_zoom_url": null
     }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 4.14 10.36 L 0 6.22 L 1.887 4.333 L 4.14 6.593 L 10.727 0 L 12.613 1.887 L 4.14 10.36 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 9,
-    height: 10.929,
-    viewBox: "0 0 9 10.929",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3,
-      top: 3,
-      width: 9,
-      height: 10.929
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 10.929 L 9 10.929 L 9 9.643 L 0 9.643 L 0 10.929 Z M 9 3.857 L 6.429 3.857 L 6.429 0 L 2.571 0 L 2.571 3.857 L 0 3.857 L 4.5 8.357 L 9 3.857 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 10,
-    height: 10,
-    viewBox: "0 0 10 10",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3,
-      top: 3,
-      width: 10,
-      height: 10
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 10 1.819 L 8.181 0 L 5 3.181 L 1.819 0 L 0 1.819 L 3.181 5 L 0 8.181 L 1.819 10 L 5 6.819 L 8.181 10 L 10 8.181 L 6.819 5 L 10 1.819 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 10,
-    height: 6.183,
-    viewBox: "0 0 10 6.183",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3,
-      top: 5,
-      width: 10,
-      height: 6.183
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 1.175 0 L 5 3.825 L 8.825 0 L 10 1.183 L 5 6.183 L 0 1.183 L 1.175 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 10,
-    height: 6.183,
-    viewBox: "0 0 10 6.183",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      transform: "matrix(-1,0,0,-1,13,11.183)",
-      transformOrigin: "0 0",
-      width: 10,
-      height: 6.183
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 1.175 0 L 5 3.825 L 8.825 0 L 10 1.183 L 5 6.183 L 0 1.183 L 1.175 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body6 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 10,
-    height: 6.183,
-    viewBox: "0 0 10 6.183",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      transform: "matrix(0,1,-1,0,10.183,3)",
-      transformOrigin: "0 0",
-      width: 10,
-      height: 6.183
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 1.175 0 L 5 3.825 L 8.825 0 L 10 1.183 L 5 6.183 L 0 1.183 L 1.175 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body7 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "rgb(181,190,198)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 10,
-    height: 6.183,
-    viewBox: "0 0 10 6.183",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 0,
-      transform: "matrix(0,-1,1,0,5,13)",
-      transformOrigin: "0 0",
-      width: 10,
-      height: 6.183
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 1.175 0 L 5 3.825 L 8.825 0 L 10 1.183 L 5 6.183 L 0 1.183 L 1.175 0 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: Icon=dots-vertical
-    "icon=dots-vertical": __body0,
-    // figma: Icon=check-bold
-    "icon=check-bold": __body1,
-    // figma: Icon=download
-    "icon=download": __body2,
-    // figma: Icon=close
-    "icon=close": __body3,
-    // figma: Icon=arrow-down
-    "icon=arrow-down": __body4,
-    // figma: Icon=arrow-up
-    "icon=arrow-up": __body5,
-    // figma: Icon=arrow-left
-    "icon=arrow-left": __body6,
-    // figma: Icon=arrow-right
-    "icon=arrow-right": __body7
-  };
-  return (__impls[__vkey(props)] ?? __body1)();
-}
-Object.assign(__ds_scope, { Icons, __ds_default_components_figma_reference_Icons_1odbgn9: Icons });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Icons.jsx", error: String((e && e.message) || e) }); }
+  }
+};
 
-// components/figma-reference/Monitor.jsx
-try { (() => {
-// figma node: 492:79 Monitor (6 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "size=" + __venc(p.size);
-function Monitor(_p = {}) {
-  const props = {
-    ..._p,
-    size: _p.size ?? "20"
+/* Generated variants (kit-only): "many" = a 36-team class over five days (40 slots), "history" = the finished
+   summer class from before slots (review times in the staff read, no slots, read-only). */
+(function () {
+  var S = window.GT_FINAL_REVIEWS_SAMPLE;
+  var TAS = S.class_tas.tas.map(function (t) {
+    return {
+      user_id: t.id,
+      name: t.name
+    };
+  });
+  var NAMES = ['Trailhead', 'Night Owls', 'Redwood Labs', 'Tidepool', 'Lighthouse', 'Seabright', 'Fog City', 'Arboretum', 'Slug Scheduler', 'Wharf Rats', 'Banana Slugs Who Ship On Fridays And Never On Mondays', 'Porter Meadow', 'Kresge Commons', 'Cowell Ranch', 'Natural Bridges', 'Pogonip', 'Moss Landing', 'Big Basin', 'Capitola Pier Collective', 'Westcliff', 'Twin Lakes', 'Pleasure Point', 'Elkhorn Slough', 'Quarry Amphitheater', 'Science Hill', 'East Field', 'Baskin Builders', 'McHenry Late Nights', 'Stevenson Stack', 'Crown Merrill', 'Rachel Carson', 'Oakes Overflow', 'The Upper Campus Shuttle', 'Hagar Court', 'Empire Grade', 'Coolidge Drive'];
+  var PEOPLE = ['Ana Ruiz', 'Jordan Lee', 'Kai Moreno', 'Eli Brooks', 'Noor Haddad', 'Rio Santos', 'Tess Park', 'Mina Patel', 'Diego Alvarez', 'Hana Kim', 'Omar Said', 'Lena Fischer'];
+  var id = function (n) {
+    return 'p-' + n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 48,
-      height: 48,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 40,
-    height: 36,
-    viewBox: "0 0 40 36",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 6,
-      width: 40,
-      height: 36
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 12 34 C 10.895 34 10 34.895 10 36 C 10 37.105 10.895 38 12 38 L 12 36 L 12 34 Z M 28 38 C 29.105 38 30 37.105 30 36 C 30 34.895 29.105 34 28 34 L 28 36 L 28 38 Z M 22 28 C 22 26.895 21.105 26 20 26 C 18.895 26 18 26.895 18 28 L 20 28 L 22 28 Z M 18 36 C 18 37.105 18.895 38 20 38 C 21.105 38 22 37.105 22 36 L 20 36 L 18 36 Z M 4 0 L 4 2 L 36 2 L 36 0 L 36 -2 L 4 -2 L 4 0 Z M 36 0 L 36 2 C 37.105 2 38 2.895 38 4 L 40 4 L 42 4 C 42 0.686 39.314 -2 36 -2 L 36 0 Z M 40 4 L 38 4 L 38 24 L 40 24 L 42 24 L 42 4 L 40 4 Z M 40 24 L 38 24 C 38 25.105 37.105 26 36 26 L 36 28 L 36 30 C 39.314 30 42 27.314 42 24 L 40 24 Z M 36 28 L 36 26 L 4 26 L 4 28 L 4 30 L 36 30 L 36 28 Z M 4 28 L 4 26 C 2.895 26 2 25.105 2 24 L 0 24 L -2 24 C -2 27.314 0.686 30 4 30 L 4 28 Z M 0 24 L 2 24 L 2 4 L 0 4 L -2 4 L -2 24 L 0 24 Z M 0 4 L 2 4 C 2 2.895 2.895 2 4 2 L 4 0 L 4 -2 C 0.686 -2 -2 0.686 -2 4 L 0 4 Z M 12 36 L 12 38 L 28 38 L 28 36 L 28 34 L 12 34 L 12 36 Z M 20 28 L 18 28 L 18 36 L 20 36 L 22 36 L 22 28 L 20 28 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 13.333,
-    height: 12,
-    viewBox: "0 0 13.333 12",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 1.333,
-      top: 2,
-      width: 13.333,
-      height: 12
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 4 11.2 C 3.558 11.2 3.2 11.558 3.2 12 C 3.2 12.442 3.558 12.8 4 12.8 L 4 12 L 4 11.2 Z M 9.333 12.8 C 9.775 12.8 10.133 12.442 10.133 12 C 10.133 11.558 9.775 11.2 9.333 11.2 L 9.333 12 L 9.333 12.8 Z M 7.467 9.333 C 7.467 8.892 7.108 8.533 6.667 8.533 C 6.225 8.533 5.867 8.892 5.867 9.333 L 6.667 9.333 L 7.467 9.333 Z M 5.867 12 C 5.867 12.442 6.225 12.8 6.667 12.8 C 7.108 12.8 7.467 12.442 7.467 12 L 6.667 12 L 5.867 12 Z M 1.333 0 L 1.333 0.8 L 12 0.8 L 12 0 L 12 -0.8 L 1.333 -0.8 L 1.333 0 Z M 12 0 L 12 0.8 C 12.295 0.8 12.533 1.039 12.533 1.333 L 13.333 1.333 L 14.133 1.333 C 14.133 0.155 13.178 -0.8 12 -0.8 L 12 0 Z M 13.333 1.333 L 12.533 1.333 L 12.533 8 L 13.333 8 L 14.133 8 L 14.133 1.333 L 13.333 1.333 Z M 13.333 8 L 12.533 8 C 12.533 8.295 12.295 8.533 12 8.533 L 12 9.333 L 12 10.133 C 13.178 10.133 14.133 9.178 14.133 8 L 13.333 8 Z M 12 9.333 L 12 8.533 L 1.333 8.533 L 1.333 9.333 L 1.333 10.133 L 12 10.133 L 12 9.333 Z M 1.333 9.333 L 1.333 8.533 C 1.039 8.533 0.8 8.295 0.8 8 L 0 8 L -0.8 8 C -0.8 9.178 0.155 10.133 1.333 10.133 L 1.333 9.333 Z M 0 8 L 0.8 8 L 0.8 1.333 L 0 1.333 L -0.8 1.333 L -0.8 8 L 0 8 Z M 0 1.333 L 0.8 1.333 C 0.8 1.039 1.039 0.8 1.333 0.8 L 1.333 0 L 1.333 -0.8 C 0.155 -0.8 -0.8 0.155 -0.8 1.333 L 0 1.333 Z M 4 12 L 4 12.8 L 9.333 12.8 L 9.333 12 L 9.333 11.2 L 4 11.2 L 4 12 Z M 6.667 9.333 L 5.867 9.333 L 5.867 12 L 6.667 12 L 7.467 12 L 7.467 9.333 L 6.667 9.333 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 20,
-      height: 20,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 16.667,
-    height: 15,
-    viewBox: "0 0 16.667 15",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 1.667,
-      top: 2.5,
-      width: 16.667,
-      height: 15
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 5 14 C 4.448 14 4 14.448 4 15 C 4 15.552 4.448 16 5 16 L 5 15 L 5 14 Z M 11.667 16 C 12.219 16 12.667 15.552 12.667 15 C 12.667 14.448 12.219 14 11.667 14 L 11.667 15 L 11.667 16 Z M 9.333 11.667 C 9.333 11.114 8.886 10.667 8.333 10.667 C 7.781 10.667 7.333 11.114 7.333 11.667 L 8.333 11.667 L 9.333 11.667 Z M 7.333 15 C 7.333 15.552 7.781 16 8.333 16 C 8.886 16 9.333 15.552 9.333 15 L 8.333 15 L 7.333 15 Z M 1.667 0 L 1.667 1 L 15 1 L 15 0 L 15 -1 L 1.667 -1 L 1.667 0 Z M 15 0 L 15 1 C 15.368 1 15.667 1.298 15.667 1.667 L 16.667 1.667 L 17.667 1.667 C 17.667 0.194 16.473 -1 15 -1 L 15 0 Z M 16.667 1.667 L 15.667 1.667 L 15.667 10 L 16.667 10 L 17.667 10 L 17.667 1.667 L 16.667 1.667 Z M 16.667 10 L 15.667 10 C 15.667 10.368 15.368 10.667 15 10.667 L 15 11.667 L 15 12.667 C 16.473 12.667 17.667 11.473 17.667 10 L 16.667 10 Z M 15 11.667 L 15 10.667 L 1.667 10.667 L 1.667 11.667 L 1.667 12.667 L 15 12.667 L 15 11.667 Z M 1.667 11.667 L 1.667 10.667 C 1.298 10.667 1 10.368 1 10 L 0 10 L -1 10 C -1 11.473 0.194 12.667 1.667 12.667 L 1.667 11.667 Z M 0 10 L 1 10 L 1 1.667 L 0 1.667 L -1 1.667 L -1 10 L 0 10 Z M 0 1.667 L 1 1.667 C 1 1.298 1.298 1 1.667 1 L 1.667 0 L 1.667 -1 C 0.194 -1 -1 0.194 -1 1.667 L 0 1.667 Z M 5 15 L 5 16 L 11.667 16 L 11.667 15 L 11.667 14 L 5 14 L 5 15 Z M 8.333 11.667 L 7.333 11.667 L 7.333 15 L 8.333 15 L 9.333 15 L 9.333 11.667 L 8.333 11.667 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 24,
-      height: 24,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 20,
-    height: 18,
-    viewBox: "0 0 20 18",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 3,
-      width: 20,
-      height: 18
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 6 16.75 C 5.31 16.75 4.75 17.31 4.75 18 C 4.75 18.69 5.31 19.25 6 19.25 L 6 18 L 6 16.75 Z M 14 19.25 C 14.69 19.25 15.25 18.69 15.25 18 C 15.25 17.31 14.69 16.75 14 16.75 L 14 18 L 14 19.25 Z M 11.25 14 C 11.25 13.31 10.69 12.75 10 12.75 C 9.31 12.75 8.75 13.31 8.75 14 L 10 14 L 11.25 14 Z M 8.75 18 C 8.75 18.69 9.31 19.25 10 19.25 C 10.69 19.25 11.25 18.69 11.25 18 L 10 18 L 8.75 18 Z M 2 0 L 2 1.25 L 18 1.25 L 18 0 L 18 -1.25 L 2 -1.25 L 2 0 Z M 18 0 L 18 1.25 C 18.414 1.25 18.75 1.586 18.75 2 L 20 2 L 21.25 2 C 21.25 0.205 19.795 -1.25 18 -1.25 L 18 0 Z M 20 2 L 18.75 2 L 18.75 12 L 20 12 L 21.25 12 L 21.25 2 L 20 2 Z M 20 12 L 18.75 12 C 18.75 12.414 18.414 12.75 18 12.75 L 18 14 L 18 15.25 C 19.795 15.25 21.25 13.795 21.25 12 L 20 12 Z M 18 14 L 18 12.75 L 2 12.75 L 2 14 L 2 15.25 L 18 15.25 L 18 14 Z M 2 14 L 2 12.75 C 1.586 12.75 1.25 12.414 1.25 12 L 0 12 L -1.25 12 C -1.25 13.795 0.205 15.25 2 15.25 L 2 14 Z M 0 12 L 1.25 12 L 1.25 2 L 0 2 L -1.25 2 L -1.25 12 L 0 12 Z M 0 2 L 1.25 2 C 1.25 1.586 1.586 1.25 2 1.25 L 2 0 L 2 -1.25 C 0.205 -1.25 -1.25 0.205 -1.25 2 L 0 2 Z M 6 18 L 6 19.25 L 14 19.25 L 14 18 L 14 16.75 L 6 16.75 L 6 18 Z M 10 14 L 8.75 14 L 8.75 18 L 10 18 L 11.25 18 L 11.25 14 L 10 14 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 32,
-      height: 32,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 26.667,
-    height: 24,
-    viewBox: "0 0 26.667 24",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2.667,
-      top: 4,
-      width: 26.667,
-      height: 24
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 8 22.5 C 7.172 22.5 6.5 23.172 6.5 24 C 6.5 24.828 7.172 25.5 8 25.5 L 8 24 L 8 22.5 Z M 18.667 25.5 C 19.495 25.5 20.167 24.828 20.167 24 C 20.167 23.172 19.495 22.5 18.667 22.5 L 18.667 24 L 18.667 25.5 Z M 14.833 18.667 C 14.833 17.838 14.162 17.167 13.333 17.167 C 12.505 17.167 11.833 17.838 11.833 18.667 L 13.333 18.667 L 14.833 18.667 Z M 11.833 24 C 11.833 24.828 12.505 25.5 13.333 25.5 C 14.162 25.5 14.833 24.828 14.833 24 L 13.333 24 L 11.833 24 Z M 2.667 0 L 2.667 1.5 L 24 1.5 L 24 0 L 24 -1.5 L 2.667 -1.5 L 2.667 0 Z M 24 0 L 24 1.5 C 24.644 1.5 25.167 2.022 25.167 2.667 L 26.667 2.667 L 28.167 2.667 C 28.167 0.365 26.301 -1.5 24 -1.5 L 24 0 Z M 26.667 2.667 L 25.167 2.667 L 25.167 16 L 26.667 16 L 28.167 16 L 28.167 2.667 L 26.667 2.667 Z M 26.667 16 L 25.167 16 C 25.167 16.644 24.644 17.167 24 17.167 L 24 18.667 L 24 20.167 C 26.301 20.167 28.167 18.301 28.167 16 L 26.667 16 Z M 24 18.667 L 24 17.167 L 2.667 17.167 L 2.667 18.667 L 2.667 20.167 L 24 20.167 L 24 18.667 Z M 2.667 18.667 L 2.667 17.167 C 2.022 17.167 1.5 16.644 1.5 16 L 0 16 L -1.5 16 C -1.5 18.301 0.365 20.167 2.667 20.167 L 2.667 18.667 Z M 0 16 L 1.5 16 L 1.5 2.667 L 0 2.667 L -1.5 2.667 L -1.5 16 L 0 16 Z M 0 2.667 L 1.5 2.667 C 1.5 2.022 2.022 1.5 2.667 1.5 L 2.667 0 L 2.667 -1.5 C 0.365 -1.5 -1.5 0.365 -1.5 2.667 L 0 2.667 Z M 8 24 L 8 25.5 L 18.667 25.5 L 18.667 24 L 18.667 22.5 L 8 22.5 L 8 24 Z M 13.333 18.667 L 11.833 18.667 L 11.833 24 L 13.333 24 L 14.833 24 L 14.833 18.667 L 13.333 18.667 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 40,
-      height: 40,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 33.333,
-    height: 30,
-    viewBox: "0 0 33.333 30",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3.333,
-      top: 5,
-      width: 33.333,
-      height: 30
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 10 28.25 C 9.034 28.25 8.25 29.034 8.25 30 C 8.25 30.966 9.034 31.75 10 31.75 L 10 30 L 10 28.25 Z M 23.333 31.75 C 24.3 31.75 25.083 30.966 25.083 30 C 25.083 29.034 24.3 28.25 23.333 28.25 L 23.333 30 L 23.333 31.75 Z M 18.417 23.333 C 18.417 22.367 17.633 21.583 16.667 21.583 C 15.7 21.583 14.917 22.367 14.917 23.333 L 16.667 23.333 L 18.417 23.333 Z M 14.917 30 C 14.917 30.966 15.7 31.75 16.667 31.75 C 17.633 31.75 18.417 30.966 18.417 30 L 16.667 30 L 14.917 30 Z M 3.333 0 L 3.333 1.75 L 30 1.75 L 30 0 L 30 -1.75 L 3.333 -1.75 L 3.333 0 Z M 30 0 L 30 1.75 C 30.874 1.75 31.583 2.459 31.583 3.333 L 33.333 3.333 L 35.083 3.333 C 35.083 0.526 32.807 -1.75 30 -1.75 L 30 0 Z M 33.333 3.333 L 31.583 3.333 L 31.583 20 L 33.333 20 L 35.083 20 L 35.083 3.333 L 33.333 3.333 Z M 33.333 20 L 31.583 20 C 31.583 20.874 30.874 21.583 30 21.583 L 30 23.333 L 30 25.083 C 32.807 25.083 35.083 22.807 35.083 20 L 33.333 20 Z M 30 23.333 L 30 21.583 L 3.333 21.583 L 3.333 23.333 L 3.333 25.083 L 30 25.083 L 30 23.333 Z M 3.333 23.333 L 3.333 21.583 C 2.459 21.583 1.75 20.874 1.75 20 L 0 20 L -1.75 20 C -1.75 22.807 0.526 25.083 3.333 25.083 L 3.333 23.333 Z M 0 20 L 1.75 20 L 1.75 3.333 L 0 3.333 L -1.75 3.333 L -1.75 20 L 0 20 Z M 0 3.333 L 1.75 3.333 C 1.75 2.459 2.459 1.75 3.333 1.75 L 3.333 0 L 3.333 -1.75 C 0.526 -1.75 -1.75 0.526 -1.75 3.333 L 0 3.333 Z M 10 30 L 10 31.75 L 23.333 31.75 L 23.333 30 L 23.333 28.25 L 10 28.25 L 10 30 Z M 16.667 23.333 L 14.917 23.333 L 14.917 30 L 16.667 30 L 18.417 30 L 18.417 23.333 L 16.667 23.333 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: Size=48
-    "size=48": __body0,
-    // figma: Size=16
-    "size=16": __body1,
-    // figma: Size=20
-    "size=20": __body2,
-    // figma: Size=24
-    "size=24": __body3,
-    // figma: Size=32
-    "size=32": __body4,
-    // figma: Size=40
-    "size=40": __body5
+  var pad = function (n) {
+    return String(n).padStart(2, '0');
   };
-  return (__impls[__vkey(props)] ?? __body2)();
-}
-Object.assign(__ds_scope, { Monitor, __ds_default_components_figma_reference_Monitor_1pfut81: Monitor });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Monitor.jsx", error: String((e && e.message) || e) }); }
+  var slots = [],
+    teams = [],
+    unbooked = [];
+  var days = ['2026-12-07', '2026-12-08', '2026-12-09', '2026-12-10', '2026-12-11'];
+  var free = {
+    '2026-12-07|13': 1,
+    '2026-12-08|10': 1,
+    '2026-12-08|15': 1,
+    '2026-12-09|9': 1,
+    '2026-12-10|14': 1,
+    '2026-12-11|11': 1,
+    '2026-12-11|15': 1,
+    '2026-12-11|16': 1
+  };
+  var t = 0;
+  days.forEach(function (d) {
+    for (var h = 9; h <= 16; h++) {
+      var z = new Date(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10), h + 8));
+      var sid = 's-' + d.slice(5).replace('-', '') + '-' + pad(h) + '00';
+      var team = null;
+      if (!free[d + '|' + h] && t < 30) {
+        var name = NAMES[t];
+        team = {
+          project_id: id(name),
+          name: name
+        };
+        var home = TAS[t % 4],
+          review = t % 3 === 2 ? null : TAS[(t + 1 + t % 2) % 4];
+        teams.push({
+          project_id: team.project_id,
+          name: name,
+          final_review_at: z.toISOString().replace('.000Z', '+00:00'),
+          home_ta: home,
+          review_ta: review
+        });
+        t++;
+      }
+      slots.push({
+        id: sid,
+        starts_at: z.toISOString().replace('.000Z', '+00:00'),
+        duration_minutes: 60,
+        team: team
+      });
+    }
+  });
+  for (; t < NAMES.length; t++) {
+    var nm = NAMES[t];
+    var po = t % 2 ? {
+      user_id: 'u-' + t,
+      name: PEOPLE[t % PEOPLE.length]
+    } : null;
+    unbooked.push({
+      project_id: id(nm),
+      name: nm,
+      product_owner: po
+    });
+    teams.push({
+      project_id: id(nm),
+      name: nm,
+      final_review_at: null,
+      home_ta: TAS[t % 4],
+      review_ta: t === 31 ? TAS[(t + 2) % 4] : null
+    });
+  }
+  S.many = {
+    review_slots_staff: {
+      class_id: S.class.id,
+      signups_open: true,
+      slots: slots,
+      my_team: null,
+      unbooked_teams: unbooked,
+      review_zoom_url: S.review_slots_staff.review_zoom_url
+    },
+    final_review_schedule: {
+      class_id: S.class.id,
+      review_zoom_url: S.review_slots_staff.review_zoom_url,
+      review_period_open: true,
+      my_review_count: 0,
+      teams: teams
+    }
+  };
+  var hist = S.final_review_schedule.teams.map(function (x, i) {
+    var day = i < 5 ? '2026-08-20' : '2026-08-21',
+      h = 9 + i % 5;
+    return Object.assign({}, x, {
+      final_review_at: new Date(Date.UTC(2026, 7, +day.slice(8), h + 7)).toISOString().replace('.000Z', '+00:00')
+    });
+  });
+  S.history = {
+    class_label: 'CSE 115A · Summer 2026',
+    complete: true,
+    now: '2026-09-02T19:00:00Z',
+    review_slots_staff: {
+      class_id: 'c-cse115a-s26',
+      signups_open: false,
+      slots: [],
+      my_team: null,
+      unbooked_teams: hist.map(function (x) {
+        return {
+          project_id: x.project_id,
+          name: x.name,
+          product_owner: null
+        };
+      }),
+      review_zoom_url: S.review_slots_staff.review_zoom_url
+    },
+    final_review_schedule: {
+      class_id: 'c-cse115a-s26',
+      review_zoom_url: S.review_slots_staff.review_zoom_url,
+      review_period_open: false,
+      my_review_count: 0,
+      teams: hist
+    }
+  };
+})();
 
-// components/figma-reference/Month.jsx
-try { (() => {
-// figma node: 602:10003 month
-function Month(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 30,
-      height: 20,
-      display: "flex",
-      flexDirection: "row",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
+/* World → API payloads (kit-only): one mutable "world" per class, and the payloads each viewer would
+   receive from it (brief §4 + §8 — students get no staff fields; my_team fills in once the team holds a slot). */
+(function () {
+  var S = window.GT_FINAL_REVIEWS_SAMPLE;
+  var st = S.students;
+  var VIEWERS = {
+    instructor: {
+      key: 'instructor',
+      label: 'Instructor',
+      role: 'instructor',
+      user: S.class.instructor
+    },
+    ta: {
+      key: 'ta',
+      label: 'TA (Maya Chen)',
+      role: 'ta',
+      user: S.ta_viewer.viewer
+    },
+    po: {
+      key: 'po',
+      label: 'Product Owner, not booked',
+      role: 'student',
+      user: st.product_owner_not_booked.viewer,
+      teamId: 'p-slug-scheduler'
+    },
+    po_booked: {
+      key: 'po_booked',
+      label: 'Product Owner, booked',
+      role: 'student',
+      user: st.product_owner_booked.viewer,
+      teamId: 'p-trailhead'
+    },
+    member: {
+      key: 'member',
+      label: 'Member, booked',
+      role: 'student',
+      user: st.member_booked_no_review_ta.viewer,
+      teamId: 'p-redwood-labs'
+    },
+    member_wait: {
+      key: 'member_wait',
+      label: 'Member, not booked',
+      role: 'student',
+      user: st.member_not_booked.viewer,
+      teamId: 'p-wharf-rats'
+    },
+    no_po: {
+      key: 'no_po',
+      label: 'Member, no Product Owner',
+      role: 'student',
+      user: st.member_no_product_owner.viewer,
+      teamId: 'p-arboretum'
+    },
+    no_team: {
+      key: 'no_team',
+      label: 'Student on no team',
+      role: 'student',
+      user: st.no_team.viewer,
+      teamId: null
+    },
+    preview: {
+      key: 'preview',
+      label: 'Instructor previewing as student',
+      role: 'instructor',
+      preview: true,
+      user: S.class.instructor
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"Avenir Next LT Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 600,
-      fontSize: 10,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "12px",
-      letterSpacing: "1.500px",
-      color: "rgb(181,190,198)",
-      flexShrink: 0
+  };
+  var byName = function (a, b) {
+    return String(a.name).localeCompare(String(b.name));
+  };
+  var person = function (p) {
+    return p ? {
+      user_id: p.user_id,
+      name: p.name
+    } : null;
+  };
+  function worldFrom(src, opts) {
+    opts = opts || {};
+    var rs = src.review_slots_staff,
+      fs = src.final_review_schedule || S.final_review_schedule;
+    var teams = {};
+    (fs.teams || []).forEach(function (t) {
+      teams[t.project_id] = {
+        project_id: t.project_id,
+        name: t.name,
+        home_ta: person(t.home_ta),
+        review_ta: person(t.review_ta),
+        product_owner: null,
+        legacy_at: t.final_review_at
+      };
+    });
+    (rs.unbooked_teams || []).forEach(function (t) {
+      teams[t.project_id] = Object.assign(teams[t.project_id] || {
+        project_id: t.project_id,
+        name: t.name,
+        home_ta: null,
+        review_ta: null
+      }, {
+        product_owner: person(t.product_owner)
+      });
+    });
+    Object.keys(st).forEach(function (k) {
+      var m = st[k].my_team;
+      if (m && teams[m.project_id] && m.product_owner && !teams[m.project_id].product_owner) teams[m.project_id].product_owner = person(m.product_owner);
+    });
+    return {
+      classId: rs.class_id,
+      signupsOpen: rs.signups_open,
+      zoomUrl: rs.review_zoom_url,
+      complete: !!opts.complete,
+      slots: rs.slots.map(function (x) {
+        return {
+          id: x.id,
+          starts_at: x.starts_at,
+          duration_minutes: x.duration_minutes || 60,
+          teamId: x.team ? x.team.project_id : null
+        };
+      }),
+      teams: teams,
+      tas: S.class_tas.tas
+    };
+  }
+  function payloadFor(world, key) {
+    var v = VIEWERS[key];
+    var held = {};
+    world.slots.forEach(function (x) {
+      if (x.teamId) held[x.teamId] = x;
+    });
+    var staff = v.role !== 'student';
+    var slots = world.slots.slice().sort(function (a, b) {
+      return new Date(a.starts_at) - new Date(b.starts_at);
+    }).map(function (x) {
+      return {
+        id: x.id,
+        starts_at: x.starts_at,
+        duration_minutes: x.duration_minutes || 60,
+        team: x.teamId ? {
+          project_id: x.teamId,
+          name: world.teams[x.teamId].name
+        } : null
+      };
+    });
+    var all = Object.keys(world.teams).map(function (k) {
+      return world.teams[k];
+    });
+    var my = null;
+    if (v.teamId && world.teams[v.teamId]) {
+      var t = world.teams[v.teamId],
+        h = held[v.teamId];
+      my = {
+        project_id: t.project_id,
+        name: t.name,
+        is_product_owner: !!(t.product_owner && t.product_owner.user_id === v.user.user_id),
+        slot_id: h ? h.id : null,
+        starts_at: h ? h.starts_at : null,
+        zoom_url: h ? world.zoomUrl : null,
+        home_ta: h ? t.home_ta : null,
+        review_ta: h ? t.review_ta : null,
+        product_owner: t.product_owner
+      };
     }
-  }, props.text1 ?? "SAT"));
-}
-Object.assign(__ds_scope, { Month, __ds_default_components_figma_reference_Month_1ogecy7: Month });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Month.jsx", error: String((e && e.message) || e) }); }
+    var reviewSlots = {
+      class_id: world.classId,
+      signups_open: world.signupsOpen,
+      slots: slots,
+      my_team: v.preview ? null : my,
+      unbooked_teams: staff ? all.filter(function (t) {
+        return !held[t.project_id];
+      }).sort(byName).map(function (t) {
+        return {
+          project_id: t.project_id,
+          name: t.name,
+          product_owner: t.product_owner
+        };
+      }) : [],
+      review_zoom_url: staff ? world.zoomUrl : null
+    };
+    var schedule = staff ? {
+      class_id: world.classId,
+      review_zoom_url: world.zoomUrl,
+      review_period_open: world.signupsOpen,
+      my_review_count: all.filter(function (t) {
+        return t.review_ta && t.review_ta.user_id === v.user.user_id;
+      }).length,
+      teams: all.map(function (t) {
+        return {
+          project_id: t.project_id,
+          name: t.name,
+          final_review_at: held[t.project_id] ? held[t.project_id].starts_at : world.slots.length ? null : t.legacy_at || null,
+          home_ta: t.home_ta,
+          review_ta: t.review_ta
+        };
+      }).sort(function (a, b) {
+        if (!a.final_review_at) return b.final_review_at ? 1 : byName(a, b);
+        if (!b.final_review_at) return -1;
+        return new Date(a.final_review_at) - new Date(b.final_review_at);
+      })
+    } : null;
+    var lens = v.preview ? 'preview' : v.role === 'instructor' ? 'instructor' : v.role === 'ta' ? 'ta' : !my ? 'no_team' : my.is_product_owner ? 'po' : 'member';
+    return {
+      reviewSlots: reviewSlots,
+      schedule: schedule,
+      viewer: v,
+      viewerId: v.user.user_id,
+      lens: lens,
+      myTeam: v.preview ? null : my
+    };
+  }
+  function emptySource() {
+    return {
+      review_slots_staff: S.empty_class.review_slots_staff,
+      final_review_schedule: {
+        teams: S.final_review_schedule.teams.map(function (t) {
+          return Object.assign({}, t, {
+            final_review_at: null,
+            review_ta: null
+          });
+        })
+      }
+    };
+  }
+  window.GT_FR = {
+    VIEWERS: VIEWERS,
+    worldFrom: worldFrom,
+    payloadFor: payloadFor,
+    emptySource: emptySource,
+    CLOCKS: {
+      booking_week: S.clocks.booking_week.now,
+      review_day: S.clocks.review_day.now,
+      after: S.clocks.after.now
+    },
+    PT: 'America/Los_Angeles',
+    IST: 'Asia/Kolkata'
+  };
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/finalReviewsData.js", error: String((e && e.message) || e) }); }
 
-// components/figma-reference/Calendar.jsx
+// components/finalreviews/finalReviewsSrcLoader.js
 try { (() => {
-// figma node: 602:10012 Calendar
-function Calendar(_p = {}) {
-  const props = _p;
-  return /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      overflow: "hidden",
-      borderRadius: 8,
-      backgroundColor: "rgb(255,255,255)",
-      boxShadow: "2px 16px 19px 0px rgba(0,0,0,0.09)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 22,
-      padding: "24px 24px 24px 24px",
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 16,
-      height: 16,
-      flexShrink: 0
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Icons, {
-    icon: "arrow-left"
-  })), /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "\"Avenir Next LT Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 600,
-      fontSize: 14,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      lineHeight: "14px",
-      color: "rgb(74,86,96)",
-      flexShrink: 0
-    }
-  }, props.text1 ?? "September 2021"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 16,
-      height: 16,
-      flexShrink: 0
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Icons, {
-    icon: "arrow-right"
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    text1: "SAN"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    }
-  }, props.icon4 ?? /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    text1: "MON "
-  })), /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    },
-    text1: "TUE"
-  }), /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    },
-    text1: "WED"
-  }), /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    },
-    text1: "THU"
-  }), /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    },
-    text1: "FRI"
-  }), /*#__PURE__*/React.createElement(__ds_scope.Month, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 20,
-      flexShrink: 0
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "column",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "2"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "3"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "4"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "5"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "6"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "7"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "8"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "9"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "10"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "11"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "12"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "13"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "14"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "15"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "16"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "17"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "18"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateActive, {
-    style: {
-      position: "relative",
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "20"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "21"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "22"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "23"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "24"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "25"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "26"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "27"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "28"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "29"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "30"
-  }), /*#__PURE__*/React.createElement(__ds_scope.DateInactive, {
-    style: {
-      position: "relative",
-      width: 30,
-      height: 30,
-      flexShrink: 0
-    },
-    text1: "31"
-  }))));
-}
-Object.assign(__ds_scope, { Calendar, __ds_default_components_figma_reference_Calendar_658co3: Calendar });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Calendar.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/Navigation.jsx
-try { (() => {
-// figma node: 492:133 Navigation (6 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "size=" + __venc(p.size);
-function Navigation(_p = {}) {
-  const props = {
-    ..._p,
-    size: _p.size ?? "20"
+/* Dev fallback: when the compiled _ds_bundle.js predates components/finalreviews/ (it regenerates once
+   per turn), transpile the family straight from source into the same namespace. Loads the schedule and
+   team-meetings families first, and Badge when the bundle's status map predates the C2 keys.
+   Inert as soon as the bundle carries SlotBoard and the slot.* status keys. */
+window.loadFinalReviewSources = async function loadFinalReviewSources(base) {
+  if (window.loadTeamMeetingSources) await window.loadTeamMeetingSources(base);else if (window.loadScheduleSources) await window.loadScheduleSources(base);
+  const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
+  const run = async path => {
+    let src = await (await fetch(`${base}/${path}`)).text();
+    const needed = [],
+      found = [];
+    src = src.replace(/import\s*\{([^}]*)\}\s*from\s*'[^']+';?/g, (m, names) => {
+      needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
+      return '';
+    });
+    src = src.replace(/^import React[^\n]*$/mg, '');
+    src = src.replace(/^export\s+(function|const)\s+([A-Za-z_$][\w$]*)/mg, (m, kind, id) => {
+      found.push(id);
+      return `${kind} ${id}`;
+    });
+    const prelude = needed.length ? `const {${[...new Set(needed)].join(',')}} = __NS;\n` : '';
+    const code = Babel.transform(prelude + src + `\n;Object.assign(__NS, {${found.join(',')}});`, {
+      presets: ['react']
+    }).code;
+    new Function('React', '__NS', code)(window.React, NS);
   };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 48,
-      height: 48,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 38,
-    height: 38,
-    viewBox: "0 0 38 38",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 4,
-      width: 38,
-      height: 38
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 18 L -0.856 16.193 C -1.62 16.554 -2.074 17.356 -1.99 18.197 C -1.907 19.038 -1.305 19.735 -0.485 19.94 L 0 18 Z M 38 0 L 39.807 0.856 C 40.169 0.092 40.012 -0.817 39.414 -1.414 C 38.817 -2.012 37.908 -2.169 37.144 -1.807 L 38 0 Z M 20 38 L 18.06 38.485 C 18.265 39.305 18.962 39.907 19.803 39.99 C 20.644 40.074 21.446 39.62 21.807 38.856 L 20 38 Z M 16 22 L 17.94 21.515 C 17.761 20.798 17.202 20.239 16.485 20.06 L 16 22 Z M 0 18 L 0.856 19.807 L 38.856 1.807 L 38 0 L 37.144 -1.807 L -0.856 16.193 L 0 18 Z M 38 0 L 36.193 -0.856 L 18.193 37.144 L 20 38 L 21.807 38.856 L 39.807 0.856 L 38 0 Z M 20 38 L 21.94 37.515 L 17.94 21.515 L 16 22 L 14.06 22.485 L 18.06 38.485 L 20 38 Z M 16 22 L 16.485 20.06 L 0.485 16.06 L 0 18 L -0.485 19.94 L 15.515 23.94 L 16 22 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 16,
-      height: 16,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 12.667,
-    height: 12.667,
-    viewBox: "0 0 12.667 12.667",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 1.333,
-      width: 12.667,
-      height: 12.667
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 6 L -0.342 5.277 C -0.648 5.422 -0.829 5.743 -0.796 6.079 C -0.763 6.415 -0.522 6.694 -0.194 6.776 L 0 6 Z M 12.667 0 L 13.39 0.342 C 13.534 0.037 13.471 -0.327 13.232 -0.566 C 12.993 -0.805 12.63 -0.868 12.324 -0.723 L 12.667 0 Z M 6.667 12.667 L 5.891 12.861 C 5.973 13.189 6.252 13.429 6.588 13.463 C 6.924 13.496 7.245 13.315 7.39 13.009 L 6.667 12.667 Z M 5.333 7.333 L 6.109 7.139 C 6.038 6.853 5.814 6.629 5.527 6.557 L 5.333 7.333 Z M 0 6 L 0.342 6.723 L 13.009 0.723 L 12.667 0 L 12.324 -0.723 L -0.342 5.277 L 0 6 Z M 12.667 0 L 11.944 -0.342 L 5.944 12.324 L 6.667 12.667 L 7.39 13.009 L 13.39 0.342 L 12.667 0 Z M 6.667 12.667 L 7.443 12.473 L 6.109 7.139 L 5.333 7.333 L 4.557 7.527 L 5.891 12.861 L 6.667 12.667 Z M 5.333 7.333 L 5.527 6.557 L 0.194 5.224 L 0 6 L -0.194 6.776 L 5.139 8.109 L 5.333 7.333 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 20,
-      height: 20,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 15.833,
-    height: 15.833,
-    viewBox: "0 0 15.833 15.833",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2.5,
-      top: 1.667,
-      width: 15.833,
-      height: 15.833
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 7.5 L -0.428 6.596 C -0.81 6.777 -1.037 7.178 -0.995 7.599 C -0.954 8.019 -0.652 8.368 -0.243 8.47 L 0 7.5 Z M 15.833 0 L 16.737 0.428 C 16.918 0.046 16.839 -0.408 16.54 -0.707 C 16.242 -1.006 15.787 -1.085 15.405 -0.904 L 15.833 0 Z M 8.333 15.833 L 7.363 16.076 C 7.466 16.486 7.814 16.787 8.235 16.828 C 8.655 16.87 9.056 16.643 9.237 16.261 L 8.333 15.833 Z M 6.667 9.167 L 7.637 8.924 C 7.547 8.566 7.267 8.286 6.909 8.197 L 6.667 9.167 Z M 0 7.5 L 0.428 8.404 L 16.261 0.904 L 15.833 0 L 15.405 -0.904 L -0.428 6.596 L 0 7.5 Z M 15.833 0 L 14.93 -0.428 L 7.43 15.405 L 8.333 15.833 L 9.237 16.261 L 16.737 0.428 L 15.833 0 Z M 8.333 15.833 L 9.303 15.591 L 7.637 8.924 L 6.667 9.167 L 5.697 9.409 L 7.363 16.076 L 8.333 15.833 Z M 6.667 9.167 L 6.909 8.197 L 0.243 6.53 L 0 7.5 L -0.243 8.47 L 6.424 10.137 L 6.667 9.167 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 24,
-      height: 24,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 19,
-    height: 19,
-    viewBox: "0 0 19 19",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 3,
-      top: 2,
-      width: 19,
-      height: 19
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 9 L -0.535 7.87 C -1.012 8.096 -1.296 8.598 -1.244 9.123 C -1.192 9.649 -0.815 10.085 -0.303 10.213 L 0 9 Z M 19 0 L 20.13 0.535 C 20.356 0.058 20.257 -0.51 19.884 -0.884 C 19.51 -1.257 18.942 -1.356 18.465 -1.13 L 19 0 Z M 10 19 L 8.787 19.303 C 8.915 19.815 9.351 20.192 9.877 20.244 C 10.402 20.296 10.904 20.012 11.13 19.535 L 10 19 Z M 8 11 L 9.213 10.697 C 9.101 10.249 8.751 9.899 8.303 9.787 L 8 11 Z M 0 9 L 0.535 10.13 L 19.535 1.13 L 19 0 L 18.465 -1.13 L -0.535 7.87 L 0 9 Z M 19 0 L 17.87 -0.535 L 8.87 18.465 L 10 19 L 11.13 19.535 L 20.13 0.535 L 19 0 Z M 10 19 L 11.213 18.697 L 9.213 10.697 L 8 11 L 6.787 11.303 L 8.787 19.303 L 10 19 Z M 8 11 L 8.303 9.787 L 0.303 7.787 L 0 9 L -0.303 10.213 L 7.697 12.213 L 8 11 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 32,
-      height: 32,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 25.333,
-    height: 25.333,
-    viewBox: "0 0 25.333 25.333",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 2.667,
-      width: 25.333,
-      height: 25.333
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 12 L -0.642 10.644 C -1.215 10.916 -1.555 11.517 -1.493 12.148 C -1.43 12.778 -0.978 13.302 -0.364 13.455 L 0 12 Z M 25.333 0 L 26.689 0.642 C 26.96 0.069 26.842 -0.612 26.394 -1.061 C 25.946 -1.509 25.264 -1.627 24.691 -1.356 L 25.333 0 Z M 13.333 25.333 L 11.878 25.697 C 12.032 26.312 12.555 26.764 13.186 26.826 C 13.816 26.888 14.418 26.548 14.689 25.975 L 13.333 25.333 Z M 10.667 14.667 L 12.122 14.303 C 11.988 13.765 11.568 13.346 11.03 13.211 L 10.667 14.667 Z M 0 12 L 0.642 13.356 L 25.975 1.356 L 25.333 0 L 24.691 -1.356 L -0.642 10.644 L 0 12 Z M 25.333 0 L 23.978 -0.642 L 11.978 24.691 L 13.333 25.333 L 14.689 25.975 L 26.689 0.642 L 25.333 0 Z M 13.333 25.333 L 14.789 24.97 L 12.122 14.303 L 10.667 14.667 L 9.211 15.03 L 11.878 25.697 L 13.333 25.333 Z M 10.667 14.667 L 11.03 13.211 L 0.364 10.545 L 0 12 L -0.364 13.455 L 10.303 16.122 L 10.667 14.667 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 40,
-      height: 40,
-      overflow: "hidden",
-      position: "relative",
-      color: "var(--icon-default-default)",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: 31.667,
-    height: 31.667,
-    viewBox: "0 0 31.667 31.667",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 3.333,
-      width: 31.667,
-      height: 31.667
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 15 L -0.749 13.418 C -1.417 13.735 -1.814 14.437 -1.741 15.172 C -1.669 15.908 -1.142 16.518 -0.424 16.698 L 0 15 Z M 31.667 0 L 33.248 0.749 C 33.565 0.081 33.427 -0.714 32.904 -1.237 C 32.381 -1.76 31.586 -1.898 30.918 -1.582 L 31.667 0 Z M 16.667 31.667 L 14.969 32.091 C 15.148 32.808 15.759 33.335 16.494 33.408 C 17.23 33.481 17.932 33.084 18.248 32.416 L 16.667 31.667 Z M 13.333 18.333 L 15.031 17.909 C 14.874 17.282 14.385 16.792 13.758 16.636 L 13.333 18.333 Z M 0 15 L 0.749 16.582 L 32.416 1.582 L 31.667 0 L 30.918 -1.582 L -0.749 13.418 L 0 15 Z M 31.667 0 L 30.085 -0.749 L 15.085 30.918 L 16.667 31.667 L 18.248 32.416 L 33.248 0.749 L 31.667 0 Z M 16.667 31.667 L 18.364 31.242 L 15.031 17.909 L 13.333 18.333 L 11.636 18.758 L 14.969 32.091 L 16.667 31.667 Z M 13.333 18.333 L 13.758 16.636 L 0.424 13.302 L 0 15 L -0.424 16.698 L 12.909 20.031 L 13.333 18.333 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: Size=48
-    "size=48": __body0,
-    // figma: Size=16
-    "size=16": __body1,
-    // figma: Size=20
-    "size=20": __body2,
-    // figma: Size=24
-    "size=24": __body3,
-    // figma: Size=32
-    "size=32": __body4,
-    // figma: Size=40
-    "size=40": __body5
-  };
-  return (__impls[__vkey(props)] ?? __body2)();
-}
-Object.assign(__ds_scope, { Navigation, __ds_default_components_figma_reference_Navigation_1hrukex: Navigation });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Navigation.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/Thumb.jsx
-try { (() => {
-// figma node: 1214:1143 Thumb (8 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "horizontal=" + __venc(p.horizontal) + '|' + "oS=" + __venc(p.oS) + '|' + "hidden=" + __venc(p.hidden);
-function Thumb(_p = {}) {
-  const props = {
-    ..._p,
-    horizontal: _p.horizontal ?? false,
-    oS: _p.oS ?? "windows",
-    hidden: _p.hidden ?? false
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 13,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(193,193,193)",
-      flexShrink: 0,
-      alignSelf: "stretch",
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 8,
-      borderRadius: 4,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 13,
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(193,193,193)",
-      flexShrink: 0,
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 13,
-      backgroundColor: "rgb(241,241,241)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(241,241,241)",
-      flexShrink: 0,
-      alignSelf: "stretch",
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 8,
-      backgroundColor: "rgb(250,250,250)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 13,
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(241,241,241)",
-      flexShrink: 0,
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      height: 13,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      whiteSpace: "nowrap",
-      lineHeight: "100%",
-      color: "rgb(193,193,193)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.text1 ?? ".. ...................."));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      whiteSpace: "nowrap",
-      lineHeight: "100%",
-      color: "rgb(193,193,193)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.text1 ?? ".. ...................."));
-  const __body6 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      height: 13,
-      backgroundColor: "rgb(241,241,241)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      whiteSpace: "nowrap",
-      lineHeight: "100%",
-      color: "rgb(241,241,241)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.text1 ?? ".. ...................."));
-  const __body7 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: "fit-content",
-      height: 8,
-      backgroundColor: "rgb(250,250,250)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      whiteSpace: "nowrap",
-      lineHeight: "100%",
-      color: "rgb(250,250,250)",
-      flexShrink: 0,
-      alignSelf: "stretch"
-    }
-  }, props.text1 ?? ".. ...................."));
-  const __impls = {
-    // figma: Horizontal=False, OS=Windows, Hidden=False
-    "horizontal=false|oS=windows|hidden=false": __body0,
-    // figma: Horizontal=False, OS=Mac, Hidden=False
-    "horizontal=false|oS=mac|hidden=false": __body1,
-    // figma: Horizontal=False, OS=Windows, Hidden=True
-    "horizontal=false|oS=windows|hidden=true": __body2,
-    // figma: Horizontal=False, OS=Mac, Hidden=True
-    "horizontal=false|oS=mac|hidden=true": __body3,
-    // figma: Horizontal=True, OS=Windows, Hidden=False
-    "horizontal=true|oS=windows|hidden=false": __body4,
-    // figma: Horizontal=True, OS=Mac, Hidden=False
-    "horizontal=true|oS=mac|hidden=false": __body5,
-    // figma: Horizontal=True, OS=Windows, Hidden=True
-    "horizontal=true|oS=windows|hidden=true": __body6,
-    // figma: Horizontal=True, OS=Mac, Hidden=True
-    "horizontal=true|oS=mac|hidden=true": __body7
-  };
-  return (__impls[__vkey(props)] ?? __body0)();
-}
-Object.assign(__ds_scope, { Thumb, __ds_default_components_figma_reference_Thumb_1ol71zd: Thumb });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Thumb.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/Scrollbar.jsx
-try { (() => {
-// figma node: 1214:1160 Scrollbar (16 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "oS=" + __venc(p.oS) + '|' + "horizontal=" + __venc(p.horizontal) + '|' + "position=" + __venc(p.position);
-function Scrollbar(_p = {}) {
-  const props = {
-    ..._p,
-    oS: _p.oS ?? "windows",
-    horizontal: _p.horizontal ?? false,
-    position: _p.position ?? "start"
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 17,
-      height: 92,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 6,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "up",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 79,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "down",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 14,
-      width: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 15,
-      height: 90,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 1px 0px 0px 0px rgb(232,232,232), inset -1px 0px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 1,
-      width: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body2 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 17,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "left",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 79,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "right",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 15,
-      top: 2,
-      height: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body3 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 15,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 0px 1px 0px 0px rgb(232,232,232), inset 0px -1px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 1,
-      top: 4,
-      height: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body4 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 17,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 15,
-      top: 2,
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "flex-start",
-      flexWrap: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      height: 13,
-      flexShrink: 0
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    text1: "........",
-    horizontal: true,
-    oS: "windows",
-    hidden: true
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      height: 13,
-      flexShrink: 0
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    text1: ".. ....................",
-    horizontal: true,
-    oS: "windows",
-    hidden: false
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "left",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 79,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon4 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "right",
-    variant: "pixelised"
-  })));
-  const __body5 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 15,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 0px 1px 0px 0px rgb(232,232,232), inset 0px -1px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 0,
-      top: 4,
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "flex-start",
-      flexWrap: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      height: 8,
-      flexShrink: 0
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    text1: "........",
-    horizontal: true,
-    oS: "mac",
-    hidden: true
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      height: 8,
-      flexShrink: 0
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    text1: ".. ....................",
-    horizontal: true,
-    oS: "mac",
-    hidden: false
-  }))));
-  const __body6 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 17,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "left",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 79,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "right",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 33,
-      top: 2,
-      height: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body7 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 15,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 0px 1px 0px 0px rgb(232,232,232), inset 0px -1px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 33,
-      top: 4,
-      height: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body8 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 17,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 6,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "left",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 79,
-      top: 5,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "right",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 52,
-      top: 2,
-      height: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body9 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 92,
-      height: 15,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 0px 1px 0px 0px rgb(232,232,232), inset 0px -1px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 66,
-      top: 4,
-      height: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: true,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body10 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 17,
-      height: 92,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 6,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "up",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 79,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "down",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 33,
-      width: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body11 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 15,
-      height: 90,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 1px 0px 0px 0px rgb(232,232,232), inset -1px 0px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 32,
-      width: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body12 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 17,
-      height: 92,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 6,
-      width: 7,
-      height: 7
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "up",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 79,
-      width: 7,
-      height: 7
-    }
-  }, props.icon2 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "down",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 53,
-      width: 13
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "windows",
-    hidden: false
-  })));
-  const __body13 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 15,
-      height: 90,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 1px 0px 0px 0px rgb(232,232,232), inset -1px 0px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 64,
-      width: 8
-    }
-  }, props.icon1 ?? /*#__PURE__*/React.createElement(__ds_scope.Thumb, {
-    horizontal: false,
-    oS: "mac",
-    hidden: false
-  })));
-  const __body14 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 17,
-      height: 92,
-      backgroundColor: "rgb(241,241,241)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 15,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
-      flexWrap: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 13,
-      height: 25,
-      backgroundColor: "rgb(241,241,241)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(0,0,0)",
-      flexShrink: 0,
-      alignSelf: "stretch",
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 13,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(0,0,0)",
-      flexShrink: 0,
-      alignSelf: "stretch",
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 6,
-      width: 7,
-      height: 7
-    }
-  }, props.icon3 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "up",
-    variant: "pixelised"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 5,
-      top: 79,
-      width: 7,
-      height: 7
-    }
-  }, props.icon4 ?? /*#__PURE__*/React.createElement(__ds_scope.Arrow, {
-    direction: "down",
-    variant: "pixelised"
-  })));
-  const __body15 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 15,
-      height: 90,
-      backgroundColor: "rgb(250,250,250)",
-      boxShadow: "inset 1px 0px 0px 0px rgb(232,232,232), inset -1px 0px 0px 0px rgb(240,240,240)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 4,
-      top: 0,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
-      flexWrap: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 8,
-      height: 25,
-      backgroundColor: "rgb(250,250,250)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 13,
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(0,0,0)",
-      flexShrink: 0,
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 8,
-      borderRadius: 4,
-      backgroundColor: "rgb(193,193,193)",
-      display: "flex",
-      flexDirection: "column",
-      gap: 10,
-      alignItems: "flex-start",
-      flexWrap: "nowrap",
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      position: "relative",
-      width: 13,
-      fontFamily: "Roboto, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-      fontWeight: 400,
-      fontSize: 4,
-      lineHeight: "100%",
-      color: "rgb(0,0,0)",
-      flexShrink: 0,
-      whiteSpace: "pre-wrap"
-    }
-  }, "\n\n\n\n"))));
-  const __impls = {
-    // figma: OS=Windows, Horizontal=False, Position=Start
-    "oS=windows|horizontal=false|position=start": __body0,
-    // figma: OS=Mac, Horizontal=False, Position=Start
-    "oS=mac|horizontal=false|position=start": __body1,
-    // figma: OS=Windows, Horizontal=True, Position=Start
-    "oS=windows|horizontal=true|position=start": __body2,
-    // figma: OS=Mac, Horizontal=True, Position=Start
-    "oS=mac|horizontal=true|position=start": __body3,
-    // figma: OS=Windows, Horizontal=True, Position=Free
-    "oS=windows|horizontal=true|position=free": __body4,
-    // figma: OS=Mac, Horizontal=True, Position=Free
-    "oS=mac|horizontal=true|position=free": __body5,
-    // figma: OS=Windows, Horizontal=True, Position=Middle
-    "oS=windows|horizontal=true|position=middle": __body6,
-    // figma: OS=Mac, Horizontal=True, Position=Middle
-    "oS=mac|horizontal=true|position=middle": __body7,
-    // figma: OS=Windows, Horizontal=True, Position=End
-    "oS=windows|horizontal=true|position=end": __body8,
-    // figma: OS=Mac, Horizontal=True, Position=End
-    "oS=mac|horizontal=true|position=end": __body9,
-    // figma: OS=Windows, Horizontal=False, Position=Middle
-    "oS=windows|horizontal=false|position=middle": __body10,
-    // figma: OS=Mac, Horizontal=False, Position=Middle
-    "oS=mac|horizontal=false|position=middle": __body11,
-    // figma: OS=Windows, Horizontal=False, Position=End
-    "oS=windows|horizontal=false|position=end": __body12,
-    // figma: OS=Mac, Horizontal=False, Position=End
-    "oS=mac|horizontal=false|position=end": __body13,
-    // figma: OS=Windows, Horizontal=False, Position=Free
-    "oS=windows|horizontal=false|position=free": __body14,
-    // figma: OS=Mac, Horizontal=False, Position=Free
-    "oS=mac|horizontal=false|position=free": __body15
-  };
-  return (__impls[__vkey(props)] ?? __body0)();
-}
-Object.assign(__ds_scope, { Scrollbar, __ds_default_components_figma_reference_Scrollbar_1q7ymct: Scrollbar });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/Scrollbar.jsx", error: String((e && e.message) || e) }); }
-
-// components/figma-reference/ToggleSwitch.jsx
-try { (() => {
-// figma node: 198:26 Toggle - Switch (2 variants)
-const __venc = v => String(v).replace(/[%|=]/g, encodeURIComponent);
-const __vkey = p => "state=" + __venc(p.state);
-function ToggleSwitch(_p = {}) {
-  const props = {
-    ..._p,
-    showAXLabel: _p.showAXLabel ?? true,
-    state: _p.state ?? "off"
-  };
-  const __body0 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 64,
-      height: 28,
-      overflow: "hidden",
-      borderRadius: 100,
-      backgroundColor: "rgba(60,60,67,0.3)",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "absolute",
-      left: 41,
-      top: 9,
-      width: 21,
-      display: "flex",
-      flexDirection: "row",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap"
-    }
-  }, props.showAXLabel && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 10,
-      height: 10,
-      borderRadius: "50%",
-      boxShadow: "inset 0 0 0 1px var(--miscellaneous-toggle-ax-label-off)",
-      flexShrink: 0
-    }
-  })), /*#__PURE__*/React.createElement("svg", {
-    width: 39,
-    height: 24,
-    viewBox: "0 0 39 24",
-    fill: "none",
-    style: {
-      position: "absolute",
-      left: 2,
-      top: 2,
-      width: 39,
-      height: 24,
-      borderRadius: 100,
-      color: "rgb(255,255,255)"
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 12 C 0 5.373 5.373 0 12 0 L 27 0 C 33.627 0 39 5.373 39 12 C 39 18.627 33.627 24 27 24 L 12 24 C 5.373 24 0 18.627 0 12 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __body1 = () => /*#__PURE__*/React.createElement("div", {
-    className: props.className,
-    style: {
-      width: 64,
-      overflow: "hidden",
-      borderRadius: 100,
-      backgroundColor: "var(--accents-green)",
-      display: "flex",
-      flexDirection: "row",
-      padding: "2px 2px 2px 2px",
-      justifyContent: "space-between",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      boxSizing: "border-box",
-      position: "relative",
-      ...props.style
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      display: "flex",
-      flexDirection: "row",
-      gap: 10,
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      flexGrow: 1
-    }
-  }, props.showAXLabel && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      width: 1,
-      height: 10,
-      backgroundColor: "rgb(255,255,255)",
-      flexShrink: 0
-    }
-  })), /*#__PURE__*/React.createElement("svg", {
-    width: 39,
-    viewBox: "0 0 39 24",
-    fill: "none",
-    style: {
-      position: "relative",
-      width: 39,
-      borderRadius: 100,
-      flexShrink: 0,
-      alignSelf: "stretch",
-      color: "rgb(255,255,255)"
-    }
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M 0 12 C 0 5.373 5.373 0 12 0 L 27 0 C 33.627 0 39 5.373 39 12 C 39 18.627 33.627 24 27 24 L 12 24 C 5.373 24 0 18.627 0 12 Z",
-    fill: "currentColor",
-    fillRule: "nonzero"
-  })));
-  const __impls = {
-    // figma: State=Off
-    "state=off": __body0,
-    // figma: State=On
-    "state=on": __body1
-  };
-  return (__impls[__vkey(props)] ?? __body0)();
-}
-Object.assign(__ds_scope, { ToggleSwitch, __ds_default_components_figma_reference_ToggleSwitch_gr5rfh: ToggleSwitch });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/ToggleSwitch.jsx", error: String((e && e.message) || e) }); }
+  if (!NS.BADGE_STATUS || !NS.BADGE_STATUS['slot.free']) await run('components/display/Badge.jsx');
+  if (NS.SlotBoard && NS.FinalReviewsModel && NS.PostSlotsDrawer && NS.ReviewWorkspaceHeader) return NS;
+  const order = ['FinalReviewsModel', 'FinalReviewsIcon', 'SlotTime', 'SlotRow', 'SlotBoard', 'FinalReviewsHeader', 'TeamReview', 'UnbookedTeams', 'SlotActionDialog', 'PostSlotsDrawer', 'ReviewWorkspaceHeader'];
+  for (const name of order) await run(`components/finalreviews/${name}.jsx`);
+  return NS;
+};
+window.runDeferredBabel = window.runDeferredBabel || function runDeferredBabel() {
+  document.querySelectorAll('script[type="text/babel-deferred"]').forEach(s => {
+    new Function(Babel.transform(s.textContent, {
+      presets: ['react']
+    }).code)();
+  });
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/finalReviewsSrcLoader.js", error: String((e && e.message) || e) }); }
 
 // components/marketing/ClosingBand.jsx
 try { (() => {
@@ -12617,6 +6285,7 @@ function FilterChipGroup({
       count: opt.count,
       icon: opt.icon,
       disabled: opt.disabled,
+      title: opt.title,
       tabIndex: single ? on || !hasSel && opt === enabled[0] ? 0 : -1 : undefined,
       onKeyDown: e => onKeyDown(e, opt),
       onClick: () => {
@@ -12628,6 +6297,220 @@ function FilterChipGroup({
 }
 Object.assign(__ds_scope, { FilterChip, FilterChipGroup });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/FilterChip.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/AnalyticsFilterRow.jsx
+try { (() => {
+const RANGE_PRESETS = [{
+  value: '7d',
+  label: '7d'
+}, {
+  value: '30d',
+  label: '30d'
+}, {
+  value: '90d',
+  label: '90d'
+}, {
+  value: 'class',
+  label: 'Class to date'
+}, {
+  value: 'all',
+  label: 'All'
+}];
+function isoDaysAgo(days, from = new Date()) {
+  const d = new Date(from);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * The one filter row (.gt-filter) above everything it scopes. Institution Select
+ * only when the viewer may see several; class Select ("All classes" first); the range as a
+ * single-choice FilterChipGroup (7d · 30d · 90d · Class to date · All — a radio group: one tab
+ * stop, arrows move and select), then a separate "Custom…" chip button after the group. "Class to
+ * date" is enabled only with a class selected. "Custom…" opens a popover (From, To, Apply); once
+ * applied it reads "Custom: Sep 1 – Sep 30" and no preset is checked. While Apply is disabled the panel's last row says why
+ * ("Dates must fall between 2000 and 2100" · "A range may span at most 2 years" ·
+ * "To must be on or after From"). Every control is disabled during the very first load.
+ * State belongs in the URL.
+ */
+function AnalyticsFilterRow({
+  institutions = [],
+  institutionId,
+  classes = [],
+  classId = '',
+  range = {
+    preset: '30d'
+  },
+  onChange,
+  disabled = false,
+  today,
+  className = ''
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [from, setFrom] = React.useState(range.from || isoDaysAgo(30, today));
+  const [to, setTo] = React.useState(range.to || isoDaysAgo(0, today));
+  const popRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const key = e => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const down = e => {
+      if (popRef.current && !popRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('keydown', key);
+    document.addEventListener('mousedown', down);
+    return () => {
+      document.removeEventListener('keydown', key);
+      document.removeEventListener('mousedown', down);
+    };
+  }, [open]);
+  const emit = patch => onChange && onChange({
+    institutionId,
+    classId,
+    range,
+    ...patch
+  });
+  const pick = preset => emit({
+    range: {
+      preset
+    }
+  });
+  const applyCustom = () => {
+    emit({
+      range: {
+        preset: 'custom',
+        from,
+        to
+      }
+    });
+    setOpen(false);
+  };
+  const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${__ds_scope.fmtRange(range.from, range.to)}` : 'Custom…';
+  // Why Apply is disabled — shown beside it in the panel's last row (copy verbatim from the revision block).
+  const reason = (() => {
+    if (!from || !to) return null;
+    const y1 = Number(from.slice(0, 4)),
+      y2 = Number(to.slice(0, 4));
+    if (y1 < 2000 || y1 > 2100 || y2 < 2000 || y2 > 2100) return 'Dates must fall between 2000 and 2100';
+    if (to < from) return 'To must be on or after From';
+    if ((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000 + 1 > 731) return 'A range may span at most 2 years';
+    return null;
+  })();
+  const select = (label, value, onSelect, children) => /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__field"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__label"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__select gt-select"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "gt-select__control",
+    value: value,
+    onChange: onSelect,
+    disabled: disabled,
+    "aria-label": label
+  }, children), /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "chevron-down",
+    size: 14,
+    className: "gt-select__chevron"
+  })));
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-filter', disabled ? 'gt-filter--disabled' : '', className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": "Filters",
+    "aria-disabled": disabled || undefined
+  }, institutions.length > 1 && select('Institution', institutionId || '', e => emit({
+    institutionId: e.target.value
+  }), institutions.map(i => /*#__PURE__*/React.createElement("option", {
+    key: i.id,
+    value: i.id
+  }, i.name))), select('Class', classId || '', e => emit({
+    classId: e.target.value,
+    range: range.preset === 'class' && !e.target.value ? {
+      preset: '30d'
+    } : range
+  }), [/*#__PURE__*/React.createElement("option", {
+    key: "",
+    value: ""
+  }, "All classes"), ...classes.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c.id,
+    value: c.id
+  }, c.label))]), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__field"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__label"
+  }, "Range"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__chips"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FilterChipGroup, {
+    type: "single",
+    ariaLabel: "Date range",
+    value: range.preset,
+    onChange: pick,
+    options: RANGE_PRESETS.map(p => {
+      const needsClass = p.value === 'class' && !classId;
+      return {
+        value: p.value,
+        label: p.label,
+        disabled: disabled || needsClass,
+        title: needsClass ? 'Select a class first' : undefined
+      };
+    })
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__custom",
+    ref: popRef
+  }, /*#__PURE__*/React.createElement(__ds_scope.FilterChip, {
+    selected: range.preset === 'custom',
+    "aria-pressed": undefined,
+    "aria-haspopup": "dialog",
+    "aria-expanded": open,
+    icon: /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      name: "calendar",
+      size: 13
+    }),
+    disabled: disabled,
+    onClick: () => setOpen(o => !o)
+  }, customLabel), open && /*#__PURE__*/React.createElement("div", {
+    className: "gt-popover gt-popover--bottom gt-popover--start gt-filter__pop",
+    role: "dialog",
+    "aria-label": "Custom range"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__pop-title"
+  }, "Custom range"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__dates"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-filter__date"
+  }, "From", /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: from,
+    onChange: e => setFrom(e.target.value)
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "gt-filter__date"
+  }, "To", /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: to,
+    onChange: e => setTo(e.target.value)
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__foot"
+  }, reason && /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__reason",
+    role: "status"
+  }, reason), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-button gt-button--ghost gt-button--sm",
+    onClick: () => setOpen(false)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, "Cancel")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-button gt-button--primary gt-button--sm gt-filter__apply",
+    onClick: applyCustom,
+    disabled: !from || !to || !!reason
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, "Apply"))))))));
+}
+Object.assign(__ds_scope, { RANGE_PRESETS, AnalyticsFilterRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/AnalyticsFilterRow.jsx", error: String((e && e.message) || e) }); }
 
 // components/navigation/Pagination.jsx
 try { (() => {
@@ -13014,9 +6897,15 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 /**
  * GrepThink button. Variants: primary · secondary · outline · ghost · danger · danger-ghost.
  * Sizes sm 32 / md 40 / lg 48 (44 minimum on phones). `href` renders an <a> with the same classes.
- * Busy: a spinner and the "-ing…" label (`loadingLabel`) replace the idle face in the same grid
- * cell, so the width never changes; the button stays focusable (`aria-disabled`) and ignores clicks.
- * `pressed` makes it a toggle button (`aria-pressed`).
+ * Busy (`loading`): a spinner and the "-ing…" label (`loadingLabel`) replace the idle face in the
+ * same grid cell, so the width never changes. The button stays focusable and announces itself
+ * (`aria-disabled`, `aria-busy` — never the native `disabled`, even together with `disabled`, which
+ * would drop focus to the page) and a click is cancelled. The face that is not showing is
+ * `aria-hidden`, so the name is the label you can see. `disabled` alone is the native attribute.
+ * `aria-disabled`, `aria-busy`, `aria-pressed` and the click guard apply after the caller's props.
+ * A link cannot be disabled: it renders without its `href`, with `role="link"` + `aria-disabled`;
+ * a disabled one leaves the tab order, a busy one keeps the focus it has (`tabIndex={0}`).
+ * `pressed` makes it a toggle button (`aria-pressed`). Adopted from the codebase (PR #259).
  */
 function Button({
   children,
@@ -13035,19 +6924,12 @@ function Button({
   className = '',
   ...rest
 }) {
-  const inert = disabled || loading;
   const cls = ['gt-button', `gt-button--${variant}`, `gt-button--${size}`, fullWidth ? 'gt-button--full' : '', loading ? 'gt-button--loading' : '', className].filter(Boolean).join(' ');
-  const handleClick = e => {
-    if (inert) {
-      e.preventDefault();
-      return;
-    }
-    if (onClick) onClick(e);
-  };
   const faces = /*#__PURE__*/React.createElement("span", {
     className: "gt-button__faces"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__face gt-button__face--idle"
+    className: "gt-button__face gt-button__face--idle",
+    "aria-hidden": loading || undefined
   }, iconLeft && /*#__PURE__*/React.createElement("span", {
     className: "gt-button__icon",
     "aria-hidden": "true"
@@ -13057,7 +6939,8 @@ function Button({
     className: "gt-button__icon",
     "aria-hidden": "true"
   }, iconRight)), (loading || loadingLabel != null) && /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__face gt-button__face--busy"
+    className: "gt-button__face gt-button__face--busy",
+    "aria-hidden": !loading || undefined
   }, /*#__PURE__*/React.createElement(__ds_scope.Spinner, {
     size: size === 'sm' ? 14 : 16,
     decorative: true
@@ -13065,24 +6948,32 @@ function Button({
     className: "gt-button__label"
   }, loadingLabel ?? children)));
   if (href) {
-    return /*#__PURE__*/React.createElement("a", _extends({
+    const inert = disabled || loading;
+    return /*#__PURE__*/React.createElement("a", _extends({}, rest, {
       className: cls,
       href: inert ? undefined : href,
-      role: inert ? 'link' : undefined,
-      "aria-disabled": inert || undefined,
       "aria-busy": loading || undefined,
-      onClick: handleClick
-    }, rest), faces);
+      "aria-disabled": inert || undefined
+    }, inert ? {
+      role: 'link',
+      tabIndex: loading ? 0 : undefined
+    } : {}, {
+      onClick: e => {
+        if (inert) e.preventDefault();else if (onClick) onClick(e);
+      }
+    }), faces);
   }
-  return /*#__PURE__*/React.createElement("button", _extends({
+  return /*#__PURE__*/React.createElement("button", _extends({}, rest, {
     type: type,
     className: cls,
-    disabled: disabled,
+    disabled: disabled && !loading,
     "aria-disabled": loading || undefined,
     "aria-busy": loading || undefined,
     "aria-pressed": pressed === undefined ? undefined : !!pressed,
-    onClick: handleClick
-  }, rest), faces);
+    onClick: e => {
+      if (loading) e.preventDefault();else if (onClick) onClick(e);
+    }
+  }), faces);
 }
 Object.assign(__ds_scope, { Button });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Button.jsx", error: String((e && e.message) || e) }); }
@@ -14544,7 +8435,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 /**
  * Icon-only button (toolbar actions, close, overflow menus). `ariaLabel` is required and, by
  * default, also shows as a Tooltip on hover and keyboard focus (the bubble is aria-hidden: the
- * label is already the name). `pressed` makes it a toggle (`aria-pressed`).
+ * label is already the name). `pressed` makes it a toggle (`aria-pressed`). `aria-label` and
+ * `aria-pressed` are set from `ariaLabel` / `pressed` after the caller's props, so nothing overrides them.
+ * Esc hides the bubble, and so does pressing the button (useTooltipDismiss), so the first Esc after it
+ * opens a menu closes the menu. While disabled there is no bubble, but the `gt-icon-tip gt-tooltip`
+ * wrapper stays, so the button is the same element when it turns disabled and back (adopted from the
+ * codebase, PR #259). `tooltip={false}` drops the wrapper too.
  * The × of a modal or drawer is `<IconButton ariaLabel="Close">`; dismissing an alert, toast or
  * banner is "Dismiss"; removing a chip is "Remove {name}".
  */
@@ -14557,24 +8453,28 @@ function IconButton({
   pressed,
   tooltip = true,
   tooltipSide = 'top',
-  onClick,
+  type = 'button',
   className = '',
   ...rest
 }) {
+  const tip = tooltip === true ? ariaLabel : tooltip;
+  const showBubble = !!tip && !disabled;
+  const {
+    dismissed,
+    handlers
+  } = __ds_scope.useTooltipDismiss(showBubble);
   const cls = ['gt-icon-button', `gt-icon-button--${variant}`, `gt-icon-button--${size}`, className].filter(Boolean).join(' ');
-  const btn = /*#__PURE__*/React.createElement("button", _extends({
-    type: "button",
+  const btn = /*#__PURE__*/React.createElement("button", _extends({}, rest, {
+    type: type,
     className: cls,
     "aria-label": ariaLabel,
     "aria-pressed": pressed === undefined ? undefined : !!pressed,
-    disabled: disabled,
-    onClick: onClick
-  }, rest), children);
-  const tip = tooltip === true ? ariaLabel : tooltip;
-  if (!tip || disabled) return btn;
-  return /*#__PURE__*/React.createElement("span", {
-    className: "gt-icon-tip gt-tooltip"
-  }, btn, /*#__PURE__*/React.createElement("span", {
+    disabled: disabled
+  }), children);
+  if (!tip) return btn;
+  return /*#__PURE__*/React.createElement("span", _extends({
+    className: ['gt-icon-tip gt-tooltip', dismissed ? 'gt-tooltip--dismissed' : ''].filter(Boolean).join(' ')
+  }, showBubble ? handlers : {}), btn, showBubble && /*#__PURE__*/React.createElement("span", {
     className: `gt-tooltip__bubble gt-tooltip__bubble--${tooltipSide}`,
     "aria-hidden": "true"
   }, tip));
@@ -15020,6 +8920,125 @@ function Drawer({
 }
 Object.assign(__ds_scope, { Drawer });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Drawer.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/UnbookedTeams.jsx
+try { (() => {
+function TeamMenu({
+  team,
+  onAction
+}) {
+  const [open, setOpen] = React.useState(false);
+  return /*#__PURE__*/React.createElement(__ds_scope.Popover, {
+    open: open,
+    onClose: () => setOpen(false),
+    placement: "bottom",
+    align: "end",
+    padded: false,
+    anchor: /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+      size: "sm",
+      ariaLabel: `More actions for ${team.name}`,
+      "aria-haspopup": "menu",
+      "aria-expanded": open,
+      tooltip: "More actions",
+      onClick: () => setOpen(o => !o)
+    }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "ellipsis",
+      size: 16
+    }))
+  }, /*#__PURE__*/React.createElement(__ds_scope.Menu, {
+    ariaLabel: `Actions for ${team.name}`,
+    autoFocus: true,
+    onClose: () => setOpen(false)
+  }, /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    icon: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "user-plus",
+      size: 16
+    }),
+    onSelect: () => {
+      setOpen(false);
+      onAction('review_ta', team);
+    }
+  }, team.review_ta ? 'Change Review TA…' : 'Appoint Review TA…')));
+}
+
+/**
+ * Staff: the teams that hold no slot, each with its Product Owner (or the amber "No Product Owner"),
+ * its Home TA and any Review TA the instructor appointed ahead of the booking. The instructor places
+ * a team from here (Place on a slot…) or appoints its Review TA (Menu). Students never get this list.
+ */
+function UnbookedTeams({
+  teams = [],
+  lens = 'ta',
+  complete = false,
+  onAction,
+  busy = null,
+  headingLevel: H = 'h2',
+  className = ''
+}) {
+  const inst = lens === 'instructor' && !complete;
+  const id = React.useId();
+  return /*#__PURE__*/React.createElement("section", {
+    className: ['gt-fr-unbooked', className].filter(Boolean).join(' '),
+    "aria-labelledby": `${id}-h`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-unbooked__head"
+  }, /*#__PURE__*/React.createElement(H, {
+    className: "gt-fr-unbooked__title",
+    id: `${id}-h`
+  }, "Teams without a slot"), /*#__PURE__*/React.createElement(__ds_scope.CountBadge, {
+    count: teams.length,
+    label: `${teams.length} ${teams.length === 1 ? 'team' : 'teams'}`
+  })), teams.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-unbooked__quiet"
+  }, "Every team has a slot.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-unbooked__hint"
+  }, inst ? 'Each team’s Product Owner books its slot, or you place the team.' : 'Each team’s Product Owner books its slot.'), /*#__PURE__*/React.createElement("ul", {
+    className: "gt-fr-unbooked__list"
+  }, teams.map(t => /*#__PURE__*/React.createElement("li", {
+    key: t.project_id,
+    className: "gt-fr-unbooked__row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-unbooked__main"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-unbooked__name"
+  }, t.name), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-unbooked__meta"
+  }, t.product_owner ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, "Product Owner"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, t.product_owner.name)) : /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "review.no_product_owner"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: ['gt-fr-person', t.home_ta ? '' : 'gt-fr-person--none'].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, "Home TA"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, t.home_ta ? t.home_ta.name : 'None yet')), t.review_ta && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, "Review TA"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, t.review_ta.name)))), inst && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-unbooked__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "secondary",
+    loading: !!(busy && busy.teamId === t.project_id),
+    loadingLabel: "Placing\u2026",
+    "aria-label": `Place ${t.name} on a slot`,
+    onClick: () => onAction && onAction('place_on_slot', t)
+  }, "Place on a slot\u2026"), /*#__PURE__*/React.createElement(TeamMenu, {
+    team: t,
+    onAction: (a, team) => onAction && onAction(a, team)
+  })))))));
+}
+Object.assign(__ds_scope, { UnbookedTeams });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/UnbookedTeams.jsx", error: String((e && e.message) || e) }); }
 
 // components/primitives/FileUpload.jsx
 try { (() => {
@@ -15922,6 +9941,144 @@ function Select({
 Object.assign(__ds_scope, { Select });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Select.jsx", error: String((e && e.message) || e) }); }
 
+// components/primitives/Slider.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const snap = (v, min, step) => +(min + Math.round((v - min) / step) * step).toFixed(6);
+
+/**
+ * Labelled range — WAI-ARIA Slider pattern on a native <input type="range"> in the field shell
+ * (label, help / error, "(optional)"). The value shows beside it with an optional unit ("25%"),
+ * or, with `withInput`, a paired number input kept in sync (typing commits in-range values at
+ * once and clamps on blur). Keys: ← ↓ / → ↑ one step, PageDown / PageUp `pageStep` (a tenth of
+ * the range by default), Home / End the ends. `color` tints fill and thumb (a token reference, to
+ * match a legend swatch); an error turns both red. 44px tall on phones. Replaces the TSR
+ * contributions step's feature-styled range.
+ */
+function Slider({
+  id,
+  label,
+  hideLabel = false,
+  value,
+  defaultValue,
+  onChange,
+  min = 0,
+  max = 100,
+  step = 1,
+  pageStep,
+  unit = '',
+  formatValue,
+  valueText,
+  withInput = false,
+  color,
+  helperText,
+  error,
+  optional = false,
+  disabled = false,
+  className = '',
+  ...rest
+}) {
+  const controlled = value !== undefined;
+  const [inner, setInner] = React.useState(defaultValue ?? min);
+  const [draft, setDraft] = React.useState(null);
+  const v = clamp(Number(controlled ? value : inner), min, max);
+  const commit = n => {
+    const next = clamp(snap(n, min, step), min, max);
+    if (!controlled) setInner(next);
+    if (onChange && next !== v) onChange(next);
+  };
+  const big = pageStep ?? Math.max(step, (max - min) / 10);
+  const frac = max > min ? (v - min) / (max - min) : 0;
+  const shown = formatValue ? formatValue(v) : `${v}${unit}`;
+  const onKeyDown = e => {
+    if (e.key !== 'PageUp' && e.key !== 'PageDown') return;
+    e.preventDefault();
+    commit(v + (e.key === 'PageUp' ? big : -big));
+  };
+  const style = {
+    '--gt-slider-frac': frac
+  };
+  if (color) style['--gt-slider-accent'] = color;
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error,
+    disabled: disabled,
+    className: ['gt-slider', disabled ? 'gt-slider--disabled' : '', className].filter(Boolean).join(' ')
+  }, ({
+    id: sid,
+    labelId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: "gt-slider__row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-slider__control",
+    style: style
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-slider__track",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-slider__fill"
+  })), /*#__PURE__*/React.createElement("input", _extends({
+    id: sid,
+    type: "range",
+    className: "gt-slider__input",
+    min: min,
+    max: max,
+    step: step,
+    value: v,
+    onChange: e => commit(Number(e.target.value)),
+    onKeyDown: onKeyDown,
+    disabled: disabled,
+    "aria-valuetext": valueText ? valueText(v) : shown,
+    "aria-invalid": invalid || undefined,
+    "aria-describedby": describedBy
+  }, rest))), withInput ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-slider__number"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    id: `${sid}-exact`
+  }, "exact value"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    className: "gt-input gt-input--compact gt-slider__number-input",
+    inputMode: "decimal",
+    min: min,
+    max: max,
+    step: step,
+    value: draft ?? String(v),
+    onChange: e => {
+      const t = e.target.value;
+      setDraft(t);
+      const n = Number(t);
+      if (t !== '' && Number.isFinite(n) && n >= min && n <= max) commit(n);
+    },
+    onBlur: () => {
+      if (draft === null) return;
+      const n = Number(draft);
+      commit(draft === '' || !Number.isFinite(n) ? v : n);
+      setDraft(null);
+    },
+    disabled: disabled,
+    "aria-labelledby": `${labelId} ${sid}-exact`,
+    "aria-describedby": describedBy,
+    "aria-invalid": invalid || undefined
+  }), unit && /*#__PURE__*/React.createElement("span", {
+    className: "gt-slider__unit",
+    "aria-hidden": "true"
+  }, unit)) : /*#__PURE__*/React.createElement("output", {
+    className: "gt-slider__value",
+    htmlFor: sid,
+    "aria-hidden": "true"
+  }, shown)));
+}
+Object.assign(__ds_scope, { Slider });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Slider.jsx", error: String((e && e.message) || e) }); }
+
 // components/primitives/Textarea.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -16819,10 +10976,13 @@ const ORDER = ['title', 'date', 'time', 'zoomUrl', 'note'];
 
 /**
  * Add / edit one team meeting. Lives inline in the Edit Project → Meetings tab: above the list for a
- * new meeting, in place of the row it edits. Times are typed on the viewer's clock (like the Final
- * Reviews time fields); when the viewer's zone differs from campus the campus time appears under the
- * time field. Validates on submit, focuses the first problem; Esc cancels and stays inside the form
- * (the modal doesn't close). A save error (`error`) renders inline and keeps what was typed.
+ * new meeting, in place of the row it edits. Built from the shared Input, Select, Textarea, Alert and
+ * Button (the codebase's TeamMeetingForm.tsx uses the same shared pieces): required fields carry no
+ * mark, Room, Zoom link and Note say "(optional)", title and note use the shared "n / max" counter.
+ * Times are typed on the viewer's clock (like the Final Reviews time fields); when the viewer's zone
+ * differs from campus the campus time is the time field's help line. Validates on submit and focuses
+ * the first problem; Esc cancels and stays inside the form (the modal doesn't close). A save error
+ * (`error`) shows as an Alert above the actions and keeps what was typed.
  */
 function TeamMeetingForm({
   mode = 'create',
@@ -16888,34 +11048,14 @@ function TeamMeetingForm({
       if (!saving && onCancel) onCancel();
     }
   };
-  const control = (k, extra) => ({
+  const field = k => ({
     id: f(k),
     name: k,
-    className: 'gt-input',
     value: draft[k],
     onChange: set(k),
     disabled: saving,
-    'aria-invalid': errors[k] ? true : undefined,
-    'aria-describedby': errors[k] ? f(`${k}-err`) : extra && extra.help ? f(`${k}-help`) : undefined
+    error: errors[k]
   });
-  const field = (k, label, node, {
-    required,
-    help
-  } = {}) => /*#__PURE__*/React.createElement("div", {
-    className: ['gt-field', errors[k] ? 'gt-field--error' : ''].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "gt-field__label",
-    htmlFor: f(k)
-  }, label, required && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__required",
-    "aria-hidden": "true"
-  }, " *")), node, errors[k] ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__error",
-    id: f(`${k}-err`)
-  }, errors[k]) : help ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__help gt-tmform__campus",
-    id: f(`${k}-help`)
-  }, help) : null);
   return /*#__PURE__*/React.createElement("form", {
     ref: rootRef,
     className: ['gt-tmform', className].filter(Boolean).join(' '),
@@ -16926,42 +11066,27 @@ function TeamMeetingForm({
   }, /*#__PURE__*/React.createElement("h4", {
     id: f('h'),
     className: "gt-tmform__title"
-  }, creating ? 'New meeting' : 'Edit meeting'), /*#__PURE__*/React.createElement("div", {
-    className: ['gt-field', errors.title ? 'gt-field--error' : ''].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "gt-field__label",
-    htmlFor: f('title')
-  }, "Title", /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__required",
-    "aria-hidden": "true"
-  }, " *")), /*#__PURE__*/React.createElement("input", _extends({}, control('title'), {
-    type: "text",
+  }, creating ? 'New meeting' : 'Edit meeting'), /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, field('title'), {
+    label: "Title",
+    required: true,
     maxLength: __ds_scope.TEAM_MEETING_TITLE_MAX,
+    showCount: true,
     placeholder: "Sprint 3 planning",
     autoComplete: "off"
   })), /*#__PURE__*/React.createElement("div", {
-    className: "gt-field__footer"
-  }, errors.title ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__error",
-    id: f('title-err')
-  }, errors.title) : /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__count"
-  }, draft.title.length, "/", __ds_scope.TEAM_MEETING_TITLE_MAX))), /*#__PURE__*/React.createElement("div", {
     className: "gt-tmform__grid gt-tmform__grid--when"
-  }, field('date', 'Date', /*#__PURE__*/React.createElement("input", _extends({}, control('date'), {
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, field('date'), {
+    label: "Date",
     type: "date",
-    min: creating ? dayKey(nowD, vz) : undefined
-  })), {
-    required: true
-  }), field('time', 'Start time', /*#__PURE__*/React.createElement("input", _extends({}, control('time', {
-    help: campus
-  }), {
-    type: "time",
-    step: 900
-  })), {
     required: true,
-    help: campus ? `${campus} on campus` : null
-  }), /*#__PURE__*/React.createElement(__ds_scope.Select, {
+    min: creating ? dayKey(nowD, vz) : undefined
+  })), /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, field('time'), {
+    label: "Start time",
+    type: "time",
+    step: 900,
+    required: true,
+    helperText: campus ? `${campus} on campus` : undefined
+  })), /*#__PURE__*/React.createElement(__ds_scope.Select, {
     id: f('durationMinutes'),
     name: "durationMinutes",
     label: "Duration",
@@ -16974,46 +11099,2329 @@ function TeamMeetingForm({
     }))
   })), /*#__PURE__*/React.createElement("div", {
     className: "gt-tmform__grid gt-tmform__grid--place"
-  }, field('location', 'Room', /*#__PURE__*/React.createElement("input", _extends({}, control('location'), {
-    type: "text",
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, field('location'), {
+    label: "Room",
+    optional: true,
     placeholder: "E2 room 180",
     autoComplete: "off"
-  }))), field('zoomUrl', 'Zoom link', /*#__PURE__*/React.createElement("input", _extends({}, control('zoomUrl'), {
+  })), /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, field('zoomUrl'), {
+    label: "Zoom link",
+    optional: true,
     type: "url",
     inputMode: "url",
     placeholder: "https://ucsc.zoom.us/j/\u2026",
     autoComplete: "off",
     spellCheck: false
-  })))), /*#__PURE__*/React.createElement(__ds_scope.Textarea, {
-    id: f('note'),
-    name: "note",
+  }))), /*#__PURE__*/React.createElement(__ds_scope.Textarea, _extends({}, field('note'), {
     label: "Note",
+    optional: true,
     rows: 2,
-    value: draft.note,
-    onChange: set('note'),
     maxLength: __ds_scope.TEAM_MEETING_NOTE_MAX,
-    showCount: true,
-    placeholder: "Anything the team should bring or read first",
-    error: errors.note,
-    disabled: saving
-  }), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    placeholder: "Anything the team should bring or read first"
+  })), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
     tone: "error"
   }, error), /*#__PURE__*/React.createElement("div", {
     className: "gt-tmform__foot"
   }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
-    type: "button",
-    variant: "secondary",
+    variant: "outline",
     size: "sm",
     onClick: onCancel,
     disabled: saving
   }, "Cancel"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
     type: "submit",
     size: "sm",
-    loading: saving
+    loading: saving,
+    loadingLabel: creating ? 'Adding…' : 'Saving…'
   }, creating ? 'Add meeting' : 'Save changes')));
 }
 Object.assign(__ds_scope, { TeamMeetingForm });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMeetingForm.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/FinalReviewsModel.jsx
+try { (() => {
+const {
+  dayKey,
+  fmtTime,
+  zoneLabel,
+  zoneDiffers,
+  countdown
+} = __ds_scope.ScheduleModel;
+const {
+  zonedToInstant
+} = __ds_scope.TeamMeetingsModel;
+
+/**
+ * Pure model for the final-review slot sign-up (C2): times in the viewer's zone with the campus
+ * time beside them, day groups, which actions each lens has on each slot (and why the others are
+ * unavailable), "Your team's review" states and copy, the posting draft, counts, and the copy for
+ * every success and error. No UI. Ports to `features/finalReviews/finalReviewsModel.ts`.
+ * Inputs are the API's own shapes (brief §8): ApiReviewSlots, ApiFinalReviewSchedule, class TAs.
+ */
+
+const SLOT_MINUTES = 60;
+/** The API takes at most 200 start times per post. */
+const SLOT_POST_MAX = 200;
+const FR_LENSES = ['instructor', 'ta', 'po', 'member', 'no_team', 'preview'];
+const toDate = v => v instanceof Date ? v : new Date(v);
+const ms = v => toDate(v).getTime();
+const cache = new Map();
+const fmt = (zone, opts) => {
+  const k = zone + JSON.stringify(opts);
+  if (!cache.has(k)) cache.set(k, new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    ...opts
+  }));
+  return cache.get(k);
+};
+/** "9:00 AM" with a plain space (ICU prints U+202F before the period). */
+const clock = (when, zone) => fmtTime(when, zone).replace(/\s/g, ' ');
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const possessive = name => /s$/i.test(name) ? `${name}’` : `${name}’s`;
+
+/* ── Time ─────────────────────────────────────────────────────────────────────────────── */
+function slotEnd(startsAt, minutes = SLOT_MINUTES) {
+  return new Date(ms(startsAt) + minutes * 60000);
+}
+/** upcoming → live (from the start, for its 60 minutes) → past. */
+function slotPhase(startsAt, now = new Date(), minutes = SLOT_MINUTES) {
+  const n = ms(now),
+    s = ms(startsAt);
+  return n >= s + minutes * 60000 ? 'past' : n >= s ? 'live' : 'upcoming';
+}
+/** The schedule layer's Join window: 10 minutes before the start until the end, with a room set. */
+function isReviewJoinable(startsAt, now = new Date(), zoomUrl, minutes = SLOT_MINUTES) {
+  if (!zoomUrl || !startsAt) return false;
+  const n = ms(now),
+    s = ms(startsAt);
+  return n >= s - __ds_scope.JOIN_WINDOW_MS && n < s + minutes * 60000;
+}
+/** "today" · "tomorrow" · "in 3 days" within a week; null otherwise (ScheduleModel.countdown). */
+function reviewCountdown(startsAt, now = new Date(), zone = __ds_scope.SCHOOL_ZONE) {
+  return countdown({
+    startsAt: toDate(startsAt).toISOString()
+  }, now, zone);
+}
+
+/**
+ * Everything a slot's time needs, in the viewer's zone, with the campus time when the zones differ
+ * (by UTC offset at that instant): campus "9:00 AM PT", or "Mon 3:00 PM PT" when the campus day differs.
+ */
+function fmtSlotWhen(startsAt, {
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  minutes = SLOT_MINUTES
+} = {}) {
+  const s = toDate(startsAt),
+    e = slotEnd(s, minutes);
+  const a = clock(s, zone),
+    b = clock(e, zone);
+  const [at, ap] = a.split(' '),
+    [, bp] = b.split(' ');
+  const key = dayKey(s, zone);
+  const differs = zoneDiffers(zone, schoolZone, s);
+  const campusSameDay = dayKey(s, schoolZone) === key;
+  const campus = differs ? `${campusSameDay ? '' : `${fmt(schoolZone, {
+    weekday: 'short'
+  }).format(s)} `}${clock(s, schoolZone)} ${zoneLabel(schoolZone, s)}` : null;
+  return {
+    key,
+    iso: s.toISOString(),
+    isoEnd: e.toISOString(),
+    day: fmt(zone, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    }).format(s),
+    dayLong: fmt(zone, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    }).format(s),
+    start: a,
+    startShort: ap === bp ? at : a,
+    end: b,
+    range: ap === bp ? `${at} – ${b}` : `${a} – ${b}`,
+    duration: minutes % 60 ? `${minutes} min` : `${minutes / 60} h`,
+    isoDuration: minutes % 60 ? `PT${minutes}M` : `PT${minutes / 60}H`,
+    differs,
+    campus,
+    campusDay: differs && !campusSameDay ? fmt(schoolZone, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    }).format(s) : null
+  };
+}
+/** One-line time for toasts, dialogs and confirmations: "Mon, Dec 7 · 11:00 AM" (+ " (Mon 3:00 PM PT on campus)"). */
+function whenText(startsAt, opts) {
+  const w = fmtSlotWhen(startsAt, opts);
+  return `${w.day} · ${w.start}${w.campus ? ` (${w.campus} on campus)` : ''}`;
+}
+/** The page's one mismatch note — "Times in GMT+5:30 · campus is PT" — or null. */
+function zoneNote(zone, schoolZone = __ds_scope.SCHOOL_ZONE, when = new Date()) {
+  return zoneDiffers(zone, schoolZone, when) ? `Times in ${zoneLabel(zone, when)} · campus is ${zoneLabel(schoolZone, when)}` : null;
+}
+
+/* ── Who is looking ───────────────────────────────────────────────────────────────────── */
+/** instructor · ta · po · member · no_team · preview (the instructor's "View class as student": read-only, no team). */
+function lensOf({
+  classRole,
+  myTeam,
+  preview = false
+} = {}) {
+  if (preview) return 'preview';
+  if (classRole === 'instructor') return 'instructor';
+  if (classRole === 'ta') return 'ta';
+  if (!myTeam) return 'no_team';
+  return myTeam.is_product_owner ? 'po' : 'member';
+}
+const isStaffLens = lens => lens === 'instructor' || lens === 'ta';
+
+/** Staff: one record per team from both reads (slots + final-reviews), by project id. */
+function indexTeams(reviewSlots, schedule) {
+  const out = {};
+  const put = (id, v) => {
+    out[id] = {
+      ...(out[id] || {
+        project_id: id
+      }),
+      ...v
+    };
+  };
+  (schedule?.teams || []).forEach(t => put(t.project_id, {
+    name: t.name,
+    home_ta: t.home_ta || null,
+    review_ta: t.review_ta || null,
+    final_review_at: t.final_review_at || null
+  }));
+  (reviewSlots?.unbooked_teams || []).forEach(t => put(t.project_id, {
+    name: t.name,
+    product_owner: t.product_owner || null,
+    unbooked: true
+  }));
+  (reviewSlots?.slots || []).forEach(s => {
+    if (s.team) put(s.team.project_id, {
+      name: s.team.name,
+      slot_id: s.id,
+      starts_at: s.starts_at
+    });
+  });
+  return out;
+}
+
+/* ── The board ────────────────────────────────────────────────────────────────────────── */
+/** Days in the viewer's zone, in time order: { key, isToday, isPast, free, booked, slots }. */
+function groupSlots(slots = [], {
+  zone = __ds_scope.SCHOOL_ZONE,
+  now = new Date()
+} = {}) {
+  const today = dayKey(now, zone);
+  const map = new Map();
+  [...slots].sort((a, b) => ms(a.starts_at) - ms(b.starts_at)).forEach(s => {
+    const key = dayKey(s.starts_at, zone);
+    if (!map.has(key)) map.set(key, {
+      key,
+      isToday: key === today,
+      slots: []
+    });
+    map.get(key).slots.push(s);
+  });
+  return [...map.values()].map(g => {
+    const phases = g.slots.map(s => slotPhase(s.starts_at, now, s.duration_minutes || SLOT_MINUTES));
+    return {
+      ...g,
+      isPast: phases.every(p => p === 'past'),
+      free: g.slots.filter((s, i) => !s.team && phases[i] === 'upcoming').length,
+      booked: g.slots.filter(s => s.team).length
+    };
+  });
+}
+const ACT = {
+  book: {
+    id: 'book',
+    label: 'Book',
+    variant: 'secondary'
+  },
+  move_here: {
+    id: 'move_here',
+    label: 'Move here',
+    variant: 'secondary'
+  },
+  release_own: {
+    id: 'release_own',
+    label: 'Release',
+    variant: 'danger-ghost'
+  },
+  sign_up: {
+    id: 'sign_up',
+    label: 'Sign up to review',
+    variant: 'secondary'
+  },
+  step_down: {
+    id: 'step_down',
+    label: 'Step down',
+    variant: 'danger-ghost'
+  },
+  open_review: {
+    id: 'open_review',
+    label: 'Open review',
+    variant: 'ghost'
+  },
+  join: {
+    id: 'join',
+    label: 'Join Zoom',
+    variant: 'primary'
+  },
+  place_team: {
+    id: 'place_team',
+    label: 'Place a team…',
+    variant: 'secondary'
+  },
+  delete: {
+    id: 'delete',
+    label: 'Delete slot',
+    variant: 'icon'
+  },
+  appoint: {
+    id: 'review_ta',
+    label: 'Appoint Review TA…'
+  },
+  change: {
+    id: 'review_ta',
+    label: 'Change Review TA…'
+  },
+  move_team: {
+    id: 'move_team',
+    label: 'Move to another slot…'
+  },
+  release_team: {
+    id: 'release_team',
+    label: 'Release slot…',
+    destructive: true
+  }
+};
+/** Why an action isn't offered, as the visible text beside the row (never a title on a disabled button). */
+const FR_REASONS = {
+  signups_closed: 'Sign-ups are closed',
+  home_ta: 'You’re the Home TA',
+  time_passed: 'Your team’s review time has passed',
+  started: 'This slot has started',
+  complete: 'This class is complete'
+};
+
+/**
+ * What one slot shows and offers in one lens. `ctx`: { lens, now, signupsOpen, complete, myTeam,
+ * viewerId, teamsById, zoomUrl }. Returns badges (status keys), people (staff, or the viewer's own
+ * team), the row's actions, the instructor's Menu items, and `note` — a FR_REASONS key shown as text
+ * where an action would be.
+ */
+function slotView(slot, ctx = {}) {
+  const {
+    lens = 'no_team',
+    now = new Date(),
+    signupsOpen = false,
+    complete = false,
+    myTeam = null,
+    viewerId = null,
+    teamsById = {},
+    zoomUrl = null
+  } = ctx;
+  const minutes = slot.duration_minutes || SLOT_MINUTES;
+  const phase = slotPhase(slot.starts_at, now, minutes);
+  const started = phase !== 'upcoming';
+  const team = slot.team || null;
+  const mine = !!(team && myTeam && team.project_id === myTeam.project_id);
+  const staff = isStaffLens(lens);
+  const info = team ? teamsById[team.project_id] || {} : {};
+  const homeTa = staff ? info.home_ta || null : mine ? myTeam.home_ta || null : null;
+  const reviewTa = staff ? info.review_ta || null : mine ? myTeam.review_ta || null : null;
+  const room = staff ? zoomUrl : mine ? myTeam.zoom_url : null;
+  const joinable = !!team && isReviewJoinable(slot.starts_at, now, room, minutes);
+  const viewerIsHome = !!(homeTa && viewerId && homeTa.user_id === viewerId);
+  const viewerIsReview = !!(reviewTa && viewerId && reviewTa.user_id === viewerId);
+  const open = signupsOpen && !complete;
+  const badges = [];
+  if (!team) badges.push(started ? 'slot.past' : 'slot.free');
+  if (mine) badges.push('slot.yours');
+  if (team && phase === 'live') badges.push('live');
+  const actions = [],
+    menu = [];
+  let note = null;
+  if (slot.history) {
+    if (staff) actions.push(ACT.open_review);
+  } else if (lens === 'po' && myTeam) {
+    const passed = !!(myTeam.starts_at && ms(myTeam.starts_at) <= ms(now));
+    if (!team && !started && open && !passed) actions.push(myTeam.slot_id ? ACT.move_here : ACT.book);
+    if (mine && open && !passed) actions.push(ACT.release_own);
+  } else if (lens === 'ta' && team) {
+    // only the Review TA sits in the review from the TA side; the Home TA scores the team but doesn't attend
+    if (joinable && viewerIsReview) actions.push({
+      ...ACT.join,
+      href: room
+    });
+    if (viewerIsReview) actions.push(ACT.step_down);else if (!reviewTa) {
+      if (viewerIsHome) note = 'home_ta';else if (!open) note = complete ? 'complete' : 'signups_closed';else actions.push(ACT.sign_up);
+    }
+    actions.push(ACT.open_review);
+  } else if (lens === 'instructor') {
+    if (!team) {
+      if (!complete) actions.push(ACT.place_team, ACT.delete);
+    } else {
+      if (joinable) actions.push({
+        ...ACT.join,
+        href: room
+      });
+      actions.push(ACT.open_review);
+      if (!complete) menu.push(reviewTa ? ACT.change : ACT.appoint, ACT.move_team, ACT.release_team);
+    }
+  }
+  return {
+    slot,
+    minutes,
+    phase,
+    started,
+    team,
+    mine,
+    staff,
+    homeTa,
+    reviewTa,
+    room,
+    joinable,
+    viewerIsHome,
+    viewerIsReview,
+    showPeople: staff ? !!team : mine,
+    needsReviewTa: staff && !!team && !reviewTa,
+    badges,
+    actions,
+    menu,
+    note
+  };
+}
+
+/** Filter chips per lens, with counts. Students: All · Free. TA: All · Teams I review (Review TA teams only) · No Review TA. Instructor: All · Free · No Review TA. */
+function boardFilters(lens, slots = [], ctx = {}) {
+  const views = slots.map(s => slotView(s, {
+    ...ctx,
+    lens
+  }));
+  const count = f => views.filter(v => matchesFilter(v, f)).length;
+  const all = {
+    value: 'all',
+    label: 'All slots',
+    count: slots.length
+  };
+  if (lens === 'ta') return [all, {
+    value: 'mine',
+    label: 'Teams I review',
+    count: count('mine')
+  }, {
+    value: 'no_review_ta',
+    label: 'No Review TA',
+    count: count('no_review_ta')
+  }];
+  if (lens === 'instructor') return [all, {
+    value: 'free',
+    label: 'Free',
+    count: count('free')
+  }, {
+    value: 'no_review_ta',
+    label: 'No Review TA',
+    count: count('no_review_ta')
+  }];
+  return [all, {
+    value: 'free',
+    label: 'Free',
+    count: count('free')
+  }];
+}
+function matchesFilter(view, filter = 'all') {
+  if (filter === 'free') return !view.team && !view.started;
+  if (filter === 'mine') return view.viewerIsReview;
+  if (filter === 'no_review_ta') return view.needsReviewTa && view.phase !== 'past';
+  return true;
+}
+
+/** Header counts: { slots, booked, free, unbooked, noReviewTa }. */
+function boardCounts(reviewSlots = {}, teamsById = {}) {
+  const slots = reviewSlots.slots || [];
+  const booked = slots.filter(s => s.team);
+  return {
+    slots: slots.length,
+    booked: booked.length,
+    free: slots.length - booked.length,
+    unbooked: (reviewSlots.unbooked_teams || []).length,
+    noReviewTa: booked.filter(s => {
+      const t = teamsById[s.team.project_id];
+      return t && !t.review_ta;
+    }).length
+  };
+}
+/** ["12 slots", "7 booked", "5 free"] (+ staff: "3 teams without a slot", "3 booked teams without a Review TA"). */
+function countsText(c, lens) {
+  const out = [plural(c.slots, 'slot'), `${c.booked} booked`, `${c.free} free`];
+  if (isStaffLens(lens)) {
+    if (c.unbooked) out.push(`${plural(c.unbooked, 'team')} without a slot`);
+    if (c.noReviewTa) out.push(`${plural(c.noReviewTa, 'booked team')} without a Review TA`);
+  }
+  return out;
+}
+/** "You're the Review TA for 1 team" (my_review_count: Review TA teams only — the Home TA isn't in the review). */
+const reviewingText = n => `You’re the Review TA for ${plural(n, 'team')}`;
+
+/** Staff: teams without a slot, by name, with Product Owner, Home TA and any appointed Review TA. */
+function unbookedTeams(reviewSlots = {}, teamsById = {}) {
+  return (reviewSlots.unbooked_teams || []).map(t => ({
+    ...teamsById[t.project_id],
+    ...t,
+    product_owner: t.product_owner || null
+  })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+/** A class from before slots: review times from the staff read, as read-only history rows (no slots exist). */
+function historyRows(reviewSlots = {}, schedule = null) {
+  if ((reviewSlots.slots || []).length || !schedule) return [];
+  return (schedule.teams || []).filter(t => t.final_review_at).map(t => ({
+    id: `history-${t.project_id}`,
+    starts_at: t.final_review_at,
+    duration_minutes: SLOT_MINUTES,
+    team: {
+      project_id: t.project_id,
+      name: t.name
+    },
+    history: true
+  })).sort((a, b) => ms(a.starts_at) - ms(b.starts_at));
+}
+/** Free slots for a Select: [{ label: 'Mon, Dec 7', options: [{ value, label: '11:00 AM – 12:00 PM' (+ ' · started') }] }]. */
+function freeSlotGroups(slots = [], {
+  zone,
+  schoolZone,
+  now = new Date(),
+  includeStarted = false,
+  exceptId
+} = {}) {
+  return groupSlots(slots.filter(s => !s.team && s.id !== exceptId && (includeStarted || slotPhase(s.starts_at, now) === 'upcoming')), {
+    zone,
+    now
+  }).map(g => ({
+    label: fmtSlotWhen(g.slots[0].starts_at, {
+      zone,
+      schoolZone
+    }).day,
+    options: g.slots.map(s => {
+      const w = fmtSlotWhen(s.starts_at, {
+        zone,
+        schoolZone
+      });
+      return {
+        value: s.id,
+        label: `${w.range}${w.campus ? ` (${w.campus})` : ''}${slotPhase(s.starts_at, now) !== 'upcoming' ? ' · started' : ''}`
+      };
+    })
+  }));
+}
+
+/* ── Your team's review ───────────────────────────────────────────────────────────────── */
+/**
+ * no_team · no_po · closed · no_slots · full · book (Product Owner) · wait_po (member) ·
+ * booked · booked_closed · joinable · live · past.
+ * "closed" is one state before sign-ups open and after they close (the app stores one switch).
+ */
+function teamReviewState({
+  myTeam,
+  slots = [],
+  signupsOpen = false,
+  complete = false,
+  now = new Date()
+} = {}) {
+  if (!myTeam) return 'no_team';
+  if (myTeam.slot_id && myTeam.starts_at) {
+    const phase = slotPhase(myTeam.starts_at, now);
+    if (phase === 'past') return 'past';
+    if (phase === 'live') return 'live';
+    if (isReviewJoinable(myTeam.starts_at, now, myTeam.zoom_url)) return 'joinable';
+    return signupsOpen && !complete ? 'booked' : 'booked_closed';
+  }
+  if (!myTeam.product_owner && !myTeam.is_product_owner) return 'no_po';
+  if (!signupsOpen || complete) return 'closed';
+  if (!slots.length) return 'no_slots';
+  if (!slots.some(s => !s.team && slotPhase(s.starts_at, now) === 'upcoming')) return 'full';
+  return myTeam.is_product_owner ? 'book' : 'wait_po';
+}
+/** Can the Product Owner change the booking now? { ok, reason } with reason a FR_REASONS key. */
+function poCanChange({
+  myTeam,
+  signupsOpen,
+  complete = false,
+  now = new Date()
+} = {}) {
+  if (!myTeam || !myTeam.is_product_owner) return {
+    ok: false,
+    reason: null
+  };
+  if (complete) return {
+    ok: false,
+    reason: 'complete'
+  };
+  if (!signupsOpen) return {
+    ok: false,
+    reason: 'signups_closed'
+  };
+  if (myTeam.starts_at && ms(myTeam.starts_at) <= ms(now)) return {
+    ok: false,
+    reason: 'time_passed'
+  };
+  return {
+    ok: true,
+    reason: null
+  };
+}
+/** Title + body for each unbooked state, and the lines the booked states share. */
+function teamReviewCopy(state, {
+  myTeam,
+  freeCount = 0,
+  variant = 'page',
+  zone,
+  schoolZone
+} = {}) {
+  const where = variant === 'card' ? 'on the Final Reviews page' : 'below';
+  const C = {
+    no_team: {
+      title: 'You’re not on a team',
+      body: `Teams book final reviews, so there’s nothing to book for you. You can still see every slot ${where}.`
+    },
+    no_po: {
+      title: 'Your team has no Product Owner',
+      body: 'Only a Product Owner can book your team’s final review. Ask your instructor to make someone Product Owner.'
+    },
+    closed: {
+      title: 'No review time yet',
+      body: 'Sign-ups aren’t open, so your team can’t book right now. Your instructor can still give your team a time.'
+    },
+    no_slots: {
+      title: 'No slots posted yet',
+      body: 'Sign-ups are open, but your instructor hasn’t posted any times yet.'
+    },
+    full: {
+      title: 'Every slot is taken',
+      body: 'There are no free slots left. Ask your instructor for a time.'
+    },
+    book: {
+      title: 'Book your team’s final review',
+      body: `Pick one of the ${plural(freeCount, 'free slot')} ${where}. You can change it until sign-ups close.`
+    },
+    wait_po: {
+      title: 'Your team hasn’t booked yet',
+      body: myTeam && myTeam.product_owner ? `Your Product Owner, ${myTeam.product_owner.name}, books your team’s slot.` : 'Your Product Owner books your team’s slot.'
+    }
+  };
+  if (C[state]) return C[state];
+  const w = myTeam && myTeam.starts_at ? fmtSlotWhen(myTeam.starts_at, {
+    zone,
+    schoolZone
+  }) : null;
+  return {
+    title: 'Your team’s final review',
+    body: state === 'past' && w ? `Your team was reviewed on ${w.dayLong}.` : null,
+    noReviewTa: 'No Review TA has signed up yet.',
+    noZoom: 'Your instructor hasn’t set the Zoom room yet.',
+    locked: 'Sign-ups are closed, so your slot can’t change. Ask your instructor for any change.',
+    passed: 'Your team’s review time has passed, so its slot can’t change.'
+  };
+}
+/** Project page: the card shows for the team's own members once the class has slots or sign-ups are open. */
+function showTeamReviewCard({
+  myTeam,
+  slots = [],
+  signupsOpen = false
+} = {}) {
+  return !!myTeam && (slots.length > 0 || signupsOpen || !!myTeam.slot_id);
+}
+
+/* ── Posting slots (instructor; typed on the campus clock) ─────────────────────────────── */
+const toMin = t => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+/** Every hour from `first` to `last` ("09:00", "10:00", …); just `first` without a last; null when last < first. */
+function hourlyStarts(first, last) {
+  if (!first) return [];
+  if (!last) return [first];
+  const a = toMin(first),
+    b = toMin(last);
+  if (b < a) return null;
+  const out = [];
+  for (let m = a; m <= b; m += SLOT_MINUTES) out.push(hhmm(m));
+  return out;
+}
+/** The API's form for a start: ISO with the campus offset and no seconds, "2026-12-07T09:00-08:00". */
+function offsetIso(date, time, schoolZone = __ds_scope.SCHOOL_ZONE) {
+  const inst = zonedToInstant(date, time, schoolZone);
+  const p = fmt(schoolZone, {
+    timeZoneName: 'longOffset'
+  }).formatToParts(inst).find(x => x.type === 'timeZoneName');
+  const off = p ? p.value.replace('GMT', '') : '';
+  return `${date}T${time}${off || '+00:00'}`;
+}
+/**
+ * The list the form will post, by campus day, each time marked: `posted` (a slot exists — the server
+ * skips it), `overlaps` (starts less than 60 minutes from another posted or listed slot — refused: slots
+ * never overlap, brief call 15; `overlaps` counts them and the form posts nothing until it is 0), `past`.
+ * entries: [{ date: 'YYYY-MM-DD', time: 'HH:MM' }] on the campus clock (duplicates removed).
+ */
+function postingDraft(entries = [], {
+  existing = [],
+  now = new Date(),
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE
+} = {}) {
+  const seen = new Set();
+  const list = entries.filter(e => {
+    const k = `${e.date}T${e.time}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).map(e => {
+    const inst = zonedToInstant(e.date, e.time, schoolZone);
+    return {
+      ...e,
+      key: `${e.date}T${e.time}`,
+      at: inst.getTime(),
+      startsAt: inst.toISOString(),
+      payload: offsetIso(e.date, e.time, schoolZone)
+    };
+  }).sort((a, b) => a.at - b.at);
+  const have = existing.map(s => ms(s.starts_at));
+  const H = SLOT_MINUTES * 60000;
+  const items = list.map(e => {
+    const posted = have.includes(e.at);
+    const near = posted ? [] : [...have, ...list.filter(o => o.key !== e.key).map(o => o.at)].filter(x => x !== e.at && Math.abs(x - e.at) < H);
+    const differs = zoneDiffers(zone, schoolZone, e.at);
+    const viewerDay = differs && dayKey(e.at, zone) !== e.date ? `${fmt(zone, {
+      weekday: 'short'
+    }).format(new Date(e.at))} ` : '';
+    return {
+      ...e,
+      posted,
+      past: e.at < ms(now),
+      overlaps: [...new Set(near)].sort((a, b) => a - b).map(x => clock(x, schoolZone)),
+      campusLabel: clock(e.at, schoolZone),
+      viewerLabel: differs ? `${viewerDay}${clock(e.at, zone)} ${zoneLabel(zone, e.at)}` : null
+    };
+  });
+  const days = [];
+  items.forEach(it => {
+    let d = days[days.length - 1];
+    if (!d || d.date !== it.date) {
+      d = {
+        date: it.date,
+        label: fmt('UTC', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric'
+        }).format(new Date(`${it.date}T12:00:00Z`)),
+        items: []
+      };
+      days.push(d);
+    }
+    d.items.push(it);
+  });
+  const fresh = items.filter(i => !i.posted);
+  return {
+    items,
+    days,
+    count: items.length,
+    fresh: fresh.length,
+    posted: items.length - fresh.length,
+    overlaps: fresh.filter(i => i.overlaps.length).length,
+    past: fresh.filter(i => i.past).length,
+    overLimit: Math.max(0, items.length - SLOT_POST_MAX),
+    payload: {
+      starts_at: items.map(i => i.payload)
+    }
+  };
+}
+/** "Posted 8 slots." · "Posted 6 slots. 2 times already had one." */
+function postedMessage(created, sent) {
+  const skipped = Math.max(0, sent - created);
+  return `Posted ${plural(created, 'slot')}.${skipped ? ` ${plural(skipped, 'time')} already had one.` : ''}`;
+}
+
+/* ── Copy for actions ─────────────────────────────────────────────────────────────────── */
+/** Success toasts (polite). x: { when, team, reviewTa, created, sent, open, cleared }. */
+function successCopy(action, x = {}) {
+  switch (action) {
+    case 'book':
+      return `Booked ${x.when}.`;
+    case 'move_here':
+      return `Moved to ${x.when}.${x.reviewTa ? ` ${x.reviewTa} is no longer your Review TA.` : ''}`;
+    case 'release_own':
+      return `Released ${x.when}. Your team has no review time now.`;
+    case 'place':
+      return `Placed ${x.team} on ${x.when}.`;
+    case 'move_team':
+      return `Moved ${x.team} to ${x.when}.${x.reviewTa ? ` ${x.reviewTa} is no longer its Review TA.` : ''}`;
+    case 'release_team':
+      return `Released ${possessive(x.team)} slot.${x.reviewTa ? ` ${x.reviewTa} is no longer its Review TA.` : ''}`;
+    case 'sign_up':
+      return `You’re ${possessive(x.team)} Review TA · ${x.when}.`;
+    case 'step_down':
+      return `You’re no longer ${possessive(x.team)} Review TA.`;
+    case 'review_ta':
+      return x.reviewTa ? `${x.reviewTa} is ${possessive(x.team)} Review TA.` : `${x.team} has no Review TA now.`;
+    case 'delete':
+      return `Deleted the ${x.when} slot.`;
+    case 'delete_day':
+      return `Deleted ${plural(x.count, 'free slot')} on ${x.when}.`;
+    case 'post':
+      return postedMessage(x.created, x.sent);
+    case 'signups':
+      return x.open ? 'Sign-ups are open.' : 'Sign-ups are closed.';
+    case 'zoom':
+      return x.cleared ? 'Zoom room cleared.' : 'Zoom room saved.';
+    default:
+      return 'Done.';
+  }
+}
+/**
+ * The board's sentence for a refused request (ApiError: { status, detail }). The backend's details
+ * are written for people; these stay close to them and say what the board did about it.
+ * x: { keeps (the team's current time, if any), team, when (a moved team's new time, for a refused sign-up) }.
+ */
+function errorCopy(action, err = {}, x = {}) {
+  const status = err.status,
+    d = String(err.detail || '').toLowerCase();
+  if (['book', 'move_here', 'place', 'move_team'].includes(action)) {
+    if (status === 409 && d.includes('taken')) return x.keeps ? `That slot was just taken, so your team keeps ${x.keeps}. The board is up to date.` : 'That slot was just taken. The board is up to date — pick another free slot.';
+    if (status === 409 && d.includes('started')) return 'That slot has already started. The board is up to date — pick a later one.';
+    if (status === 403 && d.includes('sign-ups')) return 'Sign-ups closed a moment ago, so your team’s slot can’t change now. Ask your instructor for any change.';
+    if (status === 403 && d.includes('passed')) return 'Your team’s review time has passed, so its slot can’t change now. Ask your instructor for any change.';
+    if (status === 403) return 'Only the team’s Product Owner can book a slot.';
+    if (status === 404 && d.includes('project')) return 'That team no longer exists. The board is up to date.';
+    if (status === 404) return 'That slot was deleted. The board is up to date.';
+  }
+  if (action === 'release_own' || action === 'release_team') {
+    if (status === 403 && d.includes('sign-ups')) return 'Sign-ups closed a moment ago, so your team keeps its slot. Ask your instructor for any change.';
+    if (status === 403 && d.includes('passed')) return 'Your team’s review time has passed, so its slot can’t be released now.';
+    if (status === 403) return 'Only the team’s Product Owner can release a slot.';
+    if (status === 404) return 'That team no longer exists. The board is up to date.';
+  }
+  if (action === 'sign_up' || action === 'review_ta') {
+    // the sign-up carries the slot the TA saw; the server refuses it when the team has moved since
+    if (status === 409 && (d.includes('moved') || d.includes('changed'))) return `Your sign-up for ${x.team || 'this team'} didn’t go through: the team moved to ${x.when || 'another time'} after you loaded the board. Sign up again at the new time?`;
+    if (status === 409) return `Another TA just signed up to review ${x.team || 'this team'}. The board is up to date.`;
+    if (status === 403 && d.includes('window')) return 'Sign-ups closed a moment ago, so you can’t sign up now.';
+    if (status === 403 && d.includes('slot')) return `${x.team || 'This team'} no longer holds a slot, so there’s nothing to review yet.`;
+    if (status === 400 && d.includes('different')) return `You’re ${possessive(x.team || 'this team')} Home TA, so you can’t also be its Review TA.`;
+    if (status === 400) return action === 'review_ta' ? 'That TA is no longer a TA in this class. The list is up to date.' : 'You’re no longer a TA in this class.';
+  }
+  if (action === 'delete' && status === 409) return 'A team booked this slot a moment ago. Release the team first.';
+  if (action === 'delete' && status === 404) return 'That slot was already deleted.';
+  if (action === 'post' && d.includes('overlap')) return 'A time in the list overlaps a slot that was posted a moment ago. The list is up to date — change or remove it.';
+  if (action === 'post' && status === 422) return 'Couldn’t post these times. Check the list and try again.';
+  return 'That didn’t work. Try again.';
+}
+
+/**
+ * The confirmations (ConfirmDialog): move_here (Product Owner), release_own, release_team (instructor),
+ * close_signups, step_down, delete_day. x: { team, when, from, reviewTa, passed, count, held, day }.
+ */
+function confirmCopy(kind, x = {}) {
+  const join = (...parts) => parts.filter(Boolean).join(' ');
+  switch (kind) {
+    case 'move_here':
+      return {
+        title: `Move your team to ${x.when}?`,
+        message: join(`${x.team} gives up ${x.from}.`, x.reviewTa && `${x.reviewTa} will no longer be your Review TA.`),
+        confirmLabel: 'Move',
+        busyLabel: 'Moving…',
+        destructive: !!x.reviewTa
+      };
+    case 'release_own':
+      return {
+        title: 'Release your team’s slot?',
+        message: join(`${x.team} gives up ${x.when} and has no review time until you book again.`, x.reviewTa && `${x.reviewTa} will no longer be your Review TA.`),
+        confirmLabel: 'Release slot',
+        busyLabel: 'Releasing…',
+        destructive: true
+      };
+    case 'release_team':
+      return {
+        title: `Release ${possessive(x.team)} slot?`,
+        message: join(`${x.team} loses ${x.when} and has no review time until it books again or you place it.`, x.reviewTa && `${x.reviewTa} will no longer be its Review TA.`, x.passed && 'Its review time has passed, so the review may already have been held and scored. Releasing clears the team’s time and its Review TA; the scores already entered stay.'),
+        confirmLabel: 'Release slot',
+        busyLabel: 'Releasing…',
+        destructive: true
+      };
+    case 'close_signups':
+      return {
+        title: 'Close sign-ups?',
+        message: 'Product Owners can no longer book, move or release, and TAs can no longer sign up to review. Review TAs can still step down, and you can still change anything. Nobody is notified.',
+        confirmLabel: 'Close sign-ups',
+        busyLabel: 'Closing…',
+        destructive: false
+      };
+    case 'step_down':
+      return {
+        title: `Step down as ${possessive(x.team)} Review TA?`,
+        message: join(`${x.team} will have no Review TA until another TA signs up or the instructor appoints one.`, x.when && `Its review is ${x.when}.`),
+        confirmLabel: 'Step down',
+        busyLabel: 'Stepping down…',
+        destructive: true
+      };
+    case 'delete_day':
+      return {
+        title: `Delete ${plural(x.count, 'free slot')} on ${x.day}?`,
+        message: `No team is affected${x.held ? `, and the ${plural(x.held, 'booked slot')} stay${x.held === 1 ? 's' : ''}` : ''}.`,
+        confirmLabel: `Delete ${plural(x.count, 'slot')}`,
+        busyLabel: 'Deleting…',
+        destructive: true
+      };
+    default:
+      return {
+        title: 'Are you sure?',
+        message: '',
+        confirmLabel: 'Confirm',
+        destructive: false
+      };
+  }
+}
+const FinalReviewsModel = {
+  confirmCopy,
+  SLOT_MINUTES,
+  SLOT_POST_MAX,
+  FR_LENSES,
+  FR_REASONS,
+  slotEnd,
+  slotPhase,
+  isReviewJoinable,
+  reviewCountdown,
+  fmtSlotWhen,
+  whenText,
+  zoneNote,
+  lensOf,
+  isStaffLens,
+  indexTeams,
+  groupSlots,
+  slotView,
+  boardFilters,
+  matchesFilter,
+  boardCounts,
+  countsText,
+  reviewingText,
+  unbookedTeams,
+  historyRows,
+  freeSlotGroups,
+  teamReviewState,
+  poCanChange,
+  teamReviewCopy,
+  showTeamReviewCard,
+  hourlyStarts,
+  offsetIso,
+  postingDraft,
+  postedMessage,
+  successCopy,
+  errorCopy
+};
+Object.assign(__ds_scope, { SLOT_MINUTES, SLOT_POST_MAX, FR_LENSES, slotEnd, slotPhase, isReviewJoinable, reviewCountdown, fmtSlotWhen, whenText, zoneNote, lensOf, isStaffLens, indexTeams, groupSlots, FR_REASONS, slotView, boardFilters, matchesFilter, boardCounts, countsText, reviewingText, unbookedTeams, historyRows, freeSlotGroups, teamReviewState, poCanChange, teamReviewCopy, showTeamReviewCard, hourlyStarts, offsetIso, postingDraft, postedMessage, successCopy, errorCopy, confirmCopy, FinalReviewsModel });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/FinalReviewsModel.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/FinalReviewsHeader.jsx
+try { (() => {
+const {
+  countsText,
+  reviewingText,
+  isStaffLens
+} = __ds_scope.FinalReviewsModel;
+const isHttpUrl = s => {
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The shared Zoom room for every review in the class. TAs read it; the instructor sets, edits or
+ * clears it inline (Esc cancels). Students never see this — their room arrives with their own booking.
+ */
+function ZoomRoomField({
+  zoomUrl = null,
+  canEdit = false,
+  onSave,
+  saving = false,
+  defaultEditing = false,
+  className = ''
+}) {
+  const [editing, setEditing] = React.useState(defaultEditing);
+  const [draft, setDraft] = React.useState(zoomUrl || '');
+  const [error, setError] = React.useState(null);
+  const formRef = React.useRef(null);
+  const focusInput = () => {
+    const el = formRef.current && formRef.current.querySelector('input');
+    if (el) el.focus();
+  };
+  const start = () => {
+    setDraft(zoomUrl || '');
+    setError(null);
+    setEditing(true);
+  };
+  React.useEffect(() => {
+    if (editing && !defaultEditing) focusInput();
+  }, [editing, defaultEditing]);
+  const save = async value => {
+    const v = value.trim();
+    if (v && !isHttpUrl(v)) {
+      setError('Enter the full link, like https://ucsc.zoom.us/j/…');
+      focusInput();
+      return;
+    }
+    try {
+      if (onSave) await onSave(v || null);
+      setEditing(false);
+    } catch {
+      setError('Couldn’t save the room. Try again.');
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-fr-zoom', editing ? 'gt-fr-zoom--editing' : '', className].filter(Boolean).join(' ')
+  }, editing ? /*#__PURE__*/React.createElement("form", {
+    ref: formRef,
+    className: "gt-fr-zoom__form",
+    noValidate: true,
+    onSubmit: e => {
+      e.preventDefault();
+      save(draft);
+    },
+    onKeyDown: e => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setEditing(false);
+      }
+    }
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    label: "Shared Zoom room",
+    type: "url",
+    value: draft,
+    onChange: e => {
+      setDraft(e.target.value);
+      setError(null);
+    },
+    placeholder: "https://ucsc.zoom.us/j/\u2026",
+    error: error,
+    helperText: "Every review in the class uses this room.",
+    disabled: saving,
+    className: "gt-fr-zoom__input"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-zoom__buttons"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    type: "submit",
+    size: "sm",
+    loading: saving,
+    loadingLabel: "Saving\u2026"
+  }, "Save"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "secondary",
+    onClick: () => setEditing(false),
+    disabled: saving
+  }, "Cancel"), zoomUrl && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "danger-ghost",
+    onClick: () => save(''),
+    disabled: saving
+  }, "Clear room"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-zoom__label"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "video",
+    size: 15
+  }), "Shared Zoom room"), zoomUrl ? /*#__PURE__*/React.createElement("a", {
+    className: "gt-fr-zoom__link",
+    href: zoomUrl,
+    target: "_blank",
+    rel: "noreferrer"
+  }, zoomUrl) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-zoom__none"
+  }, "Not set yet. Every review uses one shared room."), canEdit && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "ghost",
+    onClick: start,
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: zoomUrl ? 'pencil' : 'plus',
+      size: 14
+    })
+  }, zoomUrl ? 'Edit' : 'Set Zoom room')));
+}
+
+/**
+ * The board's summary bar: the sign-ups state (every lens), the counts, "You're the Review TA for n teams"
+ * (TA), the shared Zoom room (staff), and the instructor's Post slots and Open / Close sign-ups with
+ * what the switch does, said where it's flipped. A complete class reads as read-only.
+ */
+function FinalReviewsHeader({
+  lens = 'no_team',
+  signupsOpen = false,
+  counts = {
+    slots: 0,
+    booked: 0,
+    free: 0,
+    unbooked: 0,
+    noReviewTa: 0
+  },
+  myReviewCount = 0,
+  zoomUrl = null,
+  complete = false,
+  status = 'ready',
+  busy = null,
+  onPostSlots,
+  onToggleSignups,
+  onSaveZoom,
+  className = ''
+}) {
+  const staff = isStaffLens(lens);
+  const inst = lens === 'instructor' && !complete;
+  if (status === 'loading') {
+    return /*#__PURE__*/React.createElement("section", {
+      className: ['gt-fr-head', 'gt-fr-head--loading', className].filter(Boolean).join(' '),
+      "aria-busy": "true"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-head__top"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-head__state"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 112,
+      height: 22,
+      radius: 20
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 220,
+      height: 13
+    }))));
+  }
+  const help = !inst ? null : signupsOpen && !counts.slots ? 'Sign-ups are open, but no slots are posted, so nobody can book until you post some.' : signupsOpen ? 'Product Owners can book, move and release; TAs can sign up to review. You can change anything at any time.' : 'Product Owners can’t book, move or release, and TAs can’t sign up. Review TAs can still step down, and you can still change anything.';
+  const postPrimary = inst && !counts.slots;
+  return /*#__PURE__*/React.createElement("section", {
+    className: ['gt-fr-head', className].filter(Boolean).join(' '),
+    "aria-label": "Final reviews summary"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-head__top"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-head__state"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: complete ? 'class.complete' : signupsOpen ? 'signups.open' : 'signups.closed'
+  }, complete ? 'Class complete' : undefined), lens === 'ta' && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-head__mine"
+  }, reviewingText(myReviewCount))), inst && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-head__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: postPrimary ? 'primary' : 'secondary',
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "calendar-plus",
+      size: 15
+    }),
+    onClick: onPostSlots
+  }, "Post slots"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: !signupsOpen && !postPrimary ? 'primary' : 'secondary',
+    loading: busy === 'signups',
+    loadingLabel: signupsOpen ? 'Closing…' : 'Opening…',
+    onClick: () => onToggleSignups && onToggleSignups(!signupsOpen)
+  }, signupsOpen ? 'Close sign-ups' : 'Open sign-ups'))), /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-head__counts"
+  }, countsText(counts, lens).map(t => /*#__PURE__*/React.createElement("span", {
+    key: t
+  }, t))), help && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-head__help"
+  }, help), complete && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-head__help"
+  }, "This class is complete. The board is read-only."), staff && /*#__PURE__*/React.createElement(ZoomRoomField, {
+    zoomUrl: zoomUrl,
+    canEdit: inst,
+    onSave: onSaveZoom,
+    saving: busy === 'zoom'
+  }));
+}
+Object.assign(__ds_scope, { ZoomRoomField, FinalReviewsHeader });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/FinalReviewsHeader.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/PostSlotsDrawer.jsx
+try { (() => {
+const {
+  hourlyStarts,
+  postingDraft,
+  SLOT_POST_MAX
+} = __ds_scope.FinalReviewsModel;
+const {
+  zoneLabel,
+  zoneDiffers
+} = __ds_scope.ScheduleModel;
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Post slots (instructor) — a right Drawer. Days and times are typed on the campus clock: a day, a
+ * first and a last start add every hour between them; a single time is a first start with no last.
+ * The list it will post sits below, by campus day, each time with the viewer's equivalent when the
+ * zones differ and its flags: already posted (the server skips it), in the past (allowed — teams can't
+ * book it; the instructor can place a team), and overlaps — refused: slots never overlap (brief call 15),
+ * so a start less than an hour from another slot, posted or listed, is an error naming that slot, with
+ * Change (back into the Add fields) and × — nothing posts until each is fixed. At most 200 times per post. Esc / Cancel close it; the draft is kept
+ * until it posts.
+ */
+function PostSlotsDrawer({
+  open = false,
+  onClose,
+  onPost,
+  existing = [],
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  defaultEntries = [],
+  defaultDay = '',
+  portal = true,
+  width = 480
+}) {
+  const nowD = now || new Date();
+  const [day, setDay] = React.useState(defaultDay);
+  const [first, setFirst] = React.useState('09:00');
+  const [last, setLast] = React.useState('16:00');
+  const [entries, setEntries] = React.useState(defaultEntries);
+  const [errors, setErrors] = React.useState({});
+  const [submitError, setSubmitError] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const [said, setSaid] = React.useState('');
+  const rootRef = React.useRef(null);
+  const campus = zoneLabel(schoolZone, nowD);
+  const differs = zoneDiffers(zone, schoolZone, nowD);
+  const draft = postingDraft(entries, {
+    existing,
+    now: nowD,
+    zone,
+    schoolZone
+  });
+  const preview = day && first ? postingDraft([{
+    date: day,
+    time: first
+  }], {
+    now: nowD,
+    zone,
+    schoolZone
+  }).items[0] : null;
+  const add = () => {
+    const e = {};
+    if (!day) e.day = 'Pick a day.';
+    if (!first) e.first = 'Pick a start time.';
+    const times = first ? hourlyStarts(first, last) : [];
+    if (first && last && times === null) e.last = 'The last start comes before the first.';
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    const keys = new Set(entries.map(x => `${x.date}T${x.time}`));
+    const fresh = times.filter(t => !keys.has(`${day}T${t}`)).map(time => ({
+      date: day,
+      time
+    }));
+    setEntries([...entries, ...fresh]);
+    setSubmitError(null);
+    setSaid(fresh.length ? `Added ${plural(fresh.length, 'time')}.` : 'Those times are already in the list.');
+  };
+  const remove = key => {
+    setEntries(entries.filter(x => `${x.date}T${x.time}` !== key));
+    setSaid('Removed.');
+  };
+  const removeDay = date => {
+    setEntries(entries.filter(x => x.date !== date));
+    setSaid('Removed the day.');
+  };
+  /* "Change" takes an overlapping time out of the list and back into the Add fields, ready to retype. */
+  const change = it => {
+    setEntries(entries.filter(x => `${x.date}T${x.time}` !== it.key));
+    setDay(it.date);
+    setFirst(it.time);
+    setLast('');
+    setErrors({});
+    setSubmitError(null);
+    setSaid(`${it.campusLabel} is back in the Add fields.`);
+    setTimeout(() => {
+      const el = rootRef.current && rootRef.current.querySelectorAll('.gt-fr-post__grid input')[1];
+      if (el) el.focus();
+    }, 0);
+  };
+  const post = async () => {
+    if (!draft.count) {
+      setSubmitError('Add at least one time.');
+      return;
+    }
+    if (draft.overlaps) {
+      setSubmitError(`Nothing is posted yet: remove or change the ${plural(draft.overlaps, 'overlapping time')} first.`);
+      const el = rootRef.current && rootRef.current.querySelector('.gt-fr-post__item--overlap .gt-fr-post__change');
+      if (el) el.focus();
+      return;
+    }
+    if (draft.overLimit) {
+      setSubmitError(`You can post up to ${SLOT_POST_MAX} times at once. Remove ${draft.overLimit}.`);
+      return;
+    }
+    setBusy(true);
+    setSubmitError(null);
+    try {
+      if (onPost) await onPost(draft.payload, draft);
+      setEntries([]);
+    } catch (err) {
+      setSubmitError(err && err.message || 'Couldn’t post these times. Check the list and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const viewerHint = preview && preview.viewerLabel ? ` · ${preview.viewerLabel} for you` : '';
+  return /*#__PURE__*/React.createElement(__ds_scope.Drawer, {
+    open: open,
+    onClose: onClose,
+    portal: portal,
+    width: width,
+    closeDisabled: busy,
+    title: "Post slots",
+    className: "gt-fr-post-drawer",
+    subtitle: `Times are on the campus clock (${campus}). Each slot lasts 1 hour.`,
+    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "outline",
+      onClick: onClose,
+      disabled: busy
+    }, "Cancel"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      onClick: post,
+      loading: busy,
+      loadingLabel: "Posting\u2026"
+    }, draft.fresh ? `Post ${plural(draft.fresh, 'slot')}` : 'Post slots'))
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post",
+    ref: rootRef
+  }, /*#__PURE__*/React.createElement("fieldset", {
+    className: "gt-fr-post__add"
+  }, /*#__PURE__*/React.createElement("legend", {
+    className: "gt-fr-post__legend"
+  }, "Add times"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post__grid"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    label: "Day",
+    type: "date",
+    value: day,
+    onChange: e => {
+      setDay(e.target.value);
+      setErrors({
+        ...errors,
+        day: null
+      });
+    },
+    error: errors.day,
+    className: "gt-fr-post__day"
+  }), /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    label: "First start",
+    type: "time",
+    step: 900,
+    value: first,
+    onChange: e => {
+      setFirst(e.target.value);
+      setErrors({
+        ...errors,
+        first: null,
+        last: null
+      });
+    },
+    error: errors.first,
+    helperText: `Campus time (${campus})${viewerHint}`
+  }), /*#__PURE__*/React.createElement(__ds_scope.Input, {
+    label: "Last start",
+    optional: true,
+    type: "time",
+    step: 900,
+    value: last,
+    onChange: e => {
+      setLast(e.target.value);
+      setErrors({
+        ...errors,
+        last: null
+      });
+    },
+    error: errors.last,
+    helperText: "Every hour from the first start"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post__add-row"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "secondary",
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "plus",
+      size: 15
+    }),
+    onClick: add
+  }, "Add times"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__hint"
+  }, "Leave the last start empty to add one time."))), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__sr",
+    "aria-live": "polite"
+  }, said), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post__review"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "gt-fr-post__heading"
+  }, "To post ", /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__count"
+  }, draft.count ? `${plural(draft.fresh, 'new slot')}${draft.posted ? ` · ${draft.posted} already posted` : ''}` : 'nothing yet')), draft.overlaps > 0 && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error",
+    title: `${plural(draft.overlaps, 'time')} overlap${draft.overlaps === 1 ? 's' : ''} another slot`
+  }, "Slots never overlap: reviews don\u2019t run in parallel, and every review uses the one shared Zoom room. Remove each marked time, or change it to a start at least an hour from the slot it names. Nothing posts until then."), draft.past > 0 && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "info"
+  }, `${plural(draft.past, 'time has', 'times have')} already passed. Teams can’t book a slot that has started, but you can place a team on it to record a review held outside the app.`), draft.posted > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-post__note"
+  }, plural(draft.posted, 'time'), " already ", draft.posted === 1 ? 'has' : 'have', " a slot, so ", draft.posted === 1 ? 'it’s' : 'they’re', " skipped."), submitError && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error"
+  }, submitError), draft.count === 0 ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-post__empty"
+  }, "Add a day above. Typical: two to five days with five to eight hourly starts each.") : /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post__days"
+  }, draft.days.map(d => /*#__PURE__*/React.createElement("section", {
+    key: d.date,
+    className: "gt-fr-post__daygroup",
+    "aria-label": d.label
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-post__dayhead"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__dayname"
+  }, d.label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__daycount"
+  }, plural(d.items.length, 'time')), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "ghost",
+    onClick: () => removeDay(d.date),
+    "aria-label": `Remove ${d.label}`
+  }, "Remove day")), /*#__PURE__*/React.createElement("ul", {
+    className: "gt-fr-post__items"
+  }, d.items.map(it => /*#__PURE__*/React.createElement("li", {
+    key: it.key,
+    className: ['gt-fr-post__item', it.posted ? 'gt-fr-post__item--posted' : '', !it.posted && it.overlaps.length ? 'gt-fr-post__item--overlap' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("time", {
+    className: "gt-fr-post__time",
+    dateTime: it.startsAt
+  }, it.campusLabel), differs && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__viewer"
+  }, it.viewerLabel, " for you"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-post__flags"
+  }, it.posted && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: "neutral"
+  }, "Already posted"), !it.posted && it.overlaps.length > 0 && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: "error"
+  }, "Overlaps ", it.overlaps.join(', ')), !it.posted && it.past && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: "neutral"
+  }, "In the past"), !it.posted && it.overlaps.length > 0 && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "ghost",
+    className: "gt-fr-post__change",
+    onClick: () => change(it),
+    "aria-label": `Change ${it.campusLabel} on ${d.label}`
+  }, "Change")), /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+    size: "sm",
+    ariaLabel: `Remove ${it.campusLabel} on ${d.label}`,
+    tooltip: "Remove",
+    onClick: () => remove(it.key)
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "x",
+    size: 15
+  })))))))))));
+}
+Object.assign(__ds_scope, { PostSlotsDrawer });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/PostSlotsDrawer.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/SlotActionDialog.jsx
+try { (() => {
+const {
+  whenText,
+  fmtSlotWhen,
+  freeSlotGroups,
+  slotPhase
+} = __ds_scope.FinalReviewsModel;
+const own = n => /s$/i.test(n) ? `${n}’` : `${n}’s`;
+
+/**
+ * The instructor's choose-and-confirm dialog — one Select and the consequence, said before the
+ * button: `place_team` (a team onto a free slot; teams without a slot first, booked teams move),
+ * `place_on_slot` (a team without a slot onto a free slot), `move_team` (a booked team to a free slot),
+ * `review_ta` (appoint, replace or remove; never the Home TA). Started slots are offered, because
+ * placing a team there records a review held outside the app. Moving drops the Review TA and says so;
+ * a passed review time adds the "scores stay" warning. Native Select (optgroups) — Combobox lands after C2.
+ */
+function SlotActionDialog({
+  open = false,
+  kind = 'place_team',
+  slot = null,
+  team = null,
+  slots = [],
+  unbooked = [],
+  teamsById = {},
+  tas = [],
+  reviewCounts = {},
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  defaultValue,
+  onConfirm,
+  onCancel,
+  portal = true
+}) {
+  const nowD = now || new Date();
+  const when = iso => whenText(iso, {
+    zone,
+    schoolZone
+  });
+  const initial = defaultValue !== undefined ? defaultValue : kind === 'review_ta' ? team && team.review_ta ? team.review_ta.user_id : '' : '';
+  const [value, setValue] = React.useState(initial);
+  const [fieldError, setFieldError] = React.useState(null);
+  const [failed, setFailed] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  React.useEffect(() => {
+    if (open) {
+      setValue(initial);
+      setFieldError(null);
+      setFailed(null);
+      setBusy(false);
+    }
+  }, [open, kind, slot && slot.id, team && team.project_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const booked = slots.filter(s => s.team);
+  const teamAt = id => {
+    const s = booked.find(b => b.team.project_id === id);
+    const u = unbooked.find(t => t.project_id === id);
+    return {
+      ...(teamsById[id] || {}),
+      ...(u || {}),
+      project_id: id,
+      name: s && s.team.name || u && u.name || teamsById[id] && teamsById[id].name,
+      slot_id: s ? s.id : null,
+      starts_at: s ? s.starts_at : null
+    };
+  };
+  const slotById = id => slots.find(s => s.id === id);
+  const passedLine = (t, verb) => `${own(t.name)} review time has passed, so the review may already have been held and scored. ${verb} clears that time${t.review_ta ? ' and its Review TA' : ''}; the scores already entered stay.`;
+  const startedLine = 'This slot has started. Placing a team here records a review held outside the app.';
+  let title,
+    subtitle,
+    label,
+    options,
+    placeholder,
+    confirmLabel,
+    busyLabel,
+    lines = [],
+    destructive = false,
+    helper;
+  if (kind === 'place_team') {
+    title = 'Place a team';
+    subtitle = slot ? when(slot.starts_at) : null;
+    label = 'Team';
+    placeholder = 'Choose a team';
+    options = [{
+      label: 'Without a slot',
+      options: unbooked.map(t => ({
+        value: t.project_id,
+        label: t.product_owner ? t.name : `${t.name} (no Product Owner)`
+      }))
+    }, {
+      label: 'Booked — moves the team',
+      options: booked.map(s => {
+        const w = fmtSlotWhen(s.starts_at, {
+          zone,
+          schoolZone
+        });
+        return {
+          value: s.team.project_id,
+          label: `${s.team.name} · ${w.day}, ${w.start}`
+        };
+      })
+    }].filter(g => g.options.length);
+    const t = value ? teamAt(value) : null;
+    const moves = !!(t && t.slot_id);
+    confirmLabel = moves ? 'Move team' : 'Place team';
+    busyLabel = moves ? 'Moving…' : 'Placing…';
+    if (t && slot) {
+      if (moves) {
+        lines.push(`Move ${t.name} to ${when(slot.starts_at)}? Its slot on ${when(t.starts_at)} becomes free.`);
+        if (t.review_ta) lines.push(`${t.review_ta.name} will no longer be its Review TA.`);
+        if (slotPhase(t.starts_at, nowD) !== 'upcoming') lines.push(passedLine(t, 'Moving'));
+        destructive = !!t.review_ta || slotPhase(t.starts_at, nowD) !== 'upcoming';
+      } else {
+        lines.push(`${t.name} gets ${when(slot.starts_at)}.`);
+        if (t.review_ta) lines.push(`${t.review_ta.name} stays its Review TA.`);
+      }
+    }
+    if (slot && slotPhase(slot.starts_at, nowD) !== 'upcoming') lines.push(startedLine);
+  } else if (kind === 'place_on_slot' || kind === 'move_team') {
+    const move = kind === 'move_team';
+    title = move ? `Move ${team ? team.name : 'team'}` : `Place ${team ? team.name : 'team'} on a slot`;
+    subtitle = move && team && team.starts_at ? `Now ${when(team.starts_at)}` : 'Free slots, in your time zone';
+    label = move ? 'New slot' : 'Slot';
+    placeholder = 'Choose a slot';
+    options = freeSlotGroups(slots, {
+      zone,
+      schoolZone,
+      now: nowD,
+      includeStarted: true,
+      exceptId: team && team.slot_id
+    });
+    confirmLabel = move ? 'Move team' : 'Place team';
+    busyLabel = move ? 'Moving…' : 'Placing…';
+    const target = value ? slotById(value) : null;
+    if (team && target) {
+      if (move) {
+        lines.push(`Move ${team.name} to ${when(target.starts_at)}? Its current slot, ${when(team.starts_at)}, becomes free.`);
+        if (team.review_ta) lines.push(`${team.review_ta.name} will no longer be its Review TA. You can appoint them again afterwards.`);
+        if (team.starts_at && slotPhase(team.starts_at, nowD) !== 'upcoming') lines.push(passedLine(team, 'Moving'));
+        destructive = !!team.review_ta || team.starts_at && slotPhase(team.starts_at, nowD) !== 'upcoming';
+      } else {
+        lines.push(`${team.name} gets ${when(target.starts_at)}.`);
+        if (team.review_ta) lines.push(`${team.review_ta.name} stays its Review TA.`);
+      }
+      if (slotPhase(target.starts_at, nowD) !== 'upcoming') lines.push(startedLine);
+    }
+    if (!options.length) helper = 'There are no free slots. Post more, or release a team first.';
+  } else {
+    const home = team && team.home_ta;
+    const current = team && team.review_ta;
+    title = `Review TA for ${team ? team.name : 'team'}`;
+    subtitle = team && team.starts_at ? when(team.starts_at) : 'No slot yet';
+    label = 'Review TA';
+    const listed = tas.filter(t => !home || t.id !== home.user_id).map(t => ({
+      value: t.id,
+      label: `${t.name}${reviewCounts[t.id] ? ` · reviews ${reviewCounts[t.id]}` : ''}`
+    }));
+    if (current && !listed.some(o => o.value === current.user_id)) listed.push({
+      value: current.user_id,
+      label: `${current.name} (no longer listed)`
+    });
+    options = [{
+      value: '',
+      label: 'No Review TA'
+    }, ...listed];
+    helper = home ? `${own(team.name)} Home TA, ${home.name}, isn’t listed.` : undefined;
+    confirmLabel = 'Save';
+    busyLabel = 'Saving…';
+    const chosen = listed.find(o => o.value === value);
+    const chosenName = chosen ? (tas.find(t => t.id === value) || current || {}).name : null;
+    if (team && (value || '') !== (current ? current.user_id : '')) {
+      if (!value && current) lines.push(`${current.name} will no longer be ${own(team.name)} Review TA.`);else if (current) lines.push(`${chosenName} replaces ${current.name} as ${own(team.name)} Review TA.`);else lines.push(`${chosenName} becomes ${own(team.name)} Review TA.`);
+    }
+    if (team && !team.starts_at) lines.push(`${team.name} has no slot yet. Its first booking keeps this Review TA.`);
+  }
+  const submit = async () => {
+    if (kind !== 'review_ta' && !value) {
+      setFieldError(kind === 'place_team' ? 'Choose a team.' : 'Choose a slot.');
+      return;
+    }
+    if (kind === 'review_ta' && (value || '') === (team && team.review_ta ? team.review_ta.user_id : '')) {
+      if (onCancel) onCancel();
+      return;
+    }
+    setBusy(true);
+    setFailed(null);
+    try {
+      if (onConfirm) await onConfirm(kind === 'review_ta' ? {
+        userId: value || null
+      } : kind === 'place_team' ? {
+        projectId: value,
+        slotId: slot && slot.id
+      } : {
+        slotId: value,
+        projectId: team && team.project_id
+      });
+    } catch (e) {
+      setFailed(e && e.message || 'That didn’t work. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement(__ds_scope.Modal, {
+    open: open,
+    onClose: onCancel,
+    portal: portal,
+    size: "md",
+    title: title,
+    subtitle: subtitle,
+    closeDisabled: busy,
+    className: "gt-fr-dialog",
+    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "outline",
+      onClick: onCancel,
+      disabled: busy
+    }, "Cancel"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: destructive ? 'danger' : 'primary',
+      onClick: submit,
+      loading: busy,
+      loadingLabel: busyLabel
+    }, confirmLabel))
+  }, /*#__PURE__*/React.createElement("form", {
+    className: "gt-fr-dialog__body",
+    noValidate: true,
+    onSubmit: e => {
+      e.preventDefault();
+      submit();
+    }
+  }, /*#__PURE__*/React.createElement(__ds_scope.Select, {
+    label: label,
+    value: value,
+    onChange: e => {
+      setValue(e.target.value);
+      setFieldError(null);
+    },
+    options: options,
+    placeholder: placeholder,
+    error: fieldError,
+    helperText: helper,
+    disabled: busy,
+    "data-autofocus": true
+  }), lines.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-dialog__consequence",
+    "aria-live": "polite"
+  }, lines.map(l => /*#__PURE__*/React.createElement("p", {
+    key: l
+  }, l))), failed && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error"
+  }, failed)));
+}
+Object.assign(__ds_scope, { SlotActionDialog });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/SlotActionDialog.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/SlotTime.jsx
+try { (() => {
+const {
+  fmtSlotWhen
+} = __ds_scope.FinalReviewsModel;
+
+/**
+ * A slot's time in the viewer's zone with the campus time visible beside it when the two differ
+ * (brief §3.4): "10:30 – 11:30 PM" over "9:00 AM PT on campus" ("Mon 3:00 PM PT on campus" when the
+ * campus day differs). Every time is a <time datetime="ISO instant">; the duration reads "1 h" (PT1H).
+ * Board rows, Your team's review, the dialogs and the scoring workspace header all use it.
+ */
+function SlotTime({
+  startsAt,
+  minutes = 60,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  withDay = false,
+  dayFormat = 'long',
+  withDuration = false,
+  layout = 'stack',
+  className = ''
+}) {
+  const w = fmtSlotWhen(startsAt, {
+    zone,
+    schoolZone,
+    minutes
+  });
+  const campus = w.campus && withDay && w.campusDay ? `${w.campusDay} · ${w.campus.replace(/^[A-Z][a-z]{2} /, '')}` : w.campus;
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-fr-time', layout === 'inline' ? 'gt-fr-time--inline' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-time__main"
+  }, withDay && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("time", {
+    dateTime: w.key,
+    className: "gt-fr-time__day"
+  }, dayFormat === 'short' ? w.day : w.dayLong), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-time__sep",
+    "aria-hidden": "true"
+  }, "\xB7")), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-time__range"
+  }, /*#__PURE__*/React.createElement("time", {
+    dateTime: w.iso
+  }, w.startShort), " \u2013 ", /*#__PURE__*/React.createElement("time", {
+    dateTime: w.isoEnd
+  }, w.end)), withDuration && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-time__sep",
+    "aria-hidden": "true"
+  }, "\xB7"), /*#__PURE__*/React.createElement("time", {
+    className: "gt-fr-time__dur",
+    dateTime: w.isoDuration
+  }, w.duration))), campus && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-time__campus"
+  }, /*#__PURE__*/React.createElement("time", {
+    dateTime: w.iso
+  }, campus), " on campus"));
+}
+Object.assign(__ds_scope, { SlotTime });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/SlotTime.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/ReviewWorkspaceHeader.jsx
+try { (() => {
+const {
+  slotPhase,
+  isReviewJoinable,
+  reviewCountdown
+} = __ds_scope.FinalReviewsModel;
+/* Built on render (no module-level JSX: bundle order never matters). */
+const roleBadge = role => ({
+  instructor: /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    category: "instructor"
+  }),
+  home: /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    category: "ta"
+  }, "You\u2019re the Home TA"),
+  review: /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    category: "ta"
+  }, "You\u2019re the Review TA"),
+  ta: /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    category: "ta"
+  }, "Read-only")
+})[role] || null;
+
+/**
+ * The header of the scoring workspace (/app/final-reviews/:projectId, staff): back to the board, the
+ * team, the viewer's role, the review's day and time with the campus time when the zones differ (or
+ * "No slot yet"), the Home TA and the Review TA (both score), and the shared Zoom room — a primary Join Zoom
+ * inside the Join window for the Review TA and the instructor only: the Home TA doesn't sit in the review.
+ * The body of the page (scores, notes) is not part of this design.
+ */
+function ReviewWorkspaceHeader({
+  team,
+  viewerRole = 'ta',
+  startsAt = null,
+  homeTa = null,
+  reviewTa = null,
+  zoomUrl = null,
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  backHref = '/app/final-reviews',
+  onBack,
+  onJoin,
+  className = ''
+}) {
+  const nowD = now || new Date();
+  const phase = startsAt ? slotPhase(startsAt, nowD) : null;
+  // the Review TA (and the instructor) sit in the review; the Home TA scores the team here but doesn't attend
+  const joinable = (viewerRole === 'review' || viewerRole === 'instructor') && !!startsAt && isReviewJoinable(startsAt, nowD, zoomUrl);
+  const cd = startsAt && phase === 'upcoming' ? reviewCountdown(startsAt, nowD, zone) : null;
+  const person = (p, none) => p ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-ws__person"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    size: "xs",
+    name: p.name,
+    decorative: true
+  }), p.name) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-ws__none"
+  }, none);
+  return /*#__PURE__*/React.createElement("header", {
+    className: ['gt-fr-ws', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "ghost",
+    size: "sm",
+    href: backHref,
+    onClick: onBack,
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "arrow-left",
+      size: 15
+    }),
+    className: "gt-fr-ws__back"
+  }, "All reviews"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__top"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__heading"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "gt-fr-ws__title"
+  }, team ? team.name : 'Team review'), roleBadge(viewerRole), phase === 'live' && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "live"
+  }), cd && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-ws__countdown"
+  }, cd)), joinable && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    href: zoomUrl,
+    target: "_blank",
+    rel: "noreferrer",
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "video",
+      size: 16
+    }),
+    onClick: onJoin,
+    className: "gt-fr-ws__join"
+  }, "Join Zoom")), /*#__PURE__*/React.createElement("dl", {
+    className: "gt-fr-ws__facts"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__fact gt-fr-ws__fact--when"
+  }, /*#__PURE__*/React.createElement("dt", null, "Review"), /*#__PURE__*/React.createElement("dd", null, startsAt ? /*#__PURE__*/React.createElement(__ds_scope.SlotTime, {
+    startsAt: startsAt,
+    zone: zone,
+    schoolZone: schoolZone,
+    withDay: true,
+    withDuration: true
+  }) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-ws__none"
+  }, "No slot yet"))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__fact"
+  }, /*#__PURE__*/React.createElement("dt", null, "Home TA"), /*#__PURE__*/React.createElement("dd", null, person(homeTa, 'None yet'))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__fact"
+  }, /*#__PURE__*/React.createElement("dt", null, "Review TA"), /*#__PURE__*/React.createElement("dd", null, person(reviewTa, 'No Review TA yet'))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-ws__fact"
+  }, /*#__PURE__*/React.createElement("dt", null, "Zoom"), /*#__PURE__*/React.createElement("dd", null, zoomUrl ? /*#__PURE__*/React.createElement("a", {
+    className: "gt-fr-ws__link",
+    href: zoomUrl,
+    target: "_blank",
+    rel: "noreferrer",
+    onClick: onJoin
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "video",
+    size: 14
+  }), "Shared Zoom room") : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-ws__none"
+  }, "Not set yet")))));
+}
+Object.assign(__ds_scope, { ReviewWorkspaceHeader });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/ReviewWorkspaceHeader.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/SlotRow.jsx
+try { (() => {
+const {
+  slotView,
+  fmtSlotWhen,
+  FR_REASONS
+} = __ds_scope.FinalReviewsModel;
+const BUSY = {
+  book: 'Booking…',
+  move_here: 'Moving…',
+  release_own: 'Releasing…',
+  sign_up: 'Signing up…',
+  step_down: 'Stepping down…',
+  place_team: 'Placing…'
+};
+const MENU_ICON = {
+  review_ta: 'user-plus',
+  move_team: 'arrow-right-left',
+  release_team: 'calendar-x'
+};
+
+/** "Maya Chen" / "You" with its role label — names only on the board (avatars live in the cards). */
+function Person({
+  person,
+  role,
+  you
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, role), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, you ? 'You' : person.name));
+}
+
+/**
+ * One slot on the board: time (viewer's zone + campus time) · team or Free · reviewers (staff see the Home TA
+ * and the Review TA; a student's own row shows only the Review TA, the one the team presents to) · the viewer's actions. The lens decides everything through
+ * FinalReviewsModel.slotView; where an action isn't offered the reason is visible text.
+ * The instructor's structural actions sit in a Menu per row (Popover + Menu, arrow keys, Esc).
+ */
+function SlotRow({
+  slot,
+  context = {},
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  onAction,
+  busy = null,
+  reviewHref,
+  as: Tag = 'li',
+  className = ''
+}) {
+  const v = slotView(slot, context);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const w = fmtSlotWhen(slot.starts_at, {
+    zone,
+    schoolZone,
+    minutes: v.minutes
+  });
+  const name = v.team ? v.team.name : null;
+  const at = `${w.day} · ${w.start}`;
+  const act = (a, e) => {
+    if (onAction) onAction(a.id, slot, v, e);
+  };
+  const people = v.showPeople && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-slot__people-list"
+  }, v.staff && (v.homeTa ? /*#__PURE__*/React.createElement(Person, {
+    person: v.homeTa,
+    role: "Home TA",
+    you: v.viewerIsHome
+  }) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person gt-fr-person--none"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, "Home TA"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, "None yet"))), v.reviewTa ? /*#__PURE__*/React.createElement(Person, {
+    person: v.reviewTa,
+    role: "Review TA",
+    you: v.viewerIsReview
+  }) : v.staff ? /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "review.no_review_ta"
+  }) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person gt-fr-person--none"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__role"
+  }, "Review TA"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-person__who"
+  }, "None yet")));
+  const label = a => ({
+    book: `Book ${at}`,
+    move_here: `Move here: ${at}`,
+    release_own: `Release your team’s slot, ${at}`,
+    sign_up: `Sign up to review ${name}`,
+    step_down: `Step down as ${name}’s Review TA`,
+    open_review: `Open review for ${name}`,
+    join: `Join Zoom for ${name}`,
+    place_team: `Place a team on ${at}`
+  })[a.id];
+  const cls = ['gt-fr-slot', `gt-fr-slot--${v.phase}`, v.team ? 'gt-fr-slot--held' : 'gt-fr-slot--free', v.mine ? 'gt-fr-slot--mine' : '', v.staff ? 'gt-fr-slot--staff' : '', slot.history ? 'gt-fr-slot--history' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement(Tag, {
+    className: cls,
+    id: `gt-fr-slot-${slot.id}`,
+    "aria-current": v.phase === 'live' && v.team ? 'true' : undefined
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-slot__time"
+  }, /*#__PURE__*/React.createElement(__ds_scope.SlotTime, {
+    startsAt: slot.starts_at,
+    minutes: v.minutes,
+    zone: zone,
+    schoolZone: schoolZone
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-slot__team"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-slot__head"
+  }, name && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-slot__name"
+  }, name), v.badges.map(k => /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    key: k,
+    status: k
+  }))), !v.staff && people), v.staff && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-slot__people"
+  }, people), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-slot__actions"
+  }, v.note && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-slot__note"
+  }, FR_REASONS[v.note]), v.actions.map(a => {
+    if (a.id === 'delete') {
+      return /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+        key: "delete",
+        size: "sm",
+        variant: "danger",
+        ariaLabel: `Delete the ${at} slot`,
+        tooltip: "Delete slot",
+        onClick: e => act(a, e)
+      }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: "trash-2",
+        size: 16
+      }));
+    }
+    const isBusy = !!(busy && busy.slotId === slot.id && busy.action === a.id);
+    const href = a.id === 'join' ? a.href : a.id === 'open_review' && reviewHref ? reviewHref(v.team) : undefined;
+    return /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: a.id,
+      size: "sm",
+      variant: a.variant,
+      href: href,
+      target: a.id === 'join' ? '_blank' : undefined,
+      rel: a.id === 'join' ? 'noreferrer' : undefined,
+      loading: isBusy,
+      loadingLabel: BUSY[a.id],
+      "aria-label": label(a),
+      iconLeft: a.id === 'join' ? /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: "video",
+        size: 15
+      }) : undefined,
+      iconRight: a.id === 'open_review' ? /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: "chevron-right",
+        size: 15
+      }) : undefined,
+      onClick: e => act(a, e)
+    }, a.label);
+  }), v.menu.length > 0 && /*#__PURE__*/React.createElement(__ds_scope.Popover, {
+    open: menuOpen,
+    onClose: () => setMenuOpen(false),
+    placement: "bottom",
+    align: "end",
+    padded: false,
+    anchor: /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+      size: "sm",
+      ariaLabel: `More actions for ${name}`,
+      "aria-haspopup": "menu",
+      "aria-expanded": menuOpen,
+      tooltip: "More actions",
+      onClick: () => setMenuOpen(o => !o)
+    }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "ellipsis",
+      size: 16
+    }))
+  }, /*#__PURE__*/React.createElement(__ds_scope.Menu, {
+    ariaLabel: `Actions for ${name}`,
+    autoFocus: true,
+    onClose: () => setMenuOpen(false)
+  }, v.menu.map(m => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: m.id
+  }, m.destructive && /*#__PURE__*/React.createElement(__ds_scope.MenuSeparator, null), /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    destructive: !!m.destructive,
+    icon: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: MENU_ICON[m.id],
+      size: 16
+    }),
+    onSelect: () => {
+      setMenuOpen(false);
+      act(m);
+    }
+  }, m.label)))))));
+}
+Object.assign(__ds_scope, { SlotRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/SlotRow.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/TeamReview.jsx
+try { (() => {
+const {
+  teamReviewState,
+  teamReviewCopy,
+  poCanChange,
+  reviewCountdown,
+  slotPhase
+} = __ds_scope.FinalReviewsModel;
+const BOOKED = ['booked', 'booked_closed', 'joinable', 'live', 'past'];
+function Fact({
+  label,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-team__fact"
+  }, /*#__PURE__*/React.createElement("dt", null, label), /*#__PURE__*/React.createElement("dd", null, children));
+}
+function PersonFact({
+  person,
+  label,
+  role,
+  none
+}) {
+  return /*#__PURE__*/React.createElement(Fact, {
+    label: label
+  }, person ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__person"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    size: "xs",
+    name: person.name,
+    decorative: true
+  }), person.name, role && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__role"
+  }, "\xB7 ", role)) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__none"
+  }, none));
+}
+
+/**
+ * "Your team's review" — the student's own booking, at the top of the board (`variant="page"`) and as
+ * the body of the project page's "Final review" card (`variant="card"`). One component for every
+ * state (FinalReviewsModel.teamReviewState): the call to book (Product Owner), who books (member), no
+ * Product Owner, sign-ups closed, every slot taken, booked (time with campus time, countdown, the Review TA
+ * the team presents to — the Home TA scores the team but isn't in the review, so it isn't named here —
+ * the shared Zoom room, Change slot / Release or the reason they're unavailable), the Join
+ * window, live, past, and on no team. The student never sees another team's reviewers here.
+ */
+function TeamReview({
+  variant = 'page',
+  myTeam = null,
+  slots = [],
+  signupsOpen = false,
+  complete = false,
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  status = 'ready',
+  onChooseSlot,
+  onChangeSlot,
+  onRelease,
+  onJoin,
+  onRetry,
+  boardHref,
+  busy = null,
+  headingLevel,
+  className = ''
+}) {
+  const nowD = now || new Date();
+  const id = React.useId();
+  const card = variant === 'card';
+  const H = headingLevel || (card ? 'h3' : 'h2');
+  const base = ['gt-fr-team', `gt-fr-team--${variant}`];
+  if (status === 'loading') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: [...base, 'gt-fr-team--loading', className].filter(Boolean).join(' '),
+      role: "status",
+      "aria-busy": "true"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-fr-team__tile"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: card ? 32 : 40,
+      height: card ? 32 : 40,
+      radius: 10
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-team__body"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "55%",
+      height: 15
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "80%",
+      height: 12
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "40%",
+      height: 12
+    })), /*#__PURE__*/React.createElement("span", {
+      className: "gt-fr-team__sr"
+    }, "Loading your team\u2019s review"));
+  }
+  if (status === 'error') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: [...base, className].filter(Boolean).join(' ')
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "error",
+      title: "Couldn\u2019t load your team\u2019s review.",
+      onRetry: onRetry
+    }));
+  }
+  const state = teamReviewState({
+    myTeam,
+    slots,
+    signupsOpen,
+    complete,
+    now: nowD
+  });
+  const freeCount = slots.filter(s => !s.team && slotPhase(s.starts_at, nowD) === 'upcoming').length;
+  const copy = teamReviewCopy(state, {
+    myTeam,
+    freeCount,
+    variant,
+    zone,
+    schoolZone
+  });
+  const booked = BOOKED.includes(state);
+  const po = !!(myTeam && myTeam.is_product_owner);
+  const change = poCanChange({
+    myTeam,
+    signupsOpen,
+    complete,
+    now: nowD
+  });
+  const cd = booked && state !== 'past' && state !== 'live' ? reviewCountdown(myTeam.starts_at, nowD, zone) : null;
+  const joinable = state === 'joinable' || state === 'live' && !!myTeam.zoom_url;
+  const actions = [];
+  if (joinable) {
+    actions.push(/*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "join",
+      href: myTeam.zoom_url,
+      target: "_blank",
+      rel: "noreferrer",
+      size: card ? 'sm' : 'md',
+      iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: "video",
+        size: 16
+      }),
+      onClick: onJoin,
+      fullWidth: card
+    }, "Join Zoom"));
+  } else if (state === 'book') {
+    actions.push(card && boardHref ? /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "choose",
+      href: boardHref,
+      size: "sm",
+      fullWidth: true,
+      iconRight: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: "chevron-right",
+        size: 15
+      })
+    }, "Choose a slot") : /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "choose",
+      size: card ? 'sm' : 'md',
+      onClick: onChooseSlot,
+      fullWidth: card
+    }, "Choose a slot"));
+  } else if (state === 'booked' && po && change.ok) {
+    actions.push(card && boardHref ? /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "change",
+      href: boardHref,
+      size: "sm",
+      variant: "secondary"
+    }, "Change slot") : /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "change",
+      size: card ? 'sm' : 'md',
+      variant: "secondary",
+      onClick: onChangeSlot
+    }, "Change slot"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      key: "release",
+      size: card ? 'sm' : 'md',
+      variant: "danger-ghost",
+      onClick: onRelease,
+      loading: busy === 'release',
+      loadingLabel: "Releasing\u2026"
+    }, "Release"));
+  }
+  const lockNote = booked && po && !change.ok && state !== 'past' ? change.reason === 'time_passed' ? copy.passed : copy.locked : null;
+  return /*#__PURE__*/React.createElement("section", {
+    className: [...base, `gt-fr-team--${state}`, booked ? 'gt-fr-team--booked-like' : '', className].filter(Boolean).join(' '),
+    "aria-labelledby": `${id}-t`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__tile",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: booked ? 'clipboard-check' : state === 'no_team' ? 'users' : 'calendar-clock',
+    size: card ? 16 : 20
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-team__body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: ['gt-fr-team__head', card && booked ? 'gt-fr-team__head--sr' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(H, {
+    className: "gt-fr-team__title",
+    id: `${id}-t`
+  }, copy.title), !card && state === 'live' && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "live"
+  }), !card && cd && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__countdown"
+  }, cd)), booked ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-team__when"
+  }, /*#__PURE__*/React.createElement(__ds_scope.SlotTime, {
+    startsAt: myTeam.starts_at,
+    zone: zone,
+    schoolZone: schoolZone,
+    withDay: true,
+    dayFormat: card ? 'short' : 'long',
+    withDuration: !card
+  }), card && state === 'live' && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "live"
+  }), card && cd && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__countdown"
+  }, cd)), state === 'past' ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-team__text"
+  }, copy.body) : /*#__PURE__*/React.createElement("dl", {
+    className: "gt-fr-team__facts"
+  }, /*#__PURE__*/React.createElement(PersonFact, {
+    label: "Your team presents to",
+    person: myTeam.review_ta,
+    role: "Review TA",
+    none: copy.noReviewTa
+  }), /*#__PURE__*/React.createElement(Fact, {
+    label: "Zoom"
+  }, myTeam.zoom_url ? /*#__PURE__*/React.createElement("a", {
+    className: "gt-fr-team__link",
+    href: myTeam.zoom_url,
+    target: "_blank",
+    rel: "noreferrer",
+    onClick: onJoin
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "video",
+    size: 14
+  }), "Shared Zoom room") : /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-team__none"
+  }, copy.noZoom))), lockNote && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-team__note"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "lock",
+    size: 14
+  }), lockNote)) : /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-team__text"
+  }, copy.body)), actions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-team__actions"
+  }, actions));
+}
+Object.assign(__ds_scope, { TeamReview });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/TeamReview.jsx", error: String((e && e.message) || e) }); }
 
 // components/schedule/ScheduleDayHeader.jsx
 try { (() => {
@@ -17052,6 +13460,313 @@ function ScheduleDayHeader({
 }
 Object.assign(__ds_scope, { ScheduleDayHeader });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleDayHeader.jsx", error: String((e && e.message) || e) }); }
+
+// components/finalreviews/SlotBoard.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const {
+  groupSlots,
+  slotView,
+  matchesFilter,
+  boardFilters,
+  indexTeams,
+  historyRows,
+  isStaffLens,
+  fmtSlotWhen,
+  zoneNote
+} = __ds_scope.FinalReviewsModel;
+const EMPTY_FILTER = {
+  free: 'No free slots right now.',
+  mine: 'You’re not the Review TA of any booked team.',
+  no_review_ta: 'Every booked team has a Review TA.'
+};
+function DayMenu({
+  group,
+  label,
+  onDayAction
+}) {
+  const [open, setOpen] = React.useState(false);
+  return /*#__PURE__*/React.createElement(__ds_scope.Popover, {
+    open: open,
+    onClose: () => setOpen(false),
+    placement: "bottom",
+    align: "end",
+    padded: false,
+    anchor: /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+      size: "sm",
+      ariaLabel: `Actions for ${label}`,
+      "aria-haspopup": "menu",
+      "aria-expanded": open,
+      tooltip: "Day actions",
+      onClick: () => setOpen(o => !o)
+    }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "ellipsis",
+      size: 16
+    }))
+  }, /*#__PURE__*/React.createElement(__ds_scope.Menu, {
+    ariaLabel: `Actions for ${label}`,
+    autoFocus: true,
+    onClose: () => setOpen(false)
+  }, /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    destructive: true,
+    icon: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "trash-2",
+      size: 16
+    }),
+    onSelect: () => {
+      setOpen(false);
+      onDayAction('delete_day', group);
+    }
+  }, "Delete ", group.free, " free ", group.free === 1 ? 'slot' : 'slots')));
+}
+function BoardSkeleton() {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__surface",
+    role: "status",
+    "aria-busy": "true"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-board__sr"
+  }, "Loading slots"), [0, 1].map(d => /*#__PURE__*/React.createElement("div", {
+    key: d,
+    className: "gt-fr-board__day"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__skeleton-head"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: 150,
+    height: 14
+  })), [0, 1, 2, 3].map(r => /*#__PURE__*/React.createElement("div", {
+    key: r,
+    className: "gt-fr-board__skeleton-row"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: 96,
+    height: 13
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: "60%",
+    height: 13
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: 84,
+    height: 28,
+    radius: 7
+  }))))));
+}
+
+/**
+ * The Final Reviews board — every slot in the class by day (the viewer's zone), one component for
+ * every lens. Day jump links + a single-choice filter on top, sticky day headers, fully past days
+ * folded behind "Past days (n)" while later days remain. States: loading (skeleton), refetching
+ * (holds its frame, `aria-busy`), error (quiet text + Try again), no slots (instructor → Post slots),
+ * a pre-slots class (staff: recorded times as read-only history).
+ */
+function SlotBoard({
+  data,
+  schedule = null,
+  lens = 'no_team',
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  viewerId = null,
+  complete = false,
+  status = 'ready',
+  filter,
+  defaultFilter = 'all',
+  onFilterChange,
+  alert,
+  alertActions,
+  onDismissAlert,
+  busy = null,
+  onAction,
+  onDayAction,
+  onRetry,
+  onPostSlots,
+  reviewHref,
+  defaultPastOpen = false,
+  className = ''
+}) {
+  const nowD = now || new Date();
+  const [ownFilter, setOwnFilter] = React.useState(defaultFilter);
+  const [pastOpen, setPastOpen] = React.useState(defaultPastOpen);
+  const pastId = React.useId();
+  const active = filter !== undefined ? filter : ownFilter;
+  const setFilter = f => {
+    if (filter === undefined) setOwnFilter(f);
+    if (onFilterChange) onFilterChange(f);
+  };
+  if (status === 'loading' || !data) return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-fr-board', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(BoardSkeleton, null));
+  if (status === 'error') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-fr-board', className].filter(Boolean).join(' ')
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-board__surface gt-fr-board__surface--state"
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "error",
+      title: "Couldn\u2019t load the final-review slots.",
+      onRetry: onRetry
+    })));
+  }
+  const staff = isStaffLens(lens);
+  const student = !staff;
+  const myTeam = student && lens !== 'preview' ? data.my_team || null : null;
+  const teamsById = staff ? indexTeams(data, schedule) : {};
+  const ctx = {
+    lens,
+    now: nowD,
+    signupsOpen: !!data.signups_open,
+    complete,
+    myTeam,
+    viewerId,
+    teamsById,
+    zoomUrl: staff ? data.review_zoom_url : null
+  };
+  const history = staff ? historyRows(data, schedule) : [];
+  const slots = data.slots && data.slots.length ? data.slots : history;
+  const note = zoneNote(zone, schoolZone, slots[0] ? slots[0].starts_at : nowD);
+  const rowProps = {
+    context: ctx,
+    zone,
+    schoolZone,
+    onAction,
+    busy,
+    reviewHref
+  };
+  if (!slots.length) {
+    const inst = lens === 'instructor';
+    const title = complete ? 'No slots in this class' : 'No slots posted yet';
+    const desc = complete ? 'This class didn’t use final-review slots.' : inst ? `Post the times teams can book — a few days of hourly starts at once. ${data.signups_open ? 'Sign-ups are open, so teams can book as soon as you post.' : 'Teams book once you open sign-ups.'}` : lens === 'ta' ? 'The instructor hasn’t posted the review times yet.' : 'Your instructor posts the times teams can book. They’ll show here.';
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-fr-board', className].filter(Boolean).join(' ')
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-board__surface gt-fr-board__surface--state"
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "card",
+      icon: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+        name: inst ? 'calendar-plus' : 'clipboard-check',
+        size: 20
+      }),
+      title: title,
+      description: desc,
+      titleAs: "h2",
+      action: inst && !complete && onPostSlots ? /*#__PURE__*/React.createElement(__ds_scope.Button, {
+        onClick: onPostSlots,
+        iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+          name: "calendar-plus",
+          size: 16
+        })
+      }, "Post slots") : undefined
+    })));
+  }
+  const groups = groupSlots(slots, {
+    zone,
+    now: nowD
+  }).map(g => {
+    const views = g.slots.map(s => ({
+      s,
+      v: slotView(s, ctx)
+    }));
+    return {
+      ...g,
+      label: fmtSlotWhen(g.slots[0].starts_at, {
+        zone,
+        schoolZone
+      }).day,
+      shown: views.filter(({
+        v
+      }) => matchesFilter(v, active))
+    };
+  });
+  const visible = groups.filter(g => g.shown.length);
+  const hasCurrent = visible.some(g => !g.isPast);
+  const past = hasCurrent ? visible.filter(g => g.isPast) : [];
+  const current = hasCurrent ? visible.filter(g => !g.isPast) : visible;
+  const filters = history.length ? null : boardFilters(lens, slots, ctx);
+  const day = g => /*#__PURE__*/React.createElement("section", {
+    key: g.key,
+    className: ['gt-fr-board__day', g.isPast ? 'gt-fr-board__day--past' : ''].filter(Boolean).join(' '),
+    id: `gt-fr-day-${g.key}`,
+    "aria-labelledby": `gt-fr-day-${g.key}-h`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__day-head"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleDayHeader, {
+    dayKey: g.key,
+    now: nowD,
+    zone: zone,
+    id: `gt-fr-day-${g.key}-h`,
+    aside: history.length ? null : `${g.free ? `${g.free} free · ` : ''}${g.booked} booked`
+  }), lens === 'instructor' && !complete && g.free > 0 && onDayAction && /*#__PURE__*/React.createElement(DayMenu, {
+    group: g,
+    label: g.label,
+    onDayAction: onDayAction
+  })), /*#__PURE__*/React.createElement("ul", {
+    className: "gt-fr-board__list"
+  }, g.shown.map(({
+    s
+  }) => /*#__PURE__*/React.createElement(__ds_scope.SlotRow, _extends({
+    key: s.id,
+    slot: s
+  }, rowProps)))));
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-fr-board', `gt-fr-board--${lens}`, status === 'refetching' ? 'gt-fr-board--refetching' : '', className].filter(Boolean).join(' '),
+    "aria-busy": status === 'refetching' || undefined
+  }, (filters || groups.length > 1) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__bar"
+  }, groups.length > 1 && /*#__PURE__*/React.createElement("nav", {
+    className: "gt-fr-board__days",
+    "aria-label": "Jump to a day"
+  }, groups.map(g => /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    key: g.key,
+    size: "sm",
+    variant: "outline",
+    href: `#gt-fr-day-${g.key}`,
+    className: "gt-fr-board__day-link"
+  }, g.label, !history.length && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-board__day-count"
+  }, g.isPast ? ' · past' : g.free ? ` · ${g.free} free` : ' · full')))), filters && /*#__PURE__*/React.createElement(__ds_scope.FilterChipGroup, {
+    type: "single",
+    size: "sm",
+    ariaLabel: "Show",
+    value: active,
+    onChange: setFilter,
+    options: filters,
+    className: "gt-fr-board__filter"
+  })), alert && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "warning",
+    onDismiss: onDismissAlert,
+    actions: alertActions,
+    className: "gt-fr-board__alert"
+  }, alert), (note || history.length > 0) && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-board__note"
+  }, note && /*#__PURE__*/React.createElement("span", {
+    className: "gt-fr-board__zone"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+    name: "globe",
+    size: 14
+  }), note), history.length > 0 && /*#__PURE__*/React.createElement("span", null, "This class scheduled its reviews before slots existed. These are the times that were recorded; there are no slots to book.")), /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__surface"
+  }, past.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__past"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-fr-board__past-bar"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "ghost",
+    size: "sm",
+    "aria-expanded": pastOpen,
+    "aria-controls": pastId,
+    onClick: () => setPastOpen(o => !o),
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.FinalReviewsIcon, {
+      name: "chevron-right",
+      size: 15,
+      className: "gt-fr-board__past-chev"
+    })
+  }, "Past days (", past.length, ")")), /*#__PURE__*/React.createElement("div", {
+    id: pastId,
+    hidden: !pastOpen
+  }, pastOpen && past.map(day))), current.map(day), !visible.length && /*#__PURE__*/React.createElement("p", {
+    className: "gt-fr-board__quiet"
+  }, EMPTY_FILTER[active] || 'Nothing to show.')));
+}
+Object.assign(__ds_scope, { SlotBoard });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/finalreviews/SlotBoard.jsx", error: String((e && e.message) || e) }); }
 
 // components/schedule/ScheduleItem.jsx
 try { (() => {
@@ -17686,18 +14401,16 @@ function TeamMeetingsList({
       title: m.note
     }, m.note)), canManage && /*#__PURE__*/React.createElement("div", {
       className: "gt-tm-row__actions"
-    }, /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: "gt-tm__btn",
+    }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "ghost",
+      size: "sm",
       onClick: () => startEdit(m.id),
       disabled: !!editing,
       "aria-label": `Edit ${m.title}`
-    }, "Edit"), /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: "gt-tm__btn gt-tm__btn--danger",
-      onClick: () => {
-        setConfirmId(m.id);
-      },
+    }, "Edit"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "danger-ghost",
+      size: "sm",
+      onClick: () => setConfirmId(m.id),
       disabled: !!editing,
       "aria-label": `Delete ${m.title}`
     }, "Delete")));
@@ -17725,16 +14438,19 @@ function TeamMeetingsList({
       height: 10
     })))));
   } else if (status === 'error') {
-    body = /*#__PURE__*/React.createElement("p", {
-      className: "gt-tm__state gt-tm__state--error"
-    }, "Couldn\u2019t load team meetings.", /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: "gt-tm__link",
-      onClick: onRetry
-    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
-      name: "refresh-cw",
-      size: 13
-    }), "Try again"));
+    body = /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+      tone: "error",
+      title: "Couldn\u2019t load team meetings.",
+      actions: /*#__PURE__*/React.createElement(__ds_scope.Button, {
+        variant: "outline",
+        size: "sm",
+        iconLeft: /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+          name: "refresh-cw",
+          size: 13
+        }),
+        onClick: onRetry
+      }, "Try again")
+    });
   } else if (!meetings.length && editing !== 'new') {
     body = /*#__PURE__*/React.createElement("div", {
       className: "gt-tm__empty"
@@ -17824,52 +14540,17 @@ function ConfirmRow({
   onConfirm,
   onCancel
 }) {
-  const ref = React.useRef(null);
-  const uid = React.useId();
-  React.useEffect(() => {
-    const el = ref.current && ref.current.querySelector('[data-cancel]');
-    if (el) el.focus();
-  }, []);
-  const onKeyDown = e => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!busy) onCancel();
-    }
-  };
+  // the shared InlineConfirm: focus lands on Cancel, Esc cancels inside the dialog, Delete shows "Deleting…"
   return /*#__PURE__*/React.createElement("li", {
-    ref: ref,
-    className: "gt-tm-row gt-tm-row--confirm",
-    role: "group",
-    "aria-labelledby": `${uid}-q`,
-    onKeyDown: onKeyDown
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-tm-row__tile gt-tm-row__tile--alert"
-  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
-    name: "circle-alert",
-    size: 16
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "gt-tm-row__main"
-  }, /*#__PURE__*/React.createElement("p", {
-    id: `${uid}-q`,
-    className: "gt-tm-row__confirm-text"
-  }, "Delete '", meeting.title, "'? It disappears from your team's calendars."), error && /*#__PURE__*/React.createElement("p", {
-    className: "gt-tm-row__error",
-    role: "alert"
-  }, error)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-tm-row__actions"
-  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
-    size: "sm",
-    variant: "danger",
-    loading: busy,
-    onClick: onConfirm
-  }, "Delete"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
-    size: "sm",
-    variant: "secondary",
-    onClick: onCancel,
-    disabled: busy,
-    "data-cancel": "true"
-  }, "Cancel")));
+    className: "gt-tm__confirm"
+  }, /*#__PURE__*/React.createElement(__ds_scope.InlineConfirm, {
+    message: `Delete '${meeting.title}'? It disappears from your team's calendars.`,
+    busy: busy,
+    onConfirm: onConfirm,
+    onCancel: onCancel
+  }), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error"
+  }, error));
 }
 function CardSkeleton() {
   return /*#__PURE__*/React.createElement("div", {
@@ -20506,6 +17187,10 @@ function usePaletteHotkey(onToggle, {
  * Global search dialog. Controlled: `open` + `onClose`. Results come from
  * `items` (ranked client-side) or `onSearch(query, scope)` (async, debounced
  * 250ms; previous results stay visible while a new query loads).
+ * Joins the dialog stack (useDialog, like Modal and Drawer): Esc and the scrim close only the
+ * topmost layer, so over a Modal the first Esc closes the palette and focus returns into the
+ * dialog, and the second Esc closes the dialog. Tab stays inside; portaled to <body>.
+ * Scopes are a single-choice FilterChipGroup (radio group). `inline` renders in place (galleries).
  */
 function CommandPalette({
   open = false,
@@ -20521,13 +17206,12 @@ function CommandPalette({
   placeholder = 'Search people, teams, projects, tasks…',
   scopes,
   initialQuery = '',
+  inline = false,
   className = ''
 }) {
   const baseId = React.useId();
   const inputRef = React.useRef(null);
   const panelRef = React.useRef(null);
-  const restoreRef = React.useRef(null);
-  const [closing, setClosing] = React.useState(false);
   const [query, setQuery] = React.useState(initialQuery);
   const [scope, setScope] = React.useState('all');
   const [page, setPage] = React.useState(1);
@@ -20537,30 +17221,24 @@ function CommandPalette({
     items: []
   });
   const debounced = __ds_scope.useDebounced(query, onSearch ? 250 : 0);
-  const requestClose = React.useCallback(() => {
-    if (closing) return;
-    setClosing(true);
-    setTimeout(() => {
-      setClosing(false);
-      onClose && onClose();
-    }, 150);
-  }, [closing, onClose]);
-  usePaletteHotkey(React.useCallback(() => open ? requestClose() : onOpen && onOpen(), [open, requestClose, onOpen]), {
-    enabled: hotkey
+  const {
+    mounted,
+    closing,
+    onScrimDown
+  } = __ds_scope.useDialog({
+    open,
+    onClose,
+    sheetRef: panelRef,
+    initialFocusRef: inputRef,
+    exitMs: 150,
+    inPlace: inline
   });
-
-  // open: focus input, lock scroll, remember what to restore
-  React.useEffect(() => {
-    if (!open) return undefined;
-    restoreRef.current = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => inputRef.current && inputRef.current.focus());
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current && restoreRef.current.focus && restoreRef.current.focus();
-    };
-  }, [open]);
+  const requestClose = React.useCallback(() => {
+    if (onClose) onClose();
+  }, [onClose]);
+  usePaletteHotkey(React.useCallback(() => open ? requestClose() : onOpen && onOpen(), [open, requestClose, onOpen]), {
+    enabled: hotkey && !inline
+  });
 
   // reset per open
   React.useEffect(() => {
@@ -20628,13 +17306,10 @@ function CommandPalette({
     onSelect && onSelect(item, route);
     requestClose();
   };
+
+  // Esc is the dialog stack's (useDialog): it closes only the topmost layer.
   const onKeyDown = e => {
     const n = optionRows.length;
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      requestClose();
-      return;
-    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (n) setActive(i => (i + 1) % n);
@@ -20680,20 +17355,32 @@ function CommandPalette({
       select(optionRows[active].item);
     }
   };
-  if (!open && !closing) return null;
+  if (!mounted) return null;
   const scopeList = (scopes || __ds_scope.SEARCH_ENTITIES.map(e => e.type)).filter(t => t !== 'action');
+  const scopeOptions = [{
+    value: 'all',
+    label: 'All',
+    count: unscoped.length
+  }, ...scopeList.map(t => {
+    const meta = __ds_scope.SEARCH_ENTITIES.find(e => e.type === t);
+    const c = counts[t] || 0;
+    return {
+      value: t,
+      label: meta ? meta.label : t,
+      count: c > 0 ? c : undefined,
+      disabled: !c && scope !== t
+    };
+  })];
   const activeId = optionRows[active] ? `${baseId}-opt-${active}` : undefined;
   let optIndex = -1;
-  return /*#__PURE__*/React.createElement("div", {
+  return __ds_scope.dialogPortal(/*#__PURE__*/React.createElement("div", {
     className: ['gt-palette-backdrop', closing ? 'gt-palette-backdrop--closing' : ''].filter(Boolean).join(' '),
-    onMouseDown: e => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
-    }
+    onMouseDown: inline ? undefined : onScrimDown
   }, /*#__PURE__*/React.createElement("div", {
     ref: panelRef,
     className: ['gt-palette', className].filter(Boolean).join(' '),
     role: "dialog",
-    "aria-modal": "true",
+    "aria-modal": inline ? undefined : 'true',
     "aria-label": "Search"
   }, /*#__PURE__*/React.createElement("div", {
     className: "gt-palette__input-row"
@@ -20724,29 +17411,14 @@ function CommandPalette({
     onClick: requestClose,
     "aria-label": "Close search"
   }, "esc")), !idle && /*#__PURE__*/React.createElement("div", {
-    className: "gt-palette__scopes",
-    role: "group",
-    "aria-label": "Filter by type"
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: ['gt-filter-chip gt-filter-chip--sm', scope === 'all' ? 'gt-filter-chip--selected' : ''].join(' '),
-    "aria-pressed": scope === 'all',
-    onClick: () => setScope('all')
-  }, "All ", /*#__PURE__*/React.createElement("span", {
-    className: "gt-filter-chip__count"
-  }, unscoped.length)), scopeList.map(t => {
-    const meta = __ds_scope.SEARCH_ENTITIES.find(e => e.type === t);
-    const c = counts[t] || 0;
-    return /*#__PURE__*/React.createElement("button", {
-      key: t,
-      type: "button",
-      className: ['gt-filter-chip gt-filter-chip--sm', scope === t ? 'gt-filter-chip--selected' : ''].join(' '),
-      "aria-pressed": scope === t,
-      disabled: !c && scope !== t,
-      onClick: () => setScope(t)
-    }, meta ? meta.label : t, " ", c > 0 && /*#__PURE__*/React.createElement("span", {
-      className: "gt-filter-chip__count"
-    }, c));
+    className: "gt-palette__scopes"
+  }, /*#__PURE__*/React.createElement(__ds_scope.FilterChipGroup, {
+    type: "single",
+    size: "sm",
+    ariaLabel: "Filter by type",
+    value: scope,
+    onChange: setScope,
+    options: scopeOptions
   })), /*#__PURE__*/React.createElement("div", {
     className: "gt-palette__body"
   }, showSkeleton && /*#__PURE__*/React.createElement("div", {
@@ -20840,7 +17512,7 @@ function CommandPalette({
     to: pageData.to,
     total: pageData.total,
     onChange: setPage
-  }))));
+  })))), inline);
 }
 Object.assign(__ds_scope, { usePaletteHotkey, CommandPalette });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/CommandPalette.jsx", error: String((e && e.message) || e) }); }
@@ -22849,108 +19521,1767 @@ function AnalyticsApp() {
 window.AnalyticsApp = AnalyticsApp;
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/AnalyticsScreen.jsx", error: String((e && e.message) || e) }); }
 
-// ui_kits/grepthink/App.jsx
+// ui_kits/grepthink/FinalReviewsScreen.jsx
 try { (() => {
+/* GrepThink final reviews (C2) — UI-kit screen composition.
+   Composes components/finalreviews/*; reads window.GT_FINAL_REVIEWS_SAMPLE through window.GT_FR (one mutable
+   "world" per class → the API payload each viewer would get). Kit-only: the shell, the demo bar and the in-memory server. */
+const NS = window.GrepThinkDesignSystem_36e7e3;
 const {
-  Sidebar,
-  Header
-} = window.GTKShell;
-const {
-  HomeScreen,
-  ProjectsScreen,
-  AssignmentsScreen,
-  TsrScreen,
-  MessagesScreen,
-  RosterScreen,
-  MeetingsScreen,
-  StubScreen
-} = window.GTKScreens;
-const TITLES = {
-  home: 'Home',
-  messages: 'Messages',
-  projects: 'Projects',
-  assignments: 'Assignments',
-  tsr: 'TSRs',
-  roster: 'Roster',
-  meetings: 'Meetings',
-  settings: 'Settings',
-  help: 'Help Center'
-};
-const USERS = {
-  student: 'Josh Nguyen',
-  ta: 'Sam Ortiz',
-  instructor: 'Prof. Jullig'
-};
-function App() {
-  const [persona, setPersona] = React.useState(() => localStorage.getItem('gtk-persona') || 'student');
-  const [screen, setScreen] = React.useState(() => localStorage.getItem('gtk-screen') || 'home');
-  const setP = p => {
-    setPersona(p);
-    setScreen('home');
-    localStorage.setItem('gtk-persona', p);
-    localStorage.setItem('gtk-screen', 'home');
-  };
-  const nav = s => {
-    setScreen(s);
-    localStorage.setItem('gtk-screen', s);
-  };
-  let body;
-  switch (screen) {
-    case 'home':
-      body = /*#__PURE__*/React.createElement(HomeScreen, {
-        persona: persona
-      });
-      break;
-    case 'projects':
-      body = /*#__PURE__*/React.createElement(ProjectsScreen, null);
-      break;
-    case 'assignments':
-      body = /*#__PURE__*/React.createElement(AssignmentsScreen, null);
-      break;
-    case 'tsr':
-      body = /*#__PURE__*/React.createElement(TsrScreen, null);
-      break;
-    case 'messages':
-      body = /*#__PURE__*/React.createElement(MessagesScreen, null);
-      break;
-    case 'roster':
-      body = /*#__PURE__*/React.createElement(RosterScreen, null);
-      break;
-    case 'meetings':
-      body = /*#__PURE__*/React.createElement(MeetingsScreen, null);
-      break;
-    default:
-      body = /*#__PURE__*/React.createElement(StubScreen, {
-        title: TITLES[screen] || screen
-      });
+  SlotBoard,
+  FinalReviewsHeader,
+  TeamReview,
+  UnbookedTeams,
+  SlotActionDialog,
+  PostSlotsDrawer,
+  ReviewWorkspaceHeader,
+  FinalReviewsModel,
+  ConfirmDialog,
+  ToastStack,
+  SidebarNavItem,
+  SidebarSectionTitle,
+  Avatar,
+  Button,
+  ProgressBar
+} = NS;
+const M = FinalReviewsModel;
+const S = window.GT_FINAL_REVIEWS_SAMPLE,
+  F = window.GT_FR;
+const ZONES = {
+  pt: {
+    label: 'PT',
+    zone: F.PT
+  },
+  ist: {
+    label: 'India',
+    zone: F.IST
   }
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-app",
-    "data-screen-label": `${persona} / ${TITLES[screen] || screen}`
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-persona-bar"
-  }, /*#__PURE__*/React.createElement("span", null, "Viewing as"), ['student', 'ta', 'instructor'].map(p => /*#__PURE__*/React.createElement("button", {
-    key: p,
-    type: "button",
-    className: persona === p ? 'gtk-persona-bar__opt gtk-persona-bar__opt--active' : 'gtk-persona-bar__opt',
-    onClick: () => setP(p)
-  }, p === 'ta' ? 'TA' : p[0].toUpperCase() + p.slice(1))), /*#__PURE__*/React.createElement("em", null, "same design language \u2014 only permissions change")), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-frame"
-  }, /*#__PURE__*/React.createElement(Sidebar, {
-    persona: persona,
-    screen: screen,
-    onNav: nav
-  }), /*#__PURE__*/React.createElement("main", {
-    className: "gtk-main"
-  }, /*#__PURE__*/React.createElement(Header, {
-    title: TITLES[screen] || 'Home',
-    user: USERS[persona]
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-content"
-  }, body))));
+};
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const clone = w => ({
+  ...w,
+  slots: w.slots.map(s => ({
+    ...s
+  })),
+  teams: Object.fromEntries(Object.entries(w.teams).map(([k, v]) => [k, {
+    ...v
+  }]))
+});
+const svg = (d, size = 18) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true",
+  dangerouslySetInnerHTML: {
+    __html: d
+  }
+});
+const I = {
+  home: svg('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  msg: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  chart: svg('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'),
+  book: svg('<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>'),
+  plus: svg('<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>'),
+  login: svg('<path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>'),
+  dash: svg('<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>'),
+  kanban: svg('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/>'),
+  folder: svg('<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'),
+  compass: svg('<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/>'),
+  folderPlus: svg('<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'),
+  users: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+  blocks: svg('<rect width="7" height="7" x="14" y="3" rx="1"/><path d="M10 21V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H3"/>'),
+  clip: svg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>'),
+  clipList: svg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>'),
+  userCog: svg('<circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m21.7 16.4-.9-.3"/><path d="m15.2 13.9-.9-.3"/><path d="m16.6 18.7.3-.9"/><path d="m19.1 12.2.3-.9"/><path d="m19.6 18.7-.4-1"/><path d="m16.8 12.3-.4-1"/><path d="m14.3 16.6 1-.4"/><path d="m20.7 13.8 1-.4"/>'),
+  calCheck: svg('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>'),
+  listChecks: svg('<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>'),
+  gear: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
+  bell: svg('<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>', 20),
+  search: svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+  menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>', 22),
+  chev: svg('<path d="m6 9 6 6 6-6"/>', 14),
+  eye: svg('<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>', 16),
+  folderKanban: svg('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/>', 28)
+};
+
+/* The codebase's sidebar (features/app/config/sidebar.ts) with this round's items: students get Final Reviews in
+   Coursework after Assignments; TAs see it once, under TA Review; the instructor keeps it in Coursework. */
+function navFor(lens) {
+  const FR = ['Final Reviews', I.clip, 'board'];
+  const student = [['Team', [['My Project', I.folder, 'project'], ['Browse Projects', I.compass], ['Create Project', I.folderPlus]]], ['Coursework', [['Assignments', I.clipList], FR]], ['Class', [['Roster', I.users], ['TA Meetings', I.calCheck]]]];
+  if (lens === 'instructor') return [['Main', [['Home', I.home], ['Messages', I.msg], ['Analytics', I.chart]]], ['Classes', [['My Classes', I.book], ['Create Class', I.plus]]], [null, [['Dashboard', I.dash]]], ['Teams', [['Projects', I.kanban], ['Roster', I.users]]], ['Coursework', [['Modules', I.blocks], FR]], ['TAs', [['TA Management', I.userCog], ['TA Meetings', I.calCheck]]]];
+  const main = [['Main', [['Home', I.home], ['Messages', I.msg]]], ['Classes', [['My Classes', I.book], ['Join Class', I.login]]]];
+  if (lens === 'ta') return [...main, ['Team', student[0][1]], ['Coursework', [['Assignments', I.clipList]]], student[2], ['TA Review', [['TSRs', I.listChecks], FR]]];
+  return [...main, ...student];
 }
-ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/App.jsx", error: String((e && e.message) || e) }); }
+function Shell({
+  phone,
+  lens,
+  viewer,
+  title,
+  active,
+  preview,
+  contentRef,
+  onNav,
+  classLabel,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fr-app"
+  }, !phone && /*#__PURE__*/React.createElement("aside", {
+    className: "fr-side",
+    "aria-label": "Main navigation"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "fr-side__logo",
+    src: "../../assets/grepthink-logo.svg",
+    alt: "GrepThink"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "fr-class"
+  }, I.book, /*#__PURE__*/React.createElement("span", null, classLabel), /*#__PURE__*/React.createElement("span", null, I.chev)), /*#__PURE__*/React.createElement("div", {
+    className: "fr-side__nav"
+  }, navFor(lens === 'instructor' || lens === 'ta' ? lens : 'student').map(([title, items], gi) => /*#__PURE__*/React.createElement("div", {
+    key: gi,
+    className: "fr-side__group"
+  }, title && /*#__PURE__*/React.createElement(SidebarSectionTitle, null, title), items.map(([label, icon, to]) => /*#__PURE__*/React.createElement(SidebarNavItem, {
+    key: label,
+    icon: icon,
+    label: label,
+    active: !!to && to === active,
+    badge: label === 'Messages' ? 4 : undefined,
+    onClick: to ? () => onNav(to) : undefined
+  }))))), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.gear,
+    label: "Settings"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "fr-main"
+  }, preview && /*#__PURE__*/React.createElement("div", {
+    className: "fr-preview",
+    role: "status"
+  }, I.eye, /*#__PURE__*/React.createElement("span", null, "Viewing ", classLabel, " as a student \xB7 read-only"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "fr-preview__exit"
+  }, "Exit preview")), /*#__PURE__*/React.createElement("header", {
+    className: "fr-header"
+  }, phone && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "fr-header__icon fr-header__icon--plain",
+    "aria-label": "Open menu"
+  }, I.menu), /*#__PURE__*/React.createElement("h1", {
+    className: "fr-header__title"
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: "fr-header__right"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "fr-header__icon",
+    "aria-label": "Search"
+  }, I.search), !phone && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "fr-header__icon",
+    "aria-label": "Notifications"
+  }, I.bell), !phone && /*#__PURE__*/React.createElement(Avatar, {
+    name: viewer.user.name,
+    size: "sm"
+  }))), /*#__PURE__*/React.createElement("main", {
+    className: "fr-content",
+    ref: contentRef
+  }, children)));
+}
+function ProjectPage({
+  p,
+  now,
+  zone,
+  onBoard,
+  onRelease,
+  busy
+}) {
+  const my = p.myTeam;
+  if (!my) return /*#__PURE__*/React.createElement("p", {
+    className: "fr-note"
+  }, "This viewer is on no team, so there is no project page. The Final review card shows only to a team's own members.");
+  const show = M.showTeamReviewCard({
+    myTeam: my,
+    slots: p.reviewSlots.slots,
+    signupsOpen: p.reviewSlots.signups_open
+  });
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("header", {
+    className: "fr-pv__header"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-pv__logo"
+  }, I.folderKanban), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "fr-pv__title"
+  }, my.name), /*#__PURE__*/React.createElement("p", {
+    className: "fr-pv__meta"
+  }, S.class.label, " \xB7 5 members", my.product_owner ? ` · Product Owner ${my.product_owner.name}` : ''))), /*#__PURE__*/React.createElement("div", {
+    className: "fr-pv__content"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "fr-card fr-pv__desc",
+    "aria-label": "Project description"
+  }, /*#__PURE__*/React.createElement("p", null, "A course-scheduling assistant for UCSC students: import your shopping cart, see conflicts, and share a plan with your advisor."), /*#__PURE__*/React.createElement("h4", null, "Sprint 4 goals"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Conflict view on phones"), /*#__PURE__*/React.createElement("li", null, "Advisor share links"), /*#__PURE__*/React.createElement("li", null, "Release documents for the final review"))), /*#__PURE__*/React.createElement("div", {
+    className: "fr-pv__aside"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "fr-card",
+    "aria-labelledby": "fr-sprint-h"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fr-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "fr-sprint-h",
+    className: "fr-card__title"
+  }, "Sprint 4"), /*#__PURE__*/React.createElement("span", {
+    className: "fr-card__date"
+  }, "Nov 23 \u2013 Dec 4")), /*#__PURE__*/React.createElement(ProgressBar, {
+    value: 9,
+    max: 16,
+    size: "sm"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "fr-pv__sprint"
+  }, /*#__PURE__*/React.createElement("span", null, "9 of 16 points done"), /*#__PURE__*/React.createElement("span", null, "4 days left"))), show ? /*#__PURE__*/React.createElement("section", {
+    className: "fr-card",
+    "aria-labelledby": "fr-review-card-h"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fr-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "fr-review-card-h",
+    className: "fr-card__title"
+  }, "Final review"), /*#__PURE__*/React.createElement("a", {
+    href: "#board",
+    onClick: e => {
+      e.preventDefault();
+      onBoard();
+    }
+  }, "See all slots")), /*#__PURE__*/React.createElement(TeamReview, {
+    variant: "card",
+    myTeam: my,
+    slots: p.reviewSlots.slots,
+    signupsOpen: p.reviewSlots.signups_open,
+    now: now,
+    zone: zone,
+    onChooseSlot: () => onBoard('free'),
+    onChangeSlot: () => onBoard('free'),
+    onRelease: onRelease,
+    busy: busy
+  })) : /*#__PURE__*/React.createElement("p", {
+    className: "fr-note"
+  }, "No Final review card: the class has no slots yet and sign-ups are closed (the card appears once either changes)."), /*#__PURE__*/React.createElement("section", {
+    className: "fr-card",
+    "aria-labelledby": "fr-tm-h"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fr-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "fr-tm-h",
+    className: "fr-card__title"
+  }, "Team meetings")), /*#__PURE__*/React.createElement("p", {
+    className: "fr-quiet"
+  }, "No upcoming meetings.")))));
+}
+function WorkspacePage({
+  p,
+  world,
+  teamId,
+  now,
+  zone,
+  onBack,
+  onPick
+}) {
+  if (p.lens !== 'instructor' && p.lens !== 'ta') return /*#__PURE__*/React.createElement("p", {
+    className: "fr-note"
+  }, "The scoring workspace is for staff; /app/final-reviews/:projectId sends students back to the board.");
+  const t = world.teams[teamId] || Object.values(world.teams)[0];
+  const held = world.slots.find(s => s.teamId === t.project_id);
+  const startsAt = held ? held.starts_at : !world.slots.length && t.legacy_at || null;
+  const role = p.lens === 'instructor' ? 'instructor' : t.home_ta && t.home_ta.user_id === p.viewerId ? 'home' : t.review_ta && t.review_ta.user_id === p.viewerId ? 'review' : 'ta';
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fr-page"
+  }, /*#__PURE__*/React.createElement(ReviewWorkspaceHeader, {
+    team: t,
+    viewerRole: role,
+    startsAt: startsAt,
+    homeTa: t.home_ta,
+    reviewTa: t.review_ta,
+    zoomUrl: world.zoomUrl,
+    now: now,
+    zone: zone,
+    backHref: "#board",
+    onBack: e => {
+      e.preventDefault();
+      onBack();
+    },
+    onJoin: e => e && e.preventDefault && e.preventDefault()
+  }), /*#__PURE__*/React.createElement("section", {
+    className: "fr-card fr-ws-body"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "fr-ws-body__title"
+  }, "Scores and review notes"), /*#__PURE__*/React.createElement("p", {
+    className: "fr-quiet"
+  }, "Not redesigned in this round \u2014 the C2 implementation moves this part of FinalReviewDetail onto the kit as it stands."), /*#__PURE__*/React.createElement("div", {
+    className: "fr-ws-body__pick"
+  }, /*#__PURE__*/React.createElement("span", null, "Open another team:"), Object.values(world.teams).slice(0, 6).map(x => /*#__PURE__*/React.createElement(Button, {
+    key: x.project_id,
+    size: "sm",
+    variant: x.project_id === t.project_id ? 'secondary' : 'ghost',
+    onClick: () => onPick(x.project_id)
+  }, x.name)))));
+}
+function FinalReviewsApp() {
+  const [viewerKey, setViewerKey] = React.useState('instructor');
+  const [view, setView] = React.useState('board');
+  const [clock, setClock] = React.useState('booking_week');
+  const [zoneKey, setZoneKey] = React.useState('pt');
+  const [dataKey, setDataKey] = React.useState('ready');
+  const [apiMode, setApiMode] = React.useState('ok');
+  const [viewport, setViewport] = React.useState('desktop');
+  const makeWorld = (d, c) => {
+    const w = d === 'empty' ? F.worldFrom(F.emptySource()) : d === 'many' ? F.worldFrom(S.many) : d === 'history' ? F.worldFrom(S.history, {
+      complete: true
+    }) : F.worldFrom(S);
+    if (d !== 'empty' && d !== 'history') w.signupsOpen = c === 'booking_week';
+    return w;
+  };
+  const [world, setWorldState] = React.useState(() => makeWorld('ready', 'booking_week'));
+  const worldRef = React.useRef(world);
+  const setWorld = w => {
+    worldRef.current = w;
+    setWorldState(w);
+  };
+  const mutate = fn => {
+    const w = clone(worldRef.current);
+    fn(w);
+    setWorld(w);
+    return w;
+  };
+  const [filter, setFilter] = React.useState('all');
+  const [alert, setAlert] = React.useState(null);
+  const [busy, setBusy] = React.useState(null);
+  const [headBusy, setHeadBusy] = React.useState(null);
+  const [refetching, setRefetching] = React.useState(false);
+  const [toasts, setToasts] = React.useState([]);
+  const [confirm, setConfirm] = React.useState(null);
+  const [dialog, setDialog] = React.useState(null);
+  const [posting, setPosting] = React.useState(false);
+  const [wsTeam, setWsTeam] = React.useState('p-trailhead');
+  const [last, setLast] = React.useState(null);
+  const contentRef = React.useRef(null);
+  const zone = ZONES[zoneKey].zone;
+  const now = dataKey === 'history' ? new Date(S.history.now) : new Date(F.CLOCKS[clock]);
+  const p = F.payloadFor(world, viewerKey);
+  const staff = p.lens === 'instructor' || p.lens === 'ta';
+  const teamsById = M.indexTeams(p.reviewSlots, p.schedule);
+  const status = dataKey === 'loading' ? 'loading' : dataKey === 'error' ? 'error' : refetching ? 'refetching' : 'ready';
+  const when = iso => M.whenText(iso, {
+    zone
+  });
+  const classLabel = dataKey === 'history' ? S.history.class_label : S.class.label;
+  const pick = fn => v => fn(v);
+  const changeData = d => {
+    setDataKey(d);
+    setWorld(makeWorld(d, clock));
+    setAlert(null);
+    setFilter('all');
+  };
+  const changeClock = c => {
+    setClock(c);
+    mutate(w => {
+      if (dataKey !== 'empty' && dataKey !== 'history') w.signupsOpen = c === 'booking_week';
+    });
+    setAlert(null);
+  };
+  const toast = (variant, message, extra = {}) => setToasts(t => [{
+    id: `${Date.now()}-${Math.random()}`,
+    variant,
+    message,
+    ...extra
+  }, ...t].slice(0, 3));
+  const refetch = () => {
+    setRefetching(true);
+    setTimeout(() => setRefetching(false), 450);
+  };
+  const scrollToBoard = () => {
+    const c = contentRef.current,
+      el = c && c.querySelector('.fr-board-anchor');
+    if (c && el) c.scrollTo({
+      top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop - 12,
+      behavior: 'smooth'
+    });
+  };
+  const goBoard = f => {
+    setView('board');
+    if (f) setFilter(f);
+    setTimeout(scrollToBoard, 60);
+  };
+
+  /* ── in-memory server ─────────────────────────────────────────────── */
+  const race = action => {
+    const applies = {
+      taken: ['book', 'move_here', 'place', 'move_team', 'delete'],
+      started: ['book', 'move_here', 'place', 'move_team'],
+      closed: ['book', 'move_here', 'release_own', 'sign_up'],
+      passed: ['move_here', 'release_own'],
+      ta_taken: ['sign_up'],
+      moved: ['sign_up'],
+      fails: ['*']
+    }[apiMode] || [];
+    if (applies.includes(action) || applies.includes('*')) {
+      setApiMode('ok');
+      return apiMode;
+    }
+    return null;
+  };
+  const rivalTeam = w => {
+    const held = new Set(w.slots.map(s => s.teamId).filter(Boolean));
+    const mine = p.myTeam ? p.myTeam.project_id : null;
+    const free = Object.values(w.teams).find(t => !held.has(t.project_id) && t.project_id !== mine);
+    if (free) return free.project_id;
+    w.teams['p-porter-meadow'] = {
+      project_id: 'p-porter-meadow',
+      name: 'Porter Meadow',
+      home_ta: null,
+      review_ta: null,
+      product_owner: null
+    };
+    return 'p-porter-meadow';
+  };
+  const ERR = {
+    taken: [409, 'That slot was just taken.'],
+    started: [409, 'That slot has already started.'],
+    closed: [403, "Sign-ups aren't open."],
+    passed: [403, "Your team's review time has passed."],
+    ta_taken: [409, 'This team already has an additional reviewer'],
+    delete: [409, 'Release the team before deleting its slot.']
+  };
+  const conflict = (action, r, {
+    slot,
+    teamId,
+    teamName
+  } = {}) => {
+    const [status, detail] = action === 'delete' ? ERR.delete : ERR[r];
+    mutate(w => {
+      if (r === 'taken' && slot) {
+        const s = w.slots.find(x => x.id === slot.id);
+        if (s && !s.teamId) s.teamId = rivalTeam(w);
+      }
+      if (r === 'closed') w.signupsOpen = false;
+      if (r === 'ta_taken' && teamId) {
+        const t = w.teams[teamId];
+        const other = w.tas.find(x => x.id !== p.viewerId && (!t.home_ta || x.id !== t.home_ta.user_id));
+        t.review_ta = {
+          user_id: other.id,
+          name: other.name
+        };
+      }
+    });
+    const keeps = p.myTeam && p.myTeam.starts_at && (action === 'book' || action === 'move_here') ? when(p.myTeam.starts_at) : null;
+    setAlert(M.errorCopy(action, {
+      status,
+      detail
+    }, {
+      keeps,
+      team: teamName
+    }));
+    setLast(`${status} · ${detail}`);
+    refetch();
+  };
+  const withRow = async (slot, action, fn) => {
+    setBusy({
+      slotId: slot.id,
+      action
+    });
+    await delay(500);
+    setBusy(null);
+    return fn();
+  };
+  const actions = {
+    book: slot => withRow(slot, 'book', () => {
+      const r = race('book');
+      if (r === 'fails') return toast('error', 'That didn’t work. Try again.');
+      if (r) return conflict('book', r, {
+        slot
+      });
+      mutate(w => {
+        w.slots.find(s => s.id === slot.id).teamId = p.myTeam.project_id;
+      });
+      setAlert(null);
+      toast('success', M.successCopy('book', {
+        when: when(slot.starts_at)
+      }));
+      refetch();
+    }),
+    move_here: slot => {
+      const t = p.myTeam,
+        rt = t.review_ta;
+      const c = M.confirmCopy('move_here', {
+        team: t.name,
+        when: when(slot.starts_at),
+        from: when(t.starts_at),
+        reviewTa: rt && rt.name
+      });
+      setConfirm({
+        ...c,
+        onConfirm: async () => {
+          await delay(500);
+          const r = race('move_here');
+          if (r === 'fails') throw new Error('fail');
+          setConfirm(null);
+          if (r) return conflict('move_here', r, {
+            slot
+          });
+          mutate(w => {
+            w.slots.forEach(s => {
+              if (s.teamId === t.project_id) s.teamId = null;
+            });
+            w.slots.find(s => s.id === slot.id).teamId = t.project_id;
+            w.teams[t.project_id].review_ta = null;
+          });
+          setAlert(null);
+          toast('success', M.successCopy('move_here', {
+            when: when(slot.starts_at),
+            reviewTa: rt && rt.name
+          }));
+          refetch();
+        }
+      });
+    },
+    release_own: () => {
+      const t = p.myTeam,
+        rt = t.review_ta;
+      setConfirm({
+        ...M.confirmCopy('release_own', {
+          team: t.name,
+          when: when(t.starts_at),
+          reviewTa: rt && rt.name
+        }),
+        onConfirm: async () => {
+          await delay(500);
+          const r = race('release_own');
+          if (r === 'fails') throw new Error('fail');
+          setConfirm(null);
+          if (r) return conflict('release_own', r, {});
+          mutate(w => {
+            w.slots.forEach(s => {
+              if (s.teamId === t.project_id) s.teamId = null;
+            });
+            w.teams[t.project_id].review_ta = null;
+          });
+          toast('success', M.successCopy('release_own', {
+            when: when(t.starts_at)
+          }));
+          refetch();
+        }
+      });
+    },
+    sign_up: slot => withRow(slot, 'sign_up', () => {
+      const id = slot.team.project_id,
+        name = slot.team.name;
+      const r = race('sign_up');
+      if (r === 'fails') return toast('error', 'That didn’t work. Try again.');
+      // the request carries the slot the TA saw (slot.id); the server answers 409 when the team has moved since
+      if (r === 'moved') {
+        let moved = null;
+        mutate(w => {
+          const free = w.slots.find(s => !s.teamId && new Date(s.starts_at) > now);
+          if (free) {
+            w.slots.forEach(s => {
+              if (s.teamId === id) s.teamId = null;
+            });
+            free.teamId = id;
+            moved = {
+              ...free
+            };
+          }
+        });
+        if (!moved) return conflict('sign_up', 'ta_taken', {
+          teamId: id,
+          teamName: name
+        });
+        const at = when(moved.starts_at);
+        setAlert({
+          text: M.errorCopy('sign_up', {
+            status: 409,
+            detail: 'This team moved to another slot.'
+          }, {
+            team: name,
+            when: at
+          }),
+          actions: /*#__PURE__*/React.createElement(Button, {
+            size: "sm",
+            variant: "outline",
+            onClick: () => {
+              setAlert(null);
+              actions.sign_up({
+                id: moved.id,
+                starts_at: moved.starts_at,
+                team: {
+                  project_id: id,
+                  name
+                }
+              });
+            }
+          }, "Sign up for ", at)
+        });
+        setLast('409 · This team moved to another slot.');
+        return refetch();
+      }
+      if (r) return conflict('sign_up', r, {
+        teamId: id,
+        teamName: name
+      });
+      mutate(w => {
+        w.teams[id].review_ta = {
+          user_id: p.viewerId,
+          name: p.viewer.user.name
+        };
+      });
+      setAlert(null);
+      toast('success', M.successCopy('sign_up', {
+        team: name,
+        when: when(slot.starts_at)
+      }));
+      refetch();
+    }),
+    step_down: slot => {
+      const id = slot.team.project_id,
+        name = slot.team.name;
+      setConfirm({
+        ...M.confirmCopy('step_down', {
+          team: name,
+          when: when(slot.starts_at)
+        }),
+        onConfirm: async () => {
+          await delay(450);
+          if (race('step_down') === 'fails') throw new Error('fail');
+          setConfirm(null);
+          mutate(w => {
+            w.teams[id].review_ta = null;
+          });
+          toast('success', M.successCopy('step_down', {
+            team: name
+          }));
+          refetch();
+        }
+      });
+    },
+    open_review: slot => {
+      setWsTeam(slot.team.project_id);
+      setView('workspace');
+    },
+    join: () => setLast('join · shared Zoom room'),
+    place_team: slot => setDialog({
+      kind: 'place_team',
+      slot
+    }),
+    review_ta: (slot, team) => setDialog({
+      kind: 'review_ta',
+      team: team || {
+        ...teamsById[slot.team.project_id],
+        project_id: slot.team.project_id,
+        starts_at: slot.starts_at,
+        slot_id: slot.id
+      }
+    }),
+    move_team: slot => setDialog({
+      kind: 'move_team',
+      team: {
+        ...teamsById[slot.team.project_id],
+        project_id: slot.team.project_id,
+        starts_at: slot.starts_at,
+        slot_id: slot.id
+      }
+    }),
+    release_team: slot => {
+      const id = slot.team.project_id,
+        t = teamsById[id] || {},
+        name = slot.team.name;
+      const passed = M.slotPhase(slot.starts_at, now) !== 'upcoming';
+      setConfirm({
+        ...M.confirmCopy('release_team', {
+          team: name,
+          when: when(slot.starts_at),
+          reviewTa: t.review_ta && t.review_ta.name,
+          passed
+        }),
+        onConfirm: async () => {
+          await delay(500);
+          if (race('release_team') === 'fails') throw new Error('fail');
+          setConfirm(null);
+          mutate(w => {
+            w.slots.forEach(s => {
+              if (s.teamId === id) s.teamId = null;
+            });
+            w.teams[id].review_ta = null;
+          });
+          toast('success', M.successCopy('release_team', {
+            team: name,
+            reviewTa: t.review_ta && t.review_ta.name
+          }));
+          refetch();
+        }
+      });
+    },
+    delete: async slot => {
+      await delay(350);
+      if (race('delete')) return conflict('delete', 'taken', {
+        slot
+      });
+      const copy = {
+        ...slot
+      };
+      delete copy.team;
+      mutate(w => {
+        w.slots = w.slots.filter(s => s.id !== slot.id);
+      });
+      toast('success', M.successCopy('delete', {
+        when: when(slot.starts_at)
+      }), {
+        actionLabel: 'Undo',
+        onAction: () => {
+          mutate(w => {
+            if (!w.slots.some(s => s.id === slot.id)) w.slots.push({
+              id: slot.id,
+              starts_at: slot.starts_at,
+              duration_minutes: 60,
+              teamId: null
+            });
+          });
+          setLast('undo · slot posted again');
+        }
+      });
+      refetch();
+    }
+  };
+  const onAction = (action, slot, v, e) => {
+    if ((action === 'open_review' || action === 'join') && e && e.preventDefault) e.preventDefault();
+    setLast(`${action} · ${slot.team ? slot.team.name : M.whenText(slot.starts_at, {
+      zone
+    })}`);
+    if (actions[action]) actions[action](slot);
+  };
+  const onDayAction = (action, g) => {
+    const free = g.slots.filter(s => !s.team && M.slotPhase(s.starts_at, now) === 'upcoming');
+    const label = M.fmtSlotWhen(g.slots[0].starts_at, {
+      zone
+    }).dayLong;
+    setConfirm({
+      ...M.confirmCopy('delete_day', {
+        count: free.length,
+        held: g.booked,
+        day: label
+      }),
+      onConfirm: async () => {
+        await delay(450);
+        setConfirm(null);
+        const ids = new Set(free.map(s => s.id));
+        mutate(w => {
+          w.slots = w.slots.filter(s => !ids.has(s.id));
+        });
+        toast('success', M.successCopy('delete_day', {
+          count: free.length,
+          when: label
+        }));
+        refetch();
+      }
+    });
+  };
+  const confirmDialog = async value => {
+    const d = dialog;
+    await delay(550);
+    const r = race(d.kind === 'review_ta' ? 'review_ta' : d.kind === 'move_team' ? 'move_team' : 'place');
+    if (r === 'fails') throw new Error('That didn’t work. Try again.');
+    if (d.kind === 'review_ta') {
+      const id = d.team.project_id,
+        ta = value.userId ? S.class_tas.tas.find(x => x.id === value.userId) : null;
+      mutate(w => {
+        w.teams[id].review_ta = ta ? {
+          user_id: ta.id,
+          name: ta.name
+        } : null;
+      });
+      setDialog(null);
+      toast('success', M.successCopy('review_ta', {
+        team: d.team.name,
+        reviewTa: ta && ta.name
+      }));
+      return refetch();
+    }
+    const slotId = value.slotId || d.slot && d.slot.id;
+    const projectId = value.projectId || d.team && d.team.project_id;
+    const target = worldRef.current.slots.find(s => s.id === slotId);
+    setDialog(null);
+    if (r) return conflict(d.kind === 'move_team' ? 'move_team' : 'place', r, {
+      slot: target
+    });
+    const t = worldRef.current.teams[projectId];
+    const moved = worldRef.current.slots.some(s => s.teamId === projectId);
+    const dropped = moved && t.review_ta ? t.review_ta : null;
+    mutate(w => {
+      w.slots.forEach(s => {
+        if (s.teamId === projectId) s.teamId = null;
+      });
+      w.slots.find(s => s.id === slotId).teamId = projectId;
+      if (moved) w.teams[projectId].review_ta = null;
+    });
+    const msg = moved ? M.successCopy('move_team', {
+      team: t.name,
+      when: when(target.starts_at),
+      reviewTa: dropped && dropped.name
+    }) : M.successCopy('place', {
+      team: t.name,
+      when: when(target.starts_at)
+    });
+    toast('success', msg, dropped ? {
+      actionLabel: 'Appoint again',
+      onAction: () => {
+        mutate(w => {
+          w.teams[projectId].review_ta = dropped;
+        });
+        toast('success', M.successCopy('review_ta', {
+          team: t.name,
+          reviewTa: dropped.name
+        }));
+      }
+    } : {});
+    refetch();
+  };
+  const onToggleSignups = async open => {
+    if (!open) {
+      return setConfirm({
+        ...M.confirmCopy('close_signups'),
+        onConfirm: async () => {
+          await delay(450);
+          setConfirm(null);
+          mutate(w => {
+            w.signupsOpen = false;
+          });
+          toast('success', M.successCopy('signups', {
+            open: false
+          }));
+          refetch();
+        }
+      });
+    }
+    setHeadBusy('signups');
+    await delay(450);
+    setHeadBusy(null);
+    mutate(w => {
+      w.signupsOpen = true;
+    });
+    toast('success', M.successCopy('signups', {
+      open: true
+    }));
+    refetch();
+  };
+  const onSaveZoom = async url => {
+    setHeadBusy('zoom');
+    await delay(450);
+    setHeadBusy(null);
+    mutate(w => {
+      w.zoomUrl = url;
+    });
+    toast('success', M.successCopy('zoom', {
+      cleared: !url
+    }));
+  };
+  const onPost = async (payload, draft) => {
+    await delay(650);
+    if (race('post') === 'fails') throw new Error('Couldn’t post these times. Check the list and try again.');
+    const fresh = draft.items.filter(i => !i.posted);
+    mutate(w => {
+      fresh.forEach(i => w.slots.push({
+        id: `s-new-${i.key}`,
+        starts_at: i.startsAt,
+        duration_minutes: 60,
+        teamId: null
+      }));
+    });
+    setPosting(false);
+    toast('success', M.successCopy('post', {
+      created: fresh.length,
+      sent: draft.count
+    }));
+    refetch();
+  };
+  const onUnbooked = (action, team) => {
+    if (action === 'place_on_slot') setDialog({
+      kind: 'place_on_slot',
+      team
+    });else setDialog({
+      kind: 'review_ta',
+      team: {
+        ...team,
+        starts_at: null
+      }
+    });
+  };
+
+  /* ── pages ────────────────────────────────────────────────────────── */
+  const student = !staff;
+  const counts = M.boardCounts(p.reviewSlots, teamsById);
+  const board = /*#__PURE__*/React.createElement("div", {
+    className: "fr-page"
+  }, status !== 'error' && /*#__PURE__*/React.createElement(FinalReviewsHeader, {
+    lens: p.lens,
+    signupsOpen: p.reviewSlots.signups_open,
+    counts: counts,
+    myReviewCount: p.schedule ? p.schedule.my_review_count : 0,
+    zoomUrl: p.reviewSlots.review_zoom_url,
+    complete: world.complete,
+    status: status === 'loading' ? 'loading' : 'ready',
+    busy: headBusy,
+    onPostSlots: () => setPosting(true),
+    onToggleSignups: onToggleSignups,
+    onSaveZoom: onSaveZoom
+  }), student && status !== 'error' && /*#__PURE__*/React.createElement(TeamReview, {
+    myTeam: p.myTeam,
+    slots: p.reviewSlots.slots,
+    signupsOpen: p.reviewSlots.signups_open,
+    complete: world.complete,
+    now: now,
+    zone: zone,
+    status: status === 'loading' ? 'loading' : 'ready',
+    busy: busy && busy.action === 'release' ? 'release' : null,
+    onChooseSlot: () => {
+      setFilter('free');
+      scrollToBoard();
+    },
+    onChangeSlot: () => {
+      setFilter('free');
+      scrollToBoard();
+    },
+    onRelease: () => actions.release_own(),
+    onJoin: e => {
+      if (e && e.preventDefault) e.preventDefault();
+      setLast('join · own review');
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "fr-board-anchor"
+  }, /*#__PURE__*/React.createElement(SlotBoard, {
+    data: status === 'loading' ? null : p.reviewSlots,
+    schedule: p.schedule,
+    lens: p.lens,
+    viewerId: p.viewerId,
+    now: now,
+    zone: zone,
+    complete: world.complete,
+    status: status,
+    filter: filter,
+    onFilterChange: setFilter,
+    alert: alert && (alert.text || alert),
+    alertActions: alert && alert.actions,
+    onDismissAlert: () => setAlert(null),
+    busy: busy,
+    onAction: onAction,
+    onDayAction: onDayAction,
+    onRetry: () => {
+      setDataKey('loading');
+      setTimeout(() => changeData('ready'), 700);
+    },
+    onPostSlots: () => setPosting(true),
+    reviewHref: t => `#review/${t.project_id}`
+  })), staff && status === 'ready' && !world.complete && /*#__PURE__*/React.createElement(UnbookedTeams, {
+    teams: M.unbookedTeams(p.reviewSlots, teamsById),
+    lens: p.lens,
+    onAction: onUnbooked
+  }), staff && status === 'ready' && world.complete && /*#__PURE__*/React.createElement("p", {
+    className: "fr-note"
+  }, "A complete class: no teams without a slot to place, no posting, no sign-ups switch."));
+  const page = view === 'project' ? /*#__PURE__*/React.createElement(ProjectPage, {
+    p: p,
+    now: now,
+    zone: zone,
+    onBoard: goBoard,
+    onRelease: () => actions.release_own()
+  }) : view === 'workspace' ? /*#__PURE__*/React.createElement(WorkspacePage, {
+    p: p,
+    world: world,
+    teamId: wsTeam,
+    now: now,
+    zone: zone,
+    onBack: () => setView('board'),
+    onPick: setWsTeam
+  }) : view === 'states' ? React.createElement(window.FinalReviewsStates, {
+    zone
+  }) : board;
+  const title = view === 'project' ? 'My Project' : view === 'states' ? 'Final Reviews — states' : 'Final Reviews';
+  const shell = phone => /*#__PURE__*/React.createElement(Shell, {
+    phone: phone,
+    lens: p.lens,
+    viewer: p.viewer,
+    title: title,
+    active: view === 'project' ? 'project' : 'board',
+    preview: p.lens === 'preview',
+    contentRef: contentRef,
+    onNav: to => setView(to === 'project' ? 'project' : 'board'),
+    classLabel: classLabel
+  }, page);
+  const staffDialogTeams = M.unbookedTeams(p.reviewSlots, teamsById);
+  const Opt = ({
+    on,
+    onClick,
+    children
+  }) => /*#__PURE__*/React.createElement(Button, {
+    variant: "outline",
+    size: "sm",
+    pressed: on,
+    onClick: onClick
+  }, children);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fr-root"
+  }, confirm && /*#__PURE__*/React.createElement(ConfirmDialog, {
+    open: true,
+    title: confirm.title,
+    message: confirm.message,
+    confirmLabel: confirm.confirmLabel,
+    busyLabel: confirm.busyLabel,
+    destructive: confirm.destructive,
+    onConfirm: confirm.onConfirm,
+    onCancel: () => setConfirm(null)
+  }), dialog && /*#__PURE__*/React.createElement(SlotActionDialog, {
+    open: true,
+    kind: dialog.kind,
+    slot: dialog.slot,
+    team: dialog.team,
+    slots: p.reviewSlots.slots,
+    unbooked: staffDialogTeams,
+    teamsById: teamsById,
+    tas: S.class_tas.tas,
+    reviewCounts: Object.fromEntries(S.class_tas.tas.map(t => [t.id, Object.values(world.teams).filter(x => x.review_ta && x.review_ta.user_id === t.id).length])),
+    now: now,
+    zone: zone,
+    onConfirm: confirmDialog,
+    onCancel: () => setDialog(null)
+  }), /*#__PURE__*/React.createElement(PostSlotsDrawer, {
+    open: posting,
+    onClose: () => setPosting(false),
+    onPost: onPost,
+    existing: p.reviewSlots.slots,
+    now: now,
+    zone: zone,
+    defaultDay: "2026-12-09"
+  }), /*#__PURE__*/React.createElement(ToastStack, {
+    toasts: toasts,
+    onDismiss: id => setToasts(t => t.filter(x => x.id !== id))
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "fr-demo",
+    role: "toolbar",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "viewer"), /*#__PURE__*/React.createElement("select", {
+    className: "fr-demo__select",
+    value: viewerKey,
+    onChange: e => {
+      setViewerKey(e.target.value);
+      setAlert(null);
+      setFilter('all');
+    }
+  }, Object.values(F.VIEWERS).map(v => /*#__PURE__*/React.createElement("option", {
+    key: v.key,
+    value: v.key
+  }, v.label)))), /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "view"), ['board', 'project', 'workspace', 'states'].map(v => /*#__PURE__*/React.createElement(Opt, {
+    key: v,
+    on: view === v,
+    onClick: () => setView(v)
+  }, v))), /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "clock"), [['booking_week', 'booking week'], ['review_day', 'review day'], ['after', 'after']].map(([k, l]) => /*#__PURE__*/React.createElement(Opt, {
+    key: k,
+    on: clock === k,
+    onClick: () => changeClock(k)
+  }, l))), /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "zone"), Object.keys(ZONES).map(k => /*#__PURE__*/React.createElement(Opt, {
+    key: k,
+    on: zoneKey === k,
+    onClick: () => setZoneKey(k)
+  }, ZONES[k].label))), /*#__PURE__*/React.createElement("label", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "data"), /*#__PURE__*/React.createElement("select", {
+    className: "fr-demo__select",
+    value: dataKey,
+    onChange: e => changeData(e.target.value)
+  }, [['ready', 'ready'], ['empty', 'empty (no slots)'], ['loading', 'loading'], ['error', 'error'], ['many', 'many (40 slots)'], ['history', 'pre-slots class']].map(([k, l]) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: k
+  }, l)))), /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "sign-ups"), /*#__PURE__*/React.createElement(Opt, {
+    on: world.signupsOpen,
+    onClick: () => mutate(w => {
+      w.signupsOpen = true;
+    })
+  }, "open"), /*#__PURE__*/React.createElement(Opt, {
+    on: !world.signupsOpen,
+    onClick: () => mutate(w => {
+      w.signupsOpen = false;
+    })
+  }, "closed")), /*#__PURE__*/React.createElement("label", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "next request"), /*#__PURE__*/React.createElement("select", {
+    className: "fr-demo__select",
+    value: apiMode,
+    onChange: e => setApiMode(e.target.value)
+  }, [['ok', 'succeeds'], ['taken', '409 slot just taken'], ['started', '409 slot started'], ['closed', '403 sign-ups closed'], ['passed', '403 review time passed'], ['ta_taken', '409 another TA signed up'], ['moved', '409 team moved (TA sign-up)'], ['fails', 'network error']].map(([k, l]) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: k
+  }, l)))), /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__lbl"
+  }, "viewport"), /*#__PURE__*/React.createElement(Opt, {
+    on: viewport === 'desktop',
+    onClick: () => setViewport('desktop')
+  }, "desktop"), /*#__PURE__*/React.createElement(Opt, {
+    on: viewport === 'phone',
+    onClick: () => setViewport('phone')
+  }, "phone")), last && /*#__PURE__*/React.createElement("span", {
+    className: "fr-demo__log"
+  }, "\u2192 ", last)), /*#__PURE__*/React.createElement("div", {
+    className: viewport === 'phone' ? 'fr-stage fr-stage--phone' : 'fr-stage'
+  }, shell(viewport === 'phone')));
+}
+window.FinalReviewsApp = FinalReviewsApp;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/FinalReviewsScreen.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/grepthink/FinalReviewsStates.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* GrepThink final reviews — the brief's §6 states, every one in one scrolling sheet (kit-only).
+   Rendered by FinalReviewsScreen's "states" view; the viewport switch puts it in a 375px phone frame. */
+(function () {
+  const NS = window.GrepThinkDesignSystem_36e7e3;
+  const {
+    SlotBoard,
+    SlotRow,
+    FinalReviewsHeader,
+    TeamReview,
+    UnbookedTeams,
+    SlotActionDialog,
+    PostSlotsDrawer,
+    ReviewWorkspaceHeader,
+    FinalReviewsModel: M,
+    ConfirmDialog,
+    Toast,
+    Alert,
+    Button
+  } = NS;
+  const S = window.GT_FINAL_REVIEWS_SAMPLE,
+    F = window.GT_FR;
+  const WEEK = new Date(F.CLOCKS.booking_week),
+    DAY = new Date(F.CLOCKS.review_day),
+    AFTER = new Date(F.CLOCKS.after);
+  const extraViewers = {
+    trail_member: {
+      key: 'trail_member',
+      label: 'Trailhead member',
+      role: 'student',
+      user: {
+        user_id: 'u-mina-patel',
+        name: 'Mina Patel'
+      },
+      teamId: 'p-trailhead'
+    },
+    luis: {
+      key: 'luis',
+      label: 'TA (Luis Ortega)',
+      role: 'ta',
+      user: {
+        user_id: 'u-luis-ortega',
+        name: 'Luis Ortega'
+      }
+    },
+    priya: {
+      key: 'priya',
+      label: 'TA (Priya Nair)',
+      role: 'ta',
+      user: {
+        user_id: 'u-priya-nair',
+        name: 'Priya Nair'
+      }
+    }
+  };
+  Object.assign(F.VIEWERS, extraViewers);
+  Object.keys(extraViewers).forEach(k => {
+    Object.defineProperty(F.VIEWERS, k, {
+      enumerable: false
+    });
+  });
+  const base = F.worldFrom(S);
+  const closed = {
+    ...base,
+    signupsOpen: false
+  };
+  const full = {
+    ...base,
+    slots: base.slots.filter(s => s.teamId)
+  };
+  const empty = F.worldFrom(F.emptySource());
+  const emptyOpen = {
+    ...empty,
+    signupsOpen: true
+  };
+  const many = F.worldFrom(S.many);
+  const hist = F.worldFrom(S.history, {
+    complete: true
+  });
+  const noop = () => {};
+  const wait = () => new Promise(r => setTimeout(r, 500));
+  function Frame({
+    cap,
+    wide,
+    children
+  }) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: wide ? 'fr-states__wide' : ''
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "fr-caption"
+    }, cap), children);
+  }
+  function useBoard(zone) {
+    return ({
+      w = base,
+      who,
+      now = WEEK,
+      ...rest
+    }) => {
+      const p = F.payloadFor(w, who);
+      return /*#__PURE__*/React.createElement(SlotBoard, _extends({
+        data: p.reviewSlots,
+        schedule: p.schedule,
+        lens: p.lens,
+        viewerId: p.viewerId,
+        now: now,
+        zone: zone,
+        complete: w.complete,
+        reviewHref: t => `#review/${t.project_id}`,
+        onAction: (a, s, v, e) => e && e.preventDefault && e.preventDefault(),
+        onDayAction: noop,
+        onPostSlots: noop,
+        onRetry: noop
+      }, rest));
+    };
+  }
+  function Team({
+    w = base,
+    who,
+    now = WEEK,
+    zone,
+    ...rest
+  }) {
+    const p = F.payloadFor(w, who);
+    return /*#__PURE__*/React.createElement(TeamReview, _extends({
+      myTeam: p.myTeam,
+      slots: p.reviewSlots.slots,
+      signupsOpen: p.reviewSlots.signups_open,
+      now: now,
+      zone: zone,
+      onChooseSlot: noop,
+      onChangeSlot: noop,
+      onRelease: noop
+    }, rest));
+  }
+  function Head({
+    w = base,
+    who,
+    ...rest
+  }) {
+    const p = F.payloadFor(w, who);
+    return /*#__PURE__*/React.createElement(FinalReviewsHeader, _extends({
+      lens: p.lens,
+      signupsOpen: p.reviewSlots.signups_open,
+      counts: M.boardCounts(p.reviewSlots, M.indexTeams(p.reviewSlots, p.schedule)),
+      myReviewCount: p.schedule ? p.schedule.my_review_count : 0,
+      zoomUrl: p.reviewSlots.review_zoom_url,
+      onPostSlots: noop,
+      onToggleSignups: noop,
+      onSaveZoom: noop
+    }, rest));
+  }
+  /* One slot seen through one lens — the same Trailhead row in every lens. */
+  function Row({
+    who,
+    slotId = 's-1207-0900',
+    w = base,
+    now = WEEK,
+    zone
+  }) {
+    const p = F.payloadFor(w, who);
+    const slot = p.reviewSlots.slots.find(s => s.id === slotId);
+    const ctx = {
+      lens: p.lens,
+      now,
+      signupsOpen: p.reviewSlots.signups_open,
+      myTeam: p.myTeam,
+      viewerId: p.viewerId,
+      teamsById: p.lens === 'instructor' || p.lens === 'ta' ? M.indexTeams(p.reviewSlots, p.schedule) : {},
+      zoomUrl: p.lens === 'instructor' || p.lens === 'ta' ? p.reviewSlots.review_zoom_url : null
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-board"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-fr-board__surface"
+    }, /*#__PURE__*/React.createElement("ul", {
+      className: "gt-fr-board__list"
+    }, /*#__PURE__*/React.createElement(SlotRow, {
+      slot: slot,
+      context: ctx,
+      zone: zone,
+      reviewHref: t => `#review/${t.project_id}`,
+      onAction: (a, s, v, e) => e && e.preventDefault && e.preventDefault()
+    }))));
+  }
+  const Confirm = (k, x) => {
+    const c = M.confirmCopy(k, x);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "fr-dialog-stage"
+    }, /*#__PURE__*/React.createElement(ConfirmDialog, {
+      open: true,
+      portal: false,
+      title: c.title,
+      message: c.message,
+      confirmLabel: c.confirmLabel,
+      destructive: c.destructive,
+      onCancel: noop,
+      onConfirm: noop
+    }));
+  };
+  function FinalReviewsStates({
+    zone = F.PT
+  }) {
+    const Board = useBoard(zone);
+    const W = iso => M.whenText(iso, {
+      zone
+    });
+    const staff = F.payloadFor(base, 'instructor');
+    const byId = M.indexTeams(staff.reviewSlots, staff.schedule);
+    const slots = staff.reviewSlots.slots;
+    const team = id => ({
+      ...byId[id],
+      project_id: id
+    });
+    const manyStaff = F.payloadFor(many, 'instructor');
+    const e409 = (a, d, x) => M.errorCopy(a, {
+      status: 409,
+      detail: d
+    }, x);
+    const e403 = (a, d, x) => M.errorCopy(a, {
+      status: 403,
+      detail: d
+    }, x);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "fr-states"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "Load, refetch, error"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "First load \u2014 header, Your team's review and the board as skeletons (every lens)",
+      wide: true
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Head, {
+      who: "po",
+      status: "loading"
+    }), /*#__PURE__*/React.createElement(Team, {
+      who: "po",
+      status: "loading"
+    }), /*#__PURE__*/React.createElement(Board, {
+      who: "po",
+      status: "loading"
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Refetching after an action \u2014 the board holds its frame (aria-busy)"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "po_booked",
+      status: "refetching"
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Page error \u2014 quiet text + Try again, never a red panel"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "instructor",
+      status: "error"
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "No slots \xB7 sign-ups open / closed"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "No slots posted \u2014 instructor: the empty state leads to Post slots"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "instructor",
+      w: empty
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "No slots posted \u2014 everyone else"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "member_wait",
+      w: empty
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Sign-ups open, no slots posted \u2014 the instructor is told nobody can book yet"
+    }, /*#__PURE__*/React.createElement(Head, {
+      who: "instructor",
+      w: emptyOpen
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Sign-ups closed with slots posted (the same state before opening and after closing)"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Head, {
+      who: "member_wait",
+      w: closed
+    }), /*#__PURE__*/React.createElement(Team, {
+      who: "member_wait",
+      w: closed
+    }))), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "One booked team (Trailhead, Mon 9:00 AM) through every lens"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Its Product Owner \u2014 Release"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "po_booked",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Its member \u2014 the Review TA they present to, no actions"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "trail_member",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Another student \u2014 the team, never its reviewers"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "po",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "TA who is its Home TA (Maya Chen) \u2014 scores the team, isn't in the review: no Join, can't be its Review TA"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "ta",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "TA who is its Review TA (Luis Ortega) \u2014 Step down"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "luis",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "TA who is neither (Priya Nair) \u2014 Open review, read-only"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "priya",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A booked team without a Review TA, a TA who may sign up (Priya, Redwood Labs)"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "priya",
+      slotId: "s-1207-1300",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "The instructor \u2014 Open review + the row Menu"
+    }, /*#__PURE__*/React.createElement(Row, {
+      who: "instructor",
+      zone: zone
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "Refusals \u2014 the board refreshes and says so above it"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A slot taken by a race (409) \u2014 the team keeps the slot it had",
+      wide: true
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "po_booked",
+      alert: e409('move_here', 'That slot was just taken.', {
+        keeps: W('2026-12-07T17:00:00Z')
+      }),
+      onDismissAlert: noop
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A slot that started in the meantime (409)"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop
+    }, e409('book', 'That slot has already started.'))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Sign-ups closed in the meantime (403)"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop
+    }, e403('book', "Sign-ups aren't open."))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "The team's review time passed (403)"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop
+    }, e403('release_own', "Your team's review time has passed."))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Another TA signed up a moment earlier (409)"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop
+    }, e409('sign_up', 'This team already has an additional reviewer', {
+      team: 'Redwood Labs'
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A TA signs up for a team that moved after the board loaded \u2014 refused (409, the request carried the slot the TA saw); the board refreshes and offers the new time"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop,
+      actions: /*#__PURE__*/React.createElement(Button, {
+        size: "sm",
+        variant: "outline"
+      }, "Sign up for ", W('2026-12-08T18:00:00Z'))
+    }, M.errorCopy('sign_up', {
+      status: 409,
+      detail: 'This team moved to another slot.'
+    }, {
+      team: 'Redwood Labs',
+      when: W('2026-12-08T18:00:00Z')
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Instructor deletes a slot a team just booked (409)"
+    }, /*#__PURE__*/React.createElement(Alert, {
+      tone: "warning",
+      onDismiss: noop
+    }, M.errorCopy('delete', {
+      status: 409,
+      detail: 'Release the team before deleting its slot.'
+    }))), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "Moves and releases"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Product Owner moves, dropping the Review TA"
+    }, Confirm('move_here', {
+      team: 'Trailhead',
+      when: W('2026-12-08T18:00:00Z'),
+      from: W('2026-12-07T17:00:00Z'),
+      reviewTa: 'Luis Ortega'
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Product Owner moves, no Review TA to drop"
+    }, Confirm('move_here', {
+      team: 'Redwood Labs',
+      when: W('2026-12-08T18:00:00Z'),
+      from: W('2026-12-07T21:00:00Z')
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Release, with a Review TA"
+    }, Confirm('release_own', {
+      team: 'Trailhead',
+      when: W('2026-12-07T17:00:00Z'),
+      reviewTa: 'Luis Ortega'
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Release, without one (instructor)"
+    }, Confirm('release_team', {
+      team: 'Redwood Labs',
+      when: W('2026-12-07T21:00:00Z')
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Instructor moves a team \u2014 Luis Ortega named; Appoint again follows in the toast"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-dialog-stage fr-dialog-stage--tall"
+    }, /*#__PURE__*/React.createElement(SlotActionDialog, {
+      open: true,
+      portal: false,
+      kind: "move_team",
+      team: team('p-trailhead'),
+      slots: slots,
+      now: WEEK,
+      zone: zone,
+      defaultValue: "s-1208-1000",
+      onConfirm: wait,
+      onCancel: noop
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "\u2026and the toast after the move"
+    }, /*#__PURE__*/React.createElement(Toast, {
+      variant: "success",
+      message: M.successCopy('move_team', {
+        team: 'Trailhead',
+        when: W('2026-12-08T18:00:00Z'),
+        reviewTa: 'Luis Ortega'
+      }),
+      actionLabel: "Appoint again",
+      onAction: noop
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "Review day and after"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Live review (Join window) \u2014 the team's own card",
+      wide: true
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "po_booked",
+      w: closed,
+      now: DAY,
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Review day board \u2014 Trailhead live, the instructor's Join Zoom inside the window",
+      wide: true
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "instructor",
+      w: closed,
+      now: new Date('2026-12-07T17:55:00Z')
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A past review"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "po_booked",
+      w: closed,
+      now: AFTER,
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Past days on the board \u2014 Monday folded on Tuesday"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "ta",
+      w: closed,
+      now: new Date('2026-12-08T18:30:00Z')
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "The instructor on a started slot \u2014 Place a team\u2026 records a review held outside the app"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-dialog-stage fr-dialog-stage--tall"
+    }, /*#__PURE__*/React.createElement(SlotActionDialog, {
+      open: true,
+      portal: false,
+      kind: "place_team",
+      slot: slots.find(s => s.id === 's-1207-1100'),
+      slots: slots,
+      unbooked: M.unbookedTeams(staff.reviewSlots, byId),
+      teamsById: byId,
+      now: new Date('2026-12-07T19:30:00Z'),
+      zone: zone,
+      defaultValue: "p-arboretum",
+      onConfirm: wait,
+      onCancel: noop
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "\u2026and releasing a team whose time has passed (scores stay)"
+    }, Confirm('release_team', {
+      team: 'Trailhead',
+      when: W('2026-12-07T17:00:00Z'),
+      reviewTa: 'Luis Ortega',
+      passed: true
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "Gaps"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Every slot taken while teams still have none"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "po",
+      w: full,
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A team without a Product Owner \u2014 the member's card"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "no_po",
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "\u2026and the staff list (amber No Product Owner)"
+    }, /*#__PURE__*/React.createElement(UnbookedTeams, {
+      teams: M.unbookedTeams(staff.reviewSlots, byId),
+      lens: "instructor",
+      onAction: noop
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A student on no team \u2014 the board stays readable"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "no_team",
+      zone: zone
+    }), /*#__PURE__*/React.createElement(Board, {
+      who: "no_team"
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "The instructor's student preview \u2014 the no-team state, read-only"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "preview",
+      zone: zone
+    }))), /*#__PURE__*/React.createElement("p", {
+      className: "fr-states__lbl"
+    }, "History, posting, zones, density"), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A finished class from before slots \u2014 staff see the recorded times read-only"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "instructor",
+      w: hist,
+      now: new Date(S.history.now)
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "\u2026students see the no-slots state"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "member",
+      w: hist,
+      now: new Date(S.history.now)
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "Posting \u2014 an overlapping time (refused: Change or \xD7, nothing posts until fixed), a past time (allowed, with its note), times already posted"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-dialog-stage fr-dialog-stage--drawer"
+    }, /*#__PURE__*/React.createElement(PostSlotsDrawer, {
+      open: true,
+      portal: false,
+      width: "100%",
+      existing: slots,
+      now: WEEK,
+      zone: zone,
+      defaultEntries: [{
+        date: '2026-11-30',
+        time: '08:00'
+      }, {
+        date: '2026-12-07',
+        time: '09:00'
+      }, {
+        date: '2026-12-07',
+        time: '09:30'
+      }, {
+        date: '2026-12-07',
+        time: '16:00'
+      }, {
+        date: '2026-12-09',
+        time: '09:00'
+      }, {
+        date: '2026-12-09',
+        time: '10:00'
+      }],
+      onPost: wait,
+      onClose: noop
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "A viewer in India \u2014 campus times beside the viewer's, days regrouped (3:00 PM PT Monday \u2192 Tuesday 4:30 AM)"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Team, {
+      who: "member",
+      zone: F.IST
+    }), /*#__PURE__*/React.createElement(Board, {
+      who: "po"
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "40 slots, long team names, many teams without a slot (instructor)",
+      wide: true
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fr-page"
+    }, /*#__PURE__*/React.createElement(Head, {
+      who: "instructor",
+      w: many
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "fr-scrollbox"
+    }, /*#__PURE__*/React.createElement(Board, {
+      who: "instructor",
+      w: many
+    })), /*#__PURE__*/React.createElement(UnbookedTeams, {
+      teams: M.unbookedTeams(manyStaff.reviewSlots, M.indexTeams(manyStaff.reviewSlots, manyStaff.schedule)),
+      lens: "instructor",
+      onAction: noop
+    }))), /*#__PURE__*/React.createElement(Frame, {
+      cap: "The scoring workspace header \u2014 instructor, before the review",
+      wide: true
+    }, /*#__PURE__*/React.createElement(ReviewWorkspaceHeader, {
+      team: team('p-trailhead'),
+      viewerRole: "instructor",
+      startsAt: "2026-12-07T17:00:00+00:00",
+      homeTa: byId['p-trailhead'].home_ta,
+      reviewTa: byId['p-trailhead'].review_ta,
+      zoomUrl: S.review_slots_staff.review_zoom_url,
+      now: WEEK,
+      zone: zone
+    })), /*#__PURE__*/React.createElement(Frame, {
+      cap: "\u2026the Home TA inside the Join window \u2014 the Home TA view stays, with no Join Zoom (the Home TA scores but doesn't attend)",
+      wide: true
+    }, /*#__PURE__*/React.createElement(ReviewWorkspaceHeader, {
+      team: team('p-trailhead'),
+      viewerRole: "home",
+      startsAt: "2026-12-07T17:00:00+00:00",
+      homeTa: byId['p-trailhead'].home_ta,
+      reviewTa: byId['p-trailhead'].review_ta,
+      zoomUrl: S.review_slots_staff.review_zoom_url,
+      now: new Date('2026-12-07T16:55:00Z'),
+      zone: zone
+    })));
+  }
+  window.FinalReviewsStates = FinalReviewsStates;
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/FinalReviewsStates.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/grepthink/ScheduleScreen.jsx
 try { (() => {
@@ -23595,626 +21926,6 @@ function ScheduleApp() {
 window.ScheduleApp = ScheduleApp;
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/ScheduleScreen.jsx", error: String((e && e.message) || e) }); }
 
-// ui_kits/grepthink/Screens.jsx
-try { (() => {
-const NS = window.GrepThinkDesignSystem_36e7e3;
-const {
-  Card,
-  Table,
-  Badge,
-  Button,
-  StatCard,
-  ProjectCard,
-  RosterRow,
-  IconButton,
-  Pagination,
-  AssignmentCard,
-  TSRForm,
-  TSRSummaryCard,
-  ConversationListItem,
-  MessageBubble,
-  MessageComposer,
-  MeetingCard,
-  PieChartCard,
-  BarChartCard,
-  EmptyState,
-  Tabs,
-  JoinRequestCard,
-  SegmentedControl
-} = NS;
-
-/* ── Home ───────────────────────────────────────────────────── */
-function HomeScreen({
-  persona
-}) {
-  const deadlines = [{
-    id: 1,
-    name: 'TSR1',
-    assignee: 'Joshua C.',
-    due: 'Jan 18, 2026',
-    project: 'GrepThink 2.0',
-    s: /*#__PURE__*/React.createElement(Badge, {
-      tone: "error"
-    }, "Due Soon")
-  }, {
-    id: 2,
-    name: 'TSR2',
-    assignee: 'Tony W.',
-    due: 'Jan 25, 2026',
-    project: 'GrepThink 2.0',
-    s: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, "Not Started")
-  }, {
-    id: 3,
-    name: 'TSR3',
-    assignee: 'Landon N.',
-    due: 'Feb 01, 2026',
-    project: 'GrepThink 2.0',
-    s: /*#__PURE__*/React.createElement(Badge, {
-      tone: "success"
-    }, "Completed")
-  }];
-  if (persona === 'instructor') {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "gtk-stack"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "gtk-grid4"
-    }, /*#__PURE__*/React.createElement(StatCard, {
-      label: "Students",
-      value: "62",
-      hint: "58 enrolled \xB7 4 invited",
-      accent: "primary"
-    }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "Teams formed",
-      value: "12",
-      hint: "2 pending staffing",
-      accent: "blue"
-    }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "TSRs submitted",
-      value: "48/62",
-      hint: "14 outstanding",
-      accent: "amber"
-    }), /*#__PURE__*/React.createElement(StatCard, {
-      label: "Join requests",
-      value: "5",
-      hint: "oldest 2 days",
-      accent: "purple"
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "gtk-grid2"
-    }, /*#__PURE__*/React.createElement(Card, {
-      title: "TSR completion",
-      shadow: "hairline"
-    }, /*#__PURE__*/React.createElement(PieChartCard, {
-      size: 120,
-      data: [{
-        name: 'Submitted',
-        value: 48
-      }, {
-        name: 'In progress',
-        value: 8
-      }, {
-        name: 'Missing',
-        value: 6
-      }]
-    })), /*#__PURE__*/React.createElement(Card, {
-      title: "Team sizes",
-      shadow: "hairline"
-    }, /*#__PURE__*/React.createElement(BarChartCard, {
-      height: 110,
-      data: [{
-        name: 'T1',
-        value: 5
-      }, {
-        name: 'T2',
-        value: 4
-      }, {
-        name: 'T3',
-        value: 5
-      }, {
-        name: 'T4',
-        value: 6
-      }, {
-        name: 'T5',
-        value: 4
-      }]
-    }))), /*#__PURE__*/React.createElement(Card, {
-      title: "Pending join requests",
-      shadow: "hairline"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "gtk-stack",
-      style: {
-        gap: 10
-      }
-    }, /*#__PURE__*/React.createElement(JoinRequestCard, {
-      name: "Priya Raman",
-      project: "Slug Dining",
-      timestamp: "2d ago",
-      onApprove: () => {},
-      onDeny: () => {}
-    }), /*#__PURE__*/React.createElement(JoinRequestCard, {
-      name: "Marcus Lee",
-      project: "GrepThink 2.0",
-      timestamp: "1d ago",
-      message: "Took 101 with Prof. J, comfortable in React.",
-      onApprove: () => {},
-      onDeny: () => {}
-    }))));
-  }
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-welcome"
-  }, "Welcome Back, Josh"), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-grid-main"
-  }, /*#__PURE__*/React.createElement(Card, {
-    title: "Upcoming Deadlines",
-    shadow: "card",
-    padded: false
-  }, /*#__PURE__*/React.createElement(Table, {
-    columns: [{
-      key: 'name',
-      label: 'Name'
-    }, {
-      key: 'assignee',
-      label: 'Assignee'
-    }, {
-      key: 'due',
-      label: 'Deadline'
-    }, {
-      key: 'project',
-      label: 'Project'
-    }, {
-      key: 's',
-      label: 'Status'
-    }],
-    rows: deadlines
-  })), /*#__PURE__*/React.createElement(Card, {
-    shadow: "card",
-    padded: false
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-head"
-  }, "Current Group"), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-body"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-row"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gtk-group-avatar"
-  }, "GT"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-name"
-  }, "Grepthink 2.0"), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-meta"
-  }, /*#__PURE__*/React.createElement("b", null, "Product Owner:"), " Ashton Liu"), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-group-pills"
-  }, /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, "5 Members"), /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, "Faculty Led"), /*#__PURE__*/React.createElement(Badge, {
-    tone: "success"
-  }, "Incoming"))))))));
-}
-
-/* ── Projects ───────────────────────────────────────────────── */
-function ProjectsScreen() {
-  const [view, setView] = React.useState('cards');
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-toolbar"
-  }, /*#__PURE__*/React.createElement(SegmentedControl, {
-    ariaLabel: "View",
-    value: view,
-    onChange: setView,
-    options: [{
-      value: 'cards',
-      label: 'Cards'
-    }, {
-      value: 'table',
-      label: 'Table'
-    }]
-  }), /*#__PURE__*/React.createElement(Button, {
-    size: "sm"
-  }, "Create Project")), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-grid-cards"
-  }, /*#__PURE__*/React.createElement(ProjectCard, {
-    name: "Grepthink 2.0",
-    team: "Team 1",
-    memberCount: 4,
-    status: "Active",
-    onView: () => {}
-  }), /*#__PURE__*/React.createElement(ProjectCard, {
-    name: "Slug Dining",
-    team: "Team 4",
-    memberCount: 5,
-    status: "Active",
-    onView: () => {}
-  }), /*#__PURE__*/React.createElement(ProjectCard, {
-    name: "Campus Nav AR",
-    team: "Team 7",
-    memberCount: 3,
-    status: "Recruiting",
-    statusTone: "info",
-    onView: () => {}
-  }), /*#__PURE__*/React.createElement(ProjectCard, {
-    name: "StudySpots",
-    team: "\u2014",
-    memberCount: 0,
-    status: "Proposed",
-    statusTone: "neutral",
-    onView: () => {}
-  })));
-}
-
-/* ── Assignments ────────────────────────────────────────────── */
-function AssignmentsScreen() {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-count-head"
-  }, /*#__PURE__*/React.createElement("h2", null, "Assignments"), /*#__PURE__*/React.createElement("span", {
-    className: "gtk-count"
-  }, "4")), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack",
-    style: {
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement(AssignmentCard, {
-    name: "TSR 3",
-    due: "Feb 01, 2026",
-    project: "GrepThink 2.0",
-    status: "in_progress",
-    onAction: () => {}
-  }), /*#__PURE__*/React.createElement(AssignmentCard, {
-    name: "Sprint 3 Demo",
-    due: "Feb 05, 2026",
-    project: "GrepThink 2.0",
-    status: "not_started",
-    onAction: () => {}
-  }), /*#__PURE__*/React.createElement(AssignmentCard, {
-    name: "Interest Form",
-    due: "Jan 12, 2026",
-    status: "submitted",
-    onAction: () => {}
-  }), /*#__PURE__*/React.createElement(AssignmentCard, {
-    name: "TSR 2",
-    due: "Jan 25, 2026",
-    project: "GrepThink 2.0",
-    status: "closed",
-    onAction: () => {}
-  })));
-}
-
-/* ── TSR (student) ──────────────────────────────────────────── */
-function TsrScreen() {
-  const [entries, setEntries] = React.useState([{
-    name: 'Tony Wu',
-    role: 'Scrum Master',
-    percent: 25,
-    positive: '',
-    constructive: ''
-  }, {
-    name: 'Landon Ngo',
-    role: 'Member',
-    percent: 25,
-    positive: '',
-    constructive: ''
-  }, {
-    name: 'Joshua Cruz',
-    role: 'Member',
-    percent: 25,
-    positive: '',
-    constructive: ''
-  }, {
-    name: 'Ashton Liu',
-    role: 'Product Owner',
-    percent: 25,
-    positive: '',
-    constructive: ''
-  }]);
-  const [notes, setNotes] = React.useState('');
-  return /*#__PURE__*/React.createElement(Card, {
-    title: "TSR 3 \u2014 Sprint 3",
-    subtitle: "Due Feb 01, 2026 \xB7 11:59 PM",
-    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
-      variant: "secondary"
-    }, "Save draft"), /*#__PURE__*/React.createElement(Button, null, "Submit TSR"))
-  }, /*#__PURE__*/React.createElement(TSRForm, {
-    entries: entries,
-    onChange: setEntries,
-    showScrumNotes: true,
-    scrumNotes: notes,
-    onScrumNotesChange: setNotes
-  }));
-}
-
-/* ── Messages ───────────────────────────────────────────────── */
-function MessagesScreen() {
-  const [active, setActive] = React.useState('Team 1');
-  const [draft, setDraft] = React.useState('');
-  const [msgs, setMsgs] = React.useState([{
-    own: false,
-    author: 'Tony Wu',
-    time: '3:42 PM',
-    text: 'standup at 4?'
-  }, {
-    own: true,
-    time: '3:43 PM',
-    text: 'works for me'
-  }, {
-    own: false,
-    author: 'Landon Ngo',
-    time: '3:45 PM',
-    text: 'pushed the roster fix, can demo'
-  }]);
-  const send = text => {
-    setMsgs([...msgs, {
-      own: true,
-      time: 'now',
-      text
-    }]);
-    setDraft('');
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-messages"
-  }, /*#__PURE__*/React.createElement(Card, {
-    padded: false,
-    shadow: "hairline",
-    className: "gtk-messages__list"
-  }, /*#__PURE__*/React.createElement(ConversationListItem, {
-    name: "Team 1",
-    preview: "pushed the roster fix, can demo",
-    time: "2m",
-    unread: 0,
-    online: true,
-    active: active === 'Team 1',
-    onClick: () => setActive('Team 1')
-  }), /*#__PURE__*/React.createElement(ConversationListItem, {
-    name: "Sam the TA",
-    preview: "Zoom link for tomorrow \u2193",
-    time: "1h",
-    unread: 2,
-    active: active === 'Sam the TA',
-    onClick: () => setActive('Sam the TA')
-  }), /*#__PURE__*/React.createElement(ConversationListItem, {
-    name: "Joshua Cruz",
-    preview: "thanks!",
-    time: "Mon",
-    unread: 1,
-    active: active === 'Joshua Cruz',
-    onClick: () => setActive('Joshua Cruz')
-  })), /*#__PURE__*/React.createElement(Card, {
-    padded: false,
-    shadow: "hairline",
-    className: "gtk-messages__thread"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-messages__head"
-  }, active), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-messages__scroll"
-  }, msgs.map((m, i) => /*#__PURE__*/React.createElement(MessageBubble, {
-    key: i,
-    own: m.own,
-    author: m.author,
-    time: m.time
-  }, m.text))), /*#__PURE__*/React.createElement(MessageComposer, {
-    value: draft,
-    onChange: setDraft,
-    onSend: send
-  })));
-}
-
-/* ── Roster (instructor/TA) ─────────────────────────────────── */
-function RosterScreen() {
-  const [page, setPage] = React.useState(1);
-  const [tab, setTab] = React.useState('all');
-  const More = /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "5",
-    r: "1.6",
-    fill: "currentColor"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "1.6",
-    fill: "currentColor"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "19",
-    r: "1.6",
-    fill: "currentColor"
-  }));
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack"
-  }, /*#__PURE__*/React.createElement(Tabs, {
-    ariaLabel: "Roster",
-    value: tab,
-    onChange: setTab,
-    tabs: [{
-      value: 'all',
-      label: 'All students',
-      count: 62
-    }, {
-      value: 'unteamed',
-      label: 'Unteamed',
-      count: 7
-    }, {
-      value: 'invited',
-      label: 'Invited',
-      count: 4
-    }]
-  }), /*#__PURE__*/React.createElement(Card, {
-    padded: false,
-    shadow: "hairline"
-  }, /*#__PURE__*/React.createElement(RosterRow, {
-    name: "Ashton Liu",
-    email: "aliu@ucsc.edu",
-    role: "product_owner",
-    team: "Team 1",
-    status: "Enrolled",
-    statusTone: "success",
-    actions: /*#__PURE__*/React.createElement(IconButton, {
-      ariaLabel: "More",
-      size: "sm"
-    }, More)
-  }), /*#__PURE__*/React.createElement(RosterRow, {
-    name: "Tony Wu",
-    email: "twu@ucsc.edu",
-    role: "scrum_master",
-    team: "Team 1",
-    status: "Enrolled",
-    statusTone: "success",
-    actions: /*#__PURE__*/React.createElement(IconButton, {
-      ariaLabel: "More",
-      size: "sm"
-    }, More)
-  }), /*#__PURE__*/React.createElement(RosterRow, {
-    name: "Priya Raman",
-    email: "praman@ucsc.edu",
-    role: "member",
-    team: "Team 4",
-    status: "Enrolled",
-    statusTone: "success",
-    actions: /*#__PURE__*/React.createElement(IconButton, {
-      ariaLabel: "More",
-      size: "sm"
-    }, More)
-  }), /*#__PURE__*/React.createElement(RosterRow, {
-    name: "Marcus Lee",
-    email: "mlee@ucsc.edu",
-    role: "member",
-    team: "\u2014",
-    status: "Invited",
-    statusTone: "info",
-    actions: /*#__PURE__*/React.createElement(IconButton, {
-      ariaLabel: "More",
-      size: "sm"
-    }, More)
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-center"
-  }, /*#__PURE__*/React.createElement(Pagination, {
-    page: page,
-    pageCount: 16,
-    onChange: setPage
-  })));
-}
-
-/* ── Meetings (TA) ──────────────────────────────────────────── */
-function MeetingsScreen() {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gtk-stack"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-grid2"
-  }, /*#__PURE__*/React.createElement(MeetingCard, {
-    team: "Team 1 \u2014 weekly sync",
-    time: "Tue Jan 20 \xB7 3:00 PM",
-    zoomUrl: "#",
-    attendees: ['Ashton Liu', 'Tony Wu', 'Landon Ngo', 'Joshua Cruz'],
-    attendance: {
-      present: 0,
-      total: 4
-    },
-    status: "upcoming",
-    onMarkAttendance: () => {}
-  }), /*#__PURE__*/React.createElement(MeetingCard, {
-    team: "Team 4 \u2014 weekly sync",
-    time: "Tue Jan 20 \xB7 4:00 PM",
-    zoomUrl: "#",
-    attendees: ['Priya Raman', 'Marcus Lee', 'Dana Ko'],
-    attendance: {
-      present: 0,
-      total: 3
-    },
-    status: "upcoming",
-    onMarkAttendance: () => {}
-  }), /*#__PURE__*/React.createElement(MeetingCard, {
-    team: "Team 2 \u2014 weekly sync",
-    time: "Mon Jan 19 \xB7 2:00 PM",
-    attendees: ['Sofia Reyes', 'Ben Zhou', 'Ada Osei', 'Kim Tran'],
-    attendance: {
-      present: 4,
-      total: 4
-    },
-    status: "completed"
-  }), /*#__PURE__*/React.createElement(MeetingCard, {
-    team: "Team 3 \u2014 weekly sync",
-    time: "Mon Jan 19 \xB7 3:00 PM",
-    attendees: ['Noah Park', 'Ella Kim'],
-    attendance: {
-      present: 1,
-      total: 4
-    },
-    status: "missed"
-  })), /*#__PURE__*/React.createElement(Card, {
-    title: "Latest TSR summaries",
-    shadow: "hairline"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-grid2"
-  }, /*#__PURE__*/React.createElement(TSRSummaryCard, {
-    submitter: "Ashton Liu",
-    sprint: "Sprint 3",
-    submittedAt: "Jan 17",
-    rows: [{
-      name: 'Tony Wu',
-      percent: 25
-    }, {
-      name: 'Landon Ngo',
-      percent: 30
-    }, {
-      name: 'Joshua Cruz',
-      percent: 20
-    }, {
-      name: 'Ashton Liu',
-      percent: 25
-    }],
-    onOpen: () => {}
-  }), /*#__PURE__*/React.createElement(TSRSummaryCard, {
-    submitter: "Priya Raman",
-    sprint: "Sprint 3",
-    status: "late",
-    submittedAt: "Jan 19",
-    rows: [{
-      name: 'Marcus Lee',
-      percent: 35
-    }, {
-      name: 'Dana Ko',
-      percent: 30
-    }, {
-      name: 'Priya Raman',
-      percent: 35
-    }],
-    onOpen: () => {}
-  }))));
-}
-
-/* ── Placeholder for settings/help ──────────────────────────── */
-function StubScreen({
-  title
-}) {
-  return /*#__PURE__*/React.createElement(Card, {
-    shadow: "hairline"
-  }, /*#__PURE__*/React.createElement(EmptyState, {
-    compact: true,
-    title: title,
-    description: "Not recreated in this kit \u2014 see the codebase for the real view."
-  }));
-}
-window.GTKScreens = {
-  HomeScreen,
-  ProjectsScreen,
-  AssignmentsScreen,
-  TsrScreen,
-  MessagesScreen,
-  RosterScreen,
-  MeetingsScreen,
-  StubScreen
-};
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Screens.jsx", error: String((e && e.message) || e) }); }
-
 // ui_kits/grepthink/SearchScreen.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -24503,398 +22214,6 @@ function SearchApp() {
 window.SearchApp = SearchApp;
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/SearchScreen.jsx", error: String((e && e.message) || e) }); }
 
-// ui_kits/grepthink/Shell.jsx
-try { (() => {
-const NS = window.GrepThinkDesignSystem_36e7e3;
-const {
-  SidebarNavItem,
-  SidebarSectionTitle,
-  Toggle,
-  UnreadBadge,
-  Avatar
-} = NS;
-
-/* ── Lucide-style inline icons (stroke-2, 24 viewBox) ───────── */
-const Icon = {
-  home: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  msg: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  folder: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  class: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M22 10L12 5 2 10l10 5 10-5zM6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  clip: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: "9",
-    y: "3",
-    width: "6",
-    height: "4",
-    rx: "1",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  })),
-  users: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: "9",
-    cy: "7",
-    r: "4",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  })),
-  cal: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("rect", {
-    x: "3",
-    y: "5",
-    width: "18",
-    height: "16",
-    rx: "2",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M3 9h18M8 3v4M16 3v4",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  })),
-  gear: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "3",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  help: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "12",
-    cy: "12",
-    r: "10",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  })),
-  bell: /*#__PURE__*/React.createElement("svg", {
-    width: "20",
-    height: "20",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })),
-  search: /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("circle", {
-    cx: "11",
-    cy: "11",
-    r: "8",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M21 21l-4.35-4.35",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  })),
-  video: /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M23 7l-7 5 7 5V7z",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: "1",
-    y: "5",
-    width: "15",
-    height: "14",
-    rx: "2",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  })),
-  chevron: /*#__PURE__*/React.createElement("svg", {
-    width: "14",
-    height: "14",
-    viewBox: "0 0 24 24",
-    fill: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M7 10l5 5 5-5",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }))
-};
-const NAV = {
-  student: [{
-    section: 'Main',
-    items: [{
-      id: 'home',
-      label: 'Home',
-      icon: Icon.home
-    }, {
-      id: 'messages',
-      label: 'Messages',
-      icon: Icon.msg,
-      badge: 3
-    }, {
-      id: 'projects',
-      label: 'Projects',
-      icon: Icon.folder
-    }, {
-      id: 'assignments',
-      label: 'Assignments',
-      icon: Icon.clip
-    }, {
-      id: 'tsr',
-      label: 'TSRs',
-      icon: Icon.cal
-    }]
-  }, {
-    section: 'Settings',
-    items: [{
-      id: 'settings',
-      label: 'Settings',
-      icon: Icon.gear
-    }, {
-      id: 'help',
-      label: 'Help Center',
-      icon: Icon.help
-    }]
-  }],
-  ta: [{
-    section: 'Main',
-    items: [{
-      id: 'home',
-      label: 'Home',
-      icon: Icon.home
-    }, {
-      id: 'messages',
-      label: 'Messages',
-      icon: Icon.msg,
-      badge: 3
-    }, {
-      id: 'meetings',
-      label: 'Meetings',
-      icon: Icon.video
-    }, {
-      id: 'roster',
-      label: 'Roster',
-      icon: Icon.users
-    }]
-  }, {
-    section: 'Settings',
-    items: [{
-      id: 'settings',
-      label: 'Settings',
-      icon: Icon.gear
-    }, {
-      id: 'help',
-      label: 'Help Center',
-      icon: Icon.help
-    }]
-  }],
-  instructor: [{
-    section: 'Main',
-    items: [{
-      id: 'home',
-      label: 'Home',
-      icon: Icon.home
-    }, {
-      id: 'messages',
-      label: 'Messages',
-      icon: Icon.msg,
-      badge: 3
-    }, {
-      id: 'projects',
-      label: 'Projects',
-      icon: Icon.folder
-    }, {
-      id: 'roster',
-      label: 'Roster',
-      icon: Icon.users
-    }, {
-      id: 'assignments',
-      label: 'Assignments',
-      icon: Icon.clip
-    }]
-  }, {
-    section: 'Settings',
-    items: [{
-      id: 'settings',
-      label: 'Settings',
-      icon: Icon.gear
-    }, {
-      id: 'help',
-      label: 'Help Center',
-      icon: Icon.help
-    }]
-  }]
-};
-function Sidebar({
-  persona,
-  screen,
-  onNav
-}) {
-  const [dark, setDark] = React.useState(false);
-  return /*#__PURE__*/React.createElement("aside", {
-    className: "gtk-sidebar"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gtk-sidebar__logo"
-  }, /*#__PURE__*/React.createElement("img", {
-    src: "../../assets/grepthink-logo.svg",
-    alt: "GrepThink"
-  })), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gtk-class-selector"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gtk-class-selector__icon"
-  }, Icon.class), /*#__PURE__*/React.createElement("span", null, "2026W CSE 115B"), /*#__PURE__*/React.createElement("span", {
-    className: "gtk-class-selector__chev"
-  }, Icon.chevron)), /*#__PURE__*/React.createElement("nav", {
-    className: "gtk-sidebar__nav"
-  }, NAV[persona].map(group => /*#__PURE__*/React.createElement("div", {
-    key: group.section,
-    className: "gtk-sidebar__section"
-  }, /*#__PURE__*/React.createElement(SidebarSectionTitle, null, group.section), group.items.map(item => /*#__PURE__*/React.createElement(SidebarNavItem, {
-    key: item.id,
-    icon: item.icon,
-    label: item.label,
-    badge: item.badge,
-    active: screen === item.id,
-    onClick: () => onNav(item.id)
-  }))))), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-sidebar__foot"
-  }, /*#__PURE__*/React.createElement(Toggle, {
-    label: "Dark Mode",
-    checked: dark,
-    onChange: e => setDark(e.target.checked),
-    className: "gtk-darkmode"
-  })));
-}
-function Header({
-  title,
-  user
-}) {
-  return /*#__PURE__*/React.createElement("header", {
-    className: "gtk-header"
-  }, /*#__PURE__*/React.createElement("h1", {
-    className: "gtk-header__title"
-  }, title), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-header__search"
-  }, Icon.search, /*#__PURE__*/React.createElement("input", {
-    placeholder: "Search",
-    "aria-label": "Search"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "gtk-header__right"
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gtk-header__bell",
-    "aria-label": "Notifications"
-  }, Icon.bell, /*#__PURE__*/React.createElement(UnreadBadge, {
-    count: 8
-  })), /*#__PURE__*/React.createElement(Avatar, {
-    name: user,
-    size: "md"
-  })));
-}
-window.GTKShell = {
-  Sidebar,
-  Header,
-  Icon
-};
-})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Shell.jsx", error: String((e && e.message) || e) }); }
-
 // ui_kits/grepthink/TeamMeetingsScreen.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -24912,7 +22231,14 @@ const {
   Button,
   ProgressBar,
   Kbd,
-  ModKey
+  ModKey,
+  Modal,
+  Tabs,
+  TabPanel,
+  Input,
+  Textarea,
+  Select,
+  FileUpload
 } = NS;
 const {
   showTeamMeetingsCard
@@ -25181,7 +22507,8 @@ function ProjectPage({
   }, I.bug), "QA & testing"))))));
 }
 
-/* Edit Project modal (mirrors EditProjectModal.tsx): Details · Team, plus Meetings for the Product Owner only. */
+/* Edit Project modal (mirrors EditProjectModal.tsx): Details · Team, plus Meetings for the Product Owner only.
+   Built from the shared Modal, Tabs, fields and Buttons; `inline` renders it in place for the state frames. */
 function EditProjectModal({
   role,
   tab,
@@ -25191,132 +22518,97 @@ function EditProjectModal({
   children
 }) {
   const po = role === 'po';
-  const tabs = [['details', I.gear16, 'Details'], ['team', I.users, 'Team'], ...(po ? [['meetings', I.calDays, 'Meetings']] : [])];
-  const sheet = /*#__PURE__*/React.createElement("div", {
-    className: ['tm-ep', inline ? 'tm-ep--inline' : ''].filter(Boolean).join(' '),
-    role: "dialog",
-    "aria-modal": inline ? undefined : 'true',
-    "aria-labelledby": "ep-title"
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__close",
-    "aria-label": "Close",
-    onClick: onClose
-  }, I.x), /*#__PURE__*/React.createElement("header", {
-    className: "tm-ep__header"
-  }, /*#__PURE__*/React.createElement("h2", {
-    id: "ep-title",
-    className: "tm-ep__title"
-  }, "Edit Project"), /*#__PURE__*/React.createElement("p", {
-    className: "tm-ep__subtitle"
-  }, "Manage your project configuration and team roles")), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__tabs",
-    role: "tablist"
-  }, tabs.map(([id, icon, label]) => /*#__PURE__*/React.createElement("button", {
-    key: id,
-    type: "button",
-    role: "tab",
-    "aria-selected": tab === id,
-    className: `tm-ep__tab ${tab === id ? 'tm-ep__tab--active' : ''}`,
-    onClick: () => onTab(id)
-  }, icon, /*#__PURE__*/React.createElement("span", null, label)))), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__body"
-  }, tab === 'details' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("section", {
-    className: "tm-ep__section"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "tm-ep__section-title"
-  }, "Project Logo"), /*#__PURE__*/React.createElement("p", {
-    className: "tm-ep__section-hint"
-  }, "Shown on Browse Projects when set. Leave empty to use the default icon."), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__logo-row"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__logo"
-  }, I.folderKanban), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__logo-change"
-  }, I.camera, "Upload logo"))), /*#__PURE__*/React.createElement("section", {
-    className: "tm-ep__section"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "tm-ep__section-title"
-  }, "Project Name"), /*#__PURE__*/React.createElement("input", {
-    className: "tm-ep__input",
-    defaultValue: S.projectName,
-    "aria-label": "Project name"
-  })), /*#__PURE__*/React.createElement("section", {
-    className: "tm-ep__section"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "tm-ep__section-title"
-  }, "Description"), /*#__PURE__*/React.createElement("textarea", {
-    className: "tm-ep__textarea",
+  const idBase = React.useId();
+  const tabs = [{
+    value: 'details',
+    label: 'Details',
+    icon: I.gear16
+  }, {
+    value: 'team',
+    label: 'Team',
+    icon: I.users
+  }, ...(po ? [{
+    value: 'meetings',
+    label: 'Meetings',
+    icon: I.calDays
+  }] : [])];
+  const people = Object.values(S.people).map(p => ({
+    value: p.id,
+    label: p.name
+  }));
+  return /*#__PURE__*/React.createElement(Modal, {
+    open: true,
+    portal: !inline,
+    onClose: onClose,
+    size: "lg",
+    title: "Edit Project",
+    subtitle: "Manage your project configuration and team roles",
+    tabs: /*#__PURE__*/React.createElement(Tabs, {
+      idBase: idBase,
+      ariaLabel: "Edit project sections",
+      value: tab,
+      onChange: onTab,
+      tabs: tabs,
+      collapseOnPhone: true
+    }),
+    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      className: "tm-ep__footer-start"
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "danger-ghost",
+      size: "sm",
+      iconLeft: I.trash
+    }, "Delete Project")), tab === 'meetings' ? /*#__PURE__*/React.createElement(Button, {
+      onClick: onClose
+    }, "Done") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
+      variant: "outline",
+      onClick: onClose
+    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+      onClick: onClose
+    }, "Save Changes")))
+  }, /*#__PURE__*/React.createElement(TabPanel, {
+    idBase: idBase,
+    value: tab,
+    active: true
+  }, tab === 'details' && /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__form"
+  }, /*#__PURE__*/React.createElement(FileUpload, {
+    variant: "image",
+    shape: "square",
+    label: "Project logo",
+    optional: true,
+    chooseLabel: "Upload logo",
+    accept: "image/png,image/jpeg",
+    helperText: "Shown on Browse Projects when set. Leave empty to use the default icon.",
+    onSelect: () => {}
+  }), /*#__PURE__*/React.createElement(Input, {
+    label: "Project name",
+    defaultValue: S.projectName
+  }), /*#__PURE__*/React.createElement(Textarea, {
+    label: "Description",
     rows: 4,
-    "aria-label": "Project description",
     defaultValue: "GrepThink 2.0 is the team and project platform CSE 115 runs on."
-  })), /*#__PURE__*/React.createElement("section", {
-    className: "tm-ep__section"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "tm-ep__section-title"
-  }, "Max Team Size"), /*#__PURE__*/React.createElement("p", {
-    className: "tm-ep__section-hint"
-  }, "Maximum number of members allowed on this project."), /*#__PURE__*/React.createElement("input", {
-    className: "tm-ep__input tm-ep__input--short",
+  }), /*#__PURE__*/React.createElement(Input, {
+    label: "Max team size",
     type: "number",
+    min: 1,
     defaultValue: 5,
-    "aria-label": "Max team size"
-  }))), tab === 'team' && /*#__PURE__*/React.createElement("section", {
-    className: "tm-ep__section"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "tm-ep__section-title"
-  }, "Team roles"), /*#__PURE__*/React.createElement("p", {
-    className: "tm-ep__section-hint"
+    helperText: "Maximum number of members allowed on this project.",
+    className: "tm-ep__short"
+  })), tab === 'team' && /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__form"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "tm-ep__hint"
   }, "Assign the Scrum roles for this project."), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__role-row"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "tm-ep__role-name"
-  }, "Product Owner"), /*#__PURE__*/React.createElement("select", {
-    className: "tm-ep__select",
+    className: "tm-ep__roles"
+  }, /*#__PURE__*/React.createElement(Select, {
+    label: "Product Owner",
     defaultValue: "u-ashton",
-    "aria-label": "Product Owner"
-  }, Object.values(S.people).map(p => /*#__PURE__*/React.createElement("option", {
-    key: p.id,
-    value: p.id
-  }, p.name)))), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__role-row"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "tm-ep__role-name"
-  }, "Scrum Master"), /*#__PURE__*/React.createElement("select", {
-    className: "tm-ep__select",
+    options: people
+  }), /*#__PURE__*/React.createElement(Select, {
+    label: "Scrum Master",
     defaultValue: "u-tony",
-    "aria-label": "Scrum Master"
-  }, Object.values(S.people).map(p => /*#__PURE__*/React.createElement("option", {
-    key: p.id,
-    value: p.id
-  }, p.name))))), tab === 'meetings' && children), /*#__PURE__*/React.createElement("footer", {
-    className: "tm-ep__footer"
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__btn tm-ep__btn--delete"
-  }, I.trash, "Delete Project"), /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep__footer-right"
-  }, tab === 'meetings' ? /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__btn tm-ep__btn--save",
-    onClick: onClose
-  }, "Done") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__btn tm-ep__btn--secondary",
-    onClick: onClose
-  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-ep__btn tm-ep__btn--save",
-    onClick: onClose
-  }, "Save Changes")))));
-  if (inline) return sheet;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "tm-ep-backdrop",
-    onMouseDown: e => {
-      if (e.target === e.currentTarget) onClose();
-    }
-  }, sheet);
+    options: people
+  }))), tab === 'meetings' && children));
 }
 function StatesView({
   zone,
@@ -25673,10 +22965,10 @@ function TeamMeetingsApp() {
     on,
     onClick,
     children
-  }) => /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "tm-demo__opt",
-    "aria-pressed": on,
+  }) => /*#__PURE__*/React.createElement(Button, {
+    variant: "outline",
+    size: "sm",
+    pressed: on,
     onClick: onClick
   }, children);
   return /*#__PURE__*/React.createElement(React.Fragment, null, stage, /*#__PURE__*/React.createElement("div", {
@@ -26532,37 +23824,37 @@ __ds_ns.Toast = __ds_scope.Toast;
 
 __ds_ns.ToastStack = __ds_scope.ToastStack;
 
-__ds_ns.Arrow = __ds_scope.Arrow;
+__ds_ns.ZoomRoomField = __ds_scope.ZoomRoomField;
 
-__ds_ns.ButtonContentArea = __ds_scope.ButtonContentArea;
+__ds_ns.FinalReviewsHeader = __ds_scope.FinalReviewsHeader;
 
-__ds_ns.Calendar = __ds_scope.Calendar;
+__ds_ns.FinalReviewsIcon = __ds_scope.FinalReviewsIcon;
 
-__ds_ns.DAvatars223 = __ds_scope.DAvatars223;
+__ds_ns.SLOT_MINUTES = __ds_scope.SLOT_MINUTES;
 
-__ds_ns.DAvatars63 = __ds_scope.DAvatars63;
+__ds_ns.SLOT_POST_MAX = __ds_scope.SLOT_POST_MAX;
 
-__ds_ns.DateActive = __ds_scope.DateActive;
+__ds_ns.FR_LENSES = __ds_scope.FR_LENSES;
 
-__ds_ns.DateInactive = __ds_scope.DateInactive;
+__ds_ns.FR_REASONS = __ds_scope.FR_REASONS;
 
-__ds_ns.Favorite = __ds_scope.Favorite;
+__ds_ns.FinalReviewsModel = __ds_scope.FinalReviewsModel;
 
-__ds_ns.Grid = __ds_scope.Grid;
+__ds_ns.PostSlotsDrawer = __ds_scope.PostSlotsDrawer;
 
-__ds_ns.Icons = __ds_scope.Icons;
+__ds_ns.ReviewWorkspaceHeader = __ds_scope.ReviewWorkspaceHeader;
 
-__ds_ns.Monitor = __ds_scope.Monitor;
+__ds_ns.SlotActionDialog = __ds_scope.SlotActionDialog;
 
-__ds_ns.Month = __ds_scope.Month;
+__ds_ns.SlotBoard = __ds_scope.SlotBoard;
 
-__ds_ns.Navigation = __ds_scope.Navigation;
+__ds_ns.SlotRow = __ds_scope.SlotRow;
 
-__ds_ns.Scrollbar = __ds_scope.Scrollbar;
+__ds_ns.SlotTime = __ds_scope.SlotTime;
 
-__ds_ns.Thumb = __ds_scope.Thumb;
+__ds_ns.TeamReview = __ds_scope.TeamReview;
 
-__ds_ns.ToggleSwitch = __ds_scope.ToggleSwitch;
+__ds_ns.UnbookedTeams = __ds_scope.UnbookedTeams;
 
 __ds_ns.AnnouncementPill = __ds_scope.AnnouncementPill;
 
@@ -26639,6 +23931,8 @@ __ds_ns.RadioGroup = __ds_scope.RadioGroup;
 __ds_ns.SearchField = __ds_scope.SearchField;
 
 __ds_ns.Select = __ds_scope.Select;
+
+__ds_ns.Slider = __ds_scope.Slider;
 
 __ds_ns.Textarea = __ds_scope.Textarea;
 

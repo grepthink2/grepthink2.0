@@ -8,10 +8,12 @@
 .gt-modal-backdrop {
   position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; align-items: center; justify-content: center;
   padding: 16px; box-sizing: border-box; background-color: var(--gt-scrim); backdrop-filter: blur(4px);
-  animation: gt-fade-in 0.15s ease-out;
+  animation: gt-modal-fade-in 0.15s ease-out;
 }
-.gt-modal-backdrop--closing { animation: gt-fade-out 0.15s ease-out forwards; pointer-events: none; }
+.gt-modal-backdrop--closing { animation: gt-modal-fade-out 0.15s ease-out forwards; pointer-events: none; }
 .gt-modal-backdrop--inline { position: relative; inset: auto; z-index: auto; min-height: 100%; animation: none; }
+@keyframes gt-modal-fade-in { from { opacity: 0; } }
+@keyframes gt-modal-fade-out { to { opacity: 0; } }
 .gt-modal {
   position: relative; display: flex; flex-direction: column; width: 100%; max-height: 88vh; box-sizing: border-box;
   background: var(--gt-surface); border-radius: 12px; box-shadow: var(--gt-shadow-modal);
@@ -44,9 +46,9 @@
 .gt-confirm__error { margin-top: 12px; }
 
 /* ── Drawer — side sheet with the Modal's behaviour ──────── */
-.gt-drawer-backdrop { position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; justify-content: flex-end; background-color: var(--gt-scrim); animation: gt-fade-in 0.2s ease-out; }
+.gt-drawer-backdrop { position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; justify-content: flex-end; background-color: var(--gt-scrim); animation: gt-drawer-fade-in 0.2s ease-out; }
 .gt-drawer-backdrop--left { justify-content: flex-start; }
-.gt-drawer-backdrop--closing { animation: gt-fade-out 0.2s ease-out forwards; pointer-events: none; }
+.gt-drawer-backdrop--closing { animation: gt-drawer-fade-out 0.2s ease-out forwards; pointer-events: none; }
 .gt-drawer-backdrop--inline { position: relative; inset: auto; z-index: auto; height: 100%; animation: none; }
 .gt-drawer { display: flex; flex-direction: column; width: 420px; max-width: 100%; height: 100%; box-sizing: border-box; background: var(--gt-surface); box-shadow: var(--gt-shadow-modal); font-family: var(--gt-font-sans); color: var(--gt-text-primary); outline: none; animation: gt-drawer-in-right 0.2s ease-out; }
 .gt-drawer--left { animation-name: gt-drawer-in-left; }
@@ -62,6 +64,8 @@
 @keyframes gt-drawer-in-left { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes gt-drawer-out-right { to { transform: translateX(24px); opacity: 0; } }
 @keyframes gt-drawer-out-left { to { transform: translateX(-24px); opacity: 0; } }
+@keyframes gt-drawer-fade-in { from { opacity: 0; } }
+@keyframes gt-drawer-fade-out { to { opacity: 0; } }
 
 /* ── Alert (inline) ──────────────────────────────────────── */
 .gt-alert {
@@ -115,7 +119,7 @@
   box-shadow: var(--gt-shadow-pop);
   font-family: var(--gt-font-sans);
   box-sizing: border-box;
-  animation: gt-rise-in 0.25s ease-out;
+  animation: gt-toast-rise-in 0.25s ease-out;
 }
 .gt-toast--success { border-left-color: var(--gt-success); }
 .gt-toast--success .gt-toast__icon { color: var(--gt-success); }
@@ -153,10 +157,12 @@
 }
 .gt-toast__dismiss:hover { color: var(--gt-text-primary); }
 .gt-toast__dismiss:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-@keyframes gt-rise-in {
+/* Not gt-rise-in: that name is the shared 4px rise (keyframes.css, used by messages); the codebase renamed this one in Toast.scss. */
+@keyframes gt-toast-rise-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* The toast's fades, as in Toast.scss. search.css, scrum.css and the combobox borrow them — still one definition each. */
 @keyframes gt-fade-out { to { opacity: 0; } }
 @keyframes gt-fade-in { from { opacity: 0; } }
 .gt-toast-stack {
@@ -198,6 +204,7 @@
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
+@keyframes gt-popover-fade-in { from { opacity: 0; } }
 
 /* ── Menu — action list inside a flush Popover ─────────── */
 .gt-menu { display: flex; flex-direction: column; padding: 4px; min-width: 180px; font-family: var(--gt-font-sans); }
@@ -234,10 +241,10 @@
 .gt-menu__sep { height: 1px; margin: 4px 6px; background: var(--gt-border-subtle); }
 
 @media (prefers-reduced-motion: reduce) {
-  .gt-toast,
-  .gt-popover--bottom,
-  .gt-popover--top { animation: gt-fade-in 0.15s ease-out; }
+  .gt-toast { animation: gt-fade-in 0.15s ease-out; }
   .gt-toast--leaving { animation: gt-fade-out 0.15s ease-out forwards; }
+  .gt-popover--bottom,
+  .gt-popover--top { animation: gt-popover-fade-in 0.15s ease-out; }
 }
 
 /* ── EmptyState — page · card · quiet · error ─────────── */
@@ -267,7 +274,7 @@
 .gt-spinner--16 { width: 16px; height: 16px; }
 .gt-spinner--20 { width: 20px; height: 20px; }
 .gt-spinner--24 { width: 24px; height: 24px; border-width: 2.5px; }
-@keyframes gt-spin { to { transform: rotate(360deg); } }
+/* gt-spin is one of the four shared keyframes — keyframes.css */
 
 /* ── Phones + reduced motion ──────────────────────────────── */
 @media (max-width: 767px) {
@@ -284,7 +291,9 @@
   .gt-inline-confirm__actions .gt-button { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gt-modal-backdrop, .gt-modal-backdrop--closing, .gt-drawer-backdrop, .gt-drawer-backdrop--closing, .gt-drawer, .gt-drawer-backdrop--closing .gt-drawer { animation: gt-fade-in 0.15s ease-out; }
+  .gt-modal-backdrop { animation: gt-modal-fade-in 0.15s ease-out; }
+  .gt-drawer-backdrop, .gt-drawer { animation: gt-drawer-fade-in 0.15s ease-out; }
+  .gt-drawer-backdrop--closing .gt-drawer { animation: none; }
   .gt-modal-backdrop--closing, .gt-drawer-backdrop--closing { animation: none; opacity: 0; }
   /* the spinner keeps turning, slower — !important beats the app's global kill switch (codebase gt-spinner mixin) */
   .gt-spinner { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }

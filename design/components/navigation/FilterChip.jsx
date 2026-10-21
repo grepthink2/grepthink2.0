@@ -67,6 +67,7 @@ export function FilterChipGroup({ type = 'multi', ariaLabel, options = [], value
             count={opt.count}
             icon={opt.icon}
             disabled={opt.disabled}
+            title={opt.title}
             tabIndex={single ? (on || (!hasSel && opt === enabled[0]) ? 0 : -1) : undefined}
             onKeyDown={(e) => onKeyDown(e, opt)}
             onClick={() => {

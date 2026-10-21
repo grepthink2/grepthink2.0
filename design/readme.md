@@ -114,8 +114,6 @@ The public landing and contact pages are the one place the flat rules bend. Ever
   stroke-2, round-cap style; for anything richer, load Lucide from CDN
   (`https://unpkg.com/lucide@latest`) — same stroke style, no substitution needed.
 - On the green sidebar, icons render white via `filter: brightness(0) invert(1)` (codebase idiom).
-- The Figma file's own icon components (8 glyphs: arrows, calendar chrome) are materialized in
-  `components/figma-reference/Icons.jsx`.
 - No icon font. No emoji-as-icons. Unicode chars only for ‹ › calendar nav and ★ in gold badges.
 - **Logo:** `assets/grepthink-logo.svg` — mascot + GREPTHINK wordmark, monochrome. Green on
   light surfaces; white via invert filter on the green sidebar. The source SVG shipped without
@@ -131,13 +129,14 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 
 ## Index
 - `styles.css` — global entry point (import this one file)
+- `keyframes.css` — the four shared keyframes (`gt-pop-in`, `gt-rise-in`, `gt-spin`, `skeleton-shimmer`; mirrors `frontend/src/styles/keyframes.css`). Every other keyframe is named after its component and defined once.
 - `tokens/` — `colors.css`, `typography.css`, `spacing.css`, `fonts.css`, `marketing.css` (`--gt-mkt-*`, public site only)
-- `assets/` — `grepthink-logo.svg`, `google.svg`
+- `assets/` — `grepthink-logo.svg`, `google.svg` Brand and image assets keep their colours as delivered — never strip or tokenise an SVG's fills. This tool drops SVG `<style>` blocks on save, so colours live in `fill` attributes (PORTING.md → "Assets keep their colours").
 - `guidelines/` — foundation specimen cards (colors, type, spacing, brand) + `marketing-*.html`
   (scope, gradient & backdrops, card shell, band layout, badges, dark chrome, motion, responsive)
 - `components/primitives/` — Button, IconButton, FieldShell, Input, Textarea, Select, SearchField, PasswordField, CodeInput,
   Combobox (+comboFilter), Checkbox, RadioGroup (list + card), Toggle, DatePickerField (+parseDateValue), FileUpload
-  (+formatFileSize), MarkdownEditor (+renderMarkdownLite); galleries `primitives` (buttons), `fields`, `choice`, `upload`
+  (+formatFileSize), MarkdownEditor (+renderMarkdownLite), Slider; galleries `primitives` (buttons), `fields`, `choice`, `upload`, `slider`
 - `components/display/` — Badge (+BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES), CountBadge, UnreadBadge, Tag, Avatar
   (+AvatarGroup, AVATAR_COLORS, hashColor, initialsOf), Card, Table, StatCard, ProgressBar, Tooltip, InfoPopover; galleries
   `display`, `cards`
@@ -151,13 +150,10 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   AssignmentCard, TSRForm, TSRSummaryCard, RankedProjectSlot, ConversationListItem
   (+MessageBubble, MessageComposer; UnreadBadge moved to `display/`), TypingIndicator, MeetingCard, PieChartCard (+BarChartCard,
   CHART_COLORS)
-- `components/figma-reference/` — raw materialized Figma-file components (library artifacts kept
-  for fidelity, **not** part of the product API): Arrow, ButtonContentArea, Grid, Icons, Monitor,
-  Navigation, Scrollbar, Thumb, ToggleSwitch, Calendar, DateActive, DateInactive, Month, Favorite,
-  DAvatars63, DAvatars223 (+ fig-tokens.css with the file's 30 library variables, all modes)
-- `ui_kits/grepthink/` — interactive recreation of the app (Student/TA/Instructor lenses)
-  plus `scrum-board.html` (sprint board with DnD + audit, burnup, backlog, story modal)
-  and `analytics.html` (one dashboard per institution — filled / empty / loading / refetching / error)
+- `templates/grepthink-app/` — the app shell with the Student / TA / Instructor switcher (`GrepthinkApp.dc.html` → `app.html`,
+  `Shell.jsx`, `Screens.jsx`, `App.jsx`) and `templates/scrum-board/` (sprint board with DnD + audit, burnup, backlog, story modal) —
+  the two former starting points, moved 2026-10-21 (templates stay out of `_ds_bundle.js`, which also stops App.jsx rendering into every page)
+- `ui_kits/grepthink/` — the feature screens: `analytics.html` (one dashboard per institution — filled / empty / loading / refetching / error)
 - `components/analytics/` — analytics layer (2026-10 feature design, see `design_handoff_analytics/`):
   AnalyticsFilterRow (+RANGE_PRESETS), StatTile, ChartCard (+ChartCardTool, ChartCardCheck), UnitToggle, LivePill,
   ChartLegend (+AnalyticsIcon), ChartTooltip (+ChartFormat helpers), DefinitionPopover, ChartEmptyState,
@@ -180,6 +176,13 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   split, validation, zone conversion); styles at the end of `domain.css`, gallery `teammeetings.card.html`
 - `ui_kits/grepthink/team-meetings.html` — project page with the Team meetings card, the Edit Project modal's Meetings tab,
   every state, another time zone, phone
+- `components/finalreviews/` — final-review slot sign-up (C2, 2026-10-20, see `design_handoff_final_review_signup/`): SlotBoard (the
+  `/app/final-reviews` board, every lens) + SlotRow + SlotTime (viewer's time with the campus time beside it), FinalReviewsHeader
+  (+ZoomRoomField), TeamReview (Your team's review: page + project card), UnbookedTeams, SlotActionDialog (place / move / Review TA),
+  PostSlotsDrawer, ReviewWorkspaceHeader, FinalReviewsIcon, FinalReviewsModel (+SLOT_MINUTES, SLOT_POST_MAX, FR_LENSES, FR_REASONS);
+  galleries `finalreviews.card.html` (board), `teamreview.card.html`, `posting.card.html`
+- `ui_kits/grepthink/final-reviews.html` — the board in the app shell for every lens, the project-page card, posting, every
+  confirmation, the scoring workspace header and every §6 state (`FinalReviewsScreen.jsx`, `FinalReviewsStates.jsx`)
 - `guidelines/motion-system.html` — proposed motion system (nine previews; tokens local to the card) · `assets/slug.svg` — the
   original banana-slug mark (gold fill, UCSC-blue line) used by panel 8
 - `components/scrum/` — scrum-board layer (2026-08 feature design, not in fig/codebase yet):
@@ -209,6 +212,8 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   answers and port questions in `NOTES.md`
 - `design_handoff_team_meetings/` — implementation handoff for Team meetings (Meetings tab + project card: specs, validation,
   data contract, PO gating and table questions in `NOTES.md`)
+- `design_handoff_final_review_signup/` — implementation handoff for the C2 slot sign-up (board, Your team's review, posting,
+  instructor tools, workspace header; §12 answers, status keys, the §10 file list and port questions in `NOTES.md`)
 - `frontend/` — reference copies from the real codebase (read-only): `src/styles/**` (token CSS + SCSS bridge),
   `src/index.css`, app-shell SCSS, the ported `features/analytics/analytics.scss` + `features/scrum/scrum.scss`
   (the `lint:design` script stays in the repo at `frontend/scripts/design-adherence.mjs`)
@@ -216,9 +221,9 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-Every component outside `components/figma-reference/` (168 of 184 exports) is an intentional addition —
-confirmed, not a naming slip. The Figma file's own component sets are generic UI-kit library artifacts (Scrollbar, Monitor,
-Thumb, Grid…), so the product component inventory comes from the maintainer's written spec and
+Every component (185 exports) is an intentional addition —
+confirmed, not a naming slip. The Figma file's own component sets were generic UI-kit library artifacts (Scrollbar, Monitor,
+Thumb, Grid…) — materialized once in `components/figma-reference/`, unused by any screen, and removed 2026-10-20 — so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
 relative to the .fig's vocabulary, named after the codebase feature it mirrors:
 
@@ -366,6 +371,7 @@ additions; the project's own one-off meetings, kind `meeting` in the schedule la
 - `Combobox` (+`comboFilter`) — intentional addition; replaces the TSR searchable dropdown, interest-form pickers, staffing search, people search, skills input, invite email chips
 - `FileUpload` (+`formatFileSize`) — intentional addition; avatar / project-logo picker and the roster CSV drop area
 - `MarkdownEditor` (+`renderMarkdownLite`) — intentional addition; project descriptions and the public issue form (Write / Preview)
+- `Slider` — intentional addition (follow-up round, 2026-10-20); the labelled range for the TSR contributions step (`TSRS/ContributionsTab.tsx`), with value + unit or a paired number input
 - `parseDateValue` — intentional addition; helper for the DatePickerField string contract
 - `CountBadge` — intentional addition; the neutral count pill (tab counts, list totals)
 - `UnreadBadge` — intentional addition; moved from `domain/ConversationListItem` to `display/` as the one red unread pill
@@ -380,3 +386,33 @@ additions; the project's own one-off meetings, kind `meeting` in the schedule la
 - `TabPanel` — intentional addition; the tab panel paired with Tabs (aria-controls / aria-labelledby)
 - `FilterChip` (+`FilterChipGroup`) — intentional addition; promoted from the search scope chip, analytics range chip and schedule kind chip
 - `Stepper` — intentional addition; the TSR form's steps
+
+Final reviews (`components/finalreviews/`, 2026-10-20 — designed from the C2 brief, PR #258; all intentional additions; one
+family for the student, Product Owner, TA and instructor lenses; the backend exists, no screen called it yet):
+- `SlotBoard` — the `/app/final-reviews` board: every slot by day in the viewer's zone, day links, single-choice filter, sticky day headers, past days folded, every state
+- `SlotRow` — one slot: time · team or Free · reviewers (staff / own team) · the lens's actions, the reason as text where one isn't offered
+- `SlotTime` — the viewer's time with the campus time visible beside it when the zones differ (never a tooltip)
+- `FinalReviewsHeader` / `ZoomRoomField` — sign-ups state, counts, the TA's review count, the shared Zoom room, Post slots and Open / Close sign-ups
+- `TeamReview` — "Your team's review": every booking state, on the board (`page`) and as the project page's Final review card (`card`)
+- `UnbookedTeams` — staff: teams without a slot, with Product Owner, Home TA and the instructor's Place on a slot
+- `SlotActionDialog` — the instructor's choose-and-confirm: place a team, place on a slot, move, appoint / replace / remove the Review TA
+- `PostSlotsDrawer` — posting slots on the campus clock: hourly fill, the list with already-posted / overlap / past flags, ≤ 200
+- `ReviewWorkspaceHeader` — the scoring workspace header: role, time with campus time, reviewers, Join Zoom in the window
+- `FinalReviewsIcon` — the family's lucide-shaped glyph
+- `FinalReviewsModel` (+`SLOT_MINUTES`, `SLOT_POST_MAX`, `FR_LENSES`, `FR_REASONS`) — pure rules, grouping, states and copy (successes, refusals, confirmations)
+- Badge status keys `signups.open` / `signups.closed` / `slot.free` / `slot.yours` / `slot.past` / `review.no_review_ta` / `review.no_product_owner` — kit addition to `BADGE_STATUS` (colours by the alignment round's rule)
+
+#### Every export, by group
+The complete, confirmed list (185 exports); none of them is a renamed Figma component.
+- `components/primitives/` — intentional additions: `Button`, `Checkbox`, `CodeInput`, `Combobox`, `DatePickerField`, `FieldShell`, `FileUpload`, `IconButton`, `Input`, `MarkdownEditor`, `PasswordField`, `RadioGroup`, `SearchField`, `Select`, `Slider`, `Textarea`, `Toggle`
+- `components/display/` — intentional additions: `AVATAR_COLORS`, `Avatar`, `AvatarGroup`, `BADGE_CATEGORY`, `BADGE_STATUS`, `Badge`, `Card`, `CountBadge`, `InfoPopover`, `PROJECT_ROLES`, `ProgressBar`, `StatCard`, `Table`, `Tag`, `Tooltip`, `UnreadBadge`
+- `components/feedback/` — intentional additions: `Alert`, `ConfirmDialog`, `Drawer`, `EmptyState`, `InlineConfirm`, `Menu`, `MenuItem`, `MenuSeparator`, `Modal`, `NoClassSelected`, `Popover`, `Skeleton`, `Spinner`, `Toast`, `ToastStack`
+- `components/navigation/` — intentional additions: `FilterChip`, `FilterChipGroup`, `Pagination`, `SegmentedControl`, `SidebarNavItem`, `SidebarSectionTitle`, `Stepper`, `TabPanel`, `Tabs`
+- `components/domain/` — intentional additions: `AssignmentCard`, `BarChartCard`, `CHART_COLORS`, `ConversationListItem`, `JoinRequestCard`, `MeetingCard`, `MessageBubble`, `MessageComposer`, `PieChartCard`, `ProjectCard`, `RankedProjectSlot`, `RoleSelect`, `RosterRow`, `TEAM_MEETING_DEFAULT_DURATION`, `TEAM_MEETING_DURATIONS`, `TEAM_MEETING_NOTE_MAX`, `TEAM_MEETING_TITLE_MAX`, `TSRForm`, `TSRSummaryCard`, `TeamMeetingForm`, `TeamMeetingsList`, `TeamMeetingsModel`, `TeamMemberCard`, `TypingIndicator`
+- `components/scrum/` — intentional additions: `AIDraftButton`, `BOARD_COLUMNS`, `BacklogRow`, `BurnupChart`, `CommentThread`, `ESTIMATE_SCALES`, `EstimateChip`, `MarkdownText`, `MentionListbox`, `PRLinkChip`, `PointPicker`, `PointsChip`, `ScalePicker`, `ScrumBoard`, `StoryCard`, `TASK_TAGS`, `TagBadge`, `TaskCard`, `UserPair`
+- `components/assistant/` — intentional additions: `AssistantIcon`, `AssistantMark`, `AssistantSuggestionCard`, `ReportCheckCard`, `StalledFlag`, `UnlinkedPRChip`
+- `components/analytics/` — intentional additions: `AnalyticsFilterRow`, `AnalyticsIcon`, `BOARD_STATUSES`, `BREAKDOWN_COLUMNS`, `BarsBySprint`, `BreakdownTable`, `ChartCard`, `ChartCardCheck`, `ChartCardTool`, `ChartEmptyState`, `ChartFormat`, `ChartLegend`, `ChartTooltip`, `DefinitionPopover`, `LivePill`, `OnTimeMeter`, `RANGE_PRESETS`, `SplitBar`, `StackedBars`, `StatTile`, `TEAM_BREAKDOWN_COLUMNS`, `TIMELINESS_BUCKETS`, `TIMELINESS_COLUMNS`, `TimelinessBars`, `TrendLines`, `UnitToggle`, `WeeklyLine`
+- `components/search/` — intentional additions: `CommandPalette`, `EntityIcon`, `Kbd`, `MatchText`, `ModKey`, `ResultGroup`, `ResultRow`, `SEARCH_ENTITIES`, `SearchModel`, `SearchPagination`, `SearchTrigger`
+- `components/schedule/` — intentional additions: `COUNTDOWN_DAYS`, `JOIN_WINDOW_MS`, `SCHEDULE_KINDS`, `SCHOOL_ZONE`, `ScheduleDayHeader`, `ScheduleDivider`, `ScheduleIcon`, `ScheduleItem`, `ScheduleList`, `ScheduleModel`
+- `components/marketing/` — intentional additions: `AnnouncementPill`, `ClosingBand`, `ContactCard`, `Eyebrow`, `FeatureColumn`, `FloatCard`, `FloatingCards`, `Hero`, `LandingFooter`, `LandingHeader`, `MarketingBadge`, `PreviewWindow`, `Spotlight`, `Stage`, `StageCard`
+- `components/finalreviews/` — intentional additions: `FR_LENSES`, `FR_REASONS`, `FinalReviewsHeader`, `FinalReviewsIcon`, `FinalReviewsModel`, `PostSlotsDrawer`, `ReviewWorkspaceHeader`, `SLOT_MINUTES`, `SLOT_POST_MAX`, `SlotActionDialog`, `SlotBoard`, `SlotRow`, `SlotTime`, `TeamReview`, `UnbookedTeams`, `ZoomRoomField`

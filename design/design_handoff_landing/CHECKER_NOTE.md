@@ -16,9 +16,9 @@ vocabulary would break that mapping (and the `gt-*` BEM class ↔ SCSS port in `
 
 ## Where it's documented
 - `readme.md` → **"Intentional additions"** lists every component with a one-line rationale.
-- The 16 Figma families are still materialized faithfully under `components/figma-reference/`
-  (the two "not yet built" avatar families are there as `DAvatars63` / `DAvatars223` —
-  a name-normalization artifact).
+- The 16 Figma families were materialized under `components/figma-reference/` until 2026-10-20,
+  when the folder was removed: no screen used them. The checker still lists them as "Kit families
+  not yet built" — informational, nothing to build.
 
 ## Why it never clears
 The checker has no machine-readable "confirmed" hook, so the line reappears on every run.

@@ -8,3 +8,5 @@ A team's one-off meetings. `variant="manage"` is the Edit Project → Meetings t
 <TeamMeetingsList variant="card" meetings={meetings} teamName="Team 1" people={membersById}
   canManage={isProductOwner} onManage={() => openEditProject('meetings')} onJoin={track} />
 ```
+
+Shared parts (rebuilt 2026-10-20): row actions are `Button` ghost (Edit) and danger-ghost (Delete); a delete confirms with the shared `InlineConfirm` in the row's slot; the manage view's load error is an error `Alert` with an outline **Try again**. The past toggle and the card's quiet text links stay team-meetings markup.
