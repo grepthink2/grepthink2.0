@@ -114,6 +114,22 @@ describe('InfoPopover', () => {
     expect(cssRules('.gt-infopop__panel')[0].getPropertyValue('width')).toBe('352px');
   });
 
+  it('sets its own text styles, so an uppercase, tracked or bold label around it does not reach Learn more', () => {
+    render(<InfoPopover title="About" body="Text" learnMoreHref="/help" />);
+    // The design's rule, then the codebase's reset after it.
+    const [, panel] = cssRules('.gt-infopop__panel');
+    expect(panel.getPropertyValue('text-transform')).toBe('none');
+    expect(panel.getPropertyValue('letter-spacing')).toBe('normal');
+    expect(panel.getPropertyValue('font-weight')).toBe('var(--gt-weight-regular)');
+    expect(panel.getPropertyValue('font-style')).toBe('normal');
+    expect(panel.getPropertyValue('line-height')).toBe('var(--gt-leading-normal)');
+    expect(panel.getPropertyValue('white-space')).toBe('normal');
+    // Learn more takes its size and weight from its own rule, the rest from the panel.
+    const [more] = cssRules('.gt-infopop__more');
+    expect(more.getPropertyValue('font-size')).toBe('var(--gt-text-caption)');
+    expect(more.getPropertyValue('text-transform')).toBe('');
+  });
+
   describe('on a screen too narrow for the panel at its ⓘ', () => {
     // jsdom has no layout, so each case sizes the viewport, the ⓘ and the open panel (the first with what a 375 px phone measured).
     const rect = (left: number, width: number) => ({ left, right: left + width, width, top: 0, bottom: 24, height: 24, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
