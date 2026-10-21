@@ -5,7 +5,7 @@ import MarkdownText from '@components/Markdown/MarkdownText';
 import { Avatar } from '@/components/Avatar/Avatar';
 import { api } from '@/lib/api';
 import type { ApiScrumComment } from '@/lib/api';
-import type { MemberMap } from '../scrumTypes';
+import { avatarName, type MemberMap } from '../scrumTypes';
 
 /** Mirrors the backend's body_md CHECK — the server is authoritative. */
 const MAX_COMMENT = 4000;
@@ -73,7 +73,7 @@ export default function CommentThread({ parent, members, onError, onPosted }: Pr
 
       {comments?.map((c) => (
         <div key={c.id} className="gt-comments__item">
-          <Avatar name={c.author_name} src={members[c.author_id]?.image_url ?? undefined} size="sm" decorative />
+          <Avatar name={avatarName(c.author_name)} src={members[c.author_id]?.image_url ?? undefined} size="sm" decorative />
           <div className="gt-comments__body">
             <div className="gt-comments__meta">
               <span className="gt-comments__author">{c.author_name}</span>

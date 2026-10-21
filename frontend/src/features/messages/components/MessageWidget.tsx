@@ -4,7 +4,7 @@ import { MessageCircle as MessageCircleIcon, ChevronDown as ChevronDownIcon, Che
 import { Avatar } from '@/components/Avatar/Avatar';
 import { useConversations } from '../hooks/useConversations';
 import { useUnreadTotal } from '../hooks/useUnreadTotal';
-import { conversationTitle } from '../conversationTitle';
+import { conversationAvatarName, conversationTitle } from '../conversationTitle';
 import { ConversationList } from './ConversationList';
 import { ConversationThread } from './ConversationThread';
 import { ConversationMenu } from './ConversationMenu';
@@ -79,7 +79,7 @@ export const MessageWidget: React.FC = () => {
               <ChevronLeftIcon size={20} aria-hidden="true" />
             </button>
             <Avatar
-              name={title}
+              name={conversationAvatarName(selected)}
               src={isChannel ? undefined : selected.other_user?.image_url ?? undefined}
               size="md"
               decorative

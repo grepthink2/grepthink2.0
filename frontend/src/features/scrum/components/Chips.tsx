@@ -1,7 +1,7 @@
 import { ArrowRight, Clock, GitPullRequest } from 'lucide-react';
 import { Avatar } from '@/components/Avatar/Avatar';
 import { Tooltip, type TooltipProps } from '@components/Tooltip/Tooltip';
-import type { BoardPerson } from '../scrumTypes';
+import { avatarName, type BoardPerson } from '../scrumTypes';
 import { prLabel, prState } from '../utils/prLabel';
 
 /** Story-point chip — rounded square, mono numeral. */
@@ -67,11 +67,11 @@ export function UserPair({
   return (
     <span className="gt-userpair">
       <Tooltip content={`Reporter: ${reporter.name}`} side={tooltipSide} focusable={false}>
-        <Avatar name={reporter.name} src={reporter.image_url ?? undefined} size={size} decorative />
+        <Avatar name={avatarName(reporter.name)} src={reporter.image_url ?? undefined} size={size} decorative />
       </Tooltip>
       <ArrowRight size={10} aria-hidden="true" />
       <Tooltip content={`Assignee: ${assignee.name}`} side={tooltipSide} focusable={false}>
-        <Avatar name={assignee.name} src={assignee.image_url ?? undefined} size={size} decorative />
+        <Avatar name={avatarName(assignee.name)} src={assignee.image_url ?? undefined} size={size} decorative />
       </Tooltip>
     </span>
   );

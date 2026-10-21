@@ -5,7 +5,7 @@ import { Avatar } from '@/components/Avatar/Avatar';
 import { AVATAR_PX, type AvatarSize } from '@/components/Avatar/avatarHelpers';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { useAuth } from '@/lib/auth';
-import { conversationTitle, conversationBadge } from '../conversationTitle';
+import { conversationAvatarName, conversationTitle, conversationBadge } from '../conversationTitle';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { MessagePlainText } from './MessageMarkdown';
 import { ConversationMenu } from './ConversationMenu';
@@ -164,7 +164,7 @@ export const ConversationList: React.FC<Props> = ({
               }}
             >
               <Avatar
-                name={name}
+                name={conversationAvatarName(c)}
                 src={isChannel ? undefined : c.other_user?.image_url ?? undefined}
                 size={avatarSize}
                 decorative

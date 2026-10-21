@@ -10,7 +10,7 @@ import BurnupChart from '../components/BurnupChart';
 import { seriesPoints } from '../utils/burnupGeometry';
 import { PointPicker } from '../components/ScalePicker';
 import { UserPair } from '../components/Chips';
-import { buildMemberMap } from '../scrumTypes';
+import { buildMemberMap, personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { makeMembers, makeRef, makeStory, makeTask } from './fixtures';
 
 const members = buildMemberMap(makeMembers());
@@ -163,6 +163,13 @@ describe('UserPair', () => {
   it('keeps the avatars out of the tab order, since cards are the control', () => {
     const { container } = render(<UserPair reporter={tony} assignee={qa} />);
     expect(container.querySelector('[tabindex]')).toBeNull();
+  });
+
+  it('draws "?" for a person no member matches, and keeps Unknown in the tooltip', () => {
+    const { container } = render(<UserPair reporter={personOf({}, 'gone', UNKNOWN_PERSON)} assignee={qa} />);
+    expect(screen.getAllByRole('tooltip')[0]).toHaveTextContent('Reporter: Unknown');
+    expect(container.querySelectorAll('.gt-avatar')[0]).toHaveTextContent(/^\?$/);
+    expect(container.querySelectorAll('.gt-avatar')[1]).toHaveTextContent('QS');
   });
 
   it('hides the avatars, which the tooltips name, photo or initials', () => {

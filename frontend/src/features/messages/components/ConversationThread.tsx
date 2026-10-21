@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth';
 import { api, type ApiConversationSummary } from '@/lib/api';
 import { useConversationMessages } from '../hooks/useConversationMessages';
 import { useConversations } from '../hooks/useConversations';
-import { conversationTitle } from '../conversationTitle';
+import { conversationAvatarName, conversationTitle } from '../conversationTitle';
 import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { ConversationMenu } from './ConversationMenu';
@@ -178,7 +178,7 @@ export const ConversationThread: React.FC<Props> = ({
         <header className="messages-thread__header">
           <div className="messages-thread__header-left">
             <Avatar
-              name={title}
+              name={conversationAvatarName(conversation)}
               src={isGroup ? undefined : conversation.other_user?.image_url ?? undefined}
               size={headerAvatarSize}
               decorative

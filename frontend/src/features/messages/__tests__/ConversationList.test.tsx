@@ -121,6 +121,12 @@ describe('ConversationList avatars', () => {
     expect(initials).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('draws "?" for a DM with no peer, not the initials of its Unknown title', () => {
+    const { container } = render(<ConversationList loading={false} conversations={[conversation({ other_user: null })]} />);
+    expect(screen.getByText('Unknown')).toHaveClass('messages-list__name');
+    expect(container.querySelector('.gt-avatar')).toHaveTextContent(/^\?$/);
+  });
+
   it('sizes the avatars and their loading circles by avatarSize', () => {
     const { container, rerender } = render(<ConversationList loading conversations={[]} avatarSize="md" />);
     const circles = container.querySelectorAll<HTMLElement>('.gt-skeleton');
