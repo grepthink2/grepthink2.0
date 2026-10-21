@@ -120,6 +120,19 @@ describe('FilterChipGroup', () => {
     expect(radio('Class to date')).toHaveAttribute('title', 'Select a class first');
   });
 
+  it('single group: an arrow back onto the checked chip reports nothing, when the parent kept the value', async () => {
+    const onChange = vi.fn();
+    // The parent ignores the change, so 7 days stays checked while focus moves off it.
+    render(<FilterChipGroup type="single" ariaLabel="Date range" options={RANGE} value="7d" onChange={onChange} />);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(radio('30 days')).toHaveFocus();
+    expect(radio('30 days')).toHaveAttribute('aria-checked', 'false');
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(radio('7 days')).toHaveFocus();
+    expect(onChange.mock.calls.map(([v]) => v)).toEqual(['30d']);
+  });
+
   it('multiple group toggles values', async () => {
     const onChange = vi.fn();
     render(<Kinds onChange={onChange} />);

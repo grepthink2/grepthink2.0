@@ -75,7 +75,9 @@ export function FilterChipGroup(props: FilterChipGroupProps) {
     activeIndex: props.type === 'single' ? options.findIndex((o) => o.value === props.value) : -1,
     orientation: 'both',
     isDisabled: (i) => !!options[i].disabled,
-    onMove: (i) => choose(options[i].value, false),
+    // Landing on the chip already checked reports nothing: a parent that kept its value, or turned the
+    // last change down, left focus on another chip.
+    onMove: (i) => choose(options[i].value, chosen.includes(options[i].value)),
   });
   return (
     <div
