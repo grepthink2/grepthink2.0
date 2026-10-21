@@ -5,6 +5,7 @@ React 19, TypeScript and Vite 8. The repo-root [AGENTS.md](../AGENTS.md) covers 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Editor](#editor)
 - [Project Structure](#project-structure)
 - [Talking to the backend](#talking-to-the-backend)
 - [Performance](#performance)
@@ -17,12 +18,19 @@ Use Node 24 (what CI runs; `engines` requires >= 22.12). The app reads `VITE_*` 
 ```bash
 npm ci               # install from the lockfile
 npm run dev          # dev server on :5173; proxies /api to the backend on :5001
-npm run lint         # ESLint: any finding fails; every react-hooks rule is an error
+npm run lint         # oxlint: any finding fails; the react-hooks and React Compiler rules are errors
 npm run lint:design  # no raw hex colours outside the token files
 npm run build        # tsc -b && vite build (the type-check gate)
 npx vitest run       # unit and component tests
 npm run test:coverage  # the same with coverage; thresholds in vite.config.ts fail the run when missed
 ```
+
+## Editor
+
+In VS Code:
+
+- Lint: the oxc extension (`oxc.oxc-vscode`) reads `.oxlintrc.json`. Disable the ESLint extension for this workspace: the frontend has no ESLint any more.
+- Types: the "TypeScript 7" extension (`TypeScriptTeam.native-preview`) runs its own build of TypeScript 7; it does not pick up the workspace's copy yet.
 
 ## Project Structure
 
