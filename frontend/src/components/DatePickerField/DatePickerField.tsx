@@ -139,6 +139,9 @@ export function DatePickerField({
     return () => pop.removeEventListener('mousedown', stop);
   }, [open]);
 
+  // The month shown: a month of more or fewer weeks changes the calendar's height, and a calendar
+  // flipped above its trigger has to move with it.
+  const shownMonth = `${focusDay.getFullYear()}-${focusDay.getMonth()}`;
   useLayoutEffect(() => {
     if (!open) return undefined;
     const place = () => {
@@ -164,7 +167,7 @@ export function DatePickerField({
       window.removeEventListener('resize', place);
       window.removeEventListener('scroll', place, true);
     };
-  }, [open, showTime]);
+  }, [open, showTime, shownMonth]);
 
   useEffect(() => {
     if (!open || !toGrid.current) return;

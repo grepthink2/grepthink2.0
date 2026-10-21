@@ -443,6 +443,22 @@ describe('DatePickerField', () => {
       expect(calendar()).toHaveClass('dpf__popover', 'dpf__popover--up');
       expect(calendar().style.top).toBe(`${window.innerHeight - 60 - 300 - 6}px`);
     });
+
+    it('moves a calendar flipped above its trigger when a month of more weeks makes it taller', async () => {
+      // 60px of header and footer, and 40px a week.
+      vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('dpf__popover') ? 60 + this.querySelectorAll('tbody tr').length * 40 : 0;
+      });
+      render(<Field initial="2026-04-15" />);
+      const top = window.innerHeight - 60;
+      vi.spyOn(trigger(), 'getBoundingClientRect').mockReturnValue(rect(top, top + 40));
+      await user.click(trigger());
+      // April 2026 has five weeks, May six.
+      expect(calendar().style.top).toBe(`${top - (60 + 5 * 40) - 6}px`);
+      await user.click(within(calendar()).getByRole('button', { name: 'Next month' }));
+      expect(within(calendar()).getByRole('grid', { name: 'May 2026' })).toBeInTheDocument();
+      expect(calendar().style.top).toBe(`${top - (60 + 6 * 40) - 6}px`);
+    });
   });
 
   it('passes ref to the trigger, and id and className to the field', () => {
