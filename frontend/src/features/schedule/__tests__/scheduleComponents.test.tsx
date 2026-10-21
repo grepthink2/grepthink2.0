@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { AVATAR_COLORS } from '@/lib/avatarColors';
+import { hashColor } from '@/components/Avatar/avatarHelpers';
 import { ScheduleDayHeader } from '../components/ScheduleDayHeader';
 import { ScheduleIcon } from '../components/ScheduleIcon';
 import { ScheduleItem } from '../components/ScheduleItem';
@@ -54,12 +54,6 @@ function clickLink(link: Element): { handled: boolean } {
     document.removeEventListener('click', stop);
   }
   return { handled };
-}
-
-/** jsdom reports a hex background as `rgb(r, g, b)`. */
-function rgbToHex(rgb: string): string {
-  const [r, g, b] = rgb.match(/\d+/g)!.map(Number);
-  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
 }
 
 describe('ScheduleItem (compact row)', () => {
@@ -340,7 +334,7 @@ describe('ScheduleItem (compact row)', () => {
     const initials = screen.getByRole('img', { name: 'Pat Lee' });
     expect(initials.tagName).toBe('SPAN');
     expect(initials).toHaveClass('gt-avatar', 'gt-avatar--xs');
-    expect(AVATAR_COLORS.map((c) => c.toLowerCase())).toContain(rgbToHex(initials.style.backgroundColor));
+    expect(initials.style.backgroundColor).toBe(hashColor('Pat Lee'));
   });
 
   it('draws "?" for a person whose name is blank', () => {

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageCircle as MessageCircleIcon, ChevronDown as ChevronDownIcon, ChevronLeft as ChevronLeftIcon } from 'lucide-react';
+import { Avatar } from '@/components/Avatar/Avatar';
 import { useConversations } from '../hooks/useConversations';
 import { useUnreadTotal } from '../hooks/useUnreadTotal';
 import { conversationTitle } from '../conversationTitle';
 import { ConversationList } from './ConversationList';
 import { ConversationThread } from './ConversationThread';
 import { ConversationMenu } from './ConversationMenu';
-import { InitialsAvatar } from './InitialsAvatar';
 // Shared messages styles — needed when widget is mounted outside the
 // Messages page (Vite dedupes the import, so no double-injection).
 import '../pages/Messages.scss';
@@ -78,11 +78,11 @@ export const MessageWidget: React.FC = () => {
             >
               <ChevronLeftIcon size={20} aria-hidden="true" />
             </button>
-            <InitialsAvatar
-              email={isChannel ? undefined : selected.other_user?.email}
+            <Avatar
               name={title}
-              imageUrl={isChannel ? undefined : selected.other_user?.image_url}
-              size={32}
+              src={isChannel ? undefined : selected.other_user?.image_url ?? undefined}
+              size="md"
+              decorative
             />
             <span className="message-widget__title">{title}</span>
             <ConversationMenu
@@ -119,7 +119,7 @@ export const MessageWidget: React.FC = () => {
             conversations={conversations}
             loading={loading}
             activeId={null}
-            avatarSize={40}
+            avatarSize="md"
             showHeader={false}
             onSelect={(id) => setSelectedId(id)}
           />

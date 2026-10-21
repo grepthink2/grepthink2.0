@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
-import { InitialsAvatar } from '@features/messages/components/InitialsAvatar';
+import { Avatar } from '@/components/Avatar/Avatar';
 import { api } from '@/lib/api';
 import type { ApiScrumComment } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
@@ -73,11 +73,7 @@ export default function CommentThread({ parent, members, onError, onPosted }: Pr
 
       {comments?.map((c) => (
         <div key={c.id} className="gt-comments__item">
-          <InitialsAvatar
-            name={c.author_name}
-            imageUrl={members[c.author_id]?.image_url ?? null}
-            size={24}
-          />
+          <Avatar name={c.author_name} src={members[c.author_id]?.image_url ?? undefined} size="sm" decorative />
           <div className="gt-comments__body">
             <div className="gt-comments__meta">
               <span className="gt-comments__author">{c.author_name}</span>

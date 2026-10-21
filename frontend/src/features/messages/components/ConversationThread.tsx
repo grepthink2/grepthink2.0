@@ -6,8 +6,9 @@ import { useConversations } from '../hooks/useConversations';
 import { conversationTitle } from '../conversationTitle';
 import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
-import { InitialsAvatar } from './InitialsAvatar';
 import { ConversationMenu } from './ConversationMenu';
+import { Avatar } from '@/components/Avatar/Avatar';
+import type { AvatarSize } from '@/components/Avatar/avatarHelpers';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 
 /** A few alternating bubble placeholders shown while the thread loads. */
@@ -24,9 +25,8 @@ interface Props {
   conversation: ApiConversationSummary;
   /** Called after the thread is deleted via the header menu. */
   onDeleted?: () => void;
-  /** Override the avatar size used in the header. Default 51 (page);
-   *  widget passes 32. */
-  headerAvatarSize?: number;
+  /** The header avatar's size. Default 'lg' (48px, the page). */
+  headerAvatarSize?: AvatarSize;
   /** When true, the thread's own header is hidden — used inside the
    *  floating widget where the popover provides its own header. */
   hideHeader?: boolean;
@@ -35,7 +35,7 @@ interface Props {
 export const ConversationThread: React.FC<Props> = ({
   conversation,
   onDeleted,
-  headerAvatarSize = 51,
+  headerAvatarSize = 'lg',
   hideHeader = false,
 }) => {
   const { user } = useAuth();
@@ -177,11 +177,11 @@ export const ConversationThread: React.FC<Props> = ({
       {!hideHeader && (
         <header className="messages-thread__header">
           <div className="messages-thread__header-left">
-            <InitialsAvatar
-              email={isGroup ? undefined : conversation.other_user?.email}
+            <Avatar
               name={title}
-              imageUrl={isGroup ? undefined : conversation.other_user?.image_url}
+              src={isGroup ? undefined : conversation.other_user?.image_url ?? undefined}
               size={headerAvatarSize}
+              decorative
             />
             <div className="messages-thread__header-text">
               <h2 className="messages-thread__title">{title}</h2>

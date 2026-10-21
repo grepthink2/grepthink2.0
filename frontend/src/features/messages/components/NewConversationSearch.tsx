@@ -4,7 +4,7 @@ import { PencilLine as PencilLineIcon, Search as SearchIcon, X as XIcon } from '
 import { api } from '@/lib/api';
 import type { ApiContact } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
-import { InitialsAvatar } from './InitialsAvatar';
+import { Avatar } from '@/components/Avatar/Avatar';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 
 /**
@@ -157,12 +157,7 @@ export const NewConversationSearch: React.FC = () => {
                     className="new-conv-search__result"
                     onClick={() => handleSelect(c)}
                   >
-                    <InitialsAvatar
-                      email={c.email}
-                      name={contactName(c)}
-                      imageUrl={c.image_url}
-                      size={36}
-                    />
+                    <Avatar name={contactName(c)} src={c.image_url ?? undefined} size="md" decorative />
                     <div className="new-conv-search__result-text">
                       <span className="new-conv-search__result-name">
                         {contactName(c)}

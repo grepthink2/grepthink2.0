@@ -164,6 +164,17 @@ describe('UserPair', () => {
     const { container } = render(<UserPair reporter={tony} assignee={qa} />);
     expect(container.querySelector('[tabindex]')).toBeNull();
   });
+
+  it('hides the avatars, which the tooltips name, photo or initials', () => {
+    const { container } = render(<UserPair reporter={{ ...tony, image_url: 'https://img.example/tony.png' }} assignee={qa} />);
+    expect(screen.queryByRole('img')).toBeNull();
+    const [photo, initials] = Array.from(container.querySelectorAll('.gt-avatar'));
+    expect(photo).toHaveAttribute('alt', '');
+    expect(photo).toHaveAttribute('aria-hidden', 'true');
+    expect(initials).toHaveTextContent('QS');
+    expect(initials).toHaveAttribute('aria-hidden', 'true');
+    expect(initials).toHaveClass('gt-avatar--xs');
+  });
 });
 
 describe('BurnupChart', () => {

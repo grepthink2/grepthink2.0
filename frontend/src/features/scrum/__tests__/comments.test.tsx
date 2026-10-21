@@ -46,6 +46,17 @@ describe('CommentThread', () => {
     expect(screen.getByText('it').tagName).toBe('STRONG');   // markdown rendered, not escaped
   });
 
+  it('draws each author’s avatar hidden beside the printed name', async () => {
+    vi.mocked(api.getScrumComments).mockResolvedValue({ comments: [comment()] });
+    renderThread();
+    const author = await screen.findByText('Tony Wu');
+    const avatar = author.closest('.gt-comments__item')?.querySelector('.gt-avatar');
+    expect(avatar).toHaveTextContent('TW');
+    expect(avatar).toHaveAttribute('aria-hidden', 'true');
+    expect(avatar).toHaveClass('gt-avatar--sm');
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
   it('says so when a task has no comments', async () => {
     renderThread();
     expect(await screen.findByText('No comments yet.')).toBeInTheDocument();

@@ -5,10 +5,7 @@
    the deadline marker, the zone footer and the compact block.
    Left for the agenda and the schedule endpoint: the agenda's own rules and toolbar, the Now line, the sprint
    divider, the loading/empty/error states, the expand toggle and panel, and the people list and note (rows
-   in the agenda only).
-   Added: `.gt-badge` and `.gt-avatar` (design/components/display/display.css, the tones and the size the
-   row uses), because the codebase has no Badge or Avatar component yet. When they land, drop these two
-   blocks. */
+   in the agenda only). */
 
 /* ── Kind palette (tokens/colors.css --gt-sched-*; icon + label always accompany the color) ── */
 .gt-sched-item__tile { background: var(--gt-sched-lecture-soft); color: var(--gt-sched-lecture-text); }
@@ -126,35 +123,3 @@
   .gt-sched-item__live-dot { animation: none; }
   .gt-sched-item__action { transition: none; }
 }
-
-/* ── Badge and Avatar (design/components/display/display.css) ──────────── */
-.gt-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 14px;
-  border-radius: var(--gt-radius-lg);
-  font-family: var(--gt-font-sans);
-  font-size: 0.8rem;
-  font-weight: var(--gt-weight-medium);
-  white-space: nowrap;
-}
-.gt-badge--neutral { background-color: var(--gt-gray-100); color: var(--gt-gray-600); }
-.gt-badge--success { background-color: var(--gt-success-soft); color: var(--gt-success-text); }
-.gt-badge--warning { background-color: var(--gt-warning-soft); color: var(--gt-warning-text); }
-.gt-badge--error   { background-color: var(--gt-error-soft);   color: var(--gt-error-text); }
-
-.gt-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background-color: var(--gt-green-500);
-  color: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-weight: var(--gt-weight-semibold);
-  flex-shrink: 0;
-  object-fit: cover;
-  user-select: none;
-}
-.gt-avatar--xs { width: 20px; height: 20px; font-size: 8px; }
