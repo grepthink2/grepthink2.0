@@ -412,4 +412,14 @@ describe('DatePickerField', () => {
     const [reduced] = cssRules('.dpf__popover', 'prefers-reduced-motion');
     expect(reduced.getPropertyValue('animation')).toContain('gt-fade-in');
   });
+
+  it('keeps the weekday names in their columns: real table cells, centred', () => {
+    render(<Field />);
+    const [weekday] = cssRules('.dpf__cal-weekday');
+    expect(weekday.getPropertyValue('display')).toBe('table-cell');
+    expect(weekday.getPropertyValue('text-align')).toBe('center');
+    expect(weekday.getPropertyValue('vertical-align')).toBe('middle');
+    expect(weekday.getPropertyValue('height')).toBe('2rem');
+    expect(weekday.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
+  });
 });

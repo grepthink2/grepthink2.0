@@ -39,7 +39,10 @@
 .dpf__cal-nav:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .dpf__cal-grid { border-collapse: separate; border-spacing: 2px; margin: -2px; }
 .dpf__cal-grid th, .dpf__cal-grid td { padding: 0; }
-.dpf__cal-weekday { display: inline-flex; align-items: center; justify-content: center; height: 2rem; font-size: 0.75rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
+// Codebase-side fix: the design gives these <th> cells display: inline-flex, which takes them out of
+// the table, so all seven names pack into the first column and widen it (the design's own gallery
+// draws it that way). As table cells they stay in their columns, centred as the design means them.
+.dpf__cal-weekday { display: table-cell; text-align: center; vertical-align: middle; height: 2rem; font-size: 0.75rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
 .dpf__cal-day {
   width: 2.25rem; height: 2.25rem; border: none; border-radius: var(--gt-radius-sm); background: transparent;
   font-family: var(--gt-font-sans); font-size: 0.85rem; color: var(--gt-text-primary); cursor: pointer;
