@@ -1,6 +1,6 @@
 import {
   useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
-  type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref,
+  type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref,
 } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -209,6 +209,14 @@ export function DatePickerField({
     if (parsed) onChange(`${format(parsed.date, DATE_ONLY_FORMAT)} ${time}`);
     else setPendingTime(time);
   };
+  // Focus that moves out of the calendar and its field, into a layer opened after it (the ⌘K palette),
+  // closes the calendar and stays where it went: a hidden calendar would keep taking that layer's Esc.
+  // Focus that leaves the window, with no element next, keeps it open.
+  const onFocusOut = (e: ReactFocusEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (!next || popRef.current?.contains(next) || rootRef.current?.contains(next)) return;
+    setOpen(false);
+  };
   // Tab and Shift+Tab wrap inside the calendar.
   const onPopKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Tab' || !popRef.current) return;
@@ -266,6 +274,7 @@ export function DatePickerField({
               aria-describedby={describedBy}
               disabled={disabled}
               onClick={() => (shown ? close(true) : openPicker())}
+              onBlur={shown ? onFocusOut : undefined}
             >
               <span className="dpf__trigger-text" id={valueId}>{valueText}</span>
               {required && <span className="gt-visually-hidden" id={requiredId}>required</span>}
@@ -280,6 +289,7 @@ export function DatePickerField({
                 aria-label="Choose date"
                 style={{ top: pos.top, left: pos.left }}
                 onKeyDown={onPopKeyDown}
+                onBlur={onFocusOut}
               >
                 <div className="dpf__cal-head">
                   <button type="button" className="dpf__cal-nav" aria-label="Previous month" onClick={() => shiftMonth(-1)}>

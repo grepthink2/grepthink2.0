@@ -1,6 +1,6 @@
 import { createRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cssRules } from '@/test/cssRules';
 import { Popover } from '@/components/Popover/Popover';
@@ -185,6 +185,34 @@ describe('DatePickerField', () => {
     // A press outside both still closes the popover.
     await user.click(screen.getByText('Elsewhere'));
     expect(screen.queryByRole('button', { name: /^From/ })).toBeNull();
+  });
+
+  it('closes when focus moves to a layer opened after it, which then gets its own Esc', async () => {
+    render(
+      <>
+        <Field initial="2026-10-20" />
+        <input aria-label="Search everything" />
+      </>,
+    );
+    await user.click(trigger());
+    // A palette opened over the page takes the focus without a press, and listens for Esc as the
+    // ⌘K palette does: on the document, in the capture phase, from when it opened.
+    const paletteEsc = vi.fn();
+    document.addEventListener('keydown', paletteEsc, true);
+    const palette = screen.getByRole('textbox', { name: 'Search everything' });
+    act(() => palette.focus());
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(palette).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(paletteEsc).toHaveBeenCalledTimes(1);
+    document.removeEventListener('keydown', paletteEsc, true);
+  });
+
+  it('stays open when focus leaves the window, with nowhere else to go', async () => {
+    render(<Field initial="2026-10-20" />);
+    await user.click(trigger());
+    fireEvent.blur(day('Tuesday, October 20th, 2026, selected'), { relatedTarget: null });
+    expect(calendar()).toBeInTheDocument();
   });
 
   it('moves the focused day with the arrow keys, Home, End, PageUp and PageDown', async () => {
