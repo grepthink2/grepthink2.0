@@ -22,6 +22,9 @@
   width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent; color: var(--gt-text-tertiary); cursor: pointer;
   transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
 }
+// Codebase-side reset: index.css's scaffold `button` rule (padding 0.6em 1.2em, weight 500) reaches
+// this raw button, which the design gives no padding of its own.
+.gt-search-field__clear { padding: 0; }
 .gt-search-field__clear:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
 .gt-search-field__clear:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 .gt-search-field--compact .gt-search-field__input { height: 32px; font-size: 12.5px; }

@@ -413,6 +413,21 @@ describe('DatePickerField', () => {
     expect(reduced.getPropertyValue('animation')).toContain('gt-fade-in');
   });
 
+  it('resets what the app\'s scaffold button rule gives its raw buttons', () => {
+    render(<Field />);
+    // The last value declared for the selector, as the cascade would pick between its own rules.
+    const declared = (selector: string, prop: string) =>
+      cssRules(selector).map((rule) => rule.getPropertyValue(prop)).filter(Boolean).pop();
+    expect(declared('.dpf__cal-nav', 'padding')).toMatch(/^0(px)?$/);
+    expect(declared('.dpf__cal-day', 'padding')).toMatch(/^0(px)?$/);
+    expect(declared('.dpf__cal-day', 'font-weight')).toBe('var(--gt-weight-regular)');
+    expect(declared('.dpf__trigger', 'font-weight')).toBe('var(--gt-weight-regular)');
+    // Today keeps its weight: its rule comes after the reset.
+    const sheetOrder = Array.from(document.styleSheets).flatMap((sheet) => Array.from(sheet.cssRules))
+      .map((rule) => (rule as CSSStyleRule).selectorText).filter(Boolean);
+    expect(sheetOrder.lastIndexOf('.dpf__cal-day--today')).toBeGreaterThan(sheetOrder.lastIndexOf('.dpf__cal-day'));
+  });
+
   it('keeps the weekday names in their columns: real table cells, centred', () => {
     render(<Field />);
     const [weekday] = cssRules('.dpf__cal-weekday');
