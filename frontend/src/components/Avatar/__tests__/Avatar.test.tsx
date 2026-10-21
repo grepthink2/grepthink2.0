@@ -161,6 +161,19 @@ describe('AvatarGroup', () => {
     expect(container.querySelector('.gt-avatar-group')).not.toHaveAttribute('aria-label');
   });
 
+  it('shows at least one face, whatever max says', () => {
+    const { container, rerender } = render(<AvatarGroup names={TEAM} max={0} />);
+    expect(screen.getByRole('img', { name: 'Ana Ruiz and 5 more' })).toBeInTheDocument();
+    expect(container.querySelectorAll('.gt-avatar:not(.gt-avatar--extra)')).toHaveLength(1);
+    expect(container.querySelector('.gt-avatar--extra')).toHaveTextContent('+5');
+    // A negative max would count from the end of the list.
+    rerender(<AvatarGroup names={TEAM} max={-2} />);
+    expect(screen.getByRole('img', { name: 'Ana Ruiz and 5 more' })).toBeInTheDocument();
+    expect(container.querySelector('.gt-avatar--extra')).toHaveTextContent('+5');
+    rerender(<AvatarGroup names={TEAM} max={Number.NaN} />);
+    expect(screen.getByRole('img', { name: 'Ana Ruiz and 5 more' })).toBeInTheDocument();
+  });
+
   it('passes className, native props and ref, and keeps its role and name to itself', () => {
     const ref = createRef<HTMLSpanElement>();
     render(<AvatarGroup names={['Ana Ruiz']} className="x" data-key="g" ref={ref} />);

@@ -73,7 +73,7 @@ export function Avatar({
 
 export interface AvatarGroupProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'role' | 'aria-label'> {
   names: string[];
-  /** The most avatars shown before the rest collapse to "+n". @default 4 */
+  /** The most avatars shown before the rest collapse to "+n"; at least 1. @default 4 */
   max?: number;
   /** @default 'sm' */
   size?: 'xs' | 'sm' | 'md';
@@ -94,7 +94,8 @@ export interface AvatarGroupProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
  * Native props and `ref` reach the row's span.
  */
 export function AvatarGroup({ names, max = 4, size = 'sm', className = '', ref, ...rest }: AvatarGroupProps) {
-  const shown = names.slice(0, max);
+  // At least one face: 0 would show only "+n", and a negative count would slice from the end.
+  const shown = names.slice(0, max >= 1 ? max : 1);
   const extra = names.length - shown.length;
   const label = `${shown.join(', ')}${extra > 0 ? ` and ${extra} more` : ''}`;
   return (
