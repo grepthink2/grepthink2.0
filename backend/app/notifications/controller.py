@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from fastapi import HTTPException
 
 from app.core import db as core_db
-from app.core.db import get_client
+from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.utils.mentions import render_mentions_plain
 from app.utils.profiles import needs_roster_email, profile_display_name
@@ -243,7 +243,8 @@ def _get_profile(user_id: str) -> dict:
         .maybe_single()
         .execute()
     )
-    return res.data or {}
+    # supabase-py 2.x answers None, not a response with no data, when no row matches.
+    return (res.data if res else None) or {}
 
 
 _PROFILE_NOTIFICATION_COOLDOWN_SECONDS = 300  # 5 minutes
@@ -660,27 +661,34 @@ def notify_team_member_dropped_from_roster(
 
 
 def list_notifications(user_id: str, *, limit: int = 50) -> dict:
+    # The reminders may write notifications, and both reads below must see them.
     ensure_profile_completion_notification(user_id)
     ensure_roster_upload_notifications(user_id)
 
     client = _client()
-    res = (
-        client.table("notifications")
-        .select("id, type, title, body, entity_type, entity_id, read_at, created_at")
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .limit(limit)
-        .execute()
+    reads = fan_out(
+        {
+            "rows": lambda: (
+                (
+                    client.table("notifications")
+                    .select("id, type, title, body, entity_type, entity_id, read_at, created_at")
+                    .eq("user_id", user_id)
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                ).data
+                or []
+            ),
+            "unread": lambda: (
+                client.table("notifications")
+                .select("id", count="exact")
+                .eq("user_id", user_id)
+                .is_("read_at", "null")
+                .execute()
+            ),
+        }
     )
-    rows = res.data or []
-
-    unread_res = (
-        client.table("notifications")
-        .select("id", count="exact")
-        .eq("user_id", user_id)
-        .is_("read_at", "null")
-        .execute()
-    )
+    rows, unread_res = reads["rows"], reads["unread"]
     unread = (
         unread_res.count
         if unread_res.count is not None
@@ -691,23 +699,22 @@ def list_notifications(user_id: str, *, limit: int = 50) -> dict:
 
 
 def mark_notification_read(notification_id: str, user_id: str) -> None:
+    """Mark one of ``user_id``'s notifications read (again, if it already was).
+
+    One update filtered by the id and the owner. 404 when it matches nothing: an id that
+    never existed, a notification deleted since the list loaded, or another user's.
+    """
     res = (
         _client()
         .table("notifications")
-        .select("id")
+        .update({"read_at": _now_iso()})
         .eq("id", notification_id)
         .eq("user_id", user_id)
-        .maybe_single()
+        .select("id")
         .execute()
     )
     if not res.data:
         raise HTTPException(status_code=404, detail="Notification not found")
-
-    _client().table("notifications").update(
-        {
-            "read_at": _now_iso(),
-        }
-    ).eq("id", notification_id).eq("user_id", user_id).execute()
 
 
 def mark_all_read(user_id: str) -> None:
