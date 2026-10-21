@@ -421,6 +421,29 @@ describe('useDialog', () => {
     expect(closeA).not.toHaveBeenCalled();
   });
 
+  it('a held Esc closes one dialog, not the next one under it as the key repeats', () => {
+    const closeUnder = vi.fn();
+    function Two() {
+      const [asking, setAsking] = useState(true);
+      return (
+        <>
+          <TestDialog open onClose={closeUnder} label="Edit" />
+          <TestDialog open={asking} onClose={() => setAsking(false)} label="Delete?" />
+        </>
+      );
+    }
+    render(<Two />);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(screen.getByTestId('Delete? scrim')).toHaveAttribute('data-closing', 'true');
+    // Still held: the key repeats.
+    fireEvent.keyDown(document.body, { key: 'Escape', repeat: true });
+    fireEvent.keyDown(document.body, { key: 'Escape', repeat: true });
+    expect(closeUnder).not.toHaveBeenCalled();
+    // Let go and pressed again, it is the next dialog's.
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(closeUnder).toHaveBeenCalledTimes(1);
+  });
+
   it('Esc with a shared Popover open inside closes only the Popover', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();

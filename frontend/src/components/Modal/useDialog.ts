@@ -133,7 +133,8 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
  * - Esc is heard on `document` in the bubble phase, so every layer inside that takes it first wins:
  *   Popover and the ⌘K palette (capture phase), Tooltip and the date picker's calendar (the window,
  *   capture phase), and a form or row that stops it (team meetings). An Esc that something already
- *   prevented, or that ends an IME composition, is not the dialog's.
+ *   prevented, that ends an IME composition, or that repeats while the key is held, is not the
+ *   dialog's.
  * - The scrim closes the dialog only for a mousedown that starts on the scrim itself: one inside the
  *   sheet, or in a layer portaled out of it, bubbles through the scrim's handler as React events do.
  * - The page behind does not scroll while any dialog is open (scrollLock).
@@ -191,7 +192,8 @@ export function useDialog({
   const onKeyDown = useEffectEvent((e: KeyboardEvent, self: symbol) => {
     if (e.defaultPrevented || !isTopDialog(self)) return;
     if (e.key === 'Escape') {
-      if (e.isComposing || e.keyCode === 229 || closeDisabled || !onClose) return;
+      // A held Esc repeats: it closes one dialog, not the one under it next.
+      if (e.repeat || e.isComposing || e.keyCode === 229 || closeDisabled || !onClose) return;
       e.preventDefault();
       onClose();
     } else if (e.key === 'Tab' && sheetRef.current) {
