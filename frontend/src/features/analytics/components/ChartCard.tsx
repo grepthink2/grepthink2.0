@@ -1,8 +1,8 @@
 import { Inbox, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/EmptyState/EmptyState';
+import { InfoPopover } from '@/components/InfoPopover/InfoPopover';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
-import { DefinitionPopover } from './DefinitionPopover';
 import { LivePill } from './LivePill';
 
 export type ChartCardState = 'loading' | 'refetching' | 'ready' | 'empty' | 'error';
@@ -40,7 +40,7 @@ export function ChartCard({ title, subtitle, definition, live, actions, state, e
           <div className="gt-chart-card__title-row">
             <h2 className="gt-chart-card__title">{title}</h2>
             {live ? <LivePill /> : null}
-            {definition ? <DefinitionPopover {...definition} cardTitle={title} /> : null}
+            {definition ? <InfoPopover title={definition.title} body={definition.body} label={`How ${title} is counted`} /> : null}
           </div>
           {subtitle ? <p className="gt-chart-card__subtitle">{subtitle}</p> : null}
         </div>
