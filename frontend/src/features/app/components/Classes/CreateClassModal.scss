@@ -142,6 +142,14 @@
   color: $text-primary;
 }
 
+// Until this modal's other fields move onto the kit, its date fields' labels (FieldShell's) keep the look of the labels beside them.
+.create-class-modal .gt-field__label {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+}
+
 .create-class-modal__description {
   font-size: $font-size-base;
   font-weight: $font-weight-normal;

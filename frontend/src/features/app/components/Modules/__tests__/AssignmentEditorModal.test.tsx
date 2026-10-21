@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cssRules } from '@/test/cssRules';
 import AssignmentEditorModal from '../AssignmentEditorModal';
 import type { Assignment } from '../AssignmentList';
 
@@ -15,6 +16,14 @@ const TSR_1: Assignment = {
   status: 'active',
 };
 const TSR_2: Assignment = { ...TSR_1, id: 'assignment-2', title: 'Team Status Report 2' };
+
+describe('AssignmentEditorModal — date labels', () => {
+  it('gives the date fields\' labels the look of "Assignment Name"', () => {
+    const [label] = cssRules('.aem .gt-field__label');
+    expect(label.getPropertyValue('font-size')).toBe('12px');
+    expect(label.getPropertyValue('font-weight')).toBe('500');
+  });
+});
 
 describe('AssignmentEditorModal', () => {
   it('enables Save and Cancel for the next assignment opened after a delete', async () => {

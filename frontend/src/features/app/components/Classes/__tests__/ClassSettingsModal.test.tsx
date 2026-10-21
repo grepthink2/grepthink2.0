@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
+import { cssRules } from '@/test/cssRules';
 
 const ctx = vi.hoisted(() => ({
   getClassStatus: vi.fn(() => 'active' as const),
@@ -67,6 +68,15 @@ beforeEach(() => {
   ctx.setClassExternalTasksUrl.mockResolvedValue(undefined);
   ctx.setClassEndDate.mockResolvedValue(undefined);
   picks.day = '2026-12-04';
+});
+
+describe('ClassSettingsModal — date labels', () => {
+  it('gives the last day\'s label the look of the section labels beside it', () => {
+    const [label] = cssRules('.class-settings-modal .gt-field__label');
+    expect(label.getPropertyValue('font-size')).toBe('0.875rem');
+    expect(label.getPropertyValue('font-weight')).toBe('600');
+    expect(label.getPropertyValue('color')).toBe('rgb(48, 48, 48)');
+  });
 });
 
 describe('ClassSettingsModal — Tasks - External link', () => {
