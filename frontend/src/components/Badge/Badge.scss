@@ -1,0 +1,29 @@
+// Badge — ported from design/components/display/display.css so the two stay diffable: the Badge
+// block. One addition, marked below: the pill resets the text styles of the heading or caption it
+// sits in.
+
+/* ── Badge: statuses are soft-filled pills; categories are outlined with an icon ── */
+.gt-badge {
+  display: inline-flex; align-items: center; gap: 5px; box-sizing: border-box;
+  padding: 4px 14px; border-radius: var(--gt-radius-lg);
+  font-family: var(--gt-font-sans); font-size: 0.8rem; font-weight: var(--gt-weight-medium); line-height: 1.25; white-space: nowrap;
+}
+// Codebase addition: a badge sits in headings, captions and tabs and inherits their text styles, so
+// an uppercase, tracked or italic label would reach the pill. Reset them here; a feature that wants
+// one adjusts the badge from its own class.
+.gt-badge { text-transform: none; letter-spacing: normal; font-style: normal; }
+.gt-badge--neutral { background-color: var(--gt-gray-100); color: var(--gt-gray-600); }
+.gt-badge--success { background-color: var(--gt-success-soft); color: var(--gt-success-text); }
+.gt-badge--warning { background-color: var(--gt-warning-soft); color: var(--gt-warning-text); }
+.gt-badge--error   { background-color: var(--gt-error-soft);   color: var(--gt-error-text); }
+.gt-badge--info    { background-color: var(--gt-info-soft);    color: var(--gt-info-text); }
+.gt-badge--gold    { background-color: var(--gt-gold-soft);   color: var(--gt-gold-text); }
+.gt-badge--merged  { background-color: var(--gt-purple-soft); color: var(--gt-purple); }
+.gt-badge--category { padding: 3px 10px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background-color: var(--gt-surface); color: var(--gt-text-secondary); }
+.gt-badge__icon { display: inline-flex; flex-shrink: 0; }
+.gt-badge--solid.gt-badge--success { background-color: var(--gt-success); color: var(--gt-text-inverse); }
+.gt-badge--solid.gt-badge--warning { background-color: var(--gt-warning-text); color: var(--gt-text-inverse); }
+.gt-badge--solid.gt-badge--error   { background-color: var(--gt-error);   color: var(--gt-text-inverse); }
+.gt-badge--solid.gt-badge--info    { background-color: var(--gt-info);    color: var(--gt-text-inverse); }
+.gt-badge--solid.gt-badge--neutral { background-color: var(--gt-gray-600); color: var(--gt-text-inverse); }
+.gt-badge--solid.gt-badge--gold    { background-color: var(--gt-gold); color: var(--gt-gray-800); }

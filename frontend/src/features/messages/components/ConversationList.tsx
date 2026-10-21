@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { Search as SearchIcon, X as XIcon } from 'lucide-react';
 import type { ApiConversationSummary } from '@/lib/api';
+import { Avatar } from '@/components/Avatar/Avatar';
+import { AVATAR_PX, type AvatarSize } from '@/components/Avatar/avatarHelpers';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { useAuth } from '@/lib/auth';
-import { conversationTitle, conversationBadge } from '../conversationTitle';
+import { conversationAvatarName, conversationTitle, conversationBadge } from '../conversationTitle';
 import { formatRelativeTime } from '../utils/relativeTime';
-import { InitialsAvatar } from './InitialsAvatar';
 import { MessagePlainText } from './MessageMarkdown';
 import { ConversationMenu } from './ConversationMenu';
 import { NewConversationSearch } from './NewConversationSearch';
@@ -19,8 +20,8 @@ interface Props {
   /** Click handler for a row. Defaults to undefined so the parent decides
    *  navigation vs. inline selection. */
   onSelect?: (conversationId: string) => void;
-  /** Avatar diameter in this surface. Default 51 (page); widget passes 40. */
-  avatarSize?: number;
+  /** Avatar size in this surface: 'lg' (48px) on the page by default; the widget passes 'md' (36px). */
+  avatarSize?: AvatarSize;
   /** Whether to render the "All Messages" + search header. Default true. */
   showHeader?: boolean;
 }
@@ -33,7 +34,7 @@ export const ConversationList: React.FC<Props> = ({
   loading,
   activeId,
   onSelect,
-  avatarSize = 51,
+  avatarSize = 'lg',
   showHeader = true,
 }) => {
   const { user } = useAuth();
@@ -99,7 +100,7 @@ export const ConversationList: React.FC<Props> = ({
         <ul className="messages-list__items" aria-busy="true">
           {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="messages-list__item" style={{ cursor: 'default' }}>
-              <Skeleton circle height={avatarSize} />
+              <Skeleton circle height={AVATAR_PX[avatarSize]} />
               <div className="messages-list__body">
                 <div className="messages-list__row">
                   <Skeleton width="40%" height={13} />
@@ -162,11 +163,11 @@ export const ConversationList: React.FC<Props> = ({
                 }
               }}
             >
-              <InitialsAvatar
-                email={isChannel ? undefined : c.other_user?.email}
-                name={name}
-                imageUrl={isChannel ? undefined : c.other_user?.image_url}
+              <Avatar
+                name={conversationAvatarName(c)}
+                src={isChannel ? undefined : c.other_user?.image_url ?? undefined}
                 size={avatarSize}
+                decorative
               />
               <div className="messages-list__body">
                 <div className="messages-list__row">

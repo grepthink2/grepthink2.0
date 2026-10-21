@@ -1,0 +1,32 @@
+// FilterChip — ported from design/components/navigation/navigation.css so the two stay diffable: the
+// FilterChip block (the chip and the FilterChipGroup row), then its lines from the file's phone and
+// reduced-motion blocks. The chip's own border, radius, padding, background, font and transition beat
+// index.css's global button rule, which would otherwise reach this raw button.
+
+/* ── FilterChip — narrows a list (search scopes, analytics range, schedule kinds) ── */
+.gt-filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.gt-filter-chip {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; box-sizing: border-box;
+  height: 32px; padding: 0 14px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-pill); background: var(--gt-surface);
+  font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary);
+  white-space: nowrap; cursor: pointer;
+  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-filter-chip--sm { height: 26px; padding: 0 10px; font-size: 11.5px; }
+.gt-filter-chip:hover:not(:disabled):not(.gt-filter-chip--selected):not([aria-pressed="true"]):not([aria-checked="true"]) { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
+.gt-filter-chip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-filter-chip--selected, .gt-filter-chip[aria-pressed="true"], .gt-filter-chip[aria-checked="true"] { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
+.gt-filter-chip:disabled { opacity: var(--gt-opacity-disabled); cursor: not-allowed; }
+.gt-filter-chip__icon { display: inline-flex; }
+.gt-filter-chip__count { font-size: 10.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
+.gt-filter-chip--selected .gt-filter-chip__count, .gt-filter-chip[aria-pressed="true"] .gt-filter-chip__count, .gt-filter-chip[aria-checked="true"] .gt-filter-chip__count { color: inherit; }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-filter-chip, .gt-filter-chip--sm { height: 44px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-filter-chip { transition: none; }
+}

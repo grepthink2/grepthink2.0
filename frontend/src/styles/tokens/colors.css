@@ -20,6 +20,8 @@
 
   /* ---- Accent blue (links, selection, focus, info) ---- */
   --gt-blue-500: #2771FF;
+  --gt-blue-600: #1B57D6;
+  --gt-blue-700: #1543A8;
 
   /* ---- Neutral gray ramp ---- */
   --gt-gray-0:   #FFFFFF;
@@ -50,6 +52,9 @@
   --gt-info:         #2771FF;
   --gt-info-soft:    #EAF1FF;
   --gt-info-text:    #1543A8;
+
+  /* Amber ramp (the steps in use) */
+  --gt-amber-700: #8A5200;
 
   /* ---- UCSC institutional accents (reserved use) ---- */
   --gt-gold:      #FDC700;   /* achievements, stars, "team set" only */
@@ -109,7 +114,17 @@
 
   /* ---- Alignment round (2026-10-19): literals the component CSS used to carry ---- */
   --gt-skeleton-shine: #F5F5F5;                /* skeleton shimmer highlight (_skeleton.scss) */
+  --gt-gold-soft: rgba(253, 199, 0, 0.18);     /* gold badge fill */
+  --gt-purple-soft: rgba(125, 60, 152, 0.12);  /* merged PR, purple badge fill */
   --gt-opacity-disabled: 0.45; /* @kind other */ /* the one disabled opacity for buttons, chips, tabs, checks */
   --gt-border-control: #858585;                /* field, checkbox, radio, toggle boundary: 3.7:1 on white, 3.2:1 on the canvas (WCAG 1.4.11) */
   --gt-border-control-hover: var(--gt-gray-600);
+
+  /* Avatar palette — every slot passes 4.5:1 behind white initials (AVATAR_COLORS reads these) */
+  --gt-avatar-1: var(--gt-green-500);  /* 4.9:1 */
+  --gt-avatar-2: var(--gt-blue-600);   /* 6.2:1 */
+  --gt-avatar-3: var(--gt-amber-700);  /* 6.4:1 */
+  --gt-avatar-4: var(--gt-purple);     /* 7.3:1 */
+  --gt-avatar-5: var(--gt-green-700);  /* 7.0:1 */
+  --gt-avatar-6: var(--gt-blue-700);   /* 8.6:1 */
 }

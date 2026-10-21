@@ -126,8 +126,9 @@ frontend/src/
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
   components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
                       # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
-                      # (+NoClassSelected), InfoPopover, Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast,
-                      # Markdown)
+                      # (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip
+                      # (+FilterChipGroup), Avatar (+AvatarGroup), Skeleton, ErrorBoundary, Popover, Menu,
+                      # Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -358,7 +359,11 @@ The full agent-facing action catalog (method, params, role) lives at
   the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
   SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
   dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
-  InfoPopover, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A field's `maxLength` is a soft
+  InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip with FilterChipGroup, Avatar with
+  AvatarGroup, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A status pill names its status
+  (`<Badge status="attendance.late" />`), never a colour: `components/Badge/badgeStatus.ts` maps it. Avatars
+  take their colour from the one palette and hash in `components/Avatar/avatarHelpers.ts`
+  (`lib/avatarColors.ts` is the landing page's hex copy). A field's `maxLength` is a soft
   limit: the text past it is kept and flagged, so the form's own validation must refuse it. The dialogs
   share `useDialog` (`components/Modal/`): Esc and the scrim close only the topmost, so a layer inside a
   dialog that handles Esc itself (a popover, a calendar, an inline form) must take it first: in the

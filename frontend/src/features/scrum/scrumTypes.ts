@@ -11,6 +11,15 @@ export interface BoardPerson {
 export const UNKNOWN_PERSON = 'Unknown';
 export const UNASSIGNED = 'Unassigned';
 
+/**
+ * The name a person's avatar takes its initials and colour from: none for the "Unknown" placeholder
+ * (an id no member matches, or the API's own fallback for a comment's author), so the avatar shows
+ * "?" rather than the placeholder's initials.
+ */
+export function avatarName(name: string): string | undefined {
+  return name === UNKNOWN_PERSON ? undefined : name;
+}
+
 /** Reporter/assignee lookup built once per board load. */
 export type MemberMap = Record<string, ApiScrumMember>;
 
