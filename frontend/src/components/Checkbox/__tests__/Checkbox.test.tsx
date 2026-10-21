@@ -53,6 +53,26 @@ describe('Checkbox', () => {
     expect(box.indeterminate).toBe(false);
   });
 
+  it('stays indeterminate after a click whose parent re-renders without changing it', async () => {
+    function Parent() {
+      const [clicks, setClicks] = useState(0);
+      return <Checkbox label="Select all" indeterminate checked={false} onChange={() => setClicks((c) => c + 1)} data-clicks={clicks} />;
+    }
+    render(<Parent />);
+    const box = screen.getByRole('checkbox', { name: 'Select all' }) as HTMLInputElement;
+    await userEvent.click(box);
+    expect(box).toHaveAttribute('data-clicks', '1');
+    expect(box.indeterminate).toBe(true);
+  });
+
+  it('stays indeterminate after a click its parent ignores', async () => {
+    render(<Checkbox label="Select all" indeterminate checked={false} onChange={() => {}} />);
+    const box = screen.getByRole('checkbox', { name: 'Select all' }) as HTMLInputElement;
+    await userEvent.click(box);
+    expect(box).not.toBeChecked();
+    expect(box.indeterminate).toBe(true);
+  });
+
   it('cannot be toggled while disabled', async () => {
     const { container } = render(<Checkbox label="Archived" disabled defaultChecked />);
     const box = screen.getByRole('checkbox', { name: 'Archived' });

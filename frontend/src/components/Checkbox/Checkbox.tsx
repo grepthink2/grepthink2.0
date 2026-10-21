@@ -16,23 +16,26 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
  * `<input type="checkbox">` (Space toggles) under a custom-drawn box, green when checked, with the
  * accent ring on keyboard focus. The hidden input covers the whole row, so clicks, taps and the
  * screen-reader cursor all land on it. The name is the label alone; the description is linked with
- * `aria-describedby`. `indeterminate` is set on the input through a ref.
+ * `aria-describedby`. `indeterminate` is set on the input through a ref, and put back after a click
+ * clears it, so the input follows the prop.
  *
  * Native props and `ref` reach the input, `className` the row. A caller's `aria-labelledby` (for a
  * box named by its table row) and `aria-describedby` are kept, ahead of its own. It works controlled
  * (`checked`) or uncontrolled (`defaultChecked`).
  */
 export function Checkbox({
-  id, label, indeterminate = false, description, disabled = false, className = '',
+  id, label, indeterminate = false, description, disabled = false, onChange, className = '',
   'aria-labelledby': labelledByProp, 'aria-describedby': describedByProp, ref, ...rest
 }: CheckboxProps) {
   const reactId = useId();
   const inputId = id || reactId;
   const inputRef = useRef<HTMLInputElement>(null);
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement, []);
+  // After every render, not only when the prop changes: a click clears the input's indeterminate, and a
+  // parent that re-renders without changing the prop still means it.
   useEffect(() => {
     if (inputRef.current) inputRef.current.indeterminate = indeterminate;
-  }, [indeterminate]);
+  });
   const labelId = label ? `${inputId}-label` : undefined;
   const descId = description ? `${inputId}-desc` : undefined;
   return (
@@ -43,6 +46,11 @@ export function Checkbox({
         id={inputId}
         type="checkbox"
         className="gt-check__input"
+        onChange={(e) => {
+          onChange?.(e);
+          // The click has cleared it; the prop decides, here as well when the parent does not re-render.
+          e.currentTarget.indeterminate = indeterminate;
+        }}
         disabled={disabled}
         aria-labelledby={[labelledByProp, labelId].filter(Boolean).join(' ') || undefined}
         aria-describedby={[describedByProp, descId].filter(Boolean).join(' ') || undefined}
