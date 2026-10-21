@@ -29,6 +29,12 @@ export interface FieldShellProps {
   count?: number;
   /** A soft limit: shows "count / max"; past it the field is flagged, never truncated. */
   max?: number;
+  /**
+   * Shows the "count / max" counter. Hidden, the limit still flags the field past it and keeps its
+   * live region, which must be in place before it first speaks (Input shows its counter from 80%).
+   * @default true
+   */
+  showCount?: boolean;
   disabled?: boolean;
   /** Renders the label as a <span> for a control group named with `aria-labelledby` (CodeInput). @default false */
   group?: boolean;
@@ -65,11 +71,13 @@ function announcement(bucket: Bucket, remaining: number): string {
  * when over, not on every keystroke.
  *
  * Codebase-side: a space before "(optional)", so the control's name reads "Pronouns (optional)"; the
- * design's 4px margin alone gives the name "Pronouns(optional)". Ported, `ref` reaches the root.
+ * design's 4px margin alone gives the name "Pronouns(optional)". `showCount={false}` keeps a limit with
+ * its counter hidden, so the live region is in place before the counter appears. `ref` reaches the
+ * root.
  */
 export function FieldShell({
-  id, label, hideLabel = false, optional = false, helperText, error, count, max, disabled = false, group = false,
-  className = '', ref, children,
+  id, label, hideLabel = false, optional = false, helperText, error, count, max, showCount = true, disabled = false,
+  group = false, className = '', ref, children,
 }: FieldShellProps) {
   const reactId = useId();
   const fieldId = id || reactId;
@@ -77,7 +85,8 @@ export function FieldShell({
   const errId = error ? `${fieldId}-err` : undefined;
   const helpId = !error && helperText ? `${fieldId}-help` : undefined;
   const hasMax = max != null;
-  const countId = hasMax ? `${fieldId}-count` : undefined;
+  const counted = hasMax && showCount;
+  const countId = counted ? `${fieldId}-count` : undefined;
   const n = count ?? 0;
   const over = hasMax && n > max;
   const remaining = hasMax ? max - n : null;
@@ -113,7 +122,7 @@ export function FieldShell({
           : <label id={labelId} className={labelClass} htmlFor={fieldId}>{labelText}</label>
       ) : null}
       {typeof children === 'function' ? children(ctx) : children}
-      {(errId || helpId || hasMax) && (
+      {(errId || helpId || counted) && (
         <div className="gt-field__footer">
           {errId && (
             <p className="gt-field__error" id={errId}>
@@ -122,7 +131,7 @@ export function FieldShell({
             </p>
           )}
           {helpId && <p className="gt-field__help" id={helpId}>{helperText}</p>}
-          {hasMax && (
+          {counted && (
             <span className={['gt-field__count', over ? 'gt-field__count--over' : ''].filter(Boolean).join(' ')} id={countId}>
               <span aria-hidden="true">{n} / {max}</span>
               <span className="gt-visually-hidden">{n} of {max} characters</span>

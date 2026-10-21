@@ -153,6 +153,23 @@ describe('FieldShell', () => {
     expect(live).toHaveTextContent('12 characters over the limit');
   });
 
+  it('keeps the limit with the visible counter hidden: the live region, and the flag past it', () => {
+    const shell = (count: number) => (
+      <FieldShell label="Bio" count={count} max={100} showCount={false}>{control}</FieldShell>
+    );
+    const { container, rerender } = render(shell(10));
+    const input = screen.getByRole('textbox', { name: 'Bio' });
+    expect(container.querySelector('.gt-field__count')).toBeNull();
+    expect(input).not.toHaveAttribute('aria-describedby');
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live).toBeEmptyDOMElement();
+    rerender(shell(80));
+    expect(live).toHaveTextContent('20 characters left');
+    rerender(shell(101));
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(container.firstChild).toHaveClass('gt-field--over');
+  });
+
   it('has no counter, footer or live region without a limit', () => {
     const { container } = render(<FieldShell label="Title">{control}</FieldShell>);
     expect(container.querySelector('.gt-field__footer')).toBeNull();

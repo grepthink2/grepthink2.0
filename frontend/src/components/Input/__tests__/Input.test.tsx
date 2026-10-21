@@ -150,6 +150,20 @@ describe('Input', () => {
     expect(screen.getByText('8 / 80')).toBeInTheDocument();
   });
 
+  it('has its counter\'s live region in place, silent, before the counter shows', async () => {
+    const { container } = render(<Controlled label="Bio" maxLength={100} initial="abc" />);
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live).not.toBeNull();
+    expect(live).toBeEmptyDOMElement();
+    expect(container.querySelector('.gt-field__count')).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Bio' })).not.toHaveAccessibleDescription();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Bio' }), { target: { value: 'x'.repeat(80) } });
+    expect(container.querySelector('[aria-live="polite"]')).toBe(live);
+    expect(live).toHaveTextContent('20 characters left');
+    expect(screen.getByText('80 / 100')).toBeInTheDocument();
+  });
+
   it('keeps text past the limit and flags it', async () => {
     const { container } = render(<Controlled label="Title" maxLength={5} />);
     const input = screen.getByRole('textbox', { name: 'Title' });

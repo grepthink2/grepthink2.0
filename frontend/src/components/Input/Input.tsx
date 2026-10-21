@@ -54,6 +54,7 @@ export function Input({
 }: InputProps) {
   const [typed, setTyped] = useState(() => String(defaultValue ?? '').length);
   const count = value !== undefined ? value.length : typed;
+  // The counter shows from 80% of the limit; the limit itself, with its live region, holds throughout.
   const counter = maxLength != null && (showCount || count >= maxLength * 0.8);
   const grouped = iconLeft || prefixText || suffix || action;
   return (
@@ -64,8 +65,9 @@ export function Input({
       optional={optional}
       helperText={helperText}
       error={error}
-      count={counter ? count : undefined}
-      max={counter ? maxLength : undefined}
+      count={maxLength != null ? count : undefined}
+      max={maxLength}
+      showCount={counter}
       disabled={disabled}
       className={className}
     >
