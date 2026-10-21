@@ -204,6 +204,9 @@ def db(monkeypatch):
             ("projects", "classes"): ("class_id", "id", False),
             ("projects", "project_members"): ("id", "project_id", True),
             ("TSRs", "projects"): ("project_id", "id", False),
+            ("TSRs", "assignments"): ("assignment_id", "id", False),
+            ("TSRs", "profiles!TSRs_evaluator_id_fkey"): ("evaluator_id", "id", False),
+            ("TSRs", "profiles!TSRs_evaluatee_id_fkey"): ("evaluatee_id", "id", False),
             ("assignments", "classes"): ("class_id", "id", False),
         },
     )
@@ -291,17 +294,17 @@ def test_evaluator_edit_returns_the_entry_with_its_project_and_is_bounded(db, cl
     assert (entry["evaluator_name"], entry["evaluatee_name"]) == ("Sam X", "Sara X")
     assert entry["scrum_master_tickets"] == ""
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-new")["percent_contribution"] == 60
-    # the TSR (project and class embedded), the update, the profiles; plus the assignment's
-    # window read (the evaluator only) and the tsr_updated event write
-    assert db.executes <= 5, _trace(db)
+    # the TSR (its project, class and assignment window embedded), the update (both people
+    # embedded) and the tsr_updated event write
+    assert db.executes == 3, _trace(db)
 
 
 def test_instructor_may_edit_others_may_not(db):
     assignments.update_tsr_entry(INSTR, A_TSR, "t-s2", positive_feedback="edited")
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-s2")["positive_feedback"] == "edited"
-    # the TSR (project and class embedded), the update, the profiles and the event; the
-    # instructor's edit reads no window
-    assert db.executes <= 4, _trace(db)
+    # the TSR (its project, class and assignment window embedded), the update (both people
+    # embedded) and the event; the instructor's edit checks no window
+    assert db.executes == 3, _trace(db)
     for caller in (S3, TA1, OTHER_INSTR):
         with pytest.raises(HTTPException) as exc:
             assignments.update_tsr_entry(caller, A_TSR, "t-s2", positive_feedback="nope")
@@ -315,6 +318,26 @@ def test_instructor_may_edit_others_may_not(db):
         "project_id": P1,
         "meta": {"assignment_id": A_TSR, "evaluatee_id": S1},
     }
+
+
+def test_self_review_edit_names_both_sides(db, clock):
+    clock(NOW_BEFORE)
+    db.rows("TSRs").append(
+        {
+            "id": "t-self",
+            "assignment_id": A_TSR,
+            "project_id": P1,
+            "evaluator_id": S1,
+            "evaluatee_id": S1,
+            "percent_contribution": 50,
+            "positive_feedback": "me",
+            "created_at": "2026-01-04T00:00:00+00:00",
+            "updated_at": "2026-01-04T00:00:00+00:00",
+        }
+    )
+    entry = assignments.update_tsr_entry(S1, A_TSR, "t-self", positive_feedback="still me")
+    assert (entry["evaluator_name"], entry["evaluatee_name"]) == ("Sam X", "Sam X")
+    assert entry["positive_feedback"] == "still me"
 
 
 def test_tsr_edit_validation(db):
@@ -817,11 +840,13 @@ def test_a_week_based_submission_does_not_edit_an_assignment_linked_row(db, cloc
 
 
 def test_student_edit_of_a_tsr_entry_after_close_is_refused_but_the_instructor_may(db, clock):
-    clock(NOW_AFTER)
+    clock(NOW_AFTER)  # after due_at, and A_TSR has no accept_until
     with pytest.raises(HTTPException) as exc:
         assignments.update_tsr_entry(S1, A_TSR, "t-new", percent_contribution=40)
     assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_CLOSED)
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-new")["percent_contribution"] == 50
+    # Refused from the window embedded in the TSR read, before any write.
+    assert _trace(db) == ["TSRs:select"]
     entry = assignments.update_tsr_entry(INSTR, A_TSR, "t-new", percent_contribution=40)
     assert entry["percent_contribution"] == 40
     assert [e["kind"] for e in db.rows("events")] == ["tsr_updated"]
@@ -836,6 +861,7 @@ def test_an_evaluator_edit_fails_closed_when_its_assignment_is_gone(db):
     assert (exc.value.status_code, exc.value.detail) == (404, "Assignment not found")
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-new")["percent_contribution"] == 50
     assert db.rows("events") == []
+    assert _trace(db) == ["TSRs:select"]  # the TSR's assignment embeds as nothing
 
 
 def test_tsr_entries_carry_their_timestamps(db):
