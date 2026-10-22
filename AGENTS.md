@@ -40,6 +40,12 @@ review shape below, not the skill's own.
   request into `beta` or `main`.
 - A frontend test that times out on a busy machine proves nothing. Rerun the failing files alone,
   and let CI decide.
+- Vitest runs in its `vmThreads` pool (`vite.config.ts`): one jsdom per worker, a fresh `window`
+  per file. Objects that come from Node APIs or jsdom internals live in another realm there, so
+  `toStrictEqual` on a `Response.json()` result or `structuredClone` output, or `instanceof Error`
+  on an error a Node built-in threw, can fail where `toEqual` passes; compare with `toEqual` or
+  check the shape. `isolate` has no effect in that pool, and a worker is recycled past
+  `vmMemoryLimit` rather than garbage-collected.
 - Vitest keeps compiled modules on disk (`frontend/node_modules/.vitest-cache`), and that cache misses
   a change to a Sass partial: a stylesheet that `@use`s the partial keeps its old CSS. After changing a
   partial, run `npx vitest --clearCache` in `frontend/` before trusting a test that reads styles. CI
