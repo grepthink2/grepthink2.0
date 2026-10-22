@@ -2,7 +2,8 @@
 // block, then its lines from the file's phone and reduced-motion blocks. A tab's count is CountBadge
 // (components/CountBadge), which brings its own styles. The tab's own padding, border, radius,
 // background, font and transition beat index.css's global button rule, which would otherwise reach
-// this raw button.
+// this raw button. Two additions, marked below: an inactive panel stays hidden, and sm tabs reach
+// 44px on phones.
 
 /* ── Tabs — the grey segmented track (Edit Project, Requests, scrum Board / Backlog / Burnup,
    TA meeting tabs, member manager). Tabs stretch across their container; a SegmentedControl
@@ -28,6 +29,9 @@
 .gt-tabs--sm { padding: 3px; }
 .gt-tabs--sm .gt-tabs__tab { min-height: 28px; padding: 3px 10px; font-size: 12px; }
 .gt-tabs__panel:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: var(--gt-radius-sm); }
+// Codebase addition: the hidden attribute hides an inactive panel through the browser's own style, the
+// weakest there is, so a feature class that sets `display` (flex, grid) would show a kept-mounted panel.
+.gt-tabs__panel[hidden] { display: none; }
 
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {

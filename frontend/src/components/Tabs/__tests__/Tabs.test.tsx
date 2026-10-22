@@ -232,6 +232,13 @@ describe('Tabs', () => {
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('');
   });
 
+  it('keeps an inactive panel hidden, even under a feature class that sets display', () => {
+    render(<TabPanel idBase="k" value="meetings" keepMounted className="feature-flex">Draft</TabPanel>);
+    expect(panel('k-panel-meetings')).toHaveAttribute('hidden');
+    // The hidden attribute is the browser's weakest rule, so one class's `display: flex` would show it.
+    expect(cssRules('.gt-tabs__panel[hidden]')[0].getPropertyValue('display')).toBe('none');
+  });
+
   it('a panel whose content starts with a control is not a tab stop of its own', () => {
     render(
       <>
