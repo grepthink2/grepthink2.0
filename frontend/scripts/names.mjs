@@ -11,8 +11,8 @@
  * may also live in that component's folder, in its file or in a file of its own name
  * (src/components/ConfirmDialog/ConfirmDialog.tsx or InlineConfirm.tsx). These fail:
  *   - a file anywhere else that exports a kit component;
- *   - a folder in src/components/ named after no kit component (a lowercase folder, such as
- *     hooks/, holds no component and is not read);
+ *   - a folder in src/components/ named after neither a kit component nor the design file that
+ *     groups some (a lowercase folder, such as hooks/, holds no component and is not read);
  *   - a component file (a .ts or .tsx file whose name starts with a capital) in a component
  *     folder, named after neither the folder nor an export the design groups under it;
  *   - a component file in src/components/ named after a design export that it does not export;
@@ -631,9 +631,11 @@ export function checkNames(manifest, files, allowlist = NAMES_ALLOWLIST) {
     const parts = path.startsWith(COMPONENTS) ? path.slice(COMPONENTS.length).split('/') : [];
     if (parts.length > 1 && startsUpper(parts[0])) folders.add(parts[0]);
   }
+  // A folder takes a kit component's name, or the name of the design file that groups its exports.
+  const kitFolder = (folder) => kitComponents.has(folder) || groupedUnder.has(folder);
   for (const folder of [...folders].sort()) {
     const path = `${COMPONENTS}${folder}`;
-    if (kitComponents.has(folder) || pathAllowed(path)) continue;
+    if (kitFolder(folder) || pathAllowed(path)) continue;
     const near = [...kitComponents].find((n) => n.toLowerCase() === folder.toLowerCase());
     fail(
       'kit-folder',
@@ -757,7 +759,7 @@ export function checkNames(manifest, files, allowlist = NAMES_ALLOWLIST) {
     const exists = paths.some((p) => p === entry.path || p.startsWith(`${entry.path}/`));
     const passes = file
       ? stemOf(file) === folder || Boolean(groupedUnder.get(folder)?.has(stemOf(file)))
-      : Boolean(folder) && kitComponents.has(folder);
+      : Boolean(folder) && kitFolder(folder);
     if (!exists) {
       warn('allowlist-stale', entry.path, `NAMES_ALLOWLIST lists ${entry.path}, which no longer exists: remove it.`);
     } else if (passes) {

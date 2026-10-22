@@ -111,6 +111,16 @@ describe('checkNames: the kit', () => {
     expect(statusOf(r, 'InlineConfirm')).toBe('misplaced');
   });
 
+  it("passes a folder named after the design file that groups its exports, though no export bears that name", () => {
+    const r = checkNames(
+      manifest(['MarkdownText', 'components/display/Markdown.jsx']),
+      [{ path: 'src/components/Markdown/MarkdownText.tsx', source: 'export default function MarkdownText() {}' }],
+      [],
+    );
+    expect(r.failures).toEqual([]);
+    expect(statusOf(r, 'MarkdownText')).toBe('same name');
+  });
+
   it('fails a folder named after no kit component, and names the near miss', () => {
     const r = checkNames(KIT, [...PORTED, exporting('src/components/ComboBox/ComboBox.tsx', 'ComboBox')], COMBOBOX_LATER);
     expect(failures(r)).toEqual([['kit-folder', 'src/components/ComboBox/']]);
