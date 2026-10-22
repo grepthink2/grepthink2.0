@@ -1,3 +1,4 @@
+// Intentional addition: TeamMeetingsList — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { ScheduleItemData, SchedulePerson } from '../schedule/ScheduleModel';
 import type { TeamMeeting, TeamMeetingPayload } from './TeamMeetingsModel';

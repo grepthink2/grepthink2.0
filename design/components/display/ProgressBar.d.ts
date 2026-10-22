@@ -1,6 +1,8 @@
+// Intentional addition: ProgressBar — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ProgressBarProps {
+  /** `aria-valuenow` is this clamped to 0…max, unrounded; anything that isn't a number counts as 0. */
   value: number;
   /** @default 100 */
   max?: number;

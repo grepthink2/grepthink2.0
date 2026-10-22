@@ -1,3 +1,4 @@
+// Intentional addition: SlotRow — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { ApiReviewSlot, BoardContext, SlotView, SlotActionId } from './FinalReviewsModel';
 export interface SlotRowProps {

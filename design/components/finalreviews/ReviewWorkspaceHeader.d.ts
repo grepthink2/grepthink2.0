@@ -1,3 +1,4 @@
+// Intentional addition: ReviewWorkspaceHeader — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { ApiPerson } from './FinalReviewsModel';
 export interface ReviewWorkspaceHeaderProps {

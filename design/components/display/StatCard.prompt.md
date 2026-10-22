@@ -1,4 +1,4 @@
-Metric card — **one component** for the Dashboard (`DashboardMetricCard`, 4 uses) and Analytics (`StatTile`, 6 uses; StatTile is now `<StatCard compact format="compact">`).
+Metric card — **one component** for the Dashboard (`DashboardMetricCard`, 4 uses) and the analytics tiles (6 uses, `<StatCard compact format="compact">`; the StatTile alias left 2026-10-22).
 
 ```jsx
 <StatCard label="Registered Students" value={62} hint="58 enrolled · 4 invited" icon={<Users size={16} />}

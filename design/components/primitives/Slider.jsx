@@ -3,6 +3,8 @@ import { FieldShell } from './FieldShell.jsx';
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const snap = (v, min, step) => +(min + Math.round((v - min) / step) * step).toFixed(6);
+/** The last step inside `max`, counting from `min` (0…10 in steps of 3 tops out at 9, where the thumb sits). */
+const topOf = (min, max, step) => +(min + Math.floor((max - min) / step + 1e-9) * step).toFixed(6);
 
 /**
  * Labelled range — WAI-ARIA Slider pattern on a native <input type="range"> in the field shell
@@ -10,8 +12,9 @@ const snap = (v, min, step) => +(min + Math.round((v - min) / step) * step).toFi
  * or, with `withInput`, a paired number input kept in sync (typing commits in-range values at
  * once and clamps on blur). Keys: ← ↓ / → ↑ one step, PageDown / PageUp `pageStep` (a tenth of
  * the range by default), Home / End the ends. `color` tints fill and thumb (a token reference, to
- * match a legend swatch); an error turns both red. 44px tall on phones. Replaces the TSR
- * contributions step's feature-styled range.
+ * match a legend swatch); an error turns both red. 44px tall on phones. Values snap to the steps
+ * that run from `min`, and the top is the last step inside `max`, so the readout never says more
+ * than where the thumb sits. Replaces the TSR contributions step's feature-styled range.
  */
 export function Slider({
   id, label, hideLabel = false, value, defaultValue, onChange, min = 0, max = 100, step = 1, pageStep,
@@ -21,9 +24,10 @@ export function Slider({
   const controlled = value !== undefined;
   const [inner, setInner] = React.useState(defaultValue ?? min);
   const [draft, setDraft] = React.useState(null);
-  const v = clamp(Number(controlled ? value : inner), min, max);
+  const top = topOf(min, max, step);
+  const v = clamp(snap(Number(controlled ? value : inner), min, step), min, top);
   const commit = (n) => {
-    const next = clamp(snap(n, min, step), min, max);
+    const next = clamp(snap(n, min, step), min, top);
     if (!controlled) setInner(next);
     if (onChange && next !== v) onChange(next);
   };

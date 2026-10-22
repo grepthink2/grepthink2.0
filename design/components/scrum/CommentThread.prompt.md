@@ -1,4 +1,4 @@
-Comment thread for stories & tasks: markdown bodies (`MarkdownText`), @mention chips for project-team members, composer with ⌘Enter submit.
+Comment thread for stories & tasks: markdown bodies (the kit's `MarkdownText`, `display/Markdown.jsx`), @mention chips for project-team members, composer with ⌘Enter submit.
 
 ```jsx
 <CommentThread members={['Ashton Liu','Tony Wu']} comments={[
@@ -6,4 +6,4 @@ Comment thread for stories & tasks: markdown bodies (`MarkdownText`), @mention c
 ]} value={draft} onChange={setDraft} onSubmit={post} />
 ```
 
-`MarkdownText` is demo fidelity; production reuses the codebase's markdown + mention semantics.
+`MarkdownText` lives in the kit (`display/Markdown.jsx` ↔ `components/Markdown/MarkdownText`) since 2026-10-22; the design renderer is demo fidelity.

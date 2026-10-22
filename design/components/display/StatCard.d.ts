@@ -1,7 +1,8 @@
+// Intentional addition: StatCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface StatCardDelta {
-  /** Change as a ratio (0.18 → "+18%"); null hides the delta. */
+  /** Change as a ratio (0.18 → "+18%"); null hides the delta. The tone follows the rounded figure: 0.004 reads "0%" in grey, never green. */
   value: number | null;
   /** Comparison label ("vs the 7 days before"). */
   vsLabel?: string;
@@ -29,7 +30,7 @@ export interface StatCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** 'raw' as given · 'compact' 12.9K / 1.3M · 'percent' 0.82 → 82%. @default 'raw' */
   format?: 'raw' | 'compact' | 'percent';
   delta?: StatCardDelta;
-  /** 2–12 weekly points (complete weeks only); fewer than 2 draws nothing. */
+  /** 2–12 weekly points (complete weeks only); fewer than 2 draws nothing. Decorative (`aria-hidden`): the figures are in the text. */
   trend?: number[];
   /** ⓘ InfoPopover beside the label — the keyboard-reachable explanation that replaces the Dashboard's hover-only tooltip. */
   info?: StatCardInfo;
@@ -37,7 +38,7 @@ export interface StatCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   failed?: boolean;
   /** Skeleton value, `aria-busy`. @default false */
   loading?: boolean;
-  /** Analytics tile density (14px padding, h2 value) — what StatTile renders. @default false */
+  /** Analytics tile density (14px padding, h2 value) — what the analytics tiles render. @default false */
   compact?: boolean;
   /** Makes the card a stretched button named "{label}: {value}". */
   onClick?: () => void;

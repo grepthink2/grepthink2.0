@@ -4,7 +4,9 @@ import { Badge } from '../display/Badge.jsx';
 
 /**
  * Team member card — avatar, name, role pill, optional skills and
- * contact/actions row. Used in project Team tabs and TA views.
+ * contact/actions row. Used in project Team tabs and TA views. Roles are not changed from the
+ * card: the Team tab picks a member per role (Product Owner, Scrum Master) with the kit Select
+ * (RoleSelect left in the 2026-10-22 fold-back).
  */
 export function TeamMemberCard({
   name,
@@ -30,35 +32,6 @@ export function TeamMemberCard({
         </div>
       )}
       {actions && <div className="gt-member-card__actions">{actions}</div>}
-    </div>
-  );
-}
-
-/**
- * Role select — the member-card dropdown for changing a project role.
- */
-export function RoleSelect({ value = 'member', onChange, disabled = false, className = '' }) {
-  const ROLES = [
-    { value: 'owner', label: 'Owner' },
-    { value: 'product_owner', label: 'Product Owner' },
-    { value: 'scrum_master', label: 'Scrum Master' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'member', label: 'Member' },
-  ];
-  return (
-    <div className={['gt-role-select', className].filter(Boolean).join(' ')}>
-      <select
-        className="gt-role-select__control"
-        value={value}
-        onChange={(e) => onChange && onChange(e.target.value)}
-        disabled={disabled}
-        aria-label="Project role"
-      >
-        {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-      </select>
-      <svg className="gt-role-select__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
     </div>
   );
 }

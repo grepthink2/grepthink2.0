@@ -15,11 +15,12 @@ const Trend = ({ dir }) => (
 );
 
 /**
- * Metric card — one component for the Dashboard (DashboardMetricCard) and Analytics (StatTile,
- * now `compact`). Uppercase label (+ an InfoPopover ⓘ via `info`), big value, tinted icon chip,
- * hint; optional `delta` (good / bad / flat against `goodWhenUp`) and a 2–12 point `trend`
- * sparkline. `failed` or a null value shows "—"; `loading` a skeleton. A clickable card is a
- * stretched button under the content, so the ⓘ stays its own control.
+ * Metric card — one component for the Dashboard (DashboardMetricCard) and the analytics tiles
+ * (`compact`; the StatTile alias left 2026-10-22). Uppercase label (+ an InfoPopover ⓘ via `info`), big value, tinted icon chip,
+ * hint; optional `delta` (good / bad / flat against `goodWhenUp`; the tone follows the rounded
+ * figure, so there is no green "0%") and a 2–12 point `trend` sparkline, decorative since the
+ * figures are in the text. `failed` or a null value shows "—"; `loading` a skeleton. A clickable
+ * card is a stretched button under the content, so the ⓘ stays its own control.
  */
 export function StatCard({
   label, value, hint, icon = null, accent = 'primary', format = 'raw', delta, trend, info,
@@ -31,9 +32,9 @@ export function StatCard({
 
   let deltaNode = null;
   if (!failed && !loading && delta && delta.value !== null && delta.value !== undefined) {
-    const up = delta.value > 0; const flat = delta.value === 0;
-    const good = flat ? null : (delta.goodWhenUp !== false ? up : !up);
     const pct = Math.round(delta.value * 100);
+    const up = pct > 0; const flat = pct === 0;
+    const good = flat ? null : (delta.goodWhenUp !== false ? up : !up);
     deltaNode = (
       <span className={`gt-stat-card__delta gt-stat-card__delta--${flat ? 'flat' : good ? 'good' : 'bad'}`}>
         <Trend dir={flat ? 'flat' : up ? 'up' : 'down'} />
@@ -50,7 +51,7 @@ export function StatCard({
     const y = (v) => H - pad - ((v - min) / (max - min || 1)) * (H - pad * 2);
     const last = trend.length - 1;
     trendNode = (
-      <svg className="gt-stat-card__spark" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${trend.length}-week trend, latest ${fmtCompact(trend[last])}`}>
+      <svg className="gt-stat-card__spark" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false">
         <path d={trend.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} className="gt-stat-card__spark-line" />
         <circle cx={x(last)} cy={y(trend[last])} r="3.5" className="gt-stat-card__spark-dot" />
       </svg>

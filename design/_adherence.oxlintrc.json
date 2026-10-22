@@ -103,8 +103,8 @@
         "message": "<AssistantSuggestionCard> surface must be one of 'app' | 'landing'."
       },
       {
-        "selector": "JSXOpeningElement[name.name='Avatar'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|src|size|square|decorative|key|ref|className|style|children)$/]",
-        "message": "<Avatar> doesn't accept that prop. Declared props: name, src, size, square, decorative."
+        "selector": "JSXOpeningElement[name.name='Avatar'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|src|size|square|decorative|style|key|ref|className|style|children)$/]",
+        "message": "<Avatar> doesn't accept that prop. Declared props: name, src, size, square, decorative, style."
       },
       {
         "selector": "JSXOpeningElement[name.name='Avatar'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:xs|sm|md|lg|xl)$/]",
@@ -155,8 +155,8 @@
         "message": "<Button> type must be one of 'button' | 'submit' | 'reset'."
       },
       {
-        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|header|footer|title|subtitle|actions|titleAs|shadow|bordered|href|onClick|selected|padded|key|ref|className|style|children)$/]",
-        "message": "<Card> doesn't accept that prop. Declared props: children, header, footer, title, subtitle, actions, titleAs, shadow, bordered, href, onClick, selected, padded."
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|header|footer|title|subtitle|actions|titleAs|shadow|bordered|href|to|onClick|selected|padded|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: children, header, footer, title, subtitle, actions, titleAs, shadow, bordered, href, to, onClick, selected, padded."
       },
       {
         "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute[name.name='titleAs'] > Literal[value!=/^(?:h2|h3|h4|p)$/]",
@@ -171,10 +171,6 @@
         "message": "<ChartCardDefinition> doesn't accept that prop. Declared props: title, body, learnMoreHref."
       },
       {
-        "selector": "JSXOpeningElement[name.name='ChartEmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|title|hint|className|key|ref|className|style|children)$/]",
-        "message": "<ChartEmptyState> doesn't accept that prop. Declared props: icon, title, hint, className."
-      },
-      {
         "selector": "JSXOpeningElement[name.name='AnalyticsIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|key|ref|className|style|children)$/]",
         "message": "<AnalyticsIcon> doesn't accept that prop. Declared props: name, size."
       },
@@ -185,6 +181,14 @@
       {
         "selector": "JSXOpeningElement[name.name='Checkbox'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|checked|onChange|disabled|indeterminate|description|key|ref|className|style|children)$/]",
         "message": "<Checkbox> doesn't accept that prop. Declared props: label, checked, onChange, disabled, indeterminate, description."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PointsChip'] > JSXAttribute > JSXIdentifier[name!=/^(?:points|size|title|className|key|ref|className|style|children)$/]",
+        "message": "<PointsChip> doesn't accept that prop. Declared props: points, size, title, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PointsChip'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<PointsChip> size must be one of 'sm' | 'md'."
       },
       {
         "selector": "JSXOpeningElement[name.name='ClosingBand'] > JSXAttribute > JSXIdentifier[name!=/^(?:heading|text|ctaLabel|ctaHref|secondaryLabel|secondaryHref|className|key|ref|className|style|children)$/]",
@@ -229,18 +233,6 @@
       {
         "selector": "JSXOpeningElement[name.name='DatePickerField'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|onChange|showTime|disabledBefore|disabledAfter|disabled|required|optional|error|helperText|placeholder|id|className|key|ref|className|style|children)$/]",
         "message": "<DatePickerField> doesn't accept that prop. Declared props: label, value, onChange, showTime, disabledBefore, disabledAfter, disabled, required, optional, error, helperText, placeholder, id, className."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|body|learnMoreHref|placement|align|className|key|ref|className|style|children)$/]",
-        "message": "<DefinitionPopover> doesn't accept that prop. Declared props: title, body, learnMoreHref, placement, align, className."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute[name.name='placement'] > Literal[value!=/^(?:top|bottom)$/]",
-        "message": "<DefinitionPopover> placement must be one of 'top' | 'bottom'."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute[name.name='align'] > Literal[value!=/^(?:start|end)$/]",
-        "message": "<DefinitionPopover> align must be one of 'start' | 'end'."
       },
       {
         "selector": "JSXOpeningElement[name.name='Drawer'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|title|subtitle|children|footer|side|width|closeDisabled|initialFocusRef|ariaLabel|portal|className|key|ref|className|style|children)$/]",
@@ -399,6 +391,10 @@
         "message": "<LivePill> doesn't accept that prop. Declared props: label, title, className."
       },
       {
+        "selector": "JSXOpeningElement[name.name='MarkdownText'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|members|className|key|ref|className|style|children)$/]",
+        "message": "<MarkdownText> doesn't accept that prop. Declared props: children, members, className."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='MarkdownEditor'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|label|hideLabel|value|onChange|placeholder|helperText|error|required|optional|maxLength|rows|disabled|renderPreview|toolbar|className|key|ref|className|style|children)$/]",
         "message": "<MarkdownEditor> doesn't accept that prop. Declared props: id, label, hideLabel, value, onChange, placeholder, helperText, error, required, optional, maxLength, rows, disabled, renderPreview, toolbar, className."
       },
@@ -453,14 +449,6 @@
       {
         "selector": "JSXOpeningElement[name.name='ChartDatum'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|value|color|key|ref|className|style|children)$/]",
         "message": "<ChartDatum> doesn't accept that prop. Declared props: name, value, color."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='PointsChip'] > JSXAttribute > JSXIdentifier[name!=/^(?:points|size|title|className|key|ref|className|style|children)$/]",
-        "message": "<PointsChip> doesn't accept that prop. Declared props: points, size, title, className."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='PointsChip'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
-        "message": "<PointsChip> size must be one of 'sm' | 'md'."
       },
       {
         "selector": "JSXOpeningElement[name.name='Popover'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|anchor|placement|align|size|padded|className|children|key|ref|className|style|children)$/]",
@@ -687,14 +675,6 @@
         "message": "<StatCardDelta> doesn't accept that prop. Declared props: value, vsLabel, goodWhenUp."
       },
       {
-        "selector": "JSXOpeningElement[name.name='StatTile'] > JSXAttribute > JSXIdentifier[name!=/^(?:format|key|ref|className|style|children)$/]",
-        "message": "<StatTile> doesn't accept that prop. Declared props: format."
-      },
-      {
-        "selector": "JSXOpeningElement[name.name='StatTile'] > JSXAttribute[name.name='format'] > Literal[value!=/^(?:raw|compact|percent)$/]",
-        "message": "<StatTile> format must be one of 'raw' | 'compact' | 'percent'."
-      },
-      {
         "selector": "JSXOpeningElement[name.name='StepperStep'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|label|state|key|ref|className|style|children)$/]",
         "message": "<StepperStep> doesn't accept that prop. Declared props: id, label, state."
       },
@@ -916,9 +896,6 @@
       "ChartCardDefinition": {
         "replaces": []
       },
-      "ChartEmptyState": {
-        "replaces": []
-      },
       "AnalyticsIcon": {
         "replaces": []
       },
@@ -926,6 +903,9 @@
         "replaces": []
       },
       "Checkbox": {
+        "replaces": []
+      },
+      "PointsChip": {
         "replaces": []
       },
       "ClosingBand": {
@@ -956,9 +936,6 @@
         "replaces": []
       },
       "DatePickerField": {
-        "replaces": []
-      },
-      "DefinitionPopover": {
         "replaces": []
       },
       "Drawer": {
@@ -1024,6 +1001,9 @@
       "LivePill": {
         "replaces": []
       },
+      "MarkdownText": {
+        "replaces": []
+      },
       "MarkdownEditor": {
         "replaces": []
       },
@@ -1052,9 +1032,6 @@
         "replaces": []
       },
       "ChartDatum": {
-        "replaces": []
-      },
-      "PointsChip": {
         "replaces": []
       },
       "Popover": {
@@ -1163,9 +1140,6 @@
         "replaces": []
       },
       "StatCardDelta": {
-        "replaces": []
-      },
-      "StatTile": {
         "replaces": []
       },
       "StepperStep": {

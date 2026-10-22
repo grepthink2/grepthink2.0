@@ -1,3 +1,4 @@
+// Intentional addition: Modal — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ModalProps {
@@ -30,11 +31,17 @@ export interface ModalProps {
   /** false renders in place instead of in <body> (galleries, tests). @default true */
   portal?: boolean;
   className?: string;
+  /** Joins the subtitle in describing the dialog (ConfirmDialog points it at its message). */
+  'aria-describedby'?: string;
 }
 
 export function Modal(props: ModalProps): React.JSX.Element | null;
 
-/** Shared dialog behaviour (stack, focus in / trap / return, scroll lock, exit fade). */
+/**
+ * Shared dialog behaviour: a stack (Esc and the scrim close the topmost dialog only), focus in on the
+ * next task, a Tab trap over the real tab stops, focus back to the first opener still in the page,
+ * a counted body scroll lock, the exit fade. Esc is ignored while composing, repeating or already handled.
+ */
 export function useDialog(options: {
   open: boolean;
   onClose?: () => void;
@@ -45,3 +52,6 @@ export function useDialog(options: {
   /** Rendered in place (galleries): no stack, trap, scroll lock or focus move. */
   inPlace?: boolean;
 }): { mounted: boolean; closing: boolean; onScrimDown: (e: React.MouseEvent) => void };
+
+/** Counted body scroll lock; returns the release (counts once). The last release restores `overflow` only while it is still the lock's own. */
+export function lockBodyScroll(): () => void;

@@ -1,3 +1,4 @@
+// Intentional addition: JoinRequestCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface JoinRequestCardProps {

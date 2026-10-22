@@ -54,11 +54,12 @@ When a feature needs something the kit lacks, the kit grows it first (a design r
 | Slider | `components/Slider/` — the TSR contributions step (`features/app/components/TSRS/ContributionsTab.tsx`) drops its `.contributions-tab__slider` and `__number-input` styling for it; member colours pass as `color` token references |
 | Badge, CountBadge, UnreadBadge, Tag | `components/Badge/` (+ `badgeStatus.ts` from `BADGE_STATUS`), `components/CountBadge/`, `components/UnreadBadge/`, `components/Tag/` |
 | Avatar (+AvatarGroup, AVATAR_COLORS, hashColor) | `components/Avatar/` — the one palette and hash; every avatar render site uses it |
-| Card, Table | `components/Card/`, `components/Table/` (loading rows reuse `components/Skeleton/TableSkeleton`) |
-| StatCard | `components/StatCard/` — Dashboard's `DashboardMetricCard` and analytics' StatTile both render it |
+| Card, Table (+SortableHeader, useTableSort) | `components/Card/`, `components/Table/` (`Table.tsx`, `SortableHeader.tsx`, `useTableSort.ts`; loading rows reuse `components/Skeleton/TableSkeleton`) |
+| StatCard | `components/StatCard/` — Dashboard's `DashboardMetricCard` and the analytics tiles (`compact`) both render it |
 | ProgressBar | `components/ProgressBar/` |
 | Tooltip | `components/Tooltip/` (ported; `focusable` and Esc-to-hide in both) |
-| InfoPopover | `components/InfoPopover/` — replaces StatTooltip and GroupTooltip; analytics' DefinitionPopover renders it |
+| InfoPopover | `components/InfoPopover/` — replaces StatTooltip and GroupTooltip; ChartCard's ⓘ renders it |
+| Markdown (MarkdownText) | `components/Markdown/` — the one Markdown renderer (comments, story modal, project page, the landing issue card); `display/Markdown.jsx` since 2026-10-22 |
 | Modal (+useDialog) | `components/Modal/` (+ `useDialog.ts`) — the 24 hand-built modals move onto it |
 | ConfirmDialog (+InlineConfirm) | `components/ConfirmDialog/` — replaces ConfirmModal, `window.confirm`, `alert()` |
 | Drawer | `components/Drawer/` |
@@ -76,11 +77,11 @@ Feature layers keep their folders and feature SCSS, as before:
 | --- | --- |
 | `components/marketing/*` | `features/landing/components/**` (`gt-landing-header` ↔ `landing-header`, `gt-hero` ↔ `hero`, …) |
 | `components/assistant/*` | `features/app/components/Assistant/` |
-| `components/scrum/*` | `features/scrum/` (`scrum.scss` is a 1:1 port of `scrum.css`; re-port, never hand-edit values) |
-| `components/analytics/*` | `features/analytics/components/` (`analytics.scss` 1:1); StatTile → StatCard `compact`, DefinitionPopover → InfoPopover, range chips → FilterChip |
+| `components/scrum/*` | `features/scrum/` (`scrum.scss` is a 1:1 port of `scrum.css`; re-port, never hand-edit values); the four chips share `Chips.jsx` ↔ `components/Chips.tsx`; comments render the kit's MarkdownText |
+| `components/analytics/*` | `features/analytics/components/` (`analytics.scss` 1:1); the tiles are StatCard `compact`, the ⓘ InfoPopover, the per-card empty state EmptyState `card`, the header tools Button (`pressed` / `outline`) and Checkbox, range chips → FilterChip |
 | `components/search/*` | `features/search/` per `design_handoff_search/`; scope chips → FilterChip `sm` |
 | `components/schedule/*` | `features/schedule/` per `design_handoff_schedule/`; kind chips → FilterChip `sm` |
-| `components/domain/TeamMeetings*` | `EditProject/MeetingsTab.tsx` + `features/project/teamMeetingsModel.ts` per `design_handoff_team_meetings/`; its fields, buttons and alert are the shared components (drop the copies) |
+| `components/domain/TeamMeetings*` | `features/app/components/TeamMeetings/` (`TeamMeetingForm.tsx`, `TeamMeetingsList.tsx`, `teamMeetingsModel.ts`) per `design_handoff_team_meetings/`; its fields, buttons and alert are the shared components (drop the copies) |
 | `components/finalreviews/*` | `features/finalReviews/` per `design_handoff_final_review_signup/` (`finalReviews.scss` is a 1:1 port of `finalreviews.css`); SlotBoard replaces `pages/FinalReviews.tsx`'s body, ReviewWorkspaceHeader replaces `FinalReviewDetail.tsx`'s topbar + meta, TeamReview `card` goes in `ProjectView.tsx`'s aside; the seven status keys join the Badge status map |
 | `components/domain/*` (others) | the feature that owns each card (roster, projects, requests, messaging) |
 | `components/gallery.css`, `*.card.html` | not ported (design-side galleries) |
@@ -132,6 +133,47 @@ there first, then the component reads it. The design's component CSS carries **n
 
 ## Known deltas (deliberate, don't "fix" silently)
 
+- **Fold-back round, 2026-10-22** (the core kit ported in PRs #259, #261, #263, #265, #266, #268 and compared element by element) — now in
+  the design, so the next re-port is a no-op. Brief and naming audit: `uploads/2026-10-22-design-foldback/`.
+  1. **Galleries render like the app.** Every `*.card.html` loads the reference `frontend/src/index.css` after `styles.css` (border-box,
+     `line-height: 1.5`, the global `button` rule). Every raw `<button>` in the kit sets its own padding, weight, radius and transition
+     (search clear, date-picker trigger / arrows / days, Tag ×, chips, tabs, segmented options, table sort / open-row, the Card's stretched
+     title at `border-radius: 0`).
+  2. **CSS fixes the port found:** calendar weekdays are `table-cell`; a space before "(optional)"; 44px month arrows on phones; Slider values
+     snap from `min` with the top at the last step inside `max`, and the range's own box drops the global focus ring; `.gt-empty--card` is
+     `box-sizing: border-box; min-height: 176px`; `.gt-infopop__panel` resets `text-transform`, `letter-spacing`, weight, `font-style`,
+     `line-height` and `white-space`; **Card no longer clips** (`.gt-card__body--flush` clips and rounds its own corners, a focused flush
+     child rings the card, the stretch takes the card's radius); Badge, CountBadge / UnreadBadge, Tag and Avatar reset `text-transform`,
+     `letter-spacing` and `font-style`; AvatarGroup's ring is `content-box`; the sparkline is `overflow: visible`; the phone 44px rule
+     is repeated with the tabs' and segmented sizes' selectors; `.gt-tabs__panel[hidden] { display: none }`; the breakdown table's cells are
+     `content-box` and `th.gt-table__num` aligns right.
+  3. **Behaviour adopted:** dialogs (`useDialog` in `Modal.jsx`, shared by Modal, Drawer, ConfirmDialog) — a counted scroll lock that
+     restores `overflow` only while it is still the lock's own, focus in on the next task (a field that took focus as it mounted keeps it),
+     focus back past a dialog that closed in the same update to the first opener still in the page, Esc ignored while composing / repeating /
+     already handled, a Tab trap over real tab stops (drawn, `tabIndex >= 0`, one radio per group); ConfirmDialog's message is the dialog's
+     `aria-describedby` (Modal takes `aria-describedby`); InlineConfirm stops Esc while busy; CodeInput reads the input's current value per
+     keystroke, replaces the character under a collapsed caret, fires `onComplete` once per new full code; DatePickerField's chosen day ends
+     ", selected" and `showTime` defaults to 08:00; `gt-fade-in` is a shared keyframe (`keyframes.css`); FilterChip puts a space before
+     the count; FilterChipGroup (single) and SegmentedControl report no change for the checked option; StatCard's sparkline is `aria-hidden`
+     and the delta tone follows the rounded figure; ProgressBar's `aria-valuenow` is clamped to 0…max unrounded (non-numbers count as 0);
+     Tabs set `aria-controls` only with `idBase`; Table's headers are buttons only with `onSort`, `aria-sort` sits on the sorted column
+     only with a neutral ChevronsUpDown glyph elsewhere, `rowTo` is the in-app route (`rowHref` another site); Card takes `to` and a
+     selected link card is `aria-current="true"`; Avatar falls back without an effect, is named "Avatar" when nameless and merges the
+     caller's `style`; AvatarGroup is keyed by position with `max` at least 1. `rowTo` / `to` render an `<a>` here (no router).
+  4. **Names (REPORT.md):** StatTile → `StatCard compact`; DefinitionPopover → InfoPopover; ChartEmptyState → `EmptyState variant="card"`;
+     ChartCardTool → Button (`pressed` toggles, `outline` Refresh / Export CSV), ChartCardCheck → Checkbox; MarkdownText moved to
+     `display/Markdown.jsx`; `SortableHeader` and `useTableSort` exported from `display/Table.jsx`; `scrum/PointsChip.jsx` →
+     `scrum/Chips.jsx`; RoleSelect dropped (the Team tab picks a member per role with Select — `domain.card.html` draws the two pickers).
+     Kept on purpose: LandingHeader, LandingFooter, MeetingCard, TeamMemberCard. **Design-only bundle namespaces:** this tool needs a
+     same-named export per component file, so `Chips` and `Markdown` are plain objects (`{ PointsChip, … }`, `{ MarkdownText }`) —
+     allowlist them beside `ModKey`.
+  5. **Live is `<Badge status="live" />`** (blue, in progress) in ScheduleItem and the team-meetings row; the schedule's green pill, its dot
+     and `gt-sched-pulse` are deleted (PR #269 on the codebase side). The analytics LivePill follows when analytics adopts the kit.
+- **Codebase-side only (recorded, not mirrored):** Table's required `caption` named by `aria-labelledby`, overflow in both directions,
+  `rowHeader` (`<th scope="row">` + the `.gt-table tbody th` rules), per-column `className`, `rowClassName`, native props and `ref`;
+  Card `ref` and `to` as a react-router Link; FieldShell `showCount`; CodeInput uncontrolled + `ref`; ConfirmDialog `className` / `ref`
+  and per-try attempt state; InlineConfirm native props. They need no design counterpart.
+
 - **Adopted from the codebase, 2026-10-20 (PR #259, the button kit)** — now in the design, so the next re-port is a no-op:
   1. **Tooltip dismissal** (`useTooltipDismiss(enabled)` in `Tooltip.jsx` ↔ `components/Tooltip/useTooltipDismiss.ts`): Esc is heard on
      `window` in the capture phase and stopped only while a bubble shows; a mouse / pen press or Enter / Space on the control also
@@ -167,7 +209,7 @@ there first, then the component reads it. The design's component CSS carries **n
 - **Error red — converged (2026-10):** `$error-color: #DC2626` (+ soft / text) everywhere.
 - **Codebase-side scrum deltas** (header of `features/scrum/scrum.scss`, keep on re-port): `.gt-aidraft` omitted;
   `.gt-pointpicker__chip--blocked`; `.gt-story--active` soft fill; `.gt-comments__input` background.
-- **`lint:design`** runs two checks in the repo (`frontend/scripts/design-adherence.mjs` walks the tree and runs both; the design
+- **`lint:design`** runs three checks in the repo (`frontend/scripts/design-adherence.mjs` walks the tree and runs them; the design
   export's `_adherence.oxlintrc.json` does not run there):
   1. **Raw hex** — bare hex in `.scss/.css/.ts/.tsx` outside `frontend/src/styles/tokens/*.css`, unless the file carries a ledger comment.
   2. **Ownership** (`frontend/scripts/ownership.mjs`) — a shared component in `src/components/<Name>/` owns the classes its own
@@ -176,13 +218,21 @@ there first, then the component reads it. The design's component CSS carries **n
      (`className="gt-button gt-button--sm"`). Adjusting a component from the feature's own class (`.feature .gt-button`) passes.
      Deliberate exceptions go in `OWNERSHIP_ALLOWLIST`, each with its reason. Design-side feature CSS follows the same rule (this round's
      `.gt-palette__scopes .gt-filter-chips` is the passing form).
+  3. **Names** (`frontend/scripts/names.mjs`, 2026-10-22) — reads `_ds_manifest.json` and fails when a kit component's folder or file name
+     differs from the design export (`src/components/<Name>/<Name>.tsx`, or the folder / file of the design file that groups it); feature
+     layers and constants only warn, against `FEATURE_HOMES`. `NAMES_ALLOWLIST` records every deliberate difference with its reason
+     (`uploads/2026-10-22-design-foldback/REPORT.md`); an entry that hides nothing any more warns, so remove it once the design catches up.
 
 ## Sync back (codebase → design)
 
 When tokens change in the repo first: update `tokens/*.css` here to match `frontend/src/styles/tokens/` + the SCSS bridge (that
 layer is the source of truth), and refresh the reference copies under `frontend/` in this folder.
 
-**Last parity check: 2026-10-21** — reference copies from `beta`: `features/app/components/Layout/Sidebar.scss`, `Layout/Header.scss`,
+**Last parity check: 2026-10-22** — the fold-back brief (`docs/superpowers/handoffs/2026-10-22-design-foldback/README.md` on `beta`) and the naming audit
+(`docs/superpowers/handoffs/2026-10-22-naming-alignment/REPORT.md`), copied to `uploads/2026-10-22-design-foldback/`; the codebase's
+`components/Modal/{useDialog.ts,dialogStack.ts,scrollLock.ts}`, `Table/{Table.tsx,SortableHeader.tsx,useTableSort.ts}`, `Card/Card.{tsx,scss}`,
+`CodeInput/CodeInput.tsx`, `ConfirmDialog/ConfirmDialog.tsx`, `FieldShell/FieldShell.tsx` and the kit SCSS (Avatar, Badge, Slider, Tabs, Table) read for the mirrors.
+Before that, 2026-10-21 — reference copies from `beta`: `features/app/components/Layout/Sidebar.scss`, `Layout/Header.scss`,
 `index.css`, `features/scrum/scrum.scss`, `features/app/components/Classes/CreateClassModal.scss`. Before that, 2026-10-20 — the button kit (PR #259): `components/{Tooltip/useTooltipDismiss.ts,IconButton,Button}` folded back, and the
 reference copies `styles/_skeleton.scss`, `styles/tokens/colors.css` (now with the schedule kind palette) and `styles/tokens/spacing.css`
 (now with `--gt-z-palette`) refreshed from that branch. Before that, 2026-10-20 — the C2 final-review brief (PR #258, branch `docs/c2-final-review-signup-brief`) plus that branch's

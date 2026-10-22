@@ -1,3 +1,4 @@
+// Intentional addition: SLOT_MINUTES, SLOT_POST_MAX, FR_LENSES, FR_REASONS, FinalReviewsModel — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 /** Final-review slot sign-up (C2) — pure model. Shapes are the API's own (brief §8, frontend/src/lib/api/types.ts). */
 export type FinalReviewLens = 'instructor' | 'ta' | 'po' | 'member' | 'no_team' | 'preview';
 export type SlotPhase = 'upcoming' | 'live' | 'past';

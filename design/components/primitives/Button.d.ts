@@ -1,3 +1,4 @@
+// Intentional addition: Button — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-pressed' | 'aria-disabled' | 'aria-busy'> {

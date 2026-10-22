@@ -3,22 +3,26 @@ import React from 'react';
 /**
  * White surface card. `shadow`: card (2.61px signature) · hairline (1px border + whisper) · none.
  * `bordered`: 1px border, no shadow, radius 7 — for cards nested in a card or a list.
- * Interactive (`href` or `onClick`): the title becomes a stretched link / button, so the whole
+ * Interactive (`href`, `to` or `onClick`): the title becomes a stretched link / button, so the whole
  * card is the target while header actions and the footer stay clickable above it; hover lifts the
- * shadow, keyboard focus rings the card, `selected` draws the green selected border.
- * `actions` sit right of the title (as ChartCard's tools do).
+ * shadow, keyboard focus rings the card, `selected` draws the green selected border (`aria-pressed`
+ * on a button card, `aria-current="true"` on a link card). `to` is an in-app route: the codebase
+ * renders a react-router Link there, as Button does; the kit has no router, so it renders an <a>.
+ * `actions` sit right of the title (as ChartCard's tools do). The card does not clip: a flush body
+ * clips and rounds itself, and a focused flush child rings the card.
  */
 export function Card({
   children, header, footer, title, subtitle, actions, titleAs = 'h3', shadow = 'card', bordered = false,
-  href, onClick, selected, padded = true, className = '', ...rest
+  href, to, onClick, selected, padded = true, className = '', ...rest
 }) {
-  const interactive = !!(href || onClick) && title != null;
+  const interactive = !!(href || to != null || onClick) && title != null;
   const T = titleAs;
+  const current = selected ? 'true' : undefined;
   const titleNode = title != null && (
     <T className="gt-card__title">
-      {!interactive ? title : href
-        ? <a className="gt-card__link" href={href}>{title}</a>
-        : <button type="button" className="gt-card__link" onClick={onClick} aria-pressed={selected === undefined ? undefined : !!selected}>{title}</button>}
+      {!interactive ? title : (href || to != null)
+        ? <a className="gt-card__link" href={href || String(to)} aria-current={current}>{title}</a>
+        : <button type="button" className="gt-card__link" onClick={() => onClick()} aria-pressed={selected === undefined ? undefined : !!selected}>{title}</button>}
     </T>
   );
   return (

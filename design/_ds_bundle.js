@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"ZoomRoomField","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsHeader","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsIcon","sourcePath":"components/finalreviews/FinalReviewsIcon.jsx"},{"name":"SLOT_MINUTES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"SLOT_POST_MAX","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_LENSES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_REASONS","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FinalReviewsModel","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"PostSlotsDrawer","sourcePath":"components/finalreviews/PostSlotsDrawer.jsx"},{"name":"ReviewWorkspaceHeader","sourcePath":"components/finalreviews/ReviewWorkspaceHeader.jsx"},{"name":"SlotActionDialog","sourcePath":"components/finalreviews/SlotActionDialog.jsx"},{"name":"SlotBoard","sourcePath":"components/finalreviews/SlotBoard.jsx"},{"name":"SlotRow","sourcePath":"components/finalreviews/SlotRow.jsx"},{"name":"SlotTime","sourcePath":"components/finalreviews/SlotTime.jsx"},{"name":"TeamReview","sourcePath":"components/finalreviews/TeamReview.jsx"},{"name":"UnbookedTeams","sourcePath":"components/finalreviews/UnbookedTeams.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Slider","sourcePath":"components/primitives/Slider.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"012797c0b2c0","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"68279de737d2","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"ec2ba22cc62e","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"1bd9c31bd783","components/display/Badge.jsx":"e3e5eb99080f","components/display/Card.jsx":"20fccaca912d","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/ProgressBar.jsx":"96a9fb62d8d8","components/display/StatCard.jsx":"ff84e549fe3d","components/display/Table.jsx":"f196bd3798dc","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"97fcc971789d","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"2d0da52858ed","components/domain/TeamMeetingsList.jsx":"f5e826f35d8c","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"88cf54fdcde7","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"cd685fcbac42","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"1f50042cf900","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/finalreviews/FinalReviewsHeader.jsx":"b481dc32397b","components/finalreviews/FinalReviewsIcon.jsx":"5f999d24929b","components/finalreviews/FinalReviewsModel.jsx":"5b257ede1bef","components/finalreviews/PostSlotsDrawer.jsx":"9cbf8dd9a984","components/finalreviews/ReviewWorkspaceHeader.jsx":"5dc779d2ba54","components/finalreviews/SlotActionDialog.jsx":"9f7d30684170","components/finalreviews/SlotBoard.jsx":"c38113917512","components/finalreviews/SlotRow.jsx":"dcf8b1319a32","components/finalreviews/SlotTime.jsx":"68241f5e84df","components/finalreviews/TeamReview.jsx":"7233f71ccb63","components/finalreviews/UnbookedTeams.jsx":"155846fe8db2","components/finalreviews/finalReviewsData.js":"93059c906883","components/finalreviews/finalReviewsSrcLoader.js":"041f63efb75b","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"e54f7e490d62","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"89d114172de6","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"cf036fdceb2d","components/primitives/Button.jsx":"0cf89801fd2e","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"d4f9be568d2d","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07a0823811df","components/primitives/FieldShell.jsx":"f0ed60c486ad","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"57702d48c675","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Slider.jsx":"8e230095da85","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"3bc5a84c066f","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/FinalReviewsScreen.jsx":"1bcbdc6636d1","ui_kits/grepthink/FinalReviewsStates.jsx":"14f8a1ddebf8","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/TeamMeetingsScreen.jsx":"3b3ac80ccc85","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"boardCounts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"boardFilters","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"confirmCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"countsText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"errorCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtSlotWhen","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"freeSlotGroups","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupSlots","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"historyRows","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hourlyStarts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"indexTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isReviewJoinable","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isStaffLens","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"lensOf","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"matchesFilter","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"offsetIso","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"poCanChange","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postedMessage","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postingDraft","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"reviewCountdown","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"reviewingText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"showTeamReviewCard","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotEnd","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotPhase","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotView","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"successCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewState","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"unbookedTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"useTooltipDismiss","sourcePath":"components/display/Tooltip.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"whenText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneNote","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"MarkdownText","sourcePath":"components/display/Markdown.jsx"},{"name":"Markdown","sourcePath":"components/display/Markdown.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"SortableHeader","sourcePath":"components/display/Table.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"ZoomRoomField","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsHeader","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsIcon","sourcePath":"components/finalreviews/FinalReviewsIcon.jsx"},{"name":"SLOT_MINUTES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"SLOT_POST_MAX","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_LENSES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_REASONS","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FinalReviewsModel","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"PostSlotsDrawer","sourcePath":"components/finalreviews/PostSlotsDrawer.jsx"},{"name":"ReviewWorkspaceHeader","sourcePath":"components/finalreviews/ReviewWorkspaceHeader.jsx"},{"name":"SlotActionDialog","sourcePath":"components/finalreviews/SlotActionDialog.jsx"},{"name":"SlotBoard","sourcePath":"components/finalreviews/SlotBoard.jsx"},{"name":"SlotRow","sourcePath":"components/finalreviews/SlotRow.jsx"},{"name":"SlotTime","sourcePath":"components/finalreviews/SlotTime.jsx"},{"name":"TeamReview","sourcePath":"components/finalreviews/TeamReview.jsx"},{"name":"UnbookedTeams","sourcePath":"components/finalreviews/UnbookedTeams.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Slider","sourcePath":"components/primitives/Slider.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"UserPair","sourcePath":"components/scrum/Chips.jsx"},{"name":"Chips","sourcePath":"components/scrum/Chips.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"012797c0b2c0","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"52db4d853416","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"10361b92642f","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"d31276c6ed1b","components/display/Badge.jsx":"e3e5eb99080f","components/display/Card.jsx":"3f8eccef7a04","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/Markdown.jsx":"0ead671deba5","components/display/ProgressBar.jsx":"a3c8f40e3c89","components/display/StatCard.jsx":"572cae4761e0","components/display/Table.jsx":"becbe6149582","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"97fcc971789d","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"2d0da52858ed","components/domain/TeamMeetingsList.jsx":"e20d11f58a24","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"ca829c4744dd","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"4812a0252d18","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"2798c10857d9","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/finalreviews/FinalReviewsHeader.jsx":"b481dc32397b","components/finalreviews/FinalReviewsIcon.jsx":"5f999d24929b","components/finalreviews/FinalReviewsModel.jsx":"5b257ede1bef","components/finalreviews/PostSlotsDrawer.jsx":"9cbf8dd9a984","components/finalreviews/ReviewWorkspaceHeader.jsx":"5dc779d2ba54","components/finalreviews/SlotActionDialog.jsx":"9f7d30684170","components/finalreviews/SlotBoard.jsx":"c38113917512","components/finalreviews/SlotRow.jsx":"dcf8b1319a32","components/finalreviews/SlotTime.jsx":"68241f5e84df","components/finalreviews/TeamReview.jsx":"7233f71ccb63","components/finalreviews/UnbookedTeams.jsx":"155846fe8db2","components/finalreviews/finalReviewsData.js":"93059c906883","components/finalreviews/finalReviewsSrcLoader.js":"041f63efb75b","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"1266a02611ed","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"a44e40e15c9f","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"d3c2c08443ed","components/primitives/Button.jsx":"0cf89801fd2e","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"95504fc92773","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07979ba9510c","components/primitives/FieldShell.jsx":"c590ca793848","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"57702d48c675","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Slider.jsx":"56c6a60afddc","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"0bc8a9f26166","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"d5bdd4082d5e","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/Chips.jsx":"b7499f9c651c","components/scrum/CommentThread.jsx":"362b1550ca24","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"fa8d9d60277a","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"3473c5919bb0","components/search/CommandPalette.jsx":"3bc5a84c066f","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"82b39ded26bf","ui_kits/grepthink/FinalReviewsScreen.jsx":"1bcbdc6636d1","ui_kits/grepthink/FinalReviewsStates.jsx":"14f8a1ddebf8","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/TeamMeetingsScreen.jsx":"3b3ac80ccc85","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"45547d3fb712"},"inlinedExternals":[],"unexposedExports":[{"name":"boardCounts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"boardFilters","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"compareValues","sourcePath":"components/display/Table.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"confirmCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"countsText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"errorCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtSlotWhen","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"freeSlotGroups","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupSlots","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"historyRows","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hourlyStarts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"indexTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isReviewJoinable","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isStaffLens","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"lensOf","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"lockBodyScroll","sourcePath":"components/feedback/Modal.jsx"},{"name":"matchesFilter","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextSortState","sourcePath":"components/display/Table.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"offsetIso","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"poCanChange","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postedMessage","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postingDraft","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"reviewCountdown","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"reviewingText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"showTeamReviewCard","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotEnd","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotPhase","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotView","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"sortRows","sourcePath":"components/display/Table.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"successCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewState","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"unbookedTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"useTableSort","sourcePath":"components/display/Table.jsx"},{"name":"useTooltipDismiss","sourcePath":"components/display/Tooltip.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"whenText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneNote","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
 
 (() => {
 
@@ -241,32 +241,6 @@ function ChartLegend({
 }
 Object.assign(__ds_scope, { AnalyticsIcon, ChartLegend });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartLegend.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/ChartEmptyState.jsx
-try { (() => {
-/** Per-card empty state — the system `.gt-empty` compacted with `--card`: icon, title, hint. No illustration. */
-function ChartEmptyState({
-  icon = 'inbox',
-  title,
-  hint,
-  className = ''
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-empty', 'gt-empty--card', className].filter(Boolean).join(' '),
-    role: "status"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-empty__icon"
-  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: icon,
-    size: 18
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "gt-empty__title"
-  }, title), hint && /*#__PURE__*/React.createElement("p", {
-    className: "gt-empty__hint"
-  }, hint));
-}
-Object.assign(__ds_scope, { ChartEmptyState });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartEmptyState.jsx", error: String((e && e.message) || e) }); }
 
 // components/analytics/ChartTooltip.jsx
 try { (() => {
@@ -1326,281 +1300,6 @@ function TimelinessBars({
 Object.assign(__ds_scope, { TIMELINESS_BUCKETS, TimelinessBars });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/TimelinessBars.jsx", error: String((e && e.message) || e) }); }
 
-// components/analytics/TrendLines.jsx
-try { (() => {
-const M = {
-  top: 12,
-  right: 10,
-  bottom: 20,
-  left: 6
-};
-const UNIT_SHORT = {
-  'per team per week': '/team/wk',
-  'per team': '/team',
-  rate: 'rate'
-};
-const EMPTY_COPY = {
-  no_rollup: 'Trends appear after the first nightly rollup.',
-  no_complete_week: 'No complete week in this range yet.',
-  no_activity: 'No team activity in this range.'
-};
-function fmtUnit(v, unit) {
-  if (v === null || v === undefined) return '—';
-  if (unit === 'rate') return __ds_scope.fmtPct(v);
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
-}
-const isNum = v => v !== null && v !== undefined;
-
-/** A Monday-start week is complete once its Sunday is on or before the rollup's `asOf` day. */
-function completeWeeks(points = [], asOf) {
-  if (!asOf) return [];
-  const end = iso => {
-    const d = new Date(`${iso}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + 6);
-    return d.toISOString().slice(0, 10);
-  };
-  return points.filter(p => p && p.weekStart && end(p.weekStart) <= asOf);
-}
-function Panel({
-  panel,
-  compare,
-  height
-}) {
-  const [ref, width] = __ds_scope.useMeasure(220);
-  const {
-    tip,
-    show,
-    hide
-  } = __ds_scope.useChartTip();
-  const [hoverI, setHoverI] = React.useState(null);
-  const cur = panel.current || [];
-  const prev = compare && panel.previous ? panel.previous : null;
-  const n = Math.max(cur.length, prev ? prev.length : 0);
-  const maxV = Math.max(0, ...cur.map(p => p.value ?? 0), ...(prev ? prev.map(p => p.value ?? 0) : []));
-  const [top, ticks] = __ds_scope.niceScale(panel.unit === 'rate' ? Math.max(maxV, 1) : maxV, 3);
-  const iw = Math.max(10, width - M.left - M.right);
-  const ih = Math.max(10, height - M.top - M.bottom);
-  const x = i => M.left + (n > 1 ? i / (n - 1) * iw : iw / 2);
-  const y = v => M.top + ih - v / top * ih;
-  const path = pts => pts.reduce((acc, p, i) => {
-    if (!isNum(p.value)) return acc;
-    const prevOk = i > 0 && isNum(pts[i - 1]?.value);
-    return `${acc}${prevOk ? ' L' : ' M'}${x(i)},${y(p.value)}`;
-  }, '').trim();
-  let latestI = -1;
-  cur.forEach((p, i) => {
-    if (isNum(p.value)) latestI = i;
-  });
-  // A week no line reaches: a value whose neighbours are both missing.
-  const isolated = i => isNum(cur[i]?.value) && !isNum(cur[i - 1]?.value) && !isNum(cur[i + 1]?.value);
-  const rowsAt = i => {
-    const rows = [{
-      key: 'cur',
-      label: 'This range',
-      value: fmtUnit(cur[i]?.value, panel.unit),
-      seriesClass: 'gt-series--1'
-    }];
-    if (prev) rows.push({
-      key: 'prev',
-      label: 'Previous range',
-      value: fmtUnit(prev[i]?.value, panel.unit),
-      seriesClass: 'gt-series--gray'
-    });
-    return rows;
-  };
-  const showAt = i => {
-    setHoverI(i);
-    show(x(i), M.top, `Week ${i + 1} · ${__ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)}`, rowsAt(i));
-  };
-  const clear = () => {
-    setHoverI(null);
-    hide();
-  };
-  const onMove = e => {
-    if (!n) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - rect.left - M.left) / iw * (n - 1))));
-    if (i !== hoverI) showAt(i);
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gt-trend__panel"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-trend__title"
-  }, panel.title, /*#__PURE__*/React.createElement("span", {
-    className: "gt-trend__unit"
-  }, UNIT_SHORT[panel.unit] || panel.unit)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-plot",
-    ref: ref,
-    style: {
-      height
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    className: "gt-trend__svg",
-    width: width,
-    height: height,
-    role: "img",
-    "aria-label": `${panel.title}, ${n} complete weeks${latestI >= 0 ? `, latest ${fmtUnit(cur[latestI].value, panel.unit)}` : ''}${prev ? ', with the previous range in gray' : ''}`,
-    onMouseMove: onMove,
-    onMouseLeave: clear
-  }, ticks.map(t => /*#__PURE__*/React.createElement("line", {
-    key: t,
-    className: "gt-trend__grid",
-    x1: M.left,
-    x2: M.left + iw,
-    y1: y(t),
-    y2: y(t)
-  })), /*#__PURE__*/React.createElement("line", {
-    className: "gt-trend__axis",
-    x1: M.left,
-    x2: M.left + iw,
-    y1: M.top + ih,
-    y2: M.top + ih
-  }), Array.from({
-    length: n
-  }).map((_, i) => i === 0 || i === n - 1 ? /*#__PURE__*/React.createElement("text", {
-    key: i,
-    className: "gt-trend__tick",
-    x: x(i),
-    y: height - 5,
-    style: {
-      textAnchor: i === 0 ? 'start' : 'end'
-    }
-  }, __ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)) : null), hoverI !== null && /*#__PURE__*/React.createElement("line", {
-    className: "gt-trend__crosshair",
-    x1: x(hoverI),
-    x2: x(hoverI),
-    y1: M.top,
-    y2: M.top + ih
-  }), prev && /*#__PURE__*/React.createElement("path", {
-    className: "gt-trend__previous",
-    d: path(prev)
-  }), /*#__PURE__*/React.createElement("path", {
-    className: "gt-trend__current",
-    d: path(cur)
-  }), cur.map((p, i) => (i === latestI || isolated(i) || hoverI === i) && isNum(p.value) ? /*#__PURE__*/React.createElement("circle", {
-    key: i,
-    className: "gt-trend__marker",
-    cx: x(i),
-    cy: y(p.value),
-    r: hoverI === i ? 5 : 4
-  }) : null), latestI >= 0 && /*#__PURE__*/React.createElement("text", {
-    className: "gt-trend__end-label",
-    x: x(latestI) + (latestI >= n / 2 ? 2 : -2),
-    y: y(cur[latestI].value) - 8,
-    style: {
-      textAnchor: latestI >= n / 2 ? 'end' : 'start'
-    }
-  }, fmtUnit(cur[latestI].value, panel.unit)), Array.from({
-    length: n
-  }).map((_, i) => /*#__PURE__*/React.createElement("rect", {
-    key: i,
-    className: "gt-plot__hit",
-    x: x(i) - (n > 1 ? iw / (n - 1) / 2 : iw / 2),
-    y: M.top,
-    width: n > 1 ? iw / (n - 1) : iw,
-    height: ih,
-    tabIndex: 0,
-    role: "button",
-    "aria-label": `Week ${i + 1}: ${rowsAt(i).map(r => `${r.label} ${r.value}`).join(', ')}`,
-    onFocus: () => showAt(i),
-    onBlur: clear
-  }))), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, tip)));
-}
-
-/**
- * Small multiples (.gt-trend) — this range (green) with the previous range (gray)
- * as context, aligned by week index; null points leave gaps. Only COMPLETE weeks
- * are drawn (`completeWeeks(points, asOf)`); the week in progress appears once it
- * ends. `__marker` dots each week no line reaches and this range's latest week,
- * which `__end-label` labels. Three empty states: before the first rollup, no
- * complete week in range, no team activity. Footer: legend + "as of Oct 6, 2026".
- * `view="table"`: one row per complete week, one column per panel with its unit, "—" for a missing value.
- */
-function TrendLines({
-  panels = [],
-  compare = true,
-  asOf,
-  height = 96,
-  view = 'chart',
-  emptyReason,
-  className = ''
-}) {
-  const complete = panels.map(p => ({
-    ...p,
-    current: completeWeeks(p.current || [], asOf),
-    previous: p.previous ? completeWeeks(p.previous, asOf) : null
-  }));
-  let empty = emptyReason || null;
-  if (!empty) {
-    if (!asOf || !panels.length) empty = 'no_rollup';else if (complete.every(p => p.current.length === 0)) empty = 'no_complete_week';else if (complete.every(p => p.current.every(pt => !isNum(pt.value) || pt.value === 0))) empty = 'no_activity';
-  }
-  if (empty) {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "gt-trend__empty"
-    }, /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
-      icon: "trending-up",
-      title: EMPTY_COPY[empty] || empty
-    }));
-  }
-  const anyPrev = compare && complete.some(p => p.previous && p.previous.length);
-  if (view === 'table') {
-    const weeks = [...new Set(complete.flatMap(p => p.current.map(pt => pt.weekStart)))].sort();
-    return /*#__PURE__*/React.createElement("div", {
-      className: "gt-chart-table__wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "gt-chart-table"
-    }, /*#__PURE__*/React.createElement("caption", {
-      className: "gt-table__caption"
-    }, "Trends, week by week", anyPrev ? ', this range and the previous range' : ''), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-      scope: "col"
-    }, "Week"), complete.map(p => /*#__PURE__*/React.createElement("th", {
-      key: p.key,
-      scope: "col",
-      className: "gt-table__num"
-    }, p.title, " (", UNIT_SHORT[p.unit] || p.unit, ")", anyPrev && p.previous ? ' · this / previous' : '')))), /*#__PURE__*/React.createElement("tbody", null, weeks.map((w, i) => /*#__PURE__*/React.createElement("tr", {
-      key: w
-    }, /*#__PURE__*/React.createElement("td", null, __ds_scope.fmtWeek(w)), complete.map(p => {
-      const c = p.current.find(pt => pt.weekStart === w);
-      const pv = anyPrev && p.previous ? p.previous[i] : null;
-      return /*#__PURE__*/React.createElement("td", {
-        key: p.key,
-        className: "gt-table__num"
-      }, fmtUnit(c?.value, p.unit), anyPrev && p.previous ? ` / ${fmtUnit(pv?.value, p.unit)}` : '');
-    }))))));
-  }
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-trend', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-trend__panels",
-    style: {
-      '--trend-cols': Math.min(complete.length, 4)
-    }
-  }, complete.map(p => /*#__PURE__*/React.createElement(Panel, {
-    key: p.key,
-    panel: p,
-    compare: compare,
-    height: height
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "gt-trend__foot"
-  }, /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
-    items: [{
-      key: 'cur',
-      label: 'This range',
-      swatch: 'line',
-      seriesClass: 'gt-series--1'
-    }, ...(anyPrev ? [{
-      key: 'prev',
-      label: 'Previous range',
-      swatch: 'line',
-      seriesClass: 'gt-series--gray'
-    }] : [])]
-  }), asOf && /*#__PURE__*/React.createElement("span", {
-    className: "gt-trend__asof"
-  }, "as of ", __ds_scope.fmtWeek(asOf, true))));
-}
-Object.assign(__ds_scope, { completeWeeks, TrendLines });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/TrendLines.jsx", error: String((e && e.message) || e) }); }
-
 // components/analytics/UnitToggle.jsx
 try { (() => {
 /**
@@ -2175,7 +1874,9 @@ function hashColor(name = '') {
 
 /**
  * Avatar: photo, or initials on the hashed palette colour. When `src` fails to load it falls back
- * to the initials. `decorative` (beside a visible name) hides it from screen readers.
+ * to the initials (tracked per `src`, with no effect). An avatar with no name is named "Avatar".
+ * `decorative` (beside a visible name) hides it from screen readers. A caller's `style` merges over
+ * the colour.
  */
 function Avatar({
   name = '',
@@ -2184,48 +1885,50 @@ function Avatar({
   square = false,
   decorative = false,
   className = '',
+  style,
   ...rest
 }) {
-  const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => {
-    setFailed(false);
-  }, [src]);
+  const [failedSrc, setFailedSrc] = React.useState(null);
+  const failed = !!src && failedSrc === src;
   const cls = ['gt-avatar', `gt-avatar--${size}`, square ? 'gt-avatar--square' : '', className].filter(Boolean).join(' ');
+  const label = name || 'Avatar';
   if (src && !failed) {
     return /*#__PURE__*/React.createElement("img", _extends({
       className: cls,
       src: src,
-      alt: decorative ? '' : name,
+      alt: decorative ? '' : label,
       "aria-hidden": decorative || undefined,
-      onError: () => setFailed(true)
+      onError: () => setFailedSrc(src),
+      style: style
     }, rest));
   }
   return /*#__PURE__*/React.createElement("span", _extends({
     className: cls,
     style: {
-      backgroundColor: hashColor(name)
+      backgroundColor: hashColor(name),
+      ...style
     },
     role: decorative ? undefined : 'img',
-    "aria-label": decorative ? undefined : name || 'Avatar',
+    "aria-label": decorative ? undefined : label,
     "aria-hidden": decorative || undefined
   }, rest), initialsOf(name));
 }
 
-/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). */
+/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). Keyed by position (two members may share a name); `max` is at least 1. */
 function AvatarGroup({
   names = [],
   max = 4,
   size = 'sm',
   className = ''
 }) {
-  const shown = names.slice(0, max);
+  const shown = names.slice(0, Math.max(1, max));
   const extra = names.length - shown.length;
   return /*#__PURE__*/React.createElement("span", {
     className: ['gt-avatar-group', className].filter(Boolean).join(' '),
     role: "img",
     "aria-label": `${shown.join(', ')}${extra > 0 ? ` and ${extra} more` : ''}`
-  }, shown.map(n => /*#__PURE__*/React.createElement(Avatar, {
-    key: n,
+  }, shown.map((n, i) => /*#__PURE__*/React.createElement(Avatar, {
+    key: i,
     name: n,
     size: size,
     decorative: true
@@ -2461,10 +2164,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 /**
  * White surface card. `shadow`: card (2.61px signature) · hairline (1px border + whisper) · none.
  * `bordered`: 1px border, no shadow, radius 7 — for cards nested in a card or a list.
- * Interactive (`href` or `onClick`): the title becomes a stretched link / button, so the whole
+ * Interactive (`href`, `to` or `onClick`): the title becomes a stretched link / button, so the whole
  * card is the target while header actions and the footer stay clickable above it; hover lifts the
- * shadow, keyboard focus rings the card, `selected` draws the green selected border.
- * `actions` sit right of the title (as ChartCard's tools do).
+ * shadow, keyboard focus rings the card, `selected` draws the green selected border (`aria-pressed`
+ * on a button card, `aria-current="true"` on a link card). `to` is an in-app route: the codebase
+ * renders a react-router Link there, as Button does; the kit has no router, so it renders an <a>.
+ * `actions` sit right of the title (as ChartCard's tools do). The card does not clip: a flush body
+ * clips and rounds itself, and a focused flush child rings the card.
  */
 function Card({
   children,
@@ -2477,23 +2183,26 @@ function Card({
   shadow = 'card',
   bordered = false,
   href,
+  to,
   onClick,
   selected,
   padded = true,
   className = '',
   ...rest
 }) {
-  const interactive = !!(href || onClick) && title != null;
+  const interactive = !!(href || to != null || onClick) && title != null;
   const T = titleAs;
+  const current = selected ? 'true' : undefined;
   const titleNode = title != null && /*#__PURE__*/React.createElement(T, {
     className: "gt-card__title"
-  }, !interactive ? title : href ? /*#__PURE__*/React.createElement("a", {
+  }, !interactive ? title : href || to != null ? /*#__PURE__*/React.createElement("a", {
     className: "gt-card__link",
-    href: href
+    href: href || String(to),
+    "aria-current": current
   }, title) : /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "gt-card__link",
-    onClick: onClick,
+    onClick: () => onClick(),
     "aria-pressed": selected === undefined ? undefined : !!selected
   }, title));
   return /*#__PURE__*/React.createElement("div", _extends({
@@ -2650,158 +2359,92 @@ function InfoPopover({
 Object.assign(__ds_scope, { InfoPopover });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/InfoPopover.jsx", error: String((e && e.message) || e) }); }
 
-// components/analytics/DefinitionPopover.jsx
+// components/display/Markdown.jsx
 try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-/**
- * "How this is counted" — analytics' name for the shared InfoPopover (promoted to
- * components/display/InfoPopover.jsx in the alignment round, 2026-10-19). Same props.
- */
-function DefinitionPopover({
-  title = 'How this is counted',
-  className = '',
-  ...props
-}) {
-  return /*#__PURE__*/React.createElement(__ds_scope.InfoPopover, _extends({
-    title: title,
-    className: ['gt-definition', className].filter(Boolean).join(' ')
-  }, props));
-}
-Object.assign(__ds_scope, { DefinitionPopover });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/DefinitionPopover.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/ChartCard.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-/**
- * Container for every analytics chart (.gt-chart-card). White, 1px border,
- * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
- * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
- * opacity, frame held) · ready · empty (ChartEmptyState) · error (inline
- * error-soft strip "This card could not load." + Retry; the page is unaffected).
- */
-function ChartCard({
-  title,
-  subtitle,
-  definition,
-  live = false,
-  actions = null,
-  state = 'ready',
-  emptyMessage,
-  errorMessage = 'This card could not load.',
-  onRetry,
-  footnote,
-  hero,
-  heroMeta,
-  wide = false,
-  skeletonRows = 4,
-  className = '',
-  children,
-  ...rest
-}) {
-  const def = typeof definition === 'string' ? {
-    body: definition
-  } : definition;
-  const empty = emptyMessage || {
-    title: 'Nothing to list'
-  };
-  return /*#__PURE__*/React.createElement("section", _extends({
-    className: ['gt-chart-card', wide ? 'gt-chart-card--wide' : '', className].filter(Boolean).join(' '),
-    "data-state": state,
-    "aria-busy": state === 'loading' || state === 'refetching' || undefined
-  }, rest), /*#__PURE__*/React.createElement("header", {
-    className: "gt-chart-card__head"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__titles"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__title-row"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "gt-chart-card__title"
-  }, title), live && /*#__PURE__*/React.createElement(__ds_scope.LivePill, null), def && /*#__PURE__*/React.createElement(__ds_scope.DefinitionPopover, {
-    title: def.title,
-    body: def.body,
-    learnMoreHref: def.learnMoreHref
-  })), subtitle && /*#__PURE__*/React.createElement("span", {
-    className: "gt-chart-card__subtitle"
-  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__actions"
-  }, actions)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__body"
-  }, state === 'loading' ? /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__skeleton",
-    "aria-label": "Loading"
-  }, Array.from({
-    length: skeletonRows
-  }).map((_, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "gt-skeleton",
-    style: {
-      width: `${92 - i * 14}%`
+/* Minimal markdown: **bold**, *italic*, `code`, [link](url), "- " lists, @mentions. The codebase's
+   components/Markdown/MarkdownText renders GFM; this renderer is design-fidelity only. */
+function inline(text, members) {
+  const out = [];
+  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|@[\w.-]+)/g;
+  let last = 0,
+    m,
+    k = 0;
+  while (m = re.exec(text)) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const s = m[0];
+    if (s.startsWith('**')) out.push(/*#__PURE__*/React.createElement("strong", {
+      key: k++
+    }, s.slice(2, -2)));else if (s.startsWith('`')) out.push(/*#__PURE__*/React.createElement("code", {
+      key: k++,
+      className: "gt-md__code"
+    }, s.slice(1, -1)));else if (s.startsWith('*')) out.push(/*#__PURE__*/React.createElement("em", {
+      key: k++
+    }, s.slice(1, -1)));else if (s.startsWith('[')) {
+      const t = s.slice(1, s.indexOf(']'));
+      const u = s.slice(s.indexOf('(') + 1, -1);
+      out.push(/*#__PURE__*/React.createElement("a", {
+        key: k++,
+        className: "gt-md__link",
+        href: u,
+        target: "_blank",
+        rel: "noreferrer"
+      }, t));
+    } else {
+      const name = s.slice(1);
+      const known = !members || members.some(mm => mm.toLowerCase().replace(/\s+/g, '') === name.toLowerCase());
+      out.push(known ? /*#__PURE__*/React.createElement("span", {
+        key: k++,
+        className: "gt-mention"
+      }, "@", name) : s);
     }
-  }))) : state === 'error' ? /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__error",
-    role: "alert"
-  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: "alert-circle",
-    size: 15
-  }), /*#__PURE__*/React.createElement("span", null, errorMessage), onRetry && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-chart-card__retry",
-    onClick: onRetry
-  }, "Retry")) : state === 'empty' ? /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
-    icon: empty.icon,
-    title: empty.title,
-    hint: empty.hint
-  }) : /*#__PURE__*/React.createElement(React.Fragment, null, hero !== undefined && /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__hero"
-  }, hero, heroMeta && /*#__PURE__*/React.createElement("span", {
-    className: "gt-chart-card__hero-meta"
-  }, heroMeta)), children)), footnote && /*#__PURE__*/React.createElement("footer", {
-    className: "gt-chart-card__foot"
-  }, footnote));
+    last = m.index + s.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
 }
 
-/** Header tool button (Table / Export) — `pressed` renders the toggled state. */
-function ChartCardTool({
-  icon,
-  label,
-  pressed,
-  onClick,
-  disabled = false,
-  className = '',
-  ...rest
-}) {
-  return /*#__PURE__*/React.createElement("button", _extends({
-    type: "button",
-    className: ['gt-chart-card__tool', className].filter(Boolean).join(' '),
-    "aria-pressed": pressed === undefined ? undefined : pressed,
-    onClick: onClick,
-    disabled: disabled
-  }, rest), icon && /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: icon,
-    size: 13
-  }), label);
-}
-
-/** Header checkbox (e.g. "Compare with previous range"). */
-function ChartCardCheck({
-  label,
-  checked,
-  onChange,
-  disabled = false,
+/**
+ * Markdown text (`.gt-md`) — the kit's renderer for comment bodies, story and task descriptions,
+ * project descriptions and the MarkdownEditor's preview. Moved here from scrum/CommentThread.jsx
+ * (fold-back 2026-10-22) to match the codebase's `components/Markdown/MarkdownText`. Demo fidelity:
+ * paragraphs, "- " lists, bold, italic, code, links and @mentions of `members` (rendered as chips).
+ */
+function MarkdownText({
+  children = '',
+  members,
   className = ''
 }) {
-  return /*#__PURE__*/React.createElement("label", {
-    className: ['gt-chart-card__check', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    checked: checked,
-    onChange: e => onChange && onChange(e.target.checked),
-    disabled: disabled
-  }), label);
+  const blocks = [];
+  let list = null;
+  String(children).split('\n').forEach((line, i) => {
+    if (line.trim().startsWith('- ')) {
+      if (!list) {
+        list = [];
+        blocks.push(list);
+      }
+      list.push(/*#__PURE__*/React.createElement("li", {
+        key: i
+      }, inline(line.trim().slice(2), members)));
+    } else {
+      list = null;
+      if (line.trim()) blocks.push(/*#__PURE__*/React.createElement("p", {
+        key: i
+      }, inline(line, members)));
+    }
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-md', className].filter(Boolean).join(' ')
+  }, blocks.map((b, i) => Array.isArray(b) ? /*#__PURE__*/React.createElement("ul", {
+    key: i
+  }, b) : b));
 }
-Object.assign(__ds_scope, { ChartCard, ChartCardTool, ChartCardCheck });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartCard.jsx", error: String((e && e.message) || e) }); }
+
+/** The file's renderer under the file's name, for the bundle (design-only, like ModKey). */
+const Markdown = {
+  MarkdownText
+};
+Object.assign(__ds_scope, { MarkdownText, Markdown });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Markdown.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/ProgressBar.jsx
 try { (() => {
@@ -2809,7 +2452,8 @@ try { (() => {
  * Progress / meter bar. Green fill by default; `showLabel` adds a % readout.
  * `inline`: the 4px bar for table cells, story cards and the sprint picker — mark it
  * `decorative` when the number is printed beside it. `meter` for a measurement
- * (contribution share) rather than progress toward done.
+ * (contribution share) rather than progress toward done. `aria-valuenow` is the value clamped
+ * to 0…max without rounding; a value that isn't a number counts as 0.
  */
 function ProgressBar({
   value = 0,
@@ -2824,11 +2468,13 @@ function ProgressBar({
   meter = false,
   className = ''
 }) {
-  const pct = Math.max(0, Math.min(100, value / (max || 1) * 100));
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  const now = Math.max(0, Math.min(max, n));
+  const pct = Math.max(0, Math.min(100, n / (max || 1) * 100));
   const track = /*#__PURE__*/React.createElement("div", {
     className: "gt-progress__track",
     role: decorative ? undefined : meter ? 'meter' : 'progressbar',
-    "aria-valuenow": decorative ? undefined : Math.round(value),
+    "aria-valuenow": decorative ? undefined : now,
     "aria-valuemin": decorative ? undefined : 0,
     "aria-valuemax": decorative ? undefined : max,
     "aria-valuetext": decorative ? undefined : valueText,
@@ -2892,11 +2538,12 @@ const Trend = ({
 })));
 
 /**
- * Metric card — one component for the Dashboard (DashboardMetricCard) and Analytics (StatTile,
- * now `compact`). Uppercase label (+ an InfoPopover ⓘ via `info`), big value, tinted icon chip,
- * hint; optional `delta` (good / bad / flat against `goodWhenUp`) and a 2–12 point `trend`
- * sparkline. `failed` or a null value shows "—"; `loading` a skeleton. A clickable card is a
- * stretched button under the content, so the ⓘ stays its own control.
+ * Metric card — one component for the Dashboard (DashboardMetricCard) and the analytics tiles
+ * (`compact`; the StatTile alias left 2026-10-22). Uppercase label (+ an InfoPopover ⓘ via `info`), big value, tinted icon chip,
+ * hint; optional `delta` (good / bad / flat against `goodWhenUp`; the tone follows the rounded
+ * figure, so there is no green "0%") and a 2–12 point `trend` sparkline, decorative since the
+ * figures are in the text. `failed` or a null value shows "—"; `loading` a skeleton. A clickable
+ * card is a stretched button under the content, so the ⓘ stays its own control.
  */
 function StatCard({
   label,
@@ -2920,10 +2567,10 @@ function StatCard({
   const shown = isNull ? '—' : fmtValue(value, format);
   let deltaNode = null;
   if (!failed && !loading && delta && delta.value !== null && delta.value !== undefined) {
-    const up = delta.value > 0;
-    const flat = delta.value === 0;
-    const good = flat ? null : delta.goodWhenUp !== false ? up : !up;
     const pct = Math.round(delta.value * 100);
+    const up = pct > 0;
+    const flat = pct === 0;
+    const good = flat ? null : delta.goodWhenUp !== false ? up : !up;
     deltaNode = /*#__PURE__*/React.createElement("span", {
       className: `gt-stat-card__delta gt-stat-card__delta--${flat ? 'flat' : good ? 'good' : 'bad'}`
     }, /*#__PURE__*/React.createElement(Trend, {
@@ -2947,8 +2594,8 @@ function StatCard({
     trendNode = /*#__PURE__*/React.createElement("svg", {
       className: "gt-stat-card__spark",
       viewBox: `0 0 ${W} ${H}`,
-      role: "img",
-      "aria-label": `${trend.length}-week trend, latest ${fmtCompact(trend[last])}`
+      "aria-hidden": "true",
+      focusable: "false"
     }, /*#__PURE__*/React.createElement("path", {
       d: trend.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' '),
       className: "gt-stat-card__spark-line"
@@ -2995,26 +2642,6 @@ function StatCard({
 }
 Object.assign(__ds_scope, { StatCard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/StatCard.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/StatTile.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-/**
- * Analytics KPI tile = the shared StatCard, `compact` with compact number formatting.
- * StatTile's delta / trend / failed / loading / format moved into StatCard in the alignment
- * round (2026-10-19); this name stays so analytics call sites and the port's map are stable.
- */
-function StatTile({
-  format = 'compact',
-  ...props
-}) {
-  return /*#__PURE__*/React.createElement(__ds_scope.StatCard, _extends({
-    compact: true,
-    format: format
-  }, props));
-}
-Object.assign(__ds_scope, { StatTile });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StatTile.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/Tag.jsx
 try { (() => {
@@ -3746,7 +3373,9 @@ Object.assign(__ds_scope, { TSRSummaryCard });
 try { (() => {
 /**
  * Team member card — avatar, name, role pill, optional skills and
- * contact/actions row. Used in project Team tabs and TA views.
+ * contact/actions row. Used in project Team tabs and TA views. Roles are not changed from the
+ * card: the Team tab picks a member per role (Product Owner, Scrum Master) with the kit Select
+ * (RoleSelect left in the 2026-10-22 fold-back).
  */
 function TeamMemberCard({
   name,
@@ -3780,59 +3409,7 @@ function TeamMemberCard({
     className: "gt-member-card__actions"
   }, actions));
 }
-
-/**
- * Role select — the member-card dropdown for changing a project role.
- */
-function RoleSelect({
-  value = 'member',
-  onChange,
-  disabled = false,
-  className = ''
-}) {
-  const ROLES = [{
-    value: 'owner',
-    label: 'Owner'
-  }, {
-    value: 'product_owner',
-    label: 'Product Owner'
-  }, {
-    value: 'scrum_master',
-    label: 'Scrum Master'
-  }, {
-    value: 'admin',
-    label: 'Admin'
-  }, {
-    value: 'member',
-    label: 'Member'
-  }];
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-role-select', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("select", {
-    className: "gt-role-select__control",
-    value: value,
-    onChange: e => onChange && onChange(e.target.value),
-    disabled: disabled,
-    "aria-label": "Project role"
-  }, ROLES.map(r => /*#__PURE__*/React.createElement("option", {
-    key: r.value,
-    value: r.value
-  }, r.label))), /*#__PURE__*/React.createElement("svg", {
-    className: "gt-role-select__chevron",
-    width: "14",
-    height: "14",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M6 9l6 6 6-6",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })));
-}
-Object.assign(__ds_scope, { TeamMemberCard, RoleSelect });
+Object.assign(__ds_scope, { TeamMemberCard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMemberCard.jsx", error: String((e && e.message) || e) }); }
 
 // components/domain/TypingIndicator.jsx
@@ -6207,7 +5784,8 @@ const Check = () => /*#__PURE__*/React.createElement("svg", {
 /**
  * Filter chip — narrows a list. sm 26px (palette scopes, schedule kinds), md 32px (analytics
  * range). Alone it is a pressed toggle (`aria-pressed`); inside a single-choice FilterChipGroup
- * it is a radio. Selected = solid green, white text (multi-choice chips also show a check).
+ * it is a radio. Selected = solid green, white text (multi-choice chips also show a check). A space
+ * before the count, so the name reads "TA meetings 3".
  */
 function FilterChip({
   children,
@@ -6235,14 +5813,15 @@ function FilterChip({
   }, /*#__PURE__*/React.createElement(Check, null)) : icon && /*#__PURE__*/React.createElement("span", {
     className: "gt-filter-chip__icon",
     "aria-hidden": "true"
-  }, icon), children, count != null && /*#__PURE__*/React.createElement("span", {
+  }, icon), children, count != null && /*#__PURE__*/React.createElement(React.Fragment, null, " ", /*#__PURE__*/React.createElement("span", {
     className: "gt-filter-chip__count"
-  }, count));
+  }, count)));
 }
 
 /**
  * A row of FilterChips. `type="single"`: a radio group (one choice, arrow keys move and select,
- * one tab stop). `type="multi"`: a group of pressed toggles, each in the tab order.
+ * one tab stop; pressing the checked chip, or arrowing back onto it, reports no change, as with
+ * native radios). `type="multi"`: a group of pressed toggles, each in the tab order.
  */
 function FilterChipGroup({
   type = 'multi',
@@ -6266,7 +5845,7 @@ function FilterChipGroup({
     e.preventDefault();
     const el = rootRef.current && rootRef.current.querySelector(`[data-value="${String(next.value).replace(/"/g, '\\"')}"]`);
     if (el) el.focus();
-    if (onChange) onChange(next.value);
+    if (onChange && next.value !== value) onChange(next.value);
   };
   const hasSel = options.some(o => selected.includes(o.value) && !o.disabled);
   return /*#__PURE__*/React.createElement("div", {
@@ -6290,7 +5869,9 @@ function FilterChipGroup({
       onKeyDown: e => onKeyDown(e, opt),
       onClick: () => {
         if (!onChange) return;
-        if (single) onChange(opt.value);else onChange(on ? selected.filter(v => v !== opt.value) : [...selected, opt.value]);
+        if (single) {
+          if (!on) onChange(opt.value);
+        } else onChange(on ? selected.filter(v => v !== opt.value) : [...selected, opt.value]);
       }
     }, opt.label);
   }));
@@ -6596,7 +6177,8 @@ try { (() => {
 /**
  * Segmented control — switches the view or unit of the same content (Table / Cards,
  * Tasks / Points, Week / Month). WAI-ARIA radio group: roving tabindex, arrow keys (and Home /
- * End) move and select. Sizes to its options; full width on phones or with `fullWidth`.
+ * End) move and select; pressing the checked option, or arrowing back onto it, reports no change,
+ * as with native radios. Sizes to its options; full width on phones or with `fullWidth`.
  */
 function SegmentedControl({
   options = [],
@@ -6617,7 +6199,7 @@ function SegmentedControl({
     if (!next) return;
     e.preventDefault();
     if (refs.current[next.value]) refs.current[next.value].focus();
-    if (onChange) onChange(next.value);
+    if (onChange && next.value !== value) onChange(next.value);
   };
   return /*#__PURE__*/React.createElement("div", {
     className: ['gt-segmented', `gt-segmented--${size}`, fullWidth ? 'gt-segmented--full' : '', className].filter(Boolean).join(' '),
@@ -6636,7 +6218,9 @@ function SegmentedControl({
       "aria-label": opt.ariaLabel,
       tabIndex: active || !hasSelection && opt === enabled[0] ? 0 : -1,
       className: ['gt-segmented__option', active ? 'gt-segmented__option--active' : ''].filter(Boolean).join(' '),
-      onClick: () => onChange && onChange(opt.value),
+      onClick: () => {
+        if (!active && onChange) onChange(opt.value);
+      },
       onKeyDown: e => onKeyDown(e, opt),
       disabled: opt.disabled
     }, opt.icon && /*#__PURE__*/React.createElement("span", {
@@ -6800,8 +6384,9 @@ try { (() => {
  * scrum board's Board / Backlog / Burnup, TA meeting tabs, the member manager). WAI-ARIA Tabs:
  * roving tabindex, ← → / Home / End; `activation="automatic"` selects on focus (panels that
  * render at once), `"manual"` waits for Enter / Space (panels that load). Pair each tab with a
- * `<TabPanel>` that shares `idBase`. `collapseOnPhone` shows icon-only tabs under 768px while the
- * label stays in the accessible name.
+ * `<TabPanel>` that shares `idBase`; `aria-controls` is set only when `idBase` is given, so a tab
+ * never points at a panel id that does not exist. `collapseOnPhone` shows icon-only tabs under
+ * 768px while the label stays in the accessible name.
  */
 function Tabs({
   tabs = [],
@@ -6846,7 +6431,7 @@ function Tabs({
       type: "button",
       role: "tab",
       id: `${base}-tab-${tab.value}`,
-      "aria-controls": `${base}-panel-${tab.value}`,
+      "aria-controls": idBase ? `${base}-panel-${tab.value}` : undefined,
       "aria-selected": active,
       tabIndex: active || !hasSelection && tab === enabled[0] ? 0 : -1,
       className: ['gt-tabs__tab', active ? 'gt-tabs__tab--active' : '', tab.icon ? 'gt-tabs__tab--has-icon' : ''].filter(Boolean).join(' '),
@@ -7280,8 +6865,392 @@ function Skeleton({
 Object.assign(__ds_scope, { EmptyState, NoClassSelected, Skeleton });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/EmptyState.jsx", error: String((e && e.message) || e) }); }
 
+// components/analytics/ChartCard.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * Container for every analytics chart (.gt-chart-card). White, 1px border,
+ * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
+ * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
+ * opacity, frame held) · ready · empty (the kit's EmptyState, variant="card") · error (inline
+ * error-soft strip "This card could not load." + Retry; the page is unaffected).
+ * The ⓘ is the kit's InfoPopover ("How this is counted"); the header tools are the kit's Button
+ * (`pressed` for the Table toggles, `outline` for Refresh and Export CSV) and Checkbox
+ * (fold-back 2026-10-22: ChartCardTool, ChartCardCheck, DefinitionPopover and ChartEmptyState left).
+ */
+function ChartCard({
+  title,
+  subtitle,
+  definition,
+  live = false,
+  actions = null,
+  state = 'ready',
+  emptyMessage,
+  errorMessage = 'This card could not load.',
+  onRetry,
+  footnote,
+  hero,
+  heroMeta,
+  wide = false,
+  skeletonRows = 4,
+  className = '',
+  children,
+  ...rest
+}) {
+  const def = typeof definition === 'string' ? {
+    body: definition
+  } : definition;
+  const empty = emptyMessage || {
+    title: 'Nothing to list'
+  };
+  return /*#__PURE__*/React.createElement("section", _extends({
+    className: ['gt-chart-card', wide ? 'gt-chart-card--wide' : '', className].filter(Boolean).join(' '),
+    "data-state": state,
+    "aria-busy": state === 'loading' || state === 'refetching' || undefined
+  }, rest), /*#__PURE__*/React.createElement("header", {
+    className: "gt-chart-card__head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__titles"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__title-row"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "gt-chart-card__title"
+  }, title), live && /*#__PURE__*/React.createElement(__ds_scope.LivePill, null), def && /*#__PURE__*/React.createElement(__ds_scope.InfoPopover, {
+    title: def.title || 'How this is counted',
+    body: def.body,
+    learnMoreHref: def.learnMoreHref,
+    className: "gt-definition"
+  })), subtitle && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__subtitle"
+  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__actions"
+  }, actions)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__body"
+  }, state === 'loading' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__skeleton",
+    "aria-label": "Loading"
+  }, Array.from({
+    length: skeletonRows
+  }).map((_, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "gt-skeleton",
+    style: {
+      width: `${92 - i * 14}%`
+    }
+  }))) : state === 'error' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__error",
+    role: "alert"
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "alert-circle",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, errorMessage), onRetry && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-chart-card__retry",
+    onClick: onRetry
+  }, "Retry")) : state === 'empty' ? /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+    variant: "card",
+    titleAs: "p",
+    icon: /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      name: empty.icon || 'inbox',
+      size: 18
+    }),
+    title: empty.title,
+    description: empty.hint
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, hero !== undefined && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__hero"
+  }, hero, heroMeta && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__hero-meta"
+  }, heroMeta)), children)), footnote && /*#__PURE__*/React.createElement("footer", {
+    className: "gt-chart-card__foot"
+  }, footnote));
+}
+Object.assign(__ds_scope, { ChartCard });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/TrendLines.jsx
+try { (() => {
+const M = {
+  top: 12,
+  right: 10,
+  bottom: 20,
+  left: 6
+};
+const UNIT_SHORT = {
+  'per team per week': '/team/wk',
+  'per team': '/team',
+  rate: 'rate'
+};
+const EMPTY_COPY = {
+  no_rollup: 'Trends appear after the first nightly rollup.',
+  no_complete_week: 'No complete week in this range yet.',
+  no_activity: 'No team activity in this range.'
+};
+function fmtUnit(v, unit) {
+  if (v === null || v === undefined) return '—';
+  if (unit === 'rate') return __ds_scope.fmtPct(v);
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+const isNum = v => v !== null && v !== undefined;
+
+/** A Monday-start week is complete once its Sunday is on or before the rollup's `asOf` day. */
+function completeWeeks(points = [], asOf) {
+  if (!asOf) return [];
+  const end = iso => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 6);
+    return d.toISOString().slice(0, 10);
+  };
+  return points.filter(p => p && p.weekStart && end(p.weekStart) <= asOf);
+}
+function Panel({
+  panel,
+  compare,
+  height
+}) {
+  const [ref, width] = __ds_scope.useMeasure(220);
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const [hoverI, setHoverI] = React.useState(null);
+  const cur = panel.current || [];
+  const prev = compare && panel.previous ? panel.previous : null;
+  const n = Math.max(cur.length, prev ? prev.length : 0);
+  const maxV = Math.max(0, ...cur.map(p => p.value ?? 0), ...(prev ? prev.map(p => p.value ?? 0) : []));
+  const [top, ticks] = __ds_scope.niceScale(panel.unit === 'rate' ? Math.max(maxV, 1) : maxV, 3);
+  const iw = Math.max(10, width - M.left - M.right);
+  const ih = Math.max(10, height - M.top - M.bottom);
+  const x = i => M.left + (n > 1 ? i / (n - 1) * iw : iw / 2);
+  const y = v => M.top + ih - v / top * ih;
+  const path = pts => pts.reduce((acc, p, i) => {
+    if (!isNum(p.value)) return acc;
+    const prevOk = i > 0 && isNum(pts[i - 1]?.value);
+    return `${acc}${prevOk ? ' L' : ' M'}${x(i)},${y(p.value)}`;
+  }, '').trim();
+  let latestI = -1;
+  cur.forEach((p, i) => {
+    if (isNum(p.value)) latestI = i;
+  });
+  // A week no line reaches: a value whose neighbours are both missing.
+  const isolated = i => isNum(cur[i]?.value) && !isNum(cur[i - 1]?.value) && !isNum(cur[i + 1]?.value);
+  const rowsAt = i => {
+    const rows = [{
+      key: 'cur',
+      label: 'This range',
+      value: fmtUnit(cur[i]?.value, panel.unit),
+      seriesClass: 'gt-series--1'
+    }];
+    if (prev) rows.push({
+      key: 'prev',
+      label: 'Previous range',
+      value: fmtUnit(prev[i]?.value, panel.unit),
+      seriesClass: 'gt-series--gray'
+    });
+    return rows;
+  };
+  const showAt = i => {
+    setHoverI(i);
+    show(x(i), M.top, `Week ${i + 1} · ${__ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)}`, rowsAt(i));
+  };
+  const clear = () => {
+    setHoverI(null);
+    hide();
+  };
+  const onMove = e => {
+    if (!n) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - rect.left - M.left) / iw * (n - 1))));
+    if (i !== hoverI) showAt(i);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__panel"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__title"
+  }, panel.title, /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__unit"
+  }, UNIT_SHORT[panel.unit] || panel.unit)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-plot",
+    ref: ref,
+    style: {
+      height
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "gt-trend__svg",
+    width: width,
+    height: height,
+    role: "img",
+    "aria-label": `${panel.title}, ${n} complete weeks${latestI >= 0 ? `, latest ${fmtUnit(cur[latestI].value, panel.unit)}` : ''}${prev ? ', with the previous range in gray' : ''}`,
+    onMouseMove: onMove,
+    onMouseLeave: clear
+  }, ticks.map(t => /*#__PURE__*/React.createElement("line", {
+    key: t,
+    className: "gt-trend__grid",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: y(t),
+    y2: y(t)
+  })), /*#__PURE__*/React.createElement("line", {
+    className: "gt-trend__axis",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: M.top + ih,
+    y2: M.top + ih
+  }), Array.from({
+    length: n
+  }).map((_, i) => i === 0 || i === n - 1 ? /*#__PURE__*/React.createElement("text", {
+    key: i,
+    className: "gt-trend__tick",
+    x: x(i),
+    y: height - 5,
+    style: {
+      textAnchor: i === 0 ? 'start' : 'end'
+    }
+  }, __ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)) : null), hoverI !== null && /*#__PURE__*/React.createElement("line", {
+    className: "gt-trend__crosshair",
+    x1: x(hoverI),
+    x2: x(hoverI),
+    y1: M.top,
+    y2: M.top + ih
+  }), prev && /*#__PURE__*/React.createElement("path", {
+    className: "gt-trend__previous",
+    d: path(prev)
+  }), /*#__PURE__*/React.createElement("path", {
+    className: "gt-trend__current",
+    d: path(cur)
+  }), cur.map((p, i) => (i === latestI || isolated(i) || hoverI === i) && isNum(p.value) ? /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    className: "gt-trend__marker",
+    cx: x(i),
+    cy: y(p.value),
+    r: hoverI === i ? 5 : 4
+  }) : null), latestI >= 0 && /*#__PURE__*/React.createElement("text", {
+    className: "gt-trend__end-label",
+    x: x(latestI) + (latestI >= n / 2 ? 2 : -2),
+    y: y(cur[latestI].value) - 8,
+    style: {
+      textAnchor: latestI >= n / 2 ? 'end' : 'start'
+    }
+  }, fmtUnit(cur[latestI].value, panel.unit)), Array.from({
+    length: n
+  }).map((_, i) => /*#__PURE__*/React.createElement("rect", {
+    key: i,
+    className: "gt-plot__hit",
+    x: x(i) - (n > 1 ? iw / (n - 1) / 2 : iw / 2),
+    y: M.top,
+    width: n > 1 ? iw / (n - 1) : iw,
+    height: ih,
+    tabIndex: 0,
+    role: "button",
+    "aria-label": `Week ${i + 1}: ${rowsAt(i).map(r => `${r.label} ${r.value}`).join(', ')}`,
+    onFocus: () => showAt(i),
+    onBlur: clear
+  }))), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, tip)));
+}
+
+/**
+ * Small multiples (.gt-trend) — this range (green) with the previous range (gray)
+ * as context, aligned by week index; null points leave gaps. Only COMPLETE weeks
+ * are drawn (`completeWeeks(points, asOf)`); the week in progress appears once it
+ * ends. `__marker` dots each week no line reaches and this range's latest week,
+ * which `__end-label` labels. Three empty states: before the first rollup, no
+ * complete week in range, no team activity. Footer: legend + "as of Oct 6, 2026".
+ * `view="table"`: one row per complete week, one column per panel with its unit, "—" for a missing value.
+ */
+function TrendLines({
+  panels = [],
+  compare = true,
+  asOf,
+  height = 96,
+  view = 'chart',
+  emptyReason,
+  className = ''
+}) {
+  const complete = panels.map(p => ({
+    ...p,
+    current: completeWeeks(p.current || [], asOf),
+    previous: p.previous ? completeWeeks(p.previous, asOf) : null
+  }));
+  let empty = emptyReason || null;
+  if (!empty) {
+    if (!asOf || !panels.length) empty = 'no_rollup';else if (complete.every(p => p.current.length === 0)) empty = 'no_complete_week';else if (complete.every(p => p.current.every(pt => !isNum(pt.value) || pt.value === 0))) empty = 'no_activity';
+  }
+  if (empty) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-trend__empty"
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "card",
+      titleAs: "p",
+      icon: /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+        name: "trending-up",
+        size: 18
+      }),
+      title: EMPTY_COPY[empty] || empty
+    }));
+  }
+  const anyPrev = compare && complete.some(p => p.previous && p.previous.length);
+  if (view === 'table') {
+    const weeks = [...new Set(complete.flatMap(p => p.current.map(pt => pt.weekStart)))].sort();
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("caption", {
+      className: "gt-table__caption"
+    }, "Trends, week by week", anyPrev ? ', this range and the previous range' : ''), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+      scope: "col"
+    }, "Week"), complete.map(p => /*#__PURE__*/React.createElement("th", {
+      key: p.key,
+      scope: "col",
+      className: "gt-table__num"
+    }, p.title, " (", UNIT_SHORT[p.unit] || p.unit, ")", anyPrev && p.previous ? ' · this / previous' : '')))), /*#__PURE__*/React.createElement("tbody", null, weeks.map((w, i) => /*#__PURE__*/React.createElement("tr", {
+      key: w
+    }, /*#__PURE__*/React.createElement("td", null, __ds_scope.fmtWeek(w)), complete.map(p => {
+      const c = p.current.find(pt => pt.weekStart === w);
+      const pv = anyPrev && p.previous ? p.previous[i] : null;
+      return /*#__PURE__*/React.createElement("td", {
+        key: p.key,
+        className: "gt-table__num"
+      }, fmtUnit(c?.value, p.unit), anyPrev && p.previous ? ` / ${fmtUnit(pv?.value, p.unit)}` : '');
+    }))))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-trend', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__panels",
+    style: {
+      '--trend-cols': Math.min(complete.length, 4)
+    }
+  }, complete.map(p => /*#__PURE__*/React.createElement(Panel, {
+    key: p.key,
+    panel: p,
+    compare: compare,
+    height: height
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__foot"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
+    items: [{
+      key: 'cur',
+      label: 'This range',
+      swatch: 'line',
+      seriesClass: 'gt-series--1'
+    }, ...(anyPrev ? [{
+      key: 'prev',
+      label: 'Previous range',
+      swatch: 'line',
+      seriesClass: 'gt-series--gray'
+    }] : [])]
+  }), asOf && /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__asof"
+  }, "as of ", __ds_scope.fmtWeek(asOf, true))));
+}
+Object.assign(__ds_scope, { completeWeeks, TrendLines });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/TrendLines.jsx", error: String((e && e.message) || e) }); }
+
 // components/display/Table.jsx
 try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* lucide ChevronUp / ChevronDown / ChevronsUpDown at 12px */
 const SortGlyph = ({
   dir
 }) => /*#__PURE__*/React.createElement("svg", {
@@ -7297,16 +7266,99 @@ const SortGlyph = ({
   "aria-hidden": "true"
 }, dir === 'desc' ? /*#__PURE__*/React.createElement("path", {
   d: "M6 9l6 6 6-6"
-}) : /*#__PURE__*/React.createElement("path", {
+}) : dir === 'asc' ? /*#__PURE__*/React.createElement("path", {
   d: "M18 15l-6-6-6 6"
-}));
+}) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+  d: "m7 15 5 5 5-5"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m7 9 5-5 5 5"
+})));
+
+/** Numbers compare numerically; strings case-insensitively (localeCompare, base sensitivity). */
+function compareValues(a, b) {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a).localeCompare(String(b), undefined, {
+    sensitivity: 'base'
+  });
+}
+/** A new array sorted by the accessor in the given direction. Stable; never mutates. */
+function sortRows(rows, accessor, direction) {
+  const factor = direction === 'asc' ? 1 : -1;
+  return rows.map((row, index) => ({
+    row,
+    index
+  })).sort((a, b) => {
+    const r = compareValues(accessor(a.row), accessor(b.row));
+    return r !== 0 ? r * factor : a.index - b.index;
+  }).map(({
+    row
+  }) => row);
+}
+/** Pressing the active column flips its direction; another column starts ascending. */
+function nextSortState(current, key) {
+  if (current.key === key) return {
+    key,
+    direction: current.direction === 'asc' ? 'desc' : 'asc'
+  };
+  return {
+    key,
+    direction: 'asc'
+  };
+}
+/**
+ * Sort state for a table of its own (one that draws its header row with SortableHeader):
+ * `{ sortedRows, sort, toggleSort }`. `accessors` maps each sortable key to the value it sorts by;
+ * `initial` is `{ key, direction }`. Exported from Table.jsx as the codebase ships it in
+ * `components/Table/` (fold-back 2026-10-22).
+ */
+function useTableSort(rows, accessors, initial) {
+  const [sort, setSort] = React.useState(initial);
+  const sortedRows = React.useMemo(() => sortRows(rows, accessors[sort.key], sort.direction), [rows, accessors, sort]);
+  const toggleSort = key => setSort(current => nextSortState(current, key));
+  return {
+    sortedRows,
+    sort,
+    toggleSort
+  };
+}
 
 /**
- * Data table: `scope="col"` headers, sortable headers as buttons with `aria-sort`, a visually
- * hidden caption, Skeleton loading rows, a compact EmptyState row, `dense` rows, a sticky header,
- * and horizontal scrolling inside its card on phones (the scroll region is focusable only when it
- * overflows). Rows that open something put a link (`rowHref`) or button (`onRowClick`) in the
- * first cell; the row itself only shows hover — no `<tr onClick>`.
+ * A sortable column header: a `<th scope="col">` holding a button that sorts by its column. While
+ * its column sorts the table the `<th>` carries `aria-sort` (ascending / descending) and the chevron
+ * points the way it sorts; ARIA 1.2 puts `aria-sort` on the sorted column only, so the others carry
+ * none and show a neutral up-down glyph (a figure column may sort largest-first on its first press).
+ * Table renders it for a sortable column; a table of its own renders it with useTableSort.
+ */
+function SortableHeader({
+  label,
+  sortKey,
+  currentSort,
+  onSort,
+  className = '',
+  ...rest
+}) {
+  const direction = currentSort && currentSort.key === sortKey ? currentSort.direction : null;
+  return /*#__PURE__*/React.createElement("th", _extends({}, rest, {
+    scope: "col",
+    className: className || undefined,
+    "aria-sort": direction === null ? undefined : direction === 'asc' ? 'ascending' : 'descending'
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: ['gt-table__sort', direction !== null ? 'gt-table__sort--active' : ''].filter(Boolean).join(' '),
+    onClick: () => onSort(sortKey)
+  }, label, /*#__PURE__*/React.createElement(SortGlyph, {
+    dir: direction
+  })));
+}
+
+/**
+ * Data table: `scope="col"` headers, sortable headers as buttons with `aria-sort` on the sorted
+ * column (a header is a button only when the table has `onSort`), a visually hidden caption,
+ * Skeleton loading rows, a compact EmptyState row, `dense` rows, a sticky header (inside the
+ * Table's own wrapper — limit the wrapper's height, not a box around it), and horizontal scrolling
+ * inside its card on phones (the scroll region is focusable only when it overflows). Rows that open
+ * something put a link (`rowTo` for an in-app route, `rowHref` for another site) or button
+ * (`onRowClick`) in the first cell; the row itself only shows hover — no `<tr onClick>`.
  */
 function Table({
   columns = [],
@@ -7321,9 +7373,11 @@ function Table({
   rowKey = (row, i) => row.id ?? i,
   onRowClick,
   rowHref,
+  rowTo,
   dense = false,
   stickyHeader = false,
-  className = ''
+  className = '',
+  style
 }) {
   const wrapRef = React.useRef(null);
   const [scrolls, setScrolls] = React.useState(false);
@@ -7338,17 +7392,21 @@ function Table({
       if (ro) ro.disconnect();
     };
   }, [rows.length, columns.length]);
-  const handleSort = col => {
-    if (!col.sortable || !onSort) return;
-    onSort({
-      key: col.key,
-      dir: sort && sort.key === col.key && sort.dir === 'asc' ? 'desc' : 'asc'
+  const sortBy = key => {
+    if (onSort) onSort({
+      key,
+      dir: sort && sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc'
     });
   };
-  const opens = onRowClick || rowHref;
+  const current = sort ? {
+    key: sort.key,
+    direction: sort.dir
+  } : null;
+  const opens = onRowClick || rowHref || rowTo;
   return /*#__PURE__*/React.createElement("div", {
     ref: wrapRef,
     className: ['gt-table-wrapper', className].filter(Boolean).join(' '),
+    style: style,
     role: scrolls ? 'region' : undefined,
     "aria-label": scrolls && typeof caption === 'string' ? caption : undefined,
     tabIndex: scrolls ? 0 : undefined
@@ -7358,21 +7416,21 @@ function Table({
   }, caption && /*#__PURE__*/React.createElement("caption", {
     className: "gt-visually-hidden"
   }, caption), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, columns.map(col => {
-    const active = sort && sort.key === col.key;
-    return /*#__PURE__*/React.createElement("th", {
+    const colStyle = col.width ? {
+      width: col.width
+    } : undefined;
+    return col.sortable && onSort ? /*#__PURE__*/React.createElement(SortableHeader, {
+      key: col.key,
+      label: col.label,
+      sortKey: col.key,
+      currentSort: current,
+      onSort: sortBy,
+      style: colStyle
+    }) : /*#__PURE__*/React.createElement("th", {
       key: col.key,
       scope: "col",
-      style: col.width ? {
-        width: col.width
-      } : undefined,
-      "aria-sort": col.sortable ? active ? sort.dir === 'asc' ? 'ascending' : 'descending' : 'none' : undefined
-    }, col.sortable ? /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: ['gt-table__sort', active ? 'gt-table__sort--active' : ''].filter(Boolean).join(' '),
-      onClick: () => handleSort(col)
-    }, col.label, /*#__PURE__*/React.createElement(SortGlyph, {
-      dir: active ? sort.dir : 'asc'
-    })) : col.label);
+      style: colStyle
+    }, col.label);
   }))), /*#__PURE__*/React.createElement("tbody", null, loading ? Array.from({
     length: skeletonRows
   }).map((_, r) => /*#__PURE__*/React.createElement("tr", {
@@ -7394,7 +7452,10 @@ function Table({
     }, content);
     return /*#__PURE__*/React.createElement("td", {
       key: col.key
-    }, rowHref ? /*#__PURE__*/React.createElement("a", {
+    }, rowTo ? /*#__PURE__*/React.createElement("a", {
+      className: "gt-table__open",
+      href: rowTo(row)
+    }, content) : rowHref ? /*#__PURE__*/React.createElement("a", {
       className: "gt-table__open",
       href: rowHref(row)
     }, content) : /*#__PURE__*/React.createElement("button", {
@@ -7411,7 +7472,7 @@ function Table({
     titleAs: "p"
   }))))));
 }
-Object.assign(__ds_scope, { Table });
+Object.assign(__ds_scope, { compareValues, sortRows, nextSortState, useTableSort, SortableHeader, Table });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Table.jsx", error: String((e && e.message) || e) }); }
 
 // components/primitives/Checkbox.jsx
@@ -7505,7 +7566,8 @@ const bucketOf = remaining => remaining === null ? 'none' : remaining < 0 ? 'ove
 
 /**
  * The field shell every form control shares: label (visible or visually hidden), "(optional)"
- * marker, the control, then the error (replacing the help line) and the character counter.
+ * marker (after a real space, so the control's name reads "Description (optional)"), the control,
+ * then the error (replacing the help line) and the character counter.
  * Wires `aria-describedby` / `aria-invalid` for the control through a render prop:
  * `children({ id, labelId, describedBy, invalid })`.
  * Counter: "128 / 500"; past the limit the text is kept and flagged (`--over`), never cut.
@@ -7556,9 +7618,9 @@ function FieldShell({
     id: labelId,
     className: hideLabel ? 'gt-visually-hidden' : 'gt-field__label',
     htmlFor: group ? undefined : fieldId
-  }, label, optional && /*#__PURE__*/React.createElement("span", {
+  }, label, optional && /*#__PURE__*/React.createElement(React.Fragment, null, " ", /*#__PURE__*/React.createElement("span", {
     className: "gt-field__optional"
-  }, "(optional)")), typeof children === 'function' ? children(ctx) : children, (errId || helpId || hasMax) && /*#__PURE__*/React.createElement("div", {
+  }, "(optional)"))), typeof children === 'function' ? children(ctx) : children, (errId || helpId || hasMax) && /*#__PURE__*/React.createElement("div", {
     className: "gt-field__footer"
   }, errId && /*#__PURE__*/React.createElement("p", {
     className: "gt-field__error",
@@ -7583,17 +7645,27 @@ Object.assign(__ds_scope, { FieldShell });
 
 // components/primitives/CodeInput.jsx
 try { (() => {
+/** A box's caret or selection. */
+const selectionOf = el => ({
+  start: el.selectionStart ?? 0,
+  end: el.selectionEnd ?? 0
+});
+
 /**
  * One-time code boxes: 8 characters for a class join code, 6 digits for email verification.
  * One label for the group (`role="group"`); typing advances, Backspace steps back, pasting
  * (or the phone's one-time-code autofill) fills every box. The value is contiguous: a tap on any
  * box lands on the first empty one, so the whole row is one target.
+ * Kept in step with the codebase (fold-back 2026-10-22): each keystroke reads the input's current
+ * value (a ref, for a focus that moves before the next render); typing over a collapsed caret
+ * replaces the box's character (WebKit collapses the selection a box makes on focus); and
+ * `onComplete` fires once per new full code, never for an edit that leaves the code as it was.
  */
 function CodeInput({
   id,
   label,
   length = 6,
-  value = '',
+  value,
   onChange,
   onComplete,
   numeric = false,
@@ -7605,8 +7677,28 @@ function CodeInput({
   className = ''
 }) {
   const refs = React.useRef([]);
+  const [own, setOwn] = React.useState('');
   const clean = s => numeric ? s.replace(/\D/g, '') : s.replace(/[^a-z0-9]/gi, '').toUpperCase();
-  const v = clean(value).slice(0, length);
+  const v = clean(value ?? own).slice(0, length);
+  const current = React.useRef(v);
+  React.useEffect(() => {
+    current.current = v;
+  }, [v]);
+  // Each box's caret or selection as a key or paste in it began: it tells an input that kept the
+  // box's character from one that replaced it.
+  const selections = React.useRef([]);
+  const track = (i, el) => {
+    selections.current[i] = selectionOf(el);
+  };
+  React.useEffect(() => {
+    const onSelectionChange = () => {
+      const i = refs.current.findIndex(box => box && box === document.activeElement);
+      const box = refs.current[i];
+      if (box) selections.current[i] = selectionOf(box);
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, []);
   const focusBox = i => {
     const el = refs.current[Math.max(0, Math.min(length - 1, i))];
     if (el) {
@@ -7614,23 +7706,36 @@ function CodeInput({
       el.select();
     }
   };
-  const commit = next => {
-    next = next.slice(0, length);
+  const commit = raw => {
+    const next = raw.slice(0, length);
+    const before = current.current;
+    current.current = next;
+    if (value === undefined) setOwn(next);
     if (onChange) onChange(next);
-    if (next.length === length && onComplete) onComplete(next);
+    if (next.length === length && next !== before && onComplete) onComplete(next);
   };
   React.useEffect(() => {
     if (autoFocus) focusBox(v.length);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onInput = (i, e) => {
-    const typed = clean(e.target.value);
+    let raw = e.target.value;
+    const char = v[i];
+    const sel = selections.current[i];
+    // A box selects its character on focus, so what comes in replaces it. When that selection
+    // collapsed (WebKit, after the click that focused the box), the character stayed in the value,
+    // before or after what came in: drop it, from the side the caret was not on.
+    if (char && sel && sel.start === sel.end && raw.length > char.length) {
+      if (sel.start === 0 && raw.endsWith(char)) raw = raw.slice(0, -char.length);else if (sel.start > 0 && raw.startsWith(char)) raw = raw.slice(char.length);
+    }
+    const typed = clean(raw);
     if (!typed) return;
     const at = Math.min(i, v.length);
     commit(v.slice(0, at) + typed + v.slice(at + typed.length));
     focusBox(at + typed.length);
   };
   const onKeyDown = (i, e) => {
+    track(i, e.currentTarget);
     if (e.key === 'Backspace') {
       e.preventDefault();
       if (v[i]) {
@@ -7655,11 +7760,13 @@ function CodeInput({
     }
   };
   const onFocus = (i, e) => {
-    if (i > v.length) {
-      focusBox(v.length);
+    const filled = current.current.length;
+    if (i > filled) {
+      focusBox(filled);
       return;
     }
     e.target.select();
+    track(i, e.target);
   };
   const noun = numeric ? 'Digit' : 'Character';
   return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
@@ -7696,6 +7803,7 @@ function CodeInput({
     value: v[i] || '',
     onChange: e => onInput(i, e),
     onKeyDown: e => onKeyDown(i, e),
+    onPaste: e => track(i, e.currentTarget),
     onFocus: e => onFocus(i, e),
     inputMode: numeric ? 'numeric' : 'text',
     autoComplete: i === 0 ? 'one-time-code' : 'off',
@@ -8172,7 +8280,8 @@ const CalendarGlyph = () => /*#__PURE__*/React.createElement("svg", {
  * Calendar: a modal dialog portaled to <body> (z 1100, above modals), placed below the trigger or
  * flipped above when it does not fit. Arrow keys move by day / week, Home / End to the week's ends,
  * PageUp / PageDown by month (Shift: year), Enter picks, Esc closes and returns focus to the trigger.
- * `showTime` adds a labelled time input and Cancel / Done.
+ * The chosen day's name ends ", selected". `showTime` adds a labelled time input (08:00 until a time
+ * is chosen) and Cancel / Done.
  */
 function DatePickerField({
   id,
@@ -8195,7 +8304,7 @@ function DatePickerField({
   const [open, setOpen] = React.useState(false);
   const [focusDay, setFocusDay] = React.useState(parsed ? parsed.date : today);
   const [draftDate, setDraftDate] = React.useState(null);
-  const [draftTime, setDraftTime] = React.useState('09:00');
+  const [draftTime, setDraftTime] = React.useState('08:00');
   const [pos, setPos] = React.useState({
     top: 0,
     left: 0,
@@ -8210,7 +8319,7 @@ function DatePickerField({
     if (disabled) return;
     setFocusDay(parsed ? parsed.date : today);
     setDraftDate(parsed ? parsed.date : null);
-    setDraftTime(parsed && parsed.time ? parsed.time : '09:00');
+    setDraftTime(parsed && parsed.time ? parsed.time : '08:00');
     toGrid.current = true;
     setOpen(true);
   };
@@ -8302,7 +8411,7 @@ function DatePickerField({
   };
   const done = () => {
     if (!draftDate) return;
-    if (onChange) onChange(`${toKey(draftDate)} ${draftTime || '09:00'}`);
+    if (onChange) onChange(`${toKey(draftDate)} ${draftTime || '08:00'}`);
     close();
   };
   const shiftMonth = n => {
@@ -8393,7 +8502,7 @@ function DatePickerField({
     className: ['dpf__cal-day', same(d, chosen) ? 'dpf__cal-day--selected' : '', same(d, today) && !same(d, chosen) ? 'dpf__cal-day--today' : ''].filter(Boolean).join(' '),
     tabIndex: same(d, focusDay) ? 0 : -1,
     "data-focus": same(d, focusDay) ? 'true' : undefined,
-    "aria-label": `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+    "aria-label": `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}${same(d, chosen) ? ', selected' : ''}`,
     "aria-current": same(d, today) ? 'date' : undefined,
     "aria-disabled": off(d) || undefined,
     onKeyDown: onDayKey,
@@ -8486,15 +8595,136 @@ Object.assign(__ds_scope, { IconButton });
 try { (() => {
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 const FIELDS = 'input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled)';
-const openStack = [];
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const dialogPortal = (node, inPlace) => !inPlace && typeof window !== 'undefined' && window.ReactDOM && window.ReactDOM.createPortal ? window.ReactDOM.createPortal(node, document.body) : node;
 
+/* ── The dialog stack (the codebase's dialogStack.ts) ──────────────────────────────────────────
+   Open dialogs, oldest first; only the topmost answers Esc and its scrim. A layer knows where focus
+   goes back: the element that had it as the dialog opened, and the open dialog that element was in.
+   When that dialog closed in the same update (a confirm that closes the dialog under it as it
+   succeeds), focus goes back to where *that* one came from, and so on down — never to a button in a
+   dialog that is going. */
+const stack = [];
+const pushDialog = (token, opener, holds) => {
+  let parent = null;
+  for (let i = stack.length - 1; i >= 0 && opener && !parent; i--) if (stack[i].holds(opener)) parent = stack[i];
+  stack.push({
+    token,
+    opener,
+    parent,
+    holds,
+    open: true
+  });
+};
+const returnTarget = layer => {
+  if (layer.parent && !layer.parent.open) return returnTarget(layer.parent);
+  const {
+    opener
+  } = layer;
+  return opener instanceof HTMLElement && opener.isConnected ? opener : null;
+};
+const popDialog = token => {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (stack[i].token !== token) continue;
+    const [layer] = stack.splice(i, 1);
+    layer.open = false;
+    return returnTarget(layer);
+  }
+  return null;
+};
+const isTopDialog = token => stack.length > 0 && stack[stack.length - 1].token === token;
+
+/* ── The scroll lock (the codebase's scrollLock.ts) ────────────────────────────────────────────
+   Counted: the first lock saves body's inline overflow and sets hidden; only the last release puts
+   the saved value back, and only while overflow is still the lock's own (a hand-built modal that set
+   it meanwhile has the last word). A release counts once, however often it is called. */
+const LOCKED = 'hidden';
+let locks = 0;
+let savedOverflow = '';
+function lockBodyScroll() {
+  if (locks === 0) {
+    savedOverflow = document.body.style.overflow;
+    document.body.style.overflow = LOCKED;
+  }
+  locks += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    locks -= 1;
+    if (locks === 0 && document.body.style.overflow === LOCKED) document.body.style.overflow = savedOverflow;
+  };
+}
+
+/** Whether focus can land on an element: outside hidden / inert subtrees, and drawn. */
+function canTakeFocus(el) {
+  if (el.closest('[hidden], [inert]')) return false;
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility({
+    checkVisibilityCSS: true,
+    visibilityProperty: true
+  });
+  if (window.getComputedStyle(el).visibility === 'hidden') return false;
+  for (let box = el; box; box = box.parentElement) if (window.getComputedStyle(box).display === 'none') return false;
+  return true;
+}
+const isGroupedRadio = el => el instanceof HTMLInputElement && el.type === 'radio' && el.name !== '';
+/** Where Tab stops in the sheet, as the browser counts them: drawn, tabIndex >= 0 (a roving group's resting items drop out), a radio group once (its checked radio, else its first). */
+function tabStops(sheet) {
+  const focusable = Array.from(sheet.querySelectorAll(FOCUSABLE)).filter(el => el.tabIndex >= 0 && canTakeFocus(el));
+  const standIns = [];
+  for (const el of focusable) {
+    if (!isGroupedRadio(el)) continue;
+    const at = standIns.findIndex(r => r.name === el.name && r.form === el.form);
+    if (at === -1) standIns.push(el);else if (el.checked && !standIns[at].checked) standIns[at] = el;
+  }
+  return focusable.filter(el => !isGroupedRadio(el) || standIns.includes(el));
+}
+/** Focus on open: `initialFocusRef`, else `[data-autofocus]`, else the first field that takes it, else the sheet. */
+function focusInside(sheet, initial) {
+  const candidates = [initial, sheet.querySelector('[data-autofocus]'), ...sheet.querySelectorAll(FIELDS)];
+  for (const el of candidates) {
+    if (!el || !canTakeFocus(el)) continue;
+    el.focus();
+    if (document.activeElement === el) return;
+  }
+  sheet.focus();
+}
+/** Tab and Shift+Tab wrap at the sheet's ends; a key in a layer portaled out of the sheet (the date picker) is that layer's; focus lost to the page comes back in. */
+function trapTab(e, sheet) {
+  const active = document.activeElement;
+  const lost = !active || active === document.body || active === document.documentElement;
+  if (!lost && !sheet.contains(active)) return;
+  const stops = tabStops(sheet);
+  if (!stops.length) {
+    e.preventDefault();
+    sheet.focus();
+    return;
+  }
+  const follows = (a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  if (e.shiftKey) {
+    if (lost || !stops.some(el => el !== active && follows(el, active))) {
+      e.preventDefault();
+      stops[stops.length - 1].focus();
+    }
+  } else if (lost || !stops.some(el => el !== active && follows(active, el))) {
+    e.preventDefault();
+    stops[0].focus();
+  }
+}
+
 /**
- * The shared dialog behaviour (Modal, ConfirmDialog, Drawer): a stack so Esc and the scrim close
- * only the topmost dialog; focus moves in (initialFocusRef → [data-autofocus] → first field → the
- * sheet), Tab stays inside, focus returns to the trigger on close; body scroll locks; the sheet
- * stays mounted `exitMs` for the closing fade (instant under reduced motion).
+ * The shared dialog behaviour (Modal, ConfirmDialog, Drawer), kept in step with the codebase's
+ * useDialog.ts (fold-back 2026-10-22):
+ * - a stack: Esc and the scrim close only the topmost dialog;
+ * - focus moves in on the next task (so the key that opened the dialog cannot press what it lands
+ *   on): initialFocusRef → [data-autofocus] → the first field → the sheet; a field that took focus
+ *   as it mounted (autoFocus) keeps it unless initialFocusRef names another;
+ * - Tab stays inside, counting only real tab stops (drawn, tabIndex >= 0, one radio per group);
+ * - on close, focus returns to the opener — past a dialog that closed in the same update, to the
+ *   first opener still in the page — unless something moved focus elsewhere on purpose;
+ * - Esc is ignored while composing (IME), when the key repeats, or when something already handled it;
+ * - the body scroll lock is counted (see lockBodyScroll);
+ * - the sheet stays mounted `exitMs` for the closing fade (instant under reduced motion).
  */
 function useDialog({
   open,
@@ -8505,87 +8735,75 @@ function useDialog({
   exitMs = 150,
   inPlace = false
 }) {
-  const me = React.useRef({});
   const onCloseRef = React.useRef(onClose);
   const disabledRef = React.useRef(closeDisabled);
   onCloseRef.current = onClose;
   disabledRef.current = closeDisabled;
-  const [mounted, setMounted] = React.useState(open);
+  // `closing` keeps the sheet up for the fade; `opener` is read while rendering the open, before a
+  // field inside (autoFocus) can take focus.
   const [closing, setClosing] = React.useState(false);
+  const [opener, setOpener] = React.useState(() => open && typeof document !== 'undefined' ? document.activeElement : null);
+  const [wasOpen, setWasOpen] = React.useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setClosing(!open && !reduceMotion());
+    if (open) setOpener(document.activeElement);
+  }
+  const openerRef = React.useRef(opener);
+  openerRef.current = opener;
   React.useEffect(() => {
-    if (open) {
-      setMounted(true);
-      setClosing(false);
-      return undefined;
-    }
-    if (!mounted) return undefined;
-    if (reduceMotion()) {
-      setMounted(false);
-      return undefined;
-    }
-    setClosing(true);
-    const t = setTimeout(() => {
-      setMounted(false);
-      setClosing(false);
-    }, exitMs);
-    return () => clearTimeout(t);
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
+    if (!closing) return undefined;
+    const t = window.setTimeout(() => setClosing(false), exitMs);
+    return () => window.clearTimeout(t);
+  }, [closing, exitMs]);
+  const token = React.useRef(null);
   React.useEffect(() => {
     if (!open || inPlace) return undefined; // in-place renders (galleries) never trap, lock or take focus
-    const self = me.current;
-    openStack.push(self);
-    const returnTo = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const t = setTimeout(() => {
-      const s = sheetRef.current;
-      if (!s) return;
-      const target = initialFocusRef && initialFocusRef.current || s.querySelector('[data-autofocus]') || s.querySelector(FIELDS) || s;
-      target.focus();
+    const self = Symbol('dialog');
+    token.current = self;
+    // Onto the stack, with where focus goes back: focus already outside this sheet and not the page
+    // itself belongs to a dialog that closed in this same update and gave focus back to its opener.
+    const active = document.activeElement;
+    const outside = active !== null && active !== document.body && !(sheetRef.current && sheetRef.current.contains(active));
+    pushDialog(self, outside ? active : openerRef.current, el => !!(sheetRef.current && sheetRef.current.contains(el)));
+    const unlock = lockBodyScroll();
+    const focusTimer = window.setTimeout(() => {
+      const sheet = sheetRef.current;
+      const initial = initialFocusRef && initialFocusRef.current;
+      if (!sheet || !initial && sheet.contains(document.activeElement)) return;
+      focusInside(sheet, initial);
     }, 0);
     const onKey = e => {
-      if (openStack[openStack.length - 1] !== self || e.defaultPrevented) return;
+      if (e.defaultPrevented || !isTopDialog(self)) return;
       if (e.key === 'Escape') {
-        if (!disabledRef.current && onCloseRef.current) {
-          e.preventDefault();
-          onCloseRef.current();
-        }
+        if (e.repeat || e.isComposing || e.keyCode === 229 || disabledRef.current || !onCloseRef.current) return;
+        e.preventDefault();
+        onCloseRef.current();
       } else if (e.key === 'Tab' && sheetRef.current) {
-        const list = Array.from(sheetRef.current.querySelectorAll(FOCUSABLE)).filter(el => el.getClientRects().length);
-        if (!list.length) {
-          e.preventDefault();
-          return;
-        }
-        const first = list[0];
-        const last = list[list.length - 1];
-        const a = document.activeElement;
-        if (e.shiftKey && (a === first || a === sheetRef.current)) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && a === last) {
-          e.preventDefault();
-          first.focus();
-        }
+        trapTab(e, sheetRef.current);
       }
     };
     document.addEventListener('keydown', onKey);
     return () => {
-      clearTimeout(t);
+      window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', onKey);
-      const i = openStack.indexOf(self);
-      if (i >= 0) openStack.splice(i, 1);
-      if (!openStack.length) document.body.style.overflow = prevOverflow;
-      if (returnTo && returnTo.focus && document.contains(returnTo)) returnTo.focus();
+      const back = popDialog(self);
+      unlock();
+      // Focus still in the closing sheet, or lost with it, goes back; focus anywhere else stays.
+      const sheet = sheetRef.current;
+      const now = document.activeElement;
+      const stranded = !now || now === document.body || sheet !== null && sheet.contains(now);
+      if (stranded && back) back.focus();
     };
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, inPlace]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onScrimDown = e => {
     if (e.target !== e.currentTarget || disabledRef.current) return;
-    if (openStack[openStack.length - 1] === me.current && onCloseRef.current) onCloseRef.current();
+    const self = token.current;
+    if (open && !inPlace && self && isTopDialog(self) && onCloseRef.current) onCloseRef.current();
   };
   return {
-    mounted,
+    mounted: open || closing,
     closing,
     onScrimDown
   };
@@ -8606,8 +8824,9 @@ const XGlyph = () => /*#__PURE__*/React.createElement("svg", {
 /**
  * Modal dialog. `variant="form"` (default): title left, optional `tabs` under it, pinned footer —
  * Edit Project's header. `variant="message"`: centred title (JoinClassModal). Sizes sm 400 · md 560 ·
- * lg 760. `role="dialog"` + `aria-modal` on the sheet, labelled by its title; `closeDisabled` holds it
- * open while saving. Portaled to <body> at --gt-z-modal; closes with a 0.15s fade.
+ * lg 760. `role="dialog"` + `aria-modal` on the sheet, labelled by its title and described by the
+ * subtitle (and by `aria-describedby`, which ConfirmDialog points at its message); `closeDisabled`
+ * holds it open while saving. Portaled to <body> at --gt-z-modal; closes with a 0.15s fade.
  */
 function Modal({
   open = false,
@@ -8625,7 +8844,8 @@ function Modal({
   hideClose = false,
   role = 'dialog',
   portal = true,
-  className = ''
+  className = '',
+  'aria-describedby': describedBy
 }) {
   const sheetRef = React.useRef(null);
   const id = React.useId();
@@ -8651,7 +8871,7 @@ function Modal({
     role: role,
     "aria-modal": "true",
     "aria-labelledby": title ? `${id}-title` : undefined,
-    "aria-describedby": subtitle ? `${id}-sub` : undefined,
+    "aria-describedby": [subtitle ? `${id}-sub` : null, describedBy].filter(Boolean).join(' ') || undefined,
     tabIndex: -1,
     style: width ? {
       maxWidth: width
@@ -8678,7 +8898,7 @@ function Modal({
     className: "gt-modal__footer"
   }, footer))), !portal);
 }
-Object.assign(__ds_scope, { dialogPortal, useDialog, Modal });
+Object.assign(__ds_scope, { dialogPortal, lockBodyScroll, useDialog, Modal });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Modal.jsx", error: String((e && e.message) || e) }); }
 
 // components/feedback/ConfirmDialog.jsx
@@ -8705,6 +8925,7 @@ function ConfirmDialog({
   errorText = 'That didn’t work. Try again.',
   portal = true
 }) {
+  const messageId = React.useId();
   const [busyState, setBusy] = React.useState(false);
   const [errState, setErr] = React.useState('');
   const busy = busyProp ?? busyState;
@@ -8738,6 +8959,7 @@ function ConfirmDialog({
     role: "alertdialog",
     closeDisabled: busy,
     portal: portal,
+    "aria-describedby": messageId,
     footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(__ds_scope.Button, {
       variant: "outline",
       onClick: onCancel,
@@ -8750,7 +8972,8 @@ function ConfirmDialog({
       loadingLabel: busyLabel
     }, confirmLabel))
   }, /*#__PURE__*/React.createElement("p", {
-    className: "gt-confirm__message"
+    className: "gt-confirm__message",
+    id: messageId
   }, message), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
     tone: "error",
     className: "gt-confirm__error"
@@ -8776,7 +8999,8 @@ const AlertGlyph = () => /*#__PURE__*/React.createElement("svg", {
 /**
  * Inline confirm row — the row-level delete inside a dialog (never a dialog over a dialog).
  * `role="group"` labelled by its sentence; Cancel takes focus; Esc cancels without closing the
- * enclosing dialog; Delete shows its busy state.
+ * enclosing dialog, and is stopped even while busy (so it never reaches the dialog around the row
+ * in the middle of a delete); Delete shows its busy state.
  */
 function InlineConfirm({
   message,
@@ -8802,11 +9026,10 @@ function InlineConfirm({
     role: "group",
     "aria-labelledby": `${id}-msg`,
     onKeyDown: e => {
-      if (e.key === 'Escape' && !busy) {
-        e.stopPropagation();
-        e.preventDefault();
-        if (onCancel) onCancel();
-      }
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.stopPropagation();
+      e.preventDefault();
+      if (!busy && onCancel) onCancel();
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "gt-inline-confirm__icon"
@@ -9946,6 +10169,8 @@ try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 const snap = (v, min, step) => +(min + Math.round((v - min) / step) * step).toFixed(6);
+/** The last step inside `max`, counting from `min` (0…10 in steps of 3 tops out at 9, where the thumb sits). */
+const topOf = (min, max, step) => +(min + Math.floor((max - min) / step + 1e-9) * step).toFixed(6);
 
 /**
  * Labelled range — WAI-ARIA Slider pattern on a native <input type="range"> in the field shell
@@ -9953,8 +10178,9 @@ const snap = (v, min, step) => +(min + Math.round((v - min) / step) * step).toFi
  * or, with `withInput`, a paired number input kept in sync (typing commits in-range values at
  * once and clamps on blur). Keys: ← ↓ / → ↑ one step, PageDown / PageUp `pageStep` (a tenth of
  * the range by default), Home / End the ends. `color` tints fill and thumb (a token reference, to
- * match a legend swatch); an error turns both red. 44px tall on phones. Replaces the TSR
- * contributions step's feature-styled range.
+ * match a legend swatch); an error turns both red. 44px tall on phones. Values snap to the steps
+ * that run from `min`, and the top is the last step inside `max`, so the readout never says more
+ * than where the thumb sits. Replaces the TSR contributions step's feature-styled range.
  */
 function Slider({
   id,
@@ -9982,9 +10208,10 @@ function Slider({
   const controlled = value !== undefined;
   const [inner, setInner] = React.useState(defaultValue ?? min);
   const [draft, setDraft] = React.useState(null);
-  const v = clamp(Number(controlled ? value : inner), min, max);
+  const top = topOf(min, max, step);
+  const v = clamp(snap(Number(controlled ? value : inner), min, step), min, top);
   const commit = n => {
-    const next = clamp(snap(n, min, step), min, max);
+    const next = clamp(snap(n, min, step), min, top);
     if (!controlled) setInner(next);
     if (onChange && next !== v) onChange(next);
   };
@@ -14036,12 +14263,9 @@ function ScheduleItem({
       e.preventDefault();
       onOpen(item);
     } : undefined
-  }, title) : title), status === 'live' && /*#__PURE__*/React.createElement("span", {
-    className: "gt-sched-item__live"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-sched-item__live-dot",
-    "aria-hidden": "true"
-  }), "Live"), cd && /*#__PURE__*/React.createElement("span", {
+  }, title) : title), status === 'live' && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "live"
+  }), cd && /*#__PURE__*/React.createElement("span", {
     className: "gt-sched-item__countdown"
   }, cd), att && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
     tone: att[0]
@@ -14360,12 +14584,9 @@ function TeamMeetingsList({
       className: "gt-tm-row__head"
     }, /*#__PURE__*/React.createElement("span", {
       className: "gt-tm-row__title"
-    }, m.title), live && /*#__PURE__*/React.createElement("span", {
-      className: "gt-sched-item__live"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "gt-sched-item__live-dot",
-      "aria-hidden": "true"
-    }), "Live")), /*#__PURE__*/React.createElement("div", {
+    }, m.title), live && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+      status: "live"
+    })), /*#__PURE__*/React.createElement("div", {
       className: "gt-tm-row__when",
       title: campusRange(m)
     }, /*#__PURE__*/React.createElement("time", {
@@ -15698,254 +15919,13 @@ function BurnupChart({
 Object.assign(__ds_scope, { BurnupChart });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/BurnupChart.jsx", error: String((e && e.message) || e) }); }
 
-// components/scrum/CommentThread.jsx
-try { (() => {
-/* Minimal markdown for demos: **bold**, *italic*, `code`, [link](url),
-   "- " lists, @mentions. Production uses the codebase's existing
-   markdown + mention semantics — this renderer is design-fidelity only. */
-function inline(text, members) {
-  const out = [];
-  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|@[\w.-]+)/g;
-  let last = 0,
-    m,
-    k = 0;
-  while (m = re.exec(text)) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    const s = m[0];
-    if (s.startsWith('**')) out.push(/*#__PURE__*/React.createElement("strong", {
-      key: k++
-    }, s.slice(2, -2)));else if (s.startsWith('`')) out.push(/*#__PURE__*/React.createElement("code", {
-      key: k++,
-      className: "gt-md__code"
-    }, s.slice(1, -1)));else if (s.startsWith('*')) out.push(/*#__PURE__*/React.createElement("em", {
-      key: k++
-    }, s.slice(1, -1)));else if (s.startsWith('[')) {
-      const t = s.slice(1, s.indexOf(']'));
-      const u = s.slice(s.indexOf('(') + 1, -1);
-      out.push(/*#__PURE__*/React.createElement("a", {
-        key: k++,
-        className: "gt-md__link",
-        href: u,
-        target: "_blank",
-        rel: "noreferrer"
-      }, t));
-    } else {
-      const name = s.slice(1);
-      const known = !members || members.some(mm => mm.toLowerCase().replace(/\s+/g, '') === name.toLowerCase());
-      out.push(known ? /*#__PURE__*/React.createElement("span", {
-        key: k++,
-        className: "gt-mention"
-      }, "@", name) : s);
-    }
-    last = m.index + s.length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return out;
-}
-
-/** Tiny markdown renderer (demo fidelity — see note above). */
-function MarkdownText({
-  children = '',
-  members,
-  className = ''
-}) {
-  const blocks = [];
-  let list = null;
-  String(children).split('\n').forEach((line, i) => {
-    if (line.trim().startsWith('- ')) {
-      if (!list) {
-        list = [];
-        blocks.push(list);
-      }
-      list.push(/*#__PURE__*/React.createElement("li", {
-        key: i
-      }, inline(line.trim().slice(2), members)));
-    } else {
-      list = null;
-      if (line.trim()) blocks.push(/*#__PURE__*/React.createElement("p", {
-        key: i
-      }, inline(line, members)));
-    }
-  });
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-md', className].filter(Boolean).join(' ')
-  }, blocks.map((b, i) => Array.isArray(b) ? /*#__PURE__*/React.createElement("ul", {
-    key: i
-  }, b) : b));
-}
-
-/**
- * Comment thread for stories & tasks — markdown bodies, @mentions of
- * project-team members, and a composer with a mention hint.
- */
-function CommentThread({
-  comments = [],
-  members = [],
-  value = '',
-  onChange,
-  onSubmit,
-  placeholder = 'Add a comment… (markdown supported, @ to mention)',
-  className = ''
-}) {
-  const submit = () => {
-    if (!value.trim()) return;
-    onSubmit && onSubmit(value.trim());
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-comments', className].filter(Boolean).join(' ')
-  }, comments.map((c, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    className: "gt-comments__item"
-  }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
-    name: c.author,
-    size: "sm"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "gt-comments__body"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-comments__meta"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-comments__author"
-  }, c.author), c.time && /*#__PURE__*/React.createElement("span", {
-    className: "gt-comments__time"
-  }, c.time)), /*#__PURE__*/React.createElement(MarkdownText, {
-    members: members
-  }, c.body)))), /*#__PURE__*/React.createElement("div", {
-    className: "gt-comments__composer"
-  }, /*#__PURE__*/React.createElement("textarea", {
-    className: "gt-comments__input",
-    rows: 2,
-    value: value,
-    placeholder: placeholder,
-    onChange: e => onChange && onChange(e.target.value),
-    onKeyDown: e => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit();
-    },
-    "aria-label": "Comment"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "gt-comments__composer-row"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-comments__hint"
-  }, "**bold** \xB7 `code` \xB7 @mention teammates"), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-comments__send",
-    onClick: submit,
-    disabled: !value.trim()
-  }, "Comment"))));
-}
-Object.assign(__ds_scope, { MarkdownText, CommentThread });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/CommentThread.jsx", error: String((e && e.message) || e) }); }
-
-// components/scrum/MentionListbox.jsx
+// components/scrum/Chips.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+/* Scrum metadata chips — one file, as the codebase's features/scrum/components/Chips.tsx (renamed from
+   PointsChip.jsx in the 2026-10-22 fold-back). `Chips` at the end is the bundle's namespace for the
+   file (it needs a same-named export), not a component. */
 
-/**
- * @-mention autocomplete listbox, anchored to a composer textarea.
- * Async-first: pass `members` for client-side filtering or `onSearch`
- * for Supabase-style lookups (debounced 250ms). Focus stays in the
- * textarea — the host wires aria-activedescendant to the active row.
- * First consumer: scrum comments; repo-wide (messages adopt it later).
- */
-function MentionListbox({
-  open = true,
-  query = '',
-  members,
-  onSearch,
-  onSelect,
-  position = 'below',
-  activeIndex = 0,
-  id = 'gt-mentionbox',
-  stateOverride,
-  className = '',
-  ...rest
-}) {
-  const [results, setResults] = React.useState([]);
-  const [status, setStatus] = React.useState('idle');
-  const [tick, setTick] = React.useState(0);
-  React.useEffect(() => {
-    if (stateOverride) return;
-    const q = query.trim();
-    if (!q) {
-      setStatus('idle');
-      setResults([]);
-      return;
-    }
-    if (members) {
-      const r = members.filter(m => `${m.name} ${m.secondary || ''}`.toLowerCase().includes(q.toLowerCase()));
-      setResults(r);
-      setStatus(r.length ? 'results' : 'empty');
-      return;
-    }
-    if (!onSearch) {
-      setStatus('idle');
-      return;
-    }
-    setStatus('loading');
-    let live = true;
-    const t = window.setTimeout(() => {
-      onSearch(q).then(r => {
-        if (!live) return;
-        setResults(r || []);
-        setStatus(r && r.length ? 'results' : 'empty');
-      }).catch(() => {
-        if (live) setStatus('error');
-      });
-    }, 250);
-    return () => {
-      live = false;
-      window.clearTimeout(t);
-    };
-  }, [query, members, onSearch, stateOverride, tick]);
-  if (!open) return null;
-  const state = stateOverride || status;
-  return /*#__PURE__*/React.createElement("div", _extends({
-    id: id,
-    role: "listbox",
-    "aria-label": "Mention a teammate",
-    className: ['gt-mentionbox', `gt-mentionbox--${position}`, className].filter(Boolean).join(' ')
-  }, rest), state === 'idle' && /*#__PURE__*/React.createElement("div", {
-    className: "gt-mentionbox__hint"
-  }, "Type to mention a teammate"), state === 'loading' && /*#__PURE__*/React.createElement("div", {
-    className: "gt-mentionbox__hint"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-mentionbox__spinner",
-    "aria-hidden": "true"
-  }), "Searching\u2026"), state === 'empty' && /*#__PURE__*/React.createElement("div", {
-    className: "gt-mentionbox__hint"
-  }, "No matches for \u201C", query.trim(), "\u201D"), state === 'error' && /*#__PURE__*/React.createElement("div", {
-    className: "gt-mentionbox__hint gt-mentionbox__hint--error"
-  }, "Couldn\u2019t search members.", /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-mentionbox__retry",
-    onClick: () => setTick(n => n + 1)
-  }, "Retry")), state === 'results' && results.map((m, i) => /*#__PURE__*/React.createElement("div", {
-    key: m.id != null ? m.id : m.name,
-    id: `${id}-opt-${i}`,
-    role: "option",
-    "aria-selected": i === activeIndex,
-    className: ['gt-mentionbox__row', i === activeIndex ? 'gt-mentionbox__row--active' : ''].filter(Boolean).join(' '),
-    onMouseDown: e => {
-      e.preventDefault();
-      onSelect && onSelect(m);
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-mentionbox__avatar",
-    "aria-hidden": "true"
-  }, initials(m.name)), /*#__PURE__*/React.createElement("span", {
-    className: "gt-mentionbox__id"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-mentionbox__name"
-  }, m.name), m.secondary && /*#__PURE__*/React.createElement("span", {
-    className: "gt-mentionbox__sub"
-  }, m.secondary)))));
-}
-Object.assign(__ds_scope, { MentionListbox });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/MentionListbox.jsx", error: String((e && e.message) || e) }); }
-
-// components/scrum/PointsChip.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /** Story-point chip — rounded square, mono numeral. */
 function PointsChip({
   points,
@@ -16065,8 +16045,16 @@ function UserPair({
     size: size
   })));
 }
-Object.assign(__ds_scope, { PointsChip, EstimateChip, PRLinkChip, UserPair });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/PointsChip.jsx", error: String((e && e.message) || e) }); }
+
+/** The file's four chips under one name, for the bundle (design-only, like ModKey). */
+const Chips = {
+  PointsChip,
+  EstimateChip,
+  PRLinkChip,
+  UserPair
+};
+Object.assign(__ds_scope, { PointsChip, EstimateChip, PRLinkChip, UserPair, Chips });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/Chips.jsx", error: String((e && e.message) || e) }); }
 
 // components/scrum/BacklogRow.jsx
 try { (() => {
@@ -16133,6 +16121,177 @@ function BacklogRow({
 }
 Object.assign(__ds_scope, { BacklogRow });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/BacklogRow.jsx", error: String((e && e.message) || e) }); }
+
+// components/scrum/CommentThread.jsx
+try { (() => {
+/**
+ * Comment thread for stories & tasks — markdown bodies, @mentions of
+ * project-team members, and a composer with a mention hint.
+ */
+function CommentThread({
+  comments = [],
+  members = [],
+  value = '',
+  onChange,
+  onSubmit,
+  placeholder = 'Add a comment… (markdown supported, @ to mention)',
+  className = ''
+}) {
+  const submit = () => {
+    if (!value.trim()) return;
+    onSubmit && onSubmit(value.trim());
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-comments', className].filter(Boolean).join(' ')
+  }, comments.map((c, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "gt-comments__item"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    name: c.author,
+    size: "sm"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gt-comments__body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-comments__meta"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-comments__author"
+  }, c.author), c.time && /*#__PURE__*/React.createElement("span", {
+    className: "gt-comments__time"
+  }, c.time)), /*#__PURE__*/React.createElement(__ds_scope.MarkdownText, {
+    members: members
+  }, c.body)))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-comments__composer"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    className: "gt-comments__input",
+    rows: 2,
+    value: value,
+    placeholder: placeholder,
+    onChange: e => onChange && onChange(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit();
+    },
+    "aria-label": "Comment"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gt-comments__composer-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-comments__hint"
+  }, "**bold** \xB7 `code` \xB7 @mention teammates"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-comments__send",
+    onClick: submit,
+    disabled: !value.trim()
+  }, "Comment"))));
+}
+Object.assign(__ds_scope, { CommentThread });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/CommentThread.jsx", error: String((e && e.message) || e) }); }
+
+// components/scrum/MentionListbox.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+/**
+ * @-mention autocomplete listbox, anchored to a composer textarea.
+ * Async-first: pass `members` for client-side filtering or `onSearch`
+ * for Supabase-style lookups (debounced 250ms). Focus stays in the
+ * textarea — the host wires aria-activedescendant to the active row.
+ * First consumer: scrum comments; repo-wide (messages adopt it later).
+ */
+function MentionListbox({
+  open = true,
+  query = '',
+  members,
+  onSearch,
+  onSelect,
+  position = 'below',
+  activeIndex = 0,
+  id = 'gt-mentionbox',
+  stateOverride,
+  className = '',
+  ...rest
+}) {
+  const [results, setResults] = React.useState([]);
+  const [status, setStatus] = React.useState('idle');
+  const [tick, setTick] = React.useState(0);
+  React.useEffect(() => {
+    if (stateOverride) return;
+    const q = query.trim();
+    if (!q) {
+      setStatus('idle');
+      setResults([]);
+      return;
+    }
+    if (members) {
+      const r = members.filter(m => `${m.name} ${m.secondary || ''}`.toLowerCase().includes(q.toLowerCase()));
+      setResults(r);
+      setStatus(r.length ? 'results' : 'empty');
+      return;
+    }
+    if (!onSearch) {
+      setStatus('idle');
+      return;
+    }
+    setStatus('loading');
+    let live = true;
+    const t = window.setTimeout(() => {
+      onSearch(q).then(r => {
+        if (!live) return;
+        setResults(r || []);
+        setStatus(r && r.length ? 'results' : 'empty');
+      }).catch(() => {
+        if (live) setStatus('error');
+      });
+    }, 250);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [query, members, onSearch, stateOverride, tick]);
+  if (!open) return null;
+  const state = stateOverride || status;
+  return /*#__PURE__*/React.createElement("div", _extends({
+    id: id,
+    role: "listbox",
+    "aria-label": "Mention a teammate",
+    className: ['gt-mentionbox', `gt-mentionbox--${position}`, className].filter(Boolean).join(' ')
+  }, rest), state === 'idle' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-mentionbox__hint"
+  }, "Type to mention a teammate"), state === 'loading' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-mentionbox__hint"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-mentionbox__spinner",
+    "aria-hidden": "true"
+  }), "Searching\u2026"), state === 'empty' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-mentionbox__hint"
+  }, "No matches for \u201C", query.trim(), "\u201D"), state === 'error' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-mentionbox__hint gt-mentionbox__hint--error"
+  }, "Couldn\u2019t search members.", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-mentionbox__retry",
+    onClick: () => setTick(n => n + 1)
+  }, "Retry")), state === 'results' && results.map((m, i) => /*#__PURE__*/React.createElement("div", {
+    key: m.id != null ? m.id : m.name,
+    id: `${id}-opt-${i}`,
+    role: "option",
+    "aria-selected": i === activeIndex,
+    className: ['gt-mentionbox__row', i === activeIndex ? 'gt-mentionbox__row--active' : ''].filter(Boolean).join(' '),
+    onMouseDown: e => {
+      e.preventDefault();
+      onSelect && onSelect(m);
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-mentionbox__avatar",
+    "aria-hidden": "true"
+  }, initials(m.name)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-mentionbox__id"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-mentionbox__name"
+  }, m.name), m.secondary && /*#__PURE__*/React.createElement("span", {
+    className: "gt-mentionbox__sub"
+  }, m.secondary)))));
+}
+Object.assign(__ds_scope, { MentionListbox });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/MentionListbox.jsx", error: String((e && e.message) || e) }); }
 
 // components/scrum/ScalePicker.jsx
 try { (() => {
@@ -18784,10 +18943,9 @@ const {
   Badge,
   Button,
   AnalyticsFilterRow,
-  StatTile,
+  StatCard,
   ChartCard,
-  ChartCardTool,
-  ChartCardCheck,
+  Checkbox,
   UnitToggle,
   AnalyticsIcon,
   WeeklyLine,
@@ -19117,12 +19275,16 @@ function AnalyticsScreen({
   const failed = key => data.failures.includes(key) && !retried;
   const tableCard = (key, pressed) => /*#__PURE__*/React.createElement("span", {
     className: "gt-analytics__toggle"
-  }, /*#__PURE__*/React.createElement(ChartCardTool, {
-    icon: "table",
-    label: "Table",
+  }, /*#__PURE__*/React.createElement(Button, {
+    size: "sm",
+    variant: "outline",
     pressed: pressed,
+    iconLeft: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "table",
+      size: 13
+    }),
     onClick: () => toggleTable(key)
-  }));
+  }, "Table"));
   // With a class selected the Messages tile becomes that class's team-channel messages; direct messages stay school-wide.
   const teamMsgs = classView ? classView.teams.reduce((s, t) => s + (t.team_messages || 0), 0) : null;
   const convFoot = classView ? `${fmtCompact(teamMsgs)} team messages · ${rangeLabel} · direct messages are school-wide: ${fmtCompact(conv.dm)}` : `${fmtCompact(conv.total)} messages · ${rangeLabel} · direct messages are school-wide`;
@@ -19167,7 +19329,9 @@ function AnalyticsScreen({
     className: "gt-analytics__error-text"
   }, failureText(failure, true))), /*#__PURE__*/React.createElement("div", {
     className: ['gt-analytics__tiles', withTimeliness ? 'gt-analytics__tiles--6' : ''].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement(StatTile, {
+  }, /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Classes",
     value: classView ? 1 : o.active_classes,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19176,7 +19340,9 @@ function AnalyticsScreen({
     loading: loading,
     failed: failed('overview') && o.active_classes === null,
     hint: HINTS.classes(filter.classId)
-  }), /*#__PURE__*/React.createElement(StatTile, {
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Teams",
     value: classView ? classView.teams.length : o.teams,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19186,7 +19352,9 @@ function AnalyticsScreen({
     loading: loading,
     failed: failed('overview') && o.teams === null,
     hint: HINTS.teams(filter.classId)
-  }), /*#__PURE__*/React.createElement(StatTile, {
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Students",
     value: classView ? classView.teams.reduce((s, t) => s + (t.members || 0), 0) : o.students,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19196,7 +19364,9 @@ function AnalyticsScreen({
     loading: loading,
     failed: failed('overview') && o.students === null,
     hint: HINTS.students(filter.classId)
-  }), /*#__PURE__*/React.createElement(StatTile, {
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Signed in (7d)",
     value: o.active_users_7d,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19209,7 +19379,9 @@ function AnalyticsScreen({
       vsLabel: 'vs the 7 days before'
     },
     hint: o.active_users_7d === null ? 'Appears once sign-ins are recorded' : HINTS.signedIn
-  }), classView ? /*#__PURE__*/React.createElement(StatTile, {
+  }), classView ? /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Team messages",
     value: teamMsgs,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19222,7 +19394,9 @@ function AnalyticsScreen({
     },
     trend: o.trends.messages ? o.trends.messages.map(v => Math.round(v * 0.45)) : undefined,
     hint: `Direct messages are school-wide: ${fmtCompact(conv.dm)}`
-  }) : /*#__PURE__*/React.createElement(StatTile, {
+  }) : /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "Messages",
     value: o.messages,
     icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
@@ -19234,7 +19408,9 @@ function AnalyticsScreen({
       vsLabel: prevLabel
     },
     trend: o.trends.messages
-  }), withTimeliness && /*#__PURE__*/React.createElement(StatTile, {
+  }), withTimeliness && /*#__PURE__*/React.createElement(StatCard, {
+    compact: true,
+    format: "compact",
     label: "On time",
     value: tl.on_time_rate,
     format: "percent",
@@ -19365,10 +19541,10 @@ function AnalyticsScreen({
     footnote: undefined,
     actions: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
       className: "gt-analytics__check"
-    }, /*#__PURE__*/React.createElement(ChartCardCheck, {
+    }, /*#__PURE__*/React.createElement(Checkbox, {
       label: "Compare with previous range",
       checked: compare && !!prev,
-      onChange: setCompare,
+      onChange: e => setCompare(e.target.checked),
       disabled: !prev
     })), tableCard('trends', !!tables.trends))
   }, /*#__PURE__*/React.createElement(TrendLines, {
@@ -19387,13 +19563,17 @@ function AnalyticsScreen({
       title: 'Nothing to list',
       hint: 'Rows appear once the school has classes and teams.'
     },
-    actions: /*#__PURE__*/React.createElement(ChartCardTool, {
-      icon: "download",
-      label: "Export CSV",
+    actions: /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "outline",
       className: "gt-table__export",
+      iconLeft: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+        name: "download",
+        size: 13
+      }),
       onClick: exportCsv,
       disabled: !bdRows.length
-    })
+    }, "Export CSV")
   }, /*#__PURE__*/React.createElement(BreakdownTable, {
     rows: bdRows,
     columns: columns,
@@ -23614,13 +23794,13 @@ try { (() => {
    the same namespace. Inert as soon as the bundle carries ChartCard. */
 window.loadAnalyticsSources = async function loadAnalyticsSources(base) {
   const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
-  if (NS.ChartCard && NS.ChartCardCheck && NS.TEAM_BREAKDOWN_COLUMNS) return NS;
-  const order = ['ChartTooltip', 'ChartLegend', 'LivePill', 'DefinitionPopover', 'ChartEmptyState', 'ChartCard', 'UnitToggle', 'StatTile', 'AnalyticsFilterRow', 'OnTimeMeter', 'SplitBar', 'WeeklyLine', 'TrendLines', 'StackedBars', 'TimelinessBars', 'BarsBySprint', 'BreakdownTable'];
+  if (NS.ChartCard && NS.TEAM_BREAKDOWN_COLUMNS) return NS;
+  const order = ['ChartTooltip', 'ChartLegend', 'LivePill', 'ChartCard', 'UnitToggle', 'AnalyticsFilterRow', 'OnTimeMeter', 'SplitBar', 'WeeklyLine', 'TrendLines', 'StackedBars', 'TimelinessBars', 'BarsBySprint', 'BreakdownTable'];
   for (const name of order) {
     let src = await (await fetch(`${base}/components/analytics/${name}.jsx`)).text();
     const needed = [],
       found = [];
-    src = src.replace(/^import\s*\{([^}]*)\}\s*from\s*'\.\/[^']+';?[ \t]*$/mg, (m, names) => {
+    src = src.replace(/^import\s*\{([^}]*)\}\s*from\s*'\.{1,2}\/[^']+';?[ \t]*$/mg, (m, names) => {
       needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
       return '';
     });
@@ -23664,12 +23844,6 @@ __ds_ns.BreakdownTable = __ds_scope.BreakdownTable;
 
 __ds_ns.ChartCard = __ds_scope.ChartCard;
 
-__ds_ns.ChartCardTool = __ds_scope.ChartCardTool;
-
-__ds_ns.ChartCardCheck = __ds_scope.ChartCardCheck;
-
-__ds_ns.ChartEmptyState = __ds_scope.ChartEmptyState;
-
 __ds_ns.AnalyticsIcon = __ds_scope.AnalyticsIcon;
 
 __ds_ns.ChartLegend = __ds_scope.ChartLegend;
@@ -23677,8 +23851,6 @@ __ds_ns.ChartLegend = __ds_scope.ChartLegend;
 __ds_ns.ChartFormat = __ds_scope.ChartFormat;
 
 __ds_ns.ChartTooltip = __ds_scope.ChartTooltip;
-
-__ds_ns.DefinitionPopover = __ds_scope.DefinitionPopover;
 
 __ds_ns.LivePill = __ds_scope.LivePill;
 
@@ -23689,8 +23861,6 @@ __ds_ns.SplitBar = __ds_scope.SplitBar;
 __ds_ns.BOARD_STATUSES = __ds_scope.BOARD_STATUSES;
 
 __ds_ns.StackedBars = __ds_scope.StackedBars;
-
-__ds_ns.StatTile = __ds_scope.StatTile;
 
 __ds_ns.TIMELINESS_BUCKETS = __ds_scope.TIMELINESS_BUCKETS;
 
@@ -23734,9 +23904,15 @@ __ds_ns.CountBadge = __ds_scope.CountBadge;
 
 __ds_ns.InfoPopover = __ds_scope.InfoPopover;
 
+__ds_ns.MarkdownText = __ds_scope.MarkdownText;
+
+__ds_ns.Markdown = __ds_scope.Markdown;
+
 __ds_ns.ProgressBar = __ds_scope.ProgressBar;
 
 __ds_ns.StatCard = __ds_scope.StatCard;
+
+__ds_ns.SortableHeader = __ds_scope.SortableHeader;
 
 __ds_ns.Table = __ds_scope.Table;
 
@@ -23789,8 +23965,6 @@ __ds_ns.TEAM_MEETING_DURATIONS = __ds_scope.TEAM_MEETING_DURATIONS;
 __ds_ns.TeamMeetingsModel = __ds_scope.TeamMeetingsModel;
 
 __ds_ns.TeamMemberCard = __ds_scope.TeamMemberCard;
-
-__ds_ns.RoleSelect = __ds_scope.RoleSelect;
 
 __ds_ns.TypingIndicator = __ds_scope.TypingIndicator;
 
@@ -23964,12 +24138,6 @@ __ds_ns.BacklogRow = __ds_scope.BacklogRow;
 
 __ds_ns.BurnupChart = __ds_scope.BurnupChart;
 
-__ds_ns.MarkdownText = __ds_scope.MarkdownText;
-
-__ds_ns.CommentThread = __ds_scope.CommentThread;
-
-__ds_ns.MentionListbox = __ds_scope.MentionListbox;
-
 __ds_ns.PointsChip = __ds_scope.PointsChip;
 
 __ds_ns.EstimateChip = __ds_scope.EstimateChip;
@@ -23977,6 +24145,12 @@ __ds_ns.EstimateChip = __ds_scope.EstimateChip;
 __ds_ns.PRLinkChip = __ds_scope.PRLinkChip;
 
 __ds_ns.UserPair = __ds_scope.UserPair;
+
+__ds_ns.Chips = __ds_scope.Chips;
+
+__ds_ns.CommentThread = __ds_scope.CommentThread;
+
+__ds_ns.MentionListbox = __ds_scope.MentionListbox;
 
 __ds_ns.ESTIMATE_SCALES = __ds_scope.ESTIMATE_SCALES;
 

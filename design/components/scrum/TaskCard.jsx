@@ -1,6 +1,6 @@
 import React from 'react';
 import { TagBadge } from './TagBadge.jsx';
-import { PointsChip, EstimateChip, PRLinkChip, UserPair } from './PointsChip.jsx';
+import { PointsChip, EstimateChip, PRLinkChip, UserPair } from './Chips.jsx';
 
 /**
  * Scrum task card — the draggable unit on the board.

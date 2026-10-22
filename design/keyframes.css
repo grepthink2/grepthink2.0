@@ -1,6 +1,7 @@
 /* ============================================================
    GrepThink · Shared keyframes — mirrors frontend/src/styles/keyframes.css (2026-10-20),
-   which main.tsx loads once. These are the only keyframes several components share.
+   which main.tsx loads once. These are the only keyframes several components share (gt-fade-in joined
+   them in the 2026-10-22 fold-back: Toast's entrance, borrowed by search, scrum and the combobox).
    Every other keyframe is named after its component and defined once, in that component's
    block (gt-toast-rise-in, gt-drawer-in-right, gt-palette-in …): one name, one definition.
    ============================================================ */
@@ -20,6 +21,11 @@
 /* The busy spinner's turn (the gt-spinner mixin). */
 @keyframes gt-spin {
   to { transform: rotate(360deg); }
+}
+
+/* Plain fade-in (Toast's entrance; the reduced-motion stand-in for every slide). */
+@keyframes gt-fade-in {
+  from { opacity: 0; }
 }
 
 /* The skeleton loader's sweep (the skeleton-block mixin; .gt-skeleton). */

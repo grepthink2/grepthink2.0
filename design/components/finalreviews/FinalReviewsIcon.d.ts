@@ -1,3 +1,4 @@
+// Intentional addition: FinalReviewsIcon — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 export interface FinalReviewsIconProps {
   /** clipboard-check · calendar-plus · video · globe · trash-2 · ellipsis · arrow-left · chevron-right · chevron-down · plus · x · user-plus · arrow-right-left · calendar-x · calendar-clock · lock · users · pencil */

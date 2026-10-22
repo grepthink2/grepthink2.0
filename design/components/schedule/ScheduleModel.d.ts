@@ -1,3 +1,4 @@
+// Intentional addition: SCHOOL_ZONE, JOIN_WINDOW_MS, COUNTDOWN_DAYS, SCHEDULE_KINDS, ScheduleModel — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 export type ScheduleKind = 'ta_meeting' | 'final_review' | 'meeting' | 'lecture' | 'office_hours' | 'deadline' | 'sprint';
 export type ScheduleStatus = 'upcoming' | 'live' | 'past' | 'cancelled' | 'tbd';
 export type ScheduleLens = 'student' | 'ta' | 'instructor';

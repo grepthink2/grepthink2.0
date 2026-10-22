@@ -2,7 +2,7 @@
    Composes components/analytics/*; reads window.ANALYTICS_SAMPLE / _EMPTY. */
 const NS = window.GrepThinkDesignSystem_36e7e3;
 const { SidebarNavItem, SidebarSectionTitle, Badge, Button,
-        AnalyticsFilterRow, StatTile, ChartCard, ChartCardTool, ChartCardCheck, UnitToggle, AnalyticsIcon,
+        AnalyticsFilterRow, StatCard, ChartCard, Checkbox, UnitToggle, AnalyticsIcon,
         WeeklyLine, SplitBar, StackedBars, TimelinessBars, OnTimeMeter, BarsBySprint, TrendLines, BreakdownTable,
         BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS } = NS;
 
@@ -146,7 +146,7 @@ function AnalyticsScreen({ data, demoState, withTimeliness, failure }) {
   const sub = (s) => (filter.classId ? `${s} · ${classLabel}` : s);
   const hasAny = o.teams > 0 || o.messages > 0;
   const failed = (key) => data.failures.includes(key) && !retried;
-  const tableCard = (key, pressed) => <span className="gt-analytics__toggle"><ChartCardTool icon="table" label="Table" pressed={pressed} onClick={() => toggleTable(key)} /></span>;
+  const tableCard = (key, pressed) => <span className="gt-analytics__toggle"><Button size="sm" variant="outline" pressed={pressed} iconLeft={<AnalyticsIcon name="table" size={13} />} onClick={() => toggleTable(key)}>Table</Button></span>;
   // With a class selected the Messages tile becomes that class's team-channel messages; direct messages stay school-wide.
   const teamMsgs = classView ? classView.teams.reduce((s, t) => s + (t.team_messages || 0), 0) : null;
   const convFoot = classView
@@ -173,22 +173,22 @@ function AnalyticsScreen({ data, demoState, withTimeliness, failure }) {
       )}
 
       <div className={['gt-analytics__tiles', withTimeliness ? 'gt-analytics__tiles--6' : ''].filter(Boolean).join(' ')}>
-        <StatTile label="Classes" value={classView ? 1 : o.active_classes} icon={<AnalyticsIcon name="graduation-cap" />} loading={loading} failed={failed('overview') && o.active_classes === null} hint={HINTS.classes(filter.classId)} />
-        <StatTile label="Teams" value={classView ? classView.teams.length : o.teams} icon={<AnalyticsIcon name="users" />} accent="blue" loading={loading} failed={failed('overview') && o.teams === null} hint={HINTS.teams(filter.classId)} />
-        <StatTile label="Students" value={classView ? classView.teams.reduce((s, t) => s + (t.members || 0), 0) : o.students} icon={<AnalyticsIcon name="users" />} accent="purple" loading={loading} failed={failed('overview') && o.students === null} hint={HINTS.students(filter.classId)} />
-        <StatTile label="Signed in (7d)" value={o.active_users_7d} icon={<AnalyticsIcon name="activity" />} accent="amber" loading={loading}
+        <StatCard compact format="compact" label="Classes" value={classView ? 1 : o.active_classes} icon={<AnalyticsIcon name="graduation-cap" />} loading={loading} failed={failed('overview') && o.active_classes === null} hint={HINTS.classes(filter.classId)} />
+        <StatCard compact format="compact" label="Teams" value={classView ? classView.teams.length : o.teams} icon={<AnalyticsIcon name="users" />} accent="blue" loading={loading} failed={failed('overview') && o.teams === null} hint={HINTS.teams(filter.classId)} />
+        <StatCard compact format="compact" label="Students" value={classView ? classView.teams.reduce((s, t) => s + (t.members || 0), 0) : o.students} icon={<AnalyticsIcon name="users" />} accent="purple" loading={loading} failed={failed('overview') && o.students === null} hint={HINTS.students(filter.classId)} />
+        <StatCard compact format="compact" label="Signed in (7d)" value={o.active_users_7d} icon={<AnalyticsIcon name="activity" />} accent="amber" loading={loading}
           delta={{ value: o.active_users_7d === null ? null : (o.deltas.active_users_7d ?? null), vsLabel: 'vs the 7 days before' }}
           hint={o.active_users_7d === null ? 'Appears once sign-ins are recorded' : HINTS.signedIn} />
         {classView ? (
-          <StatTile label="Team messages" value={teamMsgs} icon={<AnalyticsIcon name="message-square" />} loading={loading}
+          <StatCard compact format="compact" label="Team messages" value={teamMsgs} icon={<AnalyticsIcon name="message-square" />} loading={loading}
             delta={{ value: prev ? (o.deltas.messages ?? null) : null, vsLabel: prevLabel }} trend={o.trends.messages ? o.trends.messages.map((v) => Math.round(v * 0.45)) : undefined}
             hint={`Direct messages are school-wide: ${fmtCompact(conv.dm)}`} />
         ) : (
-          <StatTile label="Messages" value={o.messages} icon={<AnalyticsIcon name="message-square" />} loading={loading}
+          <StatCard compact format="compact" label="Messages" value={o.messages} icon={<AnalyticsIcon name="message-square" />} loading={loading}
             delta={{ value: prev ? (o.deltas.messages ?? null) : null, vsLabel: prevLabel }} trend={o.trends.messages} />
         )}
         {withTimeliness && (
-          <StatTile label="On time" value={tl.on_time_rate} format="percent" icon={<AnalyticsIcon name="check-circle-2" />} accent="blue" loading={loading}
+          <StatCard compact format="compact" label="On time" value={tl.on_time_rate} format="percent" icon={<AnalyticsIcon name="check-circle-2" />} accent="blue" loading={loading}
             delta={{ value: prev ? (o.deltas.on_time_rate ?? null) : null, vsLabel: prevLabel }} hint={tl.on_time_rate === null ? 'No deadlines in this range' : undefined} />
         )}
       </div>
@@ -234,14 +234,14 @@ function AnalyticsScreen({ data, demoState, withTimeliness, failure }) {
           state={cardState('trends', trendPanels.length > 0)}
           emptyMessage={{ icon: 'trending-up', title: 'Trends appear after the first nightly rollup.' }}
           footnote={undefined}
-          actions={<><span className="gt-analytics__check"><ChartCardCheck label="Compare with previous range" checked={compare && !!prev} onChange={setCompare} disabled={!prev} /></span>{tableCard('trends', !!tables.trends)}</>}>
+          actions={<><span className="gt-analytics__check"><Checkbox label="Compare with previous range" checked={compare && !!prev} onChange={(e) => setCompare(e.target.checked)} disabled={!prev} /></span>{tableCard('trends', !!tables.trends)}</>}>
           <TrendLines panels={trendPanels} compare={compare && !!prev} asOf={data.trends.as_of} height={96} view={view('trends')} />
         </ChartCard>
 
         <ChartCard wide title={classView ? `By team · ${classLabel}` : 'By class'} subtitle={`Teams, activity and board progress · ${rangeLabel}`}
           state={cardState('breakdown', bdRows.length > 0)}
           emptyMessage={{ icon: 'table', title: 'Nothing to list', hint: 'Rows appear once the school has classes and teams.' }}
-          actions={<ChartCardTool icon="download" label="Export CSV" className="gt-table__export" onClick={exportCsv} disabled={!bdRows.length} />}>
+          actions={<Button size="sm" variant="outline" className="gt-table__export" iconLeft={<AnalyticsIcon name="download" size={13} />} onClick={exportCsv} disabled={!bdRows.length}>Export CSV</Button>}>
           <BreakdownTable rows={bdRows} columns={columns} sort={sort} onSort={setSort} onRowView={onRowView} />
         </ChartCard>
       </div>

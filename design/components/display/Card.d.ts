@@ -1,3 +1,4 @@
+// Intentional addition: Card — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'onClick'> {
@@ -16,11 +17,13 @@ export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 't
   shadow?: 'card' | 'hairline' | 'none';
   /** 1px border, no shadow, radius 7, 12×14 padding — cards inside a card or a list. @default false */
   bordered?: boolean;
-  /** Makes the card a link (stretched over the card from the title). */
+  /** Makes the card a link (stretched over the card from the title) to another site. */
   href?: string;
+  /** Makes the card a link to an in-app route (the codebase renders a react-router Link; the kit an <a>). */
+  to?: string;
   /** Makes the card a button (stretched from the title). */
   onClick?: () => void;
-  /** Selected border (2px inset green); with `onClick` also sets `aria-pressed`. */
+  /** Selected border (2px inset green); with `onClick` also sets `aria-pressed`, with `href` / `to` `aria-current="true"`. */
   selected?: boolean;
   /** @default true */
   padded?: boolean;

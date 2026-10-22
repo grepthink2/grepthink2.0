@@ -36,7 +36,7 @@
 .gt-analytics__title svg { color: var(--gt-primary); }
 .gt-analytics__badge { display: inline-flex; }
 .gt-analytics__refresh { margin-left: auto; }
-/* A card's Table toggle wraps a .gt-chart-card__tool; the Trends compare checkbox wraps a .gt-chart-card__check. */
+/* A card's Table toggle wraps the kit Button (pressed); the Trends compare checkbox wraps the kit Checkbox. */
 .gt-analytics__toggle, .gt-analytics__check { display: inline-flex; align-items: center; }
 /* Scrum card's two-part body: stacked bars (left) · characters small multiples (right). */
 .gt-analytics__scrum { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -77,15 +77,9 @@
 .gt-chart-card__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 .gt-chart-card__skeleton { display: flex; flex-direction: column; gap: 10px; }
 .gt-chart-card__skeleton .gt-skeleton { display: block; height: 12px; }
-.gt-chart-card__tool { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: var(--gt-radius-sm); border: 1px solid var(--gt-border); background: var(--gt-surface); font-family: var(--gt-font-sans); font-size: 11.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer; transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast); }
-.gt-chart-card__tool:hover { background: var(--gt-surface-muted); border-color: var(--gt-border-strong); }
-.gt-chart-card__tool[aria-pressed="true"] { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
-.gt-chart-card__tool:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-.gt-chart-card__tool:disabled { opacity: 0.5; cursor: not-allowed; }
-.gt-chart-card__check { display: inline-flex; align-items: center; gap: 7px; height: 28px; font-size: 11.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer; user-select: none; }
-.gt-chart-card__check input { width: 15px; height: 15px; margin: 0; accent-color: var(--gt-primary); cursor: pointer; }
-.gt-chart-card__check input:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-.gt-chart-card__check input:disabled { cursor: not-allowed; opacity: 0.5; }
+/* ChartCard's header tools are the kit's Button (`pressed` for the Table toggles, `outline` for Refresh and Export CSV) and Checkbox (fold-back 2026-10-22) */
+.gt-chart-card__actions .gt-button { height: 28px; padding: 0 9px; font-size: 11.5px; }
+.gt-chart-card__actions .gt-check { font-size: 11.5px; }
 
 /* ── LivePill ───────────────────────────────────────────── */
 .gt-live-pill { display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 7px; border-radius: var(--gt-radius-pill); background: var(--gt-primary-soft); color: var(--gt-green-700); font-family: var(--gt-font-sans); font-size: 10px; font-weight: var(--gt-weight-semibold); letter-spacing: 0.04em; text-transform: uppercase; }
@@ -117,7 +111,7 @@
 .gt-filter__reason { margin-right: auto; font-size: 11px; line-height: 1.4; color: var(--gt-text-tertiary); min-width: 0; }
 .gt-filter__apply { display: inline-flex; }
 
-/* ── StatTile = StatCard compact (delta, spark, null, loading live in display.css) ── */
+/* ── The tiles = StatCard compact (delta, spark, null, loading live in display.css) ── */
 
 /* ── ChartLegend ────────────────────────────────────────── */
 .gt-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-family: var(--gt-font-sans); }
@@ -148,7 +142,7 @@
 .gt-chart-tip__value { margin-left: auto; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); font-variant-numeric: tabular-nums; padding-left: 10px; }
 .gt-chart-tip__note { margin-top: 4px; font-size: 10.5px; color: var(--gt-text-tertiary); white-space: normal; }
 
-/* ── DefinitionPopover = the shared InfoPopover (display.css .gt-infopop) ── */
+/* ── The ⓘ = the shared InfoPopover (display.css .gt-infopop; .gt-definition is the card's hook) ── */
 
 /* ── Per-card empty state = the shared EmptyState variant="card" (feedback.css) ── */
 
@@ -296,12 +290,14 @@
 .gt-table--breakdown .gt-table__export { display: inline-flex; }
 .gt-table--breakdown .gt-table__scroll { overflow: auto; max-height: 520px; border-radius: var(--gt-radius-sm); }
 .gt-table--breakdown .gt-table__table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; color: var(--gt-text-primary); min-width: 600px; }
+.gt-table--breakdown .gt-table__table th, .gt-table--breakdown .gt-table__table td { box-sizing: content-box; } /* the row heights below are content-box heights */
 .gt-table--breakdown .gt-table__table th { position: sticky; top: 0; z-index: 1; background: var(--gt-surface-sunken); color: var(--gt-text-secondary); font-size: 11px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: var(--gt-tracking-wide); text-align: left; padding: 0 10px; height: 34px; border-bottom: 1px solid var(--gt-border); white-space: nowrap; }
 .gt-table--breakdown .gt-table__table td { padding: 0 10px; height: 36px; border-bottom: 1px solid var(--gt-border-subtle); white-space: nowrap; color: var(--gt-text-primary); font-size: 12.5px; }
 .gt-table--breakdown.gt-table--dense .gt-table__table td { height: 20px; font-size: 12px; }
 .gt-table--breakdown .gt-table__table tbody tr:hover td { background: var(--gt-surface-muted); }
 .gt-table--breakdown .gt-table__table tbody tr:last-child td { border-bottom: none; }
 .gt-table--breakdown .gt-table__num { text-align: right; font-variant-numeric: tabular-nums; }
+.gt-table--breakdown .gt-table__table th.gt-table__num { text-align: right; } /* outranks the thead th rule above */
 .gt-table--breakdown .gt-table__sort { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; text-transform: inherit; letter-spacing: inherit; border-radius: 3px; }
 .gt-table--breakdown .gt-table__sort:hover { color: var(--gt-text-primary); }
 .gt-table--breakdown .gt-table__sort:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }

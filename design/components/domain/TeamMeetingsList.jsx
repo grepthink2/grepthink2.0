@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../primitives/Button.jsx';
+import { Badge } from '../display/Badge.jsx';
 import { Alert } from '../feedback/Alert.jsx';
 import { InlineConfirm } from '../feedback/ConfirmDialog.jsx';
 import { Skeleton } from '../feedback/EmptyState.jsx';
@@ -121,7 +122,7 @@ export function TeamMeetingsList({
         <div className="gt-tm-row__main">
           <div className="gt-tm-row__head">
             <span className="gt-tm-row__title">{m.title}</span>
-            {live && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+            {live && <Badge status="live" />}
           </div>
           <div className="gt-tm-row__when" title={campusRange(m)}>
             <time className="gt-tm-row__day" dateTime={m.startsAt}>{when.day}</time>

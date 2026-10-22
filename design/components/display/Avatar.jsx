@@ -23,30 +23,33 @@ export function hashColor(name = '') {
 
 /**
  * Avatar: photo, or initials on the hashed palette colour. When `src` fails to load it falls back
- * to the initials. `decorative` (beside a visible name) hides it from screen readers.
+ * to the initials (tracked per `src`, with no effect). An avatar with no name is named "Avatar".
+ * `decorative` (beside a visible name) hides it from screen readers. A caller's `style` merges over
+ * the colour.
  */
-export function Avatar({ name = '', src, size = 'md', square = false, decorative = false, className = '', ...rest }) {
-  const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => { setFailed(false); }, [src]);
+export function Avatar({ name = '', src, size = 'md', square = false, decorative = false, className = '', style, ...rest }) {
+  const [failedSrc, setFailedSrc] = React.useState(null);
+  const failed = !!src && failedSrc === src;
   const cls = ['gt-avatar', `gt-avatar--${size}`, square ? 'gt-avatar--square' : '', className].filter(Boolean).join(' ');
+  const label = name || 'Avatar';
   if (src && !failed) {
-    return <img className={cls} src={src} alt={decorative ? '' : name} aria-hidden={decorative || undefined} onError={() => setFailed(true)} {...rest} />;
+    return <img className={cls} src={src} alt={decorative ? '' : label} aria-hidden={decorative || undefined} onError={() => setFailedSrc(src)} style={style} {...rest} />;
   }
   return (
-    <span className={cls} style={{ backgroundColor: hashColor(name) }} role={decorative ? undefined : 'img'}
-      aria-label={decorative ? undefined : (name || 'Avatar')} aria-hidden={decorative || undefined} {...rest}>
+    <span className={cls} style={{ backgroundColor: hashColor(name), ...style }} role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : label} aria-hidden={decorative || undefined} {...rest}>
       {initialsOf(name)}
     </span>
   );
 }
 
-/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). */
+/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). Keyed by position (two members may share a name); `max` is at least 1. */
 export function AvatarGroup({ names = [], max = 4, size = 'sm', className = '' }) {
-  const shown = names.slice(0, max);
+  const shown = names.slice(0, Math.max(1, max));
   const extra = names.length - shown.length;
   return (
     <span className={['gt-avatar-group', className].filter(Boolean).join(' ')} role="img" aria-label={`${shown.join(', ')}${extra > 0 ? ` and ${extra} more` : ''}`}>
-      {shown.map((n) => <Avatar key={n} name={n} size={size} decorative />)}
+      {shown.map((n, i) => <Avatar key={i} name={n} size={size} decorative />)}
       {extra > 0 && <span className={`gt-avatar gt-avatar--${size} gt-avatar--extra`} aria-hidden="true">+{extra}</span>}
     </span>
   );

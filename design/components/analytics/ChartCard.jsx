@@ -1,15 +1,18 @@
 import React from 'react';
 import { AnalyticsIcon } from './ChartLegend.jsx';
 import { LivePill } from './LivePill.jsx';
-import { DefinitionPopover } from './DefinitionPopover.jsx';
-import { ChartEmptyState } from './ChartEmptyState.jsx';
+import { InfoPopover } from '../display/InfoPopover.jsx';
+import { EmptyState } from '../feedback/EmptyState.jsx';
 
 /**
  * Container for every analytics chart (.gt-chart-card). White, 1px border,
  * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
  * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
- * opacity, frame held) · ready · empty (ChartEmptyState) · error (inline
+ * opacity, frame held) · ready · empty (the kit's EmptyState, variant="card") · error (inline
  * error-soft strip "This card could not load." + Retry; the page is unaffected).
+ * The ⓘ is the kit's InfoPopover ("How this is counted"); the header tools are the kit's Button
+ * (`pressed` for the Table toggles, `outline` for Refresh and Export CSV) and Checkbox
+ * (fold-back 2026-10-22: ChartCardTool, ChartCardCheck, DefinitionPopover and ChartEmptyState left).
  */
 export function ChartCard({
   title,
@@ -44,7 +47,7 @@ export function ChartCard({
           <div className="gt-chart-card__title-row">
             <h3 className="gt-chart-card__title">{title}</h3>
             {live && <LivePill />}
-            {def && <DefinitionPopover title={def.title} body={def.body} learnMoreHref={def.learnMoreHref} />}
+            {def && <InfoPopover title={def.title || 'How this is counted'} body={def.body} learnMoreHref={def.learnMoreHref} className="gt-definition" />}
           </div>
           {subtitle && <span className="gt-chart-card__subtitle">{subtitle}</span>}
         </div>
@@ -64,7 +67,7 @@ export function ChartCard({
             {onRetry && <button type="button" className="gt-chart-card__retry" onClick={onRetry}>Retry</button>}
           </div>
         ) : state === 'empty' ? (
-          <ChartEmptyState icon={empty.icon} title={empty.title} hint={empty.hint} />
+          <EmptyState variant="card" titleAs="p" icon={<AnalyticsIcon name={empty.icon || 'inbox'} size={18} />} title={empty.title} description={empty.hint} />
         ) : (
           <>
             {hero !== undefined && (
@@ -79,32 +82,5 @@ export function ChartCard({
       </div>
       {footnote && <footer className="gt-chart-card__foot">{footnote}</footer>}
     </section>
-  );
-}
-
-/** Header tool button (Table / Export) — `pressed` renders the toggled state. */
-export function ChartCardTool({ icon, label, pressed, onClick, disabled = false, className = '', ...rest }) {
-  return (
-    <button
-      type="button"
-      className={['gt-chart-card__tool', className].filter(Boolean).join(' ')}
-      aria-pressed={pressed === undefined ? undefined : pressed}
-      onClick={onClick}
-      disabled={disabled}
-      {...rest}
-    >
-      {icon && <AnalyticsIcon name={icon} size={13} />}
-      {label}
-    </button>
-  );
-}
-
-/** Header checkbox (e.g. "Compare with previous range"). */
-export function ChartCardCheck({ label, checked, onChange, disabled = false, className = '' }) {
-  return (
-    <label className={['gt-chart-card__check', className].filter(Boolean).join(' ')}>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange && onChange(e.target.checked)} disabled={disabled} />
-      {label}
-    </label>
   );
 }
