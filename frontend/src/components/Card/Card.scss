@@ -6,9 +6,9 @@
 // rings a focused flush child; the stretched title takes no focus ring of its own.
 
 /* ── Card ───────────────────────────────────────────────── */
-// Codebase change: no `overflow: hidden` here, as the design has. The kit's Tooltip, Menu and Popover
-// render in place, so a clip cut off what sits in the header's actions, and it hid the focus ring
-// of a focusable child at the card's edge (a scrolling flush Table).
+// Codebase change: this line drops the design's `overflow: hidden`. The kit's Tooltip, Menu and
+// Popover render in place, so the clip cut off what sits in the header's actions, and it hid the
+// focus ring of a focusable child at the card's edge (a scrolling flush Table).
 .gt-card { position: relative; display: block; box-sizing: border-box; background: var(--gt-surface); border-radius: var(--gt-radius-md); font-family: var(--gt-font-sans); color: var(--gt-text-primary); text-align: left; }
 .gt-card--card     { box-shadow: var(--gt-shadow-card); }
 .gt-card--hairline { border: 1px solid var(--gt-border); box-shadow: var(--gt-shadow-hairline); }
