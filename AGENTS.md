@@ -127,8 +127,9 @@ frontend/src/
   components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
                       # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
                       # (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip
-                      # (+FilterChipGroup), Avatar (+AvatarGroup), Skeleton, ErrorBoundary, Popover, Menu,
-                      # Tooltip, Toast, Markdown; hooks/useRovingFocus)
+                      # (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs (+TabPanel),
+                      # SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton, ErrorBoundary,
+                      # Popover, Menu, Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -360,7 +361,11 @@ The full agent-facing action catalog (method, params, role) lives at
   SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
   dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
   InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip with FilterChipGroup, Avatar with
-  AvatarGroup, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A status pill names its status
+  AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
+  SortableHeader and `useTableSort`, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. Tabs switch
+  panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
+  a list. A table row that opens something carries a link or button in its first cell (Table's
+  `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
   (`<Badge status="attendance.late" />`), never a colour: `components/Badge/badgeStatus.ts` maps it. Avatars
   take their colour from the one palette and hash in `components/Avatar/avatarHelpers.ts`
   (`lib/avatarColors.ts` is the landing page's hex copy). A field's `maxLength` is a soft
