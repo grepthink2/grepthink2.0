@@ -376,7 +376,11 @@ The full agent-facing action catalog (method, params, role) lives at
   feature stylesheet never re-declares a shared component's classes, and feature markup never renders
   them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
   feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
-  build it with your feature's own class names; never copy a design component's CSS block.
+  build it with your feature's own class names; never copy a design component's CSS block. A kit
+  component takes the name `design/_ds_manifest.json` gives it, at `src/components/<Name>/<Name>.tsx`
+  (an export the design ships inside another component's file may sit in that component's folder);
+  `lint:design` fails otherwise, and a deliberate difference goes in `NAMES_ALLOWLIST`
+  (`frontend/scripts/names.mjs`) with its reason.
 - **The frontend lints with oxlint and type-checks with TypeScript 7.** `frontend/.oxlintrc.json`
   lists the rules it runs, each as an error; nothing is enabled by category (its `off` entries are
   typescript-eslint's overlay, which turns core rules off on TypeScript files). The rule names are

@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
- * Design-system adherence checks, run by `npm run lint:design`. It fails (exit 1) when either
+ * Design-system adherence checks, run by `npm run lint:design`. It fails (exit 1) when any
  * check finds something:
  *   1. Non-token color literals: raw hex outside the token files (this file; described below).
  *   2. Shared component ownership: a stylesheet or markup outside src/components/ that copies a
  *      shared component's classes instead of using the component (ownership.mjs, where the
  *      rule is described).
+ *   3. Design-export names: a kit component in src/components/ whose folder or file is not named
+ *      after its export in design/_ds_manifest.json (names.mjs, where the rules are described).
+ *      Its findings in the feature layers and constants are warnings, which never fail the run.
  *
  * SCOPE of the hex scan (read before trusting a clean run): this scanner matches only bare
  * `#hex`/`#rrggbb`/`#rrggbbaa` literals. It does NOT scan `rgba()`/`rgb()`/
@@ -17,7 +20,7 @@
  * non-token color this script exists to catch) — tracked as a possible
  * follow-up, not attempted here.
  *
- * These two checks are the whole `lint:design` gate. An oxlint half was vendored
+ * These three checks are the whole `lint:design` gate. An oxlint half was vendored
  * briefly and removed by the final branch review: the only rules oxlint could
  * actually run (`no-restricted-imports` on DS-component paths, an empty
  * `forbid-elements`) matched zero files in this repo — the globs referenced a
@@ -83,10 +86,12 @@ import {
   ownedClasses,
   splitCodeAndComments,
 } from './ownership.mjs';
+import { checkNames } from './names.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FRONTEND_ROOT = join(__dirname, '..');
 const SRC_DIR = join(FRONTEND_ROOT, 'src');
+const MANIFEST = join(FRONTEND_ROOT, '..', 'design', '_ds_manifest.json');
 
 const SCAN_EXTS = new Set(['.scss', '.css', '.ts', '.tsx']);
 
@@ -252,6 +257,23 @@ for (const abs of files) {
   }
 }
 
+// ── Design-export names (rules in names.mjs) ────────────────────────────────
+// A manifest that cannot be read or has no components[] list stops this check, and fails the run.
+let names = null;
+let namesError = '';
+try {
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  names = checkNames(
+    manifest,
+    files.map((abs) => {
+      const rel = toRel(abs);
+      return { path: rel, source: /\.tsx?$/.test(rel) ? readFileSync(abs, 'utf8') : undefined };
+    })
+  );
+} catch (error) {
+  namesError = String(error?.message ?? error).split('\n')[0];
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 let failed = false;
 
@@ -311,6 +333,58 @@ if (compileErrors.length === 0 && ownershipLines.length === 0) {
       `component's classes (${owned.size} classes of ${componentCss.size} components; ` +
       `${stylesheetCount} stylesheets and ${sourceCount} source files checked).`
   );
+}
+
+if (names === null) {
+  failed = true;
+  console.error(`\ndesign-adherence: the names check could not run: ${namesError}`);
+} else {
+  if (names.failures.length > 0) {
+    failed = true;
+    console.error(
+      `\ndesign-adherence: ${names.failures.length} shared component name(s) differ from the design's ` +
+        `exports:\n`
+    );
+    for (const f of names.failures) console.error(`  ${f.message}`);
+    console.error(
+      '\nA kit component lives at src/components/<Name>/<Name>.tsx, named after its export in ' +
+        "design/_ds_manifest.json; an export the design ships in another component's file may also " +
+        "live in that component's folder. A deliberate difference goes in NAMES_ALLOWLIST " +
+        '(scripts/names.mjs) with its reason.'
+    );
+  }
+  if (names.warnings.length > 0) {
+    console.warn(`\ndesign-adherence: ${names.warnings.length} naming warning(s), report only:\n`);
+    for (const w of names.warnings) console.warn(`  ${w.message}`);
+    console.warn(
+      "\nWarnings never fail the run. Name the codebase side after the design's export, or record " +
+        'a deliberate difference in NAMES_ALLOWLIST (scripts/names.mjs) with its status and reason; ' +
+        'an entry that hides nothing any more can go.'
+    );
+  }
+  for (const note of names.notes) console.log(`design-adherence: note: ${note.message}`);
+  if (names.failures.length === 0) {
+    // Each export: under its own name, accounted for in NAMES_ALLOWLIST, waiting for a feature
+    // folder that does not exist yet, or left to a warning.
+    const tally = (rows) => {
+      const listed = rows.filter((row) => row.allowlisted).length;
+      const same = rows.filter((row) => !row.allowlisted && row.status === 'same name').length;
+      const waiting = rows.filter((row) => !row.allowlisted && row.status === 'not ported').length;
+      const open = rows.length - listed - same - waiting;
+      return (
+        `${same} under their own name, ${listed} in NAMES_ALLOWLIST` +
+        (waiting > 0 ? `, ${waiting} waiting for their folder` : '') +
+        (open > 0 ? `, ${open} with a warning` : '')
+      );
+    };
+    const kit = names.audit.filter((row) => row.kit);
+    const features = names.audit.filter((row) => !row.kit);
+    console.log(
+      `design-adherence: OK — every kit component in src/components/ carries its design export's ` +
+        `name (${kit.length} kit exports: ${tally(kit)}; ${features.length} feature-layer exports: ` +
+        `${tally(features)}).`
+    );
+  }
 }
 
 process.exit(failed ? 1 : 0);
