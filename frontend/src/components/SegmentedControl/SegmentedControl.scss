@@ -2,7 +2,8 @@
 // diffable: the SegmentedControl block, then its lines from the file's phone and reduced-motion
 // blocks. The option's own border, radius, background, font and transition, and the size class's
 // padding and font size (every control has one), beat index.css's global button rule, which would
-// otherwise reach this raw button.
+// otherwise reach this raw button. One addition, marked below: options reach 44px on phones at either
+// size.
 
 /* ── SegmentedControl — same track; sizes to its options (full width on phones) ── */
 .gt-segmented { display: inline-flex; gap: 2px; max-width: 100%; padding: 4px; box-sizing: border-box; border-radius: var(--gt-radius-sm); background: var(--gt-gray-100); font-family: var(--gt-font-sans); }

@@ -8,7 +8,7 @@ describe('analyticsFormat', () => {
     expect(percent(0.8249, 1)).toBe('82.5%');
     expect(percent(null)).toBe('—');
   });
-  it('re-exports the delta helpers the metric card shares (lib/deltaFormat, tested there)', () => {
+  it('re-exports the delta helpers StatCard shares (lib/deltaFormat, tested there)', () => {
     expect(signedPercent).toBe(deltaFormat.signedPercent);
     expect(deltaPoints).toBe(deltaFormat.deltaPoints);
   });

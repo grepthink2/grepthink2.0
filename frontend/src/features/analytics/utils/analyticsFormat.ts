@@ -6,7 +6,7 @@ export function percent(rate: number | null | undefined, digits = 0): string {
   return `${(rate * 100).toFixed(digits)}%`;
 }
 
-/** The delta helpers live with the shell's metric card, which must not import a feature; the page reads them from here. */
+/** The delta helpers live in lib/, since StatCard (components/) must not import a feature; the page reads them from here. */
 export { deltaPoints, signedPercent } from '@/lib/deltaFormat';
 
 function parts(iso: string): { y: number; m: number; d: number } {
