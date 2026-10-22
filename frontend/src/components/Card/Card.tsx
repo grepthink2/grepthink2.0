@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode, Ref } from 'react';
+import { Link, type LinkProps } from 'react-router-dom';
 import './Card.scss';
 
 /** A visible title, which an interactive card needs: its text names the link or button. */
@@ -30,16 +31,29 @@ export interface CardStaticProps extends CardBaseProps {
   /** The visible heading. Never the HTML `title` attribute: the card does not forward it. */
   title?: ReactNode;
   href?: undefined;
+  to?: undefined;
   onClick?: undefined;
 }
 
-/** A card that is a link, stretched over the card from its title. */
+/** A card that is a link, stretched over the card from its title: to another site (an in-app route is `to`). */
 export interface CardLinkProps extends CardBaseProps {
   href: string;
   /** The visible heading, and the link's text. */
   title: CardTitle;
   /** The title is the link, so there is no custom header. */
   header?: never;
+  to?: never;
+  onClick?: never;
+}
+
+/** A card that is a react-router link to an in-app route, stretched over the card from its title. */
+export interface CardRouteProps extends CardBaseProps {
+  to: LinkProps['to'];
+  /** The visible heading, and the link's text. */
+  title: CardTitle;
+  /** The title is the link, so there is no custom header. */
+  header?: never;
+  href?: never;
   onClick?: never;
 }
 
@@ -51,9 +65,10 @@ export interface CardButtonProps extends CardBaseProps {
   /** The title is the button, so there is no custom header. */
   header?: never;
   href?: never;
+  to?: never;
 }
 
-export type CardProps = CardStaticProps | CardLinkProps | CardButtonProps;
+export type CardProps = CardStaticProps | CardLinkProps | CardRouteProps | CardButtonProps;
 
 const shows = (node: ReactNode) => node !== undefined && node !== null && node !== false && node !== '';
 
@@ -64,22 +79,26 @@ const shows = (node: ReactNode) => node !== undefined && node !== null && node !
  * subtitle, or a custom `header`, with `actions` on its right; the body is padded unless `padded` is
  * false; `footer` sits under a hairline.
  *
- * With `href` or `onClick` the card is interactive: its title becomes the real link or button,
+ * With `href`, `to` or `onClick` the card is interactive: its title becomes the real link or button,
  * stretched over the whole card, so the card is one target with one name, while `actions` and the
  * footer stay their own targets above the stretch. Hover deepens the shadow, keyboard focus rings the
  * card, and `selected` draws the green border (with `aria-pressed` on a button card). The types ask
  * an interactive card for a title and one target; a card without a title stays a plain surface.
  *
- * Native props and `ref` reach the card's root. Codebase-side: the button calls `onClick` with no
- * arguments, and the focus ring is the card's alone (index.css would ring the title too).
+ * Native props and `ref` reach the card's root. Codebase-side: `to` renders a react-router `Link`, so
+ * an in-app card opens without reloading the app (`href` is for another site), as Button's `to` does;
+ * the button calls `onClick` with no arguments; and the focus ring is the card's alone (index.css
+ * would ring the title too).
  */
 export function Card({
   children, header, footer, title, subtitle, actions, titleAs: Title = 'h3', shadow = 'card', bordered = false,
-  href, onClick, selected, padded = true, className = '', ref, ...rest
+  href, to, onClick, selected, padded = true, className = '', ref, ...rest
 }: CardProps) {
-  const interactive = Boolean(href || onClick) && shows(title);
+  const interactive = Boolean(href || to !== undefined || onClick) && shows(title);
   let titleContent: ReactNode = title;
-  if (interactive && href) {
+  if (interactive && to !== undefined) {
+    titleContent = <Link className="gt-card__link" to={to}>{title}</Link>;
+  } else if (interactive && href) {
     titleContent = <a className="gt-card__link" href={href}>{title}</a>;
   } else if (interactive) {
     titleContent = (

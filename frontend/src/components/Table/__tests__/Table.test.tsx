@@ -2,6 +2,7 @@ import { createRef, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { cssRules } from '@/test/cssRules';
 import { Table, type TableColumn, type TableSort } from '../Table';
 
@@ -196,6 +197,34 @@ describe('Table', () => {
     expect(screen.getAllByRole('link')).toHaveLength(3);
     // Only the first cell opens the row.
     expect(within(screen.getAllByRole('row')[1]).getByText('Team 4').closest('a')).toBeNull();
+  });
+
+  it('rowTo makes the first cell a router link, so opening a row does not reload the app', async () => {
+    render(
+      <MemoryRouter initialEntries={['/app/roster']}>
+        <Routes>
+          <Route path="/app/roster" element={<Table caption="Roster" columns={COLUMNS} rows={ROWS} rowTo={(r) => `/app/students/${r.id}`} />} />
+          <Route path="/app/students/:id" element={<p>Student page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole('link', { name: 'Cho Park' });
+    expect(link).toHaveAttribute('href', '/app/students/3');
+    expect(link).toHaveClass('gt-table__open');
+    expect(screen.getAllByRole('link')).toHaveLength(3);
+    await userEvent.click(link);
+    expect(screen.getByText('Student page')).toBeInTheDocument();
+  });
+
+  it('a row opens once: rowTo comes before rowHref, and either before onRowClick', () => {
+    const onRowClick = vi.fn();
+    render(
+      <MemoryRouter>
+        <Table caption="Roster" columns={COLUMNS} rows={ROWS.slice(0, 1)} rowTo={() => '/in-app'} rowHref={() => 'https://example.org'} onRowClick={onRowClick} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Ana Ruiz' })).toHaveAttribute('href', '/in-app');
+    expect(screen.queryByRole('button', { name: 'Ana Ruiz' })).not.toBeInTheDocument();
   });
 
   it('onRowClick makes the first cell a button that opens the row, and nothing else does', async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useId, useImperativeHandle, useRef, useState, type HTMLAttributes, type ReactNode, type Ref } from 'react';
+import { Link, type LinkProps } from 'react-router-dom';
 import { EmptyState } from '@/components/EmptyState/EmptyState';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { SortableHeader } from './SortableHeader';
@@ -44,8 +45,10 @@ export interface TableProps<Row extends object = Record<string, unknown>>
   rowKey?: (row: Row, index: number) => string | number;
   /** The first cell becomes a button that opens the row. */
   onRowClick?: (row: Row) => void;
-  /** The first cell becomes a link to the row. */
+  /** The first cell becomes a link to the row on another site (an in-app route is `rowTo`). */
   rowHref?: (row: Row) => string;
+  /** The first cell becomes a react-router link to the row's in-app route. Before `rowHref` and `onRowClick`. */
+  rowTo?: (row: Row) => LinkProps['to'];
   /** A class for a row (a folded or a highlighted one). */
   rowClassName?: (row: Row, index: number) => string | undefined;
   /** 6/8 × 12 padding, 13px cells. @default false */
@@ -71,22 +74,23 @@ const byIdOrIndex = (row: object, index: number) => (row as { id?: string | numb
  * SortableHeader: a button that asks `onSort` for the next sort (ascending first, then the other way)
  * and a `<th>` with `aria-sort`. While `loading`, skeleton rows (hidden from assistive tech) stand in
  * and the table is `aria-busy`; with no rows, one row holds a compact card EmptyState. A row that opens
- * something carries a link (`rowHref`) or button (`onRowClick`) in its first cell; the row itself only
- * shows hover, so no `<tr onClick>` that a keyboard cannot reach. `dense` rows suit analytics
- * breakdowns, and `stickyHeader` a scrolling card (its `max-height` is the feature's). The wrapper
+ * something carries a link (`rowTo`, `rowHref`) or button (`onRowClick`) in its first cell; the row
+ * itself only shows hover, so no `<tr onClick>` that a keyboard cannot reach. `dense` rows suit
+ * analytics breakdowns, and `stickyHeader` a scrolling card (its `max-height` is the feature's). The wrapper
  * scrolls sideways on phones, and while the table overflows it is a focusable region named by the
  * caption, so a keyboard can scroll it.
  *
  * Codebase-side: `caption` is required, since every table needs a name, and the region is labelled by
- * it (`aria-labelledby`), so a caption that is not a string names it too; overflow counts in both
- * directions, as a feature's `max-height` scrolls the table down; a column can be its rows' headers
- * (`rowHeader`) and carry a class (`className`), and a row a class (`rowClassName`); a sortable column
- * needs `onSort` to be a button; and `onRowClick` gets the row alone. Native props and `ref` reach the
- * wrapper.
+ * it (`aria-labelledby`), so a caption that is not a string names it too; `rowTo` renders the first
+ * cell as a react-router `Link`, so an in-app row opens without reloading the app (`rowHref` is for
+ * another site); overflow counts in both directions, as a feature's `max-height` scrolls the table
+ * down; a column can be its rows' headers (`rowHeader`) and carry a class (`className`), and a row a
+ * class (`rowClassName`); a sortable column needs `onSort` to be a button; and `onRowClick` gets the
+ * row alone. Native props and `ref` reach the wrapper.
  */
 export function Table<Row extends object = Record<string, unknown>>({
   columns, rows, caption, sort, onSort, loading = false, skeletonRows = 4, emptyState, emptyText = 'Nothing here yet.',
-  rowKey = byIdOrIndex, onRowClick, rowHref, rowClassName, dense = false, stickyHeader = false, className = '', ref, ...rest
+  rowKey = byIdOrIndex, onRowClick, rowHref, rowTo, rowClassName, dense = false, stickyHeader = false, className = '', ref, ...rest
 }: TableProps<Row>) {
   const captionId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -108,7 +112,7 @@ export function Table<Row extends object = Record<string, unknown>>({
     return () => observer.disconnect();
   }, []);
 
-  const opens = Boolean(onRowClick || rowHref);
+  const opens = Boolean(onRowClick || rowHref || rowTo);
   const sortBy = (key: string) => {
     onSort?.({ key, dir: sort?.key === key && sort.dir === 'asc' ? 'desc' : 'asc' });
   };
@@ -164,9 +168,9 @@ export function Table<Row extends object = Record<string, unknown>>({
                   const content = col.render ? col.render(row) : ((row as Record<string, unknown>)[col.key] as ReactNode);
                   let cell = content;
                   if (opens && ci === 0) {
-                    cell = rowHref
-                      ? <a className="gt-table__open" href={rowHref(row)}>{content}</a>
-                      : <button type="button" className="gt-table__open" onClick={() => onRowClick?.(row)}>{content}</button>;
+                    if (rowTo) cell = <Link className="gt-table__open" to={rowTo(row)}>{content}</Link>;
+                    else if (rowHref) cell = <a className="gt-table__open" href={rowHref(row)}>{content}</a>;
+                    else cell = <button type="button" className="gt-table__open" onClick={() => onRowClick?.(row)}>{content}</button>;
                   }
                   return col.rowHeader
                     ? <th key={col.key} scope="row" className={col.className}>{cell}</th>

@@ -1,6 +1,7 @@
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { cssRules } from '@/test/cssRules';
 import { Card } from '../Card';
@@ -131,6 +132,23 @@ describe('Card', () => {
     expect(selected.getPropertyValue('outline-offset')).toBe('-2px');
   });
 
+  it('an in-app card is a router link, so opening it does not reload the app', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/app/projects']}>
+        <Routes>
+          <Route path="/app/projects" element={<Card to="/app/projects/p1" title="Bike Share Map">Team 4</Card>} />
+          <Route path="/app/projects/p1" element={<p>Project page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(root(container)).toHaveClass('gt-card--interactive');
+    const link = screen.getByRole('link', { name: 'Bike Share Map' });
+    expect(link).toHaveAttribute('href', '/app/projects/p1');
+    expect(link).toHaveClass('gt-card__link');
+    await userEvent.click(link);
+    expect(screen.getByText('Project page')).toBeInTheDocument();
+  });
+
   it('a selected link card draws the outline and stays a plain link', () => {
     const { container } = render(<Card href="#p" selected title="SlugEats" />);
     expect(root(container)).toHaveClass('gt-card--selected');
@@ -184,7 +202,13 @@ describe('Card', () => {
     const headed = <Card onClick={() => {}} title="T" header={<div>H</div>}>Body</Card>;
     // @ts-expect-error: one target, a link or a button
     const both = <Card href="/x" onClick={() => {}} title="T">Body</Card>;
-    expect([noLinkTitle, noButtonTitle, headed, both]).toHaveLength(4);
+    // @ts-expect-error: a router link card needs a title too
+    const noRouteTitle = <Card to="/x">Body</Card>;
+    // @ts-expect-error: one link, in-app or not
+    const twoLinks = <Card to="/x" href="/y" title="T">Body</Card>;
+    // @ts-expect-error: a router link card's title is its target too
+    const routeHeaded = <Card to="/x" title="T" header={<div>H</div>}>Body</Card>;
+    expect([noLinkTitle, noButtonTitle, headed, both, noRouteTitle, twoLinks, routeHeaded]).toHaveLength(7);
   });
 
   it('passes className, native props and ref to its root', () => {
