@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Badge } from '@/components/Badge/Badge';
 import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { ScheduleDayHeader } from '@features/schedule/components/ScheduleDayHeader';
@@ -94,7 +95,8 @@ export interface TeamMeetingsListProps {
  * design/design_handoff_team_meetings/).
  * `variant="manage"` is the Edit Project → Meetings tab (Product Owner only): upcoming first, "Past (n)"
  *   collapsed, Edit / Delete per row. "Add meeting" opens TeamMeetingForm above the list, Edit puts it in
- *   place of the row, Delete confirms inline. One editor at a time.
+ *   place of the row, Delete confirms inline. One editor at a time. A meeting in progress carries the kit's
+ *   `<Badge status="live" />`, the badge the card's schedule rows show (the design reuses their green pill).
  * `variant="card"` is the project-page "Team meetings" card body for every member: upcoming meetings as
  *   compact ScheduleItem rows grouped by day, "Past meetings (n)" collapsed, and for the Product Owner a
  *   quiet "Add one" line when there are none (showTeamMeetingsCard() says whether to render the card).
@@ -339,7 +341,7 @@ export function TeamMeetingsList({
         <div className="gt-tm-row__main">
           <div className="gt-tm-row__head">
             <span className="gt-tm-row__title">{m.title}</span>
-            {live && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+            {live && <Badge status="live" />}
           </div>
           <div className="gt-tm-row__when" title={campusRange(m)}>
             <time className="gt-tm-row__day" dateTime={m.startsAt}>{when.day}</time>

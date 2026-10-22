@@ -1,7 +1,7 @@
 /* GrepThink · team meetings (the Edit Project Meetings tab and the project-page card). Port of the
    design's TeamMeetingsList / TeamMeetingForm styles (design/design_handoff_team_meetings/), BEM `.gt-*`
    classes and `--gt-*` tokens only (lint:design). Every rule below is copied unchanged from the design
-   CSS; only these comments are new.
+   CSS except one addition, marked where it stands; only these comments are new.
    Copied:
      design/components/domain/domain.css — Team meetings 516-614, whole.
    The buttons, fields and the form's error alert are the shared Button, Input, Select, Textarea and
@@ -31,6 +31,9 @@
 .gt-tm-row__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 2px; }
 .gt-tm-row__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .gt-tm-row__title { font-size: 14px; font-weight: var(--gt-weight-semibold); line-height: 1.35; min-width: 0; overflow-wrap: anywhere; text-wrap: pretty; }
+/* Addition: a live row shows the kit's Live badge where the design reuses the schedule's green pill, and
+   the badge takes the size the schedule row gives the pills in its head. */
+.gt-tm-row__head .gt-badge { padding: 1px 7px; font-size: 10.5px; }
 .gt-tm-row__when { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; line-height: 1.4; color: var(--gt-text-secondary); font-variant-numeric: tabular-nums; }
 .gt-tm-row__day { font-weight: var(--gt-weight-medium); white-space: nowrap; }
 .gt-tm-row__range { white-space: nowrap; }

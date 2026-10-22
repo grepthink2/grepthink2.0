@@ -55,7 +55,8 @@ export interface ScheduleItemProps {
  * Join Zoom under the context line inside the join window. Seat it in an `<ol class="gt-sched__items">`
  * inside `.gt-sched.gt-sched--compact`, which sets the row's grid. Port of design/components/schedule/
  * ScheduleItem.jsx, the compact variant only: the agenda row (actions column, people list, note,
- * expand toggle) and its MeetingCard panel wait for the schedule endpoint.
+ * expand toggle) and its MeetingCard panel wait for the schedule endpoint. A live row shows the kit's
+ * `<Badge status="live" />` (blue: in progress) where the design draws a green pulsing pill.
  */
 export function ScheduleItem({
   item, lens = 'student', now, zone = SCHOOL_ZONE, schoolZone = SCHOOL_ZONE, showSchoolTime = false,
@@ -174,7 +175,7 @@ export function ScheduleItem({
               <a href={item.href} onClick={onOpen ? (e) => { e.preventDefault(); onOpen(item); } : undefined}>{title}</a>
             ) : title}
           </span>
-          {status === 'live' && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+          {status === 'live' && <Badge status="live" />}
           {cd && <span className="gt-sched-item__countdown">{cd}</span>}
           {att && <Badge status={att} />}
           {status === 'cancelled' && <Badge tone="neutral">Cancelled</Badge>}

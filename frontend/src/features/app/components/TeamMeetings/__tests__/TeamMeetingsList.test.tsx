@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import { cssRules } from '@/test/cssRules';
 
 // Edit Project's Save Changes calls the API; nothing else here does.
 const updateProject = vi.hoisted(() => vi.fn());
@@ -487,6 +488,16 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(within(pastList).getByText('Kickoff').closest('li')).toHaveClass('gt-tm-row--past');
   });
 
+  it('marks the live meeting with the blue Live badge, at the schedule row’s pill size', () => {
+    renderManage({ meetings: [live] });
+    const badge = within(screen.getByRole('listitem')).getByText('Live');
+    expect(badge).toHaveClass('gt-badge', 'gt-badge--info');
+    expect(badge.parentElement).toHaveClass('gt-tm-row__head');
+    const [pill] = cssRules('.gt-tm-row__head .gt-badge');
+    expect(pill.getPropertyValue('padding')).toBe('1px 7px');
+    expect(pill.getPropertyValue('font-size')).toBe('10.5px');
+  });
+
   it('says No upcoming meetings when only past ones exist', () => {
     renderManage({ meetings: [past] });
     expect(screen.getByText('No upcoming meetings.')).toBeInTheDocument();
@@ -643,6 +654,7 @@ describe('TeamMeetingsList — the project-page card', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('Standup');
     expect(rows[0]).toHaveAttribute('aria-current', 'true');
+    expect(within(rows[0] as HTMLElement).getByText('Live')).toHaveClass('gt-badge', 'gt-badge--info');
     expect(within(rows[0] as HTMLElement).getByRole('link', { name: 'Join Zoom' })).toHaveAttribute('href', 'https://ucsc.zoom.us/j/1');
     expect(rows[1]).toHaveTextContent('Sprint 3 planning');
     expect(rows[1]).toHaveTextContent('Alpha');

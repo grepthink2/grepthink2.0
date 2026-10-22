@@ -3,6 +3,10 @@
    as the design has them.
    Ported: the kind palette, the list root, the day header, the item row with its pills and the Join action,
    the deadline marker, the zone footer and the compact block.
+   Not ported: the green Live pill, its pulsing dot and their keyframes (`.gt-sched-item__live`,
+   `gt-sched-pulse`). A live row shows the kit's `<Badge status="live" />`, blue under the status colour
+   rule (design/design_handoff_ui_alignment/NOTES.md), at the size `.gt-sched-item__head .gt-badge` gives
+   the row's pills.
    Left for the agenda and the schedule endpoint: the agenda's own rules and toolbar, the Now line, the sprint
    divider, the loading/empty/error states, the expand toggle and panel, and the people list and note (rows
    in the agenda only). */
@@ -76,12 +80,6 @@
 .gt-sched-item__action--primary:hover { border-color: var(--gt-primary-hover); background: var(--gt-primary-hover); color: var(--gt-text-inverse); }
 
 /* status */
-.gt-sched-item__live {
-  display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 7px; border-radius: var(--gt-radius-pill);
-  background: var(--gt-success-soft); color: var(--gt-success-text); font-size: 10.5px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em;
-}
-.gt-sched-item__live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gt-success); animation: gt-sched-pulse 1.6s ease-out infinite; }
-@keyframes gt-sched-pulse { 0% { box-shadow: 0 0 0 0 rgba(1, 129, 86, 0.35); } 100% { box-shadow: 0 0 0 6px rgba(1, 129, 86, 0); } }
 .gt-sched-item__countdown { font-size: 12px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-secondary); white-space: nowrap; }
 .gt-sched-item__head .gt-badge { padding: 1px 7px; font-size: 10.5px; }
 .gt-sched-item--past .gt-sched-item__time, .gt-sched-item--past .gt-sched-item__tile, .gt-sched-item--past .gt-sched-item__title,
@@ -120,6 +118,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gt-sched-item__live-dot { animation: none; }
   .gt-sched-item__action { transition: none; }
 }
