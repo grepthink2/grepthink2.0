@@ -32,6 +32,9 @@
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {
   .gt-tabs__tab { min-height: 44px; }
+  // Codebase addition: the sm size rule has two classes and outranks the line above, so sm tabs stayed
+  // 28px on phones. This rule matches it. The design's navigation.css has the same gap.
+  .gt-tabs--sm .gt-tabs__tab { min-height: 44px; }
   /* icon-only tabs: the label leaves the screen, not the accessible name */
   .gt-tabs--collapse .gt-tabs__tab--has-icon .gt-tabs__label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 }

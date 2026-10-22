@@ -26,6 +26,9 @@
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {
   .gt-segmented__option { min-height: 44px; }
+  // Codebase addition: each size rule has two classes and outranks the line above, so options stayed
+  // 30 and 24px on phones. These rules match them. The design's navigation.css has the same gap.
+  .gt-segmented--md .gt-segmented__option, .gt-segmented--sm .gt-segmented__option { min-height: 44px; }
   .gt-segmented { display: flex; width: 100%; }
   .gt-segmented__option { flex: 1 1 0; }
 }

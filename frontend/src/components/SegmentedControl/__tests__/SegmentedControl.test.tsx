@@ -170,8 +170,11 @@ describe('SegmentedControl', () => {
     expect(sm.getPropertyValue('padding')).toBe('2px 10px');
     expect(cssRules('.gt-segmented--full')[0].getPropertyValue('width')).toBe('100%');
     expect(cssRules('.gt-segmented--full .gt-segmented__option')[0].getPropertyValue('flex')).toBe('1 1 0px');
-    // Under 768px every control is full width with 44px options.
+    // Under 768px every control is full width with 44px options, at either size: each size's own rule
+    // (two classes) would outrank a one-class phone rule, so the phone rules name the sizes too.
     expect(cssRules('.gt-segmented__option', 'max-width: 767px').map((s) => s.getPropertyValue('min-height'))).toContain('44px');
+    expect(cssRules('.gt-segmented--md .gt-segmented__option', 'max-width: 767px')[0].getPropertyValue('min-height')).toBe('44px');
+    expect(cssRules('.gt-segmented--sm .gt-segmented__option', 'max-width: 767px')[0].getPropertyValue('min-height')).toBe('44px');
     expect(cssRules('.gt-segmented', 'max-width: 767px')[0].getPropertyValue('width')).toBe('100%');
   });
 

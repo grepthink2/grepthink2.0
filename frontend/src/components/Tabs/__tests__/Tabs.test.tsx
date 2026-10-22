@@ -267,6 +267,8 @@ describe('Tabs', () => {
     expect(collapsed.getPropertyValue('clip-path')).toBe('inset(50%)');
     expect(collapsed.getPropertyValue('display')).toBe('');
     expect(cssRules('.gt-tabs__tab', 'max-width: 767px')[0].getPropertyValue('min-height')).toBe('44px');
+    // sm tabs too: their size rule (two classes) would outrank the one-class phone rule.
+    expect(cssRules('.gt-tabs--sm .gt-tabs__tab', 'max-width: 767px')[0].getPropertyValue('min-height')).toBe('44px');
   });
 
   it('is md by default and sm on request', () => {
