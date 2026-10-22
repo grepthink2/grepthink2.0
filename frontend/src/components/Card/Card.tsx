@@ -17,7 +17,7 @@ interface CardBaseProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | '
   shadow?: 'card' | 'hairline' | 'none';
   /** 1px border, no shadow, radius 7, 12×14 padding: cards inside a card or a list. @default false */
   bordered?: boolean;
-  /** The selected border (2px inset green); on a button card also `aria-pressed`. */
+  /** The selected border (2px inset green); on a button card also `aria-pressed`, on a link card `aria-current`. */
   selected?: boolean;
   /** @default true */
   padded?: boolean;
@@ -87,19 +87,22 @@ const shows = (node: ReactNode) => node !== undefined && node !== null && node !
  *
  * Native props and `ref` reach the card's root. Codebase-side: `to` renders a react-router `Link`, so
  * an in-app card opens without reloading the app (`href` is for another site), as Button's `to` does;
- * the button calls `onClick` with no arguments; and the focus ring is the card's alone (index.css
- * would ring the title too).
+ * a selected link card carries `aria-current="true"`, so its state is more than the outline; the
+ * button calls `onClick` with no arguments; and the focus ring is the card's alone (index.css would
+ * ring the title too).
  */
 export function Card({
   children, header, footer, title, subtitle, actions, titleAs: Title = 'h3', shadow = 'card', bordered = false,
   href, to, onClick, selected, padded = true, className = '', ref, ...rest
 }: CardProps) {
   const interactive = Boolean(href || to !== undefined || onClick) && shows(title);
+  // A selected link is the current one of its set (a button says it with aria-pressed).
+  const current = selected ? 'true' : undefined;
   let titleContent: ReactNode = title;
   if (interactive && to !== undefined) {
-    titleContent = <Link className="gt-card__link" to={to}>{title}</Link>;
+    titleContent = <Link className="gt-card__link" to={to} aria-current={current}>{title}</Link>;
   } else if (interactive && href) {
-    titleContent = <a className="gt-card__link" href={href}>{title}</a>;
+    titleContent = <a className="gt-card__link" href={href} aria-current={current}>{title}</a>;
   } else if (interactive) {
     titleContent = (
       <button type="button" className="gt-card__link" onClick={() => onClick?.()} aria-pressed={selected}>

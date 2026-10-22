@@ -149,10 +149,37 @@ describe('Card', () => {
     expect(screen.getByText('Project page')).toBeInTheDocument();
   });
 
-  it('a selected link card draws the outline and stays a plain link', () => {
-    const { container } = render(<Card href="#p" selected title="SlugEats" />);
+  it('a selected link card draws the outline and says it is the current one', () => {
+    const { container, rerender } = render(<Card href="#p" selected title="SlugEats" />);
     expect(root(container)).toHaveClass('gt-card--selected');
-    expect(screen.getByRole('link', { name: 'SlugEats' })).not.toHaveAttribute('aria-pressed');
+    const link = screen.getByRole('link', { name: 'SlugEats' });
+    expect(link).toHaveAttribute('aria-current', 'true');
+    expect(link).not.toHaveAttribute('aria-pressed');
+    rerender(<Card href="#p" title="SlugEats" />);
+    expect(screen.getByRole('link', { name: 'SlugEats' })).not.toHaveAttribute('aria-current');
+    rerender(<MemoryRouter><Card to="/app/projects/p2" selected title="SlugEats" /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'SlugEats' })).toHaveAttribute('aria-current', 'true');
+    // A button card says it with aria-pressed instead.
+    rerender(<Card onClick={() => {}} selected title="SlugEats" />);
+    expect(screen.getByRole('button', { name: 'SlugEats' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('renders a 0 but leaves out an empty string or false', () => {
+    const { container, rerender } = render(<Card title="Team" subtitle={0} actions={0} footer={0}>Body</Card>);
+    expect(container.querySelector('.gt-card__subtitle')).toHaveTextContent('0');
+    expect(container.querySelector('.gt-card__actions')).toHaveTextContent('0');
+    expect(container.querySelector('.gt-card__footer')).toHaveTextContent('0');
+    rerender(<Card title="Team" subtitle="" actions={false} footer="">Body</Card>);
+    expect(container.querySelector('.gt-card__subtitle')).toBeNull();
+    expect(container.querySelector('.gt-card__actions')).toBeNull();
+    expect(container.querySelector('.gt-card__footer')).toBeNull();
+    // A title of 0 is a heading; an empty one leaves no header at all.
+    rerender(<Card title={0}>Body</Card>);
+    expect(screen.getByRole('heading', { name: '0' })).toBeInTheDocument();
+    rerender(<Card title="">Body</Card>);
+    expect(container.querySelector('.gt-card__header')).toBeNull();
+    rerender(<Card header="">Body</Card>);
+    expect(container.querySelector('.gt-card__header')).toBeNull();
   });
 
   it('actions sit in the header, above the stretched title', async () => {
