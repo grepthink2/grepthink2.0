@@ -196,11 +196,40 @@ describe('Card', () => {
     expect(ref.current).toHaveAttribute('aria-label', 'Team card');
   });
 
+  it('clips nothing itself: flush content rounds to the card’s corners, and the card rings a focused flush child', () => {
+    const { container, rerender } = render(<Card shadow="hairline" padded={false}><div tabIndex={0}>Rows</div></Card>);
+    // A tooltip, menu or popover in the header's actions can leave the card, and a ring can show.
+    expect(cssRules('.gt-card')[0].getPropertyValue('overflow')).toBe('');
+    const body = container.querySelector('.gt-card__body--flush')!;
+    // With no header or footer, the flush body meets all four corners and clips its content to them.
+    expect(body).toBe(root(container).firstElementChild);
+    expect(body).toBe(root(container).lastElementChild);
+    expect(cssRules('.gt-card__body--flush').map((s) => s.getPropertyValue('overflow'))).toContain('hidden');
+    const [top] = cssRules('.gt-card__body--flush:first-child');
+    expect(top.getPropertyValue('border-top-left-radius')).toBe('inherit');
+    expect(top.getPropertyValue('border-top-right-radius')).toBe('inherit');
+    const [bottom] = cssRules('.gt-card__body--flush:last-child');
+    expect(bottom.getPropertyValue('border-bottom-left-radius')).toBe('inherit');
+    expect(bottom.getPropertyValue('border-bottom-right-radius')).toBe('inherit');
+    // Its clip hides a focused child's own ring, so the card rings itself, as an interactive card does.
+    expect(cssRules('.gt-card:has(> .gt-card__body--flush > :focus-visible)')[0].getPropertyValue('box-shadow'))
+      .toBe('var(--gt-focus-ring)');
+    // Under a header and over a footer it meets no corner.
+    rerender(<Card shadow="hairline" padded={false} title="Roster" footer={<span>3 more</span>}>Rows</Card>);
+    expect(body.previousElementSibling).toHaveClass('gt-card__header');
+    expect(body.nextElementSibling).toHaveClass('gt-card__footer');
+  });
+
+  it('rounds the stretch to the card’s own corners, now that the card does not clip it', () => {
+    render(<Card href="#p" title="SlugEats" />);
+    expect(cssRules('.gt-card__link::after')[0].getPropertyValue('border-radius')).toBe('var(--gt-radius-md)');
+    expect(cssRules('.gt-card--bordered .gt-card__link::after')[0].getPropertyValue('border-radius')).toBe('var(--gt-radius-sm)');
+  });
+
   it('ports the card block, and sets what the global button rule would on the stretched button', () => {
     render(<Card onClick={() => {}} title="T" />);
     const [card] = cssRules('.gt-card');
     expect(card.getPropertyValue('position')).toBe('relative');
-    expect(card.getPropertyValue('overflow')).toBe('hidden');
     expect(card.getPropertyValue('border-radius')).toBe('var(--gt-radius-md)');
     const [link] = cssRules('.gt-card__link');
     expect(link.getPropertyValue('padding')).toBe('0px');
@@ -208,6 +237,8 @@ describe('Card', () => {
     expect(link.getPropertyValue('background')).toBe('none');
     expect(link.getPropertyValue('font')).toBe('inherit');
     expect(link.getPropertyValue('text-align')).toBe('inherit');
+    // index.css gives every button an 8px radius.
+    expect(cssRules('.gt-card__link').map((s) => s.getPropertyValue('border-radius'))).toContain('0px');
     expect(cssRules('.gt-card__title')[0].getPropertyValue('font-size')).toBe('1.35rem');
     expect(cssRules('.gt-card--interactive', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
   });

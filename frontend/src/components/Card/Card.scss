@@ -1,11 +1,15 @@
 // Card — ported from design/components/display/display.css so the two stay diffable: the Card block,
 // then its line from the file's reduced-motion block. The stretched button's own padding, border,
-// background and font beat index.css's global button rule; the rule's radius and border-colour
-// transition have nothing to act on (no border, and the card's `overflow: hidden` clips the stretch
-// to its corners). One addition, marked below: the stretched title takes no focus ring of its own.
+// background and font, and the radius marked below, beat index.css's global button rule; the rule's
+// border-colour transition has nothing to act on (no border). Changes and additions, marked below:
+// the card does not clip, so flush content and the stretch round their own corners and the card
+// rings a focused flush child; the stretched title takes no focus ring of its own.
 
 /* ── Card ───────────────────────────────────────────────── */
-.gt-card { position: relative; display: block; box-sizing: border-box; overflow: hidden; background: var(--gt-surface); border-radius: var(--gt-radius-md); font-family: var(--gt-font-sans); color: var(--gt-text-primary); text-align: left; }
+// Codebase change: no `overflow: hidden` here, as the design has. The kit's Tooltip, Menu and Popover
+// render in place, so a clip cut off what sits in the header's actions, and it hid the focus ring
+// of a focusable child at the card's edge (a scrolling flush Table).
+.gt-card { position: relative; display: block; box-sizing: border-box; background: var(--gt-surface); border-radius: var(--gt-radius-md); font-family: var(--gt-font-sans); color: var(--gt-text-primary); text-align: left; }
 .gt-card--card     { box-shadow: var(--gt-shadow-card); }
 .gt-card--hairline { border: 1px solid var(--gt-border); box-shadow: var(--gt-shadow-hairline); }
 .gt-card--none     { box-shadow: none; }
@@ -16,7 +20,12 @@
 .gt-card--interactive:has(.gt-card__link:focus-visible) { box-shadow: var(--gt-focus-ring); }
 .gt-card--selected { outline: 2px solid var(--gt-primary); outline-offset: -2px; }
 .gt-card__link { padding: 0; border: none; background: none; font: inherit; color: inherit; text-align: inherit; text-decoration: none; cursor: pointer; }
-.gt-card__link::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+// Codebase addition: index.css's global button rule gives the stretched button an 8px radius.
+.gt-card__link { border-radius: 0; }
+// Codebase change: the stretch takes the card's radius, not the design's `inherit` (the link's): the
+// card's clip used to round it, and without one its corners would reach past the card's.
+.gt-card__link::after { content: ''; position: absolute; inset: 0; border-radius: var(--gt-radius-md); }
+.gt-card--bordered .gt-card__link::after { border-radius: var(--gt-radius-sm); }
 .gt-card__link:focus-visible { outline: none; }
 // Codebase addition: index.css's global focus ring is a box-shadow on every focused link and button,
 // which would ring the title's text as well as the card. The card carries the ring (the rule above it).
@@ -28,6 +37,13 @@
 .gt-card__subtitle { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
 .gt-card__body { padding: var(--gt-space-lg) var(--gt-space-xl); }
 .gt-card__body--flush { padding: 0; }
+// Codebase addition: with no clip on the card, flush content clips itself, rounded where it meets the
+// card's corners: on top when nothing is above it, below when nothing follows. That clip hides a
+// focused child's own ring, so the card rings itself, as an interactive card does.
+.gt-card__body--flush { overflow: hidden; }
+.gt-card__body--flush:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.gt-card__body--flush:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.gt-card:has(> .gt-card__body--flush > :focus-visible) { box-shadow: var(--gt-focus-ring); }
 .gt-card__footer { position: relative; z-index: 1; display: flex; justify-content: flex-end; gap: var(--gt-space-sm); padding: var(--gt-space-md) var(--gt-space-xl); border-top: 1px solid var(--gt-border); }
 .gt-card--bordered .gt-card__header { padding: 12px 14px; border-bottom-color: var(--gt-border-subtle); }
 .gt-card--bordered .gt-card__body { padding: 12px 14px; }
