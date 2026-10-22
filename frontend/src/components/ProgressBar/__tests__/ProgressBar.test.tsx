@@ -47,6 +47,25 @@ describe('ProgressBar', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
   });
 
+  it('reports its value as it is, decimals and all, without rounding', () => {
+    const { container, rerender } = render(<ProgressBar value={0.62} max={1} label="Share" />);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0.62');
+    expect(fill(container)).toHaveStyle({ width: '62%' });
+    rerender(<ProgressBar value={2.5} max={5} label="Points" />);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2.5');
+    expect(fill(container)).toHaveStyle({ width: '50%' });
+  });
+
+  it('draws and reports a value that is not a finite number (a 0/0 rate) as 0', () => {
+    const { container, rerender } = render(<ProgressBar value={NaN} label="On time" showLabel />);
+    expect(fill(container)).toHaveStyle({ width: '0%' });
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByText('0%')).toHaveClass('gt-progress__pct');
+    rerender(<ProgressBar value={Infinity} label="On time" />);
+    expect(fill(container)).toHaveStyle({ width: '0%' });
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+  });
+
   it('is named Progress without a label, and shows no head', () => {
     const { container } = render(<ProgressBar value={30} />);
     expect(screen.getByRole('progressbar', { name: 'Progress' })).toBeInTheDocument();

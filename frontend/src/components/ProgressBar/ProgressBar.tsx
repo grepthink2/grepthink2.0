@@ -43,19 +43,21 @@ export interface ProgressBarProps extends Omit<HTMLAttributes<HTMLDivElement>, '
  * `aria-valuenow` against `max` and `valueText` as its reading; `decorative` hides it, for a bar with
  * its number printed beside it. The fill's width is clamped to 0–100%.
  *
- * Codebase-side: the value the bar reports is clamped between 0 and `max` as well, as ARIA asks. Native
- * props and `ref` reach the root.
+ * Codebase-side: the value the bar reports is clamped between 0 and `max` as well, as ARIA asks, and
+ * not rounded (ARIA takes decimals); a value that is not a finite number (a 0/0 rate) draws and reads
+ * as 0. Native props and `ref` reach the root.
  */
 export function ProgressBar({
   value, max = 100, tone = 'primary', size = 'md', showLabel = false, label, valueText, inline = false,
   decorative = false, meter = false, className = '', ref, ...rest
 }: ProgressBarProps) {
-  const pct = Math.max(0, Math.min(100, (value / (max || 1)) * 100));
+  const shown = Number.isFinite(value) ? value : 0;
+  const pct = Math.max(0, Math.min(100, (shown / (max || 1)) * 100));
   const track = (
     <div
       className="gt-progress__track"
       role={decorative ? undefined : meter ? 'meter' : 'progressbar'}
-      aria-valuenow={decorative ? undefined : Math.min(Math.max(Math.round(value), 0), max)}
+      aria-valuenow={decorative ? undefined : Math.min(Math.max(shown, 0), max)}
       aria-valuemin={decorative ? undefined : 0}
       aria-valuemax={decorative ? undefined : max}
       aria-valuetext={decorative ? undefined : valueText}
