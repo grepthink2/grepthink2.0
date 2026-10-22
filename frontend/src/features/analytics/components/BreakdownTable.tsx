@@ -34,24 +34,25 @@ const NAMES = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' 
 /** A cell: the name (with the folded row's explanation), a percentage over its 3px meter, or a figure; "—" when missing. */
 function cellOf(column: BreakdownColumn, row: ApiAnalyticsBreakdownRow): ReactNode {
   const v = row[column.key];
+  if (column.kind !== 'text' && (v === null || v === undefined)) return <span className="gt-table__null">—</span>;
   if (column.kind === 'text') {
     return <>{String(v ?? '')}{row.kind === 'folded' ? <Info size={12} role="img" aria-label="Fewer than 3 people" className="gt-table__info" /> : null}</>;
   }
   if (column.kind === 'percent') {
     return (
       <>
-        {percent(v as number | null)}
-        {typeof v === 'number' ? <span className="gt-table__meter" aria-hidden="true"><span className="gt-table__meter-fill" style={{ width: `${Math.min(100, Math.max(0, Math.round(v * 100)))}%` }} /></span> : null}
+        {percent(v as number)}
+        <span className="gt-table__meter" aria-hidden="true"><span className="gt-table__meter-fill" style={{ width: `${Math.min(100, Math.max(0, Math.round((v as number) * 100)))}%` }} /></span>
       </>
     );
   }
-  return v === null || v === undefined ? '—' : (v as number).toLocaleString('en-US');
+  return (v as number).toLocaleString('en-US');
 }
 
 /**
- * Per class or per team (brief §4 #12), on the shared Table with dense rows and a sticky header: the name is each row's
- * header, figures are right-aligned and tabular, a 3px meter sits under percentages, and the folded row comes last, in
- * italics. `.gt-table--breakdown` is the design's modifier for it.
+ * Per class or per team (brief §4 #12), on the shared Table with a sticky header: the name is each row's header,
+ * figures are right-aligned and tabular, a 3px meter sits under percentages, and the folded row comes last, in italics.
+ * It takes the design's breakdown look, `.gt-table--breakdown` in analytics.scss.
  */
 export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
   const cols = useMemo(() => breakdownColumns(kind), [kind]);
@@ -89,7 +90,7 @@ export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
       key: 'open',
       label: <span className="gt-visually-hidden">Open</span>,
       className: 'gt-table__num',
-      render: (r) => (r.kind === 'row' && r.href ? <Link to={r.href} aria-label={`View ${r.name}`}>View</Link> : null),
+      render: (r) => (r.kind === 'row' && r.href ? <Link className="gt-table__link" to={r.href} aria-label={`View ${r.name}`}>View</Link> : null),
     },
   ];
   return (

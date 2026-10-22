@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiAnalyticsBreakdownRow } from '@/lib/api/types';
+import { cssRules } from '@/test/cssRules';
+import '../../analytics.scss';
 import { BreakdownTable, breakdownCsvRows } from '../BreakdownTable';
 
 const ROWS: ApiAnalyticsBreakdownRow[] = [
@@ -69,6 +71,41 @@ describe('BreakdownTable', () => {
     await userEvent.click(within(header).getByRole('button'));
     expect(sorted()).toHaveLength(1);
     expect(header.querySelector('.gt-table__sort--active .gt-table__sort-icon')).toHaveClass('lucide-chevron-down');
+  });
+  it('takes the design’s breakdown look on the shared Table: uppercase headers over a rule, 36px rows, a dashed folded row', () => {
+    renderTable();
+    const rule = (selector: string) => cssRules(selector)[0];
+    const head = rule('.gt-table--breakdown .gt-table thead th');
+    expect(head.getPropertyValue('font-size')).toBe('11px');
+    expect(head.getPropertyValue('font-weight')).toBe('var(--gt-weight-semibold)');
+    expect(head.getPropertyValue('text-transform')).toBe('uppercase');
+    expect(head.getPropertyValue('letter-spacing')).toBe('var(--gt-tracking-wide)');
+    expect(head.getPropertyValue('height')).toBe('34px');
+    expect(head.getPropertyValue('border-bottom')).toBe('1px solid var(--gt-border)');
+    // The body cells, the row's own header (the name) among them.
+    const cell = rule('.gt-table--breakdown .gt-table tbody th');
+    expect(cell).toBe(rule('.gt-table--breakdown .gt-table td'));
+    expect(cell.getPropertyValue('height')).toBe('36px');
+    expect(cell.getPropertyValue('border-bottom')).toBe('1px solid var(--gt-border-subtle)');
+    expect(cell.getPropertyValue('font-size')).toBe('12.5px');
+    // The design's heights leave out the cell's 1px rule: its cells are content boxes.
+    expect(rule('.gt-table--breakdown .gt-table td').getPropertyValue('padding')).toBe('0px 10px');
+    expect(cssRules('.gt-table--breakdown .gt-table th').map((r) => r.getPropertyValue('box-sizing'))).toContain('content-box');
+    const folded = rule('.gt-table--breakdown .gt-table .gt-table__row--folded td');
+    expect(folded.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
+    expect(folded.getPropertyValue('font-style')).toBe('italic');
+    expect(folded.getPropertyValue('border-top')).toBe('1px dashed var(--gt-border)');
+    expect(cssRules('.gt-table--breakdown .gt-table .gt-table__row--folded th').map((r) => r.getPropertyValue('font-weight')))
+      .toContain('var(--gt-weight-regular)');
+    // A figure column's header sits right, over its figures.
+    expect(rule('.gt-table--breakdown .gt-table thead th.gt-table__num').getPropertyValue('text-align')).toBe('right');
+    expect(rule('.gt-table--breakdown .gt-table__sort').getPropertyValue('text-transform')).toBe('inherit');
+    expect(rule('.gt-table--breakdown .gt-table__sort--active .gt-table__sort-icon').getPropertyValue('color')).toBe('var(--gt-primary)');
+    expect(rule('.gt-table--breakdown .gt-table-wrapper').getPropertyValue('max-height')).toBe('520px');
+    // The pieces the look names: a missing figure is tertiary, and View is the design's small link.
+    expect(screen.getByText('CSE 115B').closest('tr')!.querySelector('.gt-table__null')).toHaveTextContent('—');
+    expect(screen.getByRole('link', { name: 'View CSE 115B' })).toHaveClass('gt-table__link');
+    expect(rule('.gt-table--breakdown .gt-table__null').getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
   });
   it('is the shared Table, dense with a sticky header, in the breakdown look, with a named View column', () => {
     const { container } = renderTable();
