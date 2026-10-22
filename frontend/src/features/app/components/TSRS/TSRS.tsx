@@ -212,6 +212,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment, zone }) => {
     (e) => e.submitted_at && dueAt && new Date(e.submitted_at) >= dueAt,
   );
   // Outside the window the server refuses the submission (403): say so before anything is typed.
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
 
   const contributionsTotal = Object.values(contributions).reduce((s, v) => s + v, 0);

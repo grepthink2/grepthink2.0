@@ -98,6 +98,8 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
 
   if (!isOpen && !isClosing) return null;
 
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
 
   return (

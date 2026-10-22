@@ -123,7 +123,7 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useNotifications = (): NotificationsValue => {
   const ctx = useContext(NotificationsContext);
   if (!ctx) {

@@ -456,7 +456,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return <ClassContext.Provider value={value}>{children}</ClassContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useClass = () => {
   const context = useContext(ClassContext);
   if (!context) {
@@ -466,7 +466,7 @@ export const useClass = () => {
 };
 
 /** Your role in the selected class: undefined while classes load, null with no class. */
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useSelectedClassRole = (): ClassRole | null | undefined => {
   const { selectedClass, loading, previewClassId } = useClass();
   if (!selectedClass) return loading ? undefined : null;
@@ -474,7 +474,7 @@ export const useSelectedClassRole = (): ClassRole | null | undefined => {
 };
 
 /** Your role in `classId`: undefined while classes load, null when you are not in it (or no id). */
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useClassRole = (classId: string | null | undefined): ClassRole | null | undefined => {
   const { classes, loading, previewClassId } = useClass();
   if (!classId) return null;

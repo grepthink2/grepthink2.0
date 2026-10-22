@@ -115,6 +115,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const dueAt = assignment.dueAt ? new Date(assignment.dueAt) : null;
   const submittedLate = Boolean(submittedAt && dueAt && new Date(submittedAt) >= dueAt);
   // Outside the window the server refuses the submission (403): say so before anything is typed.
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
 
   const handleSubmit = async () => {

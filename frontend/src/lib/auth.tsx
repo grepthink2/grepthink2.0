@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
@@ -182,7 +182,7 @@ export const useAuth = (): AuthContextValue => {
   return ctx;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useUser = () => {
   const { user, loading } = useAuth();
   return { user, isLoaded: !loading };
