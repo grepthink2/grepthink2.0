@@ -62,17 +62,43 @@ describe('EditProjectModal', () => {
     expect(dialog()).toHaveClass('gt-modal', 'gt-modal--lg', 'edit-project');
     expect(within(dialog()).getByRole('button', { name: 'Close' })).toHaveClass('gt-icon-button');
     // The tab strip sits in the header's slot, under the title.
-    expect(within(dialog()).getByRole('button', { name: 'Details' }).closest('.gt-modal__tabs')).not.toBeNull();
+    expect(within(dialog()).getByRole('tab', { name: 'Details' }).closest('.gt-modal__tabs')).not.toBeNull();
     // Opened on Details, focus moves to the first field.
     await settle();
     expect(screen.getByRole('textbox', { name: 'Project name' })).toHaveFocus();
   });
 
+  it('switches sections from a tablist in its header, linked to the panels, by click or arrow key', async () => {
+    const user = userEvent.setup();
+    renderModal({ viewerIsProductOwner: true, meetingsList: { meetings: [], now: NOW, zone: ZONE, schoolZone: ZONE } });
+    await settle();
+    const list = within(dialog()).getByRole('tablist', { name: 'Edit project sections' });
+    expect(list.closest('.gt-modal__tabs')).not.toBeNull();
+    expect(within(list).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Details', 'Team', 'Meetings']);
+    // On phones the tabs show their icons alone, and keep their names.
+    expect(list).toHaveClass('gt-tabs--collapse');
+    expect(screen.getByRole('tab', { name: 'Details' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Details' })).toContainElement(screen.getByRole('textbox', { name: 'Project name' }));
+
+    screen.getByRole('tab', { name: 'Details' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Team' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'Team' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Team' })).toBeVisible();
+    expect(screen.queryByRole('textbox', { name: 'Project name' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
+    expect(screen.getByRole('tabpanel', { name: 'Meetings' })).toContainElement(screen.getByRole('region', { name: 'Team meetings' }));
+  });
+
   it('is named Manage Project Admins for someone who only manages admins', () => {
-    renderModal({ canEditProjectDetails: false });
+    renderModal({ canEditProjectDetails: false, canManageAdmins: true });
     const admins = screen.getByRole('dialog', { name: 'Manage Project Admins' });
     expect(admins).toHaveAccessibleDescription('Assign or revoke admin access for project members');
-    expect(within(admins).queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+    expect(within(admins).queryByRole('tab', { name: 'Details' })).not.toBeInTheDocument();
+    // With no tab strip, the Team content sits in the body with no panel around it.
+    expect(within(admins).queryByRole('tablist')).not.toBeInTheDocument();
+    expect(within(admins).queryByRole('tabpanel')).not.toBeInTheDocument();
+    expect(within(admins).getByText('Admin Access')).toBeInTheDocument();
     expect(within(admins).queryByRole('button', { name: /Delete Project/ })).not.toBeInTheDocument();
   });
 
@@ -112,7 +138,7 @@ describe('EditProjectModal', () => {
       viewerIsProductOwner: true,
       meetingsList: { meetings: [], now: NOW, zone: ZONE, schoolZone: ZONE, onCreate: vi.fn() },
     });
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveFocus();
 

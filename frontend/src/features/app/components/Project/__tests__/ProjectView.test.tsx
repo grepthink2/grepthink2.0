@@ -344,7 +344,7 @@ describe('ProjectView — the team meetings card', () => {
 
     await user.click(screen.getByRole('button', { name: /Edit Project\/Roles/ }));
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Meetings' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Meetings' })).toBeInTheDocument();
   });
 
   it('shows no Meetings tab to a project admin who is not the Product Owner', async () => {
@@ -352,8 +352,8 @@ describe('ProjectView — the team meetings card', () => {
     renderView({ userRoleOnProject: 'admin' });
 
     await user.click(screen.getByRole('button', { name: /Edit Project\/Roles/ }));
-    expect(screen.getByRole('button', { name: 'Team' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Meetings' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Team' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Meetings' })).not.toBeInTheDocument();
   });
 
   it('adds a meeting from the Meetings tab and shows it on the card', async () => {

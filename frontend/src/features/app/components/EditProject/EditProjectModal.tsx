@@ -1,9 +1,10 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { CalendarDays, Settings, Trash2, Users } from 'lucide-react';
+import { CalendarDays, FileText, Trash2, Users } from 'lucide-react';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import { Modal } from '@/components/Modal/Modal';
+import { TabPanel, Tabs, type TabItem } from '@/components/Tabs/Tabs';
 import DetailsTab from './DetailsTab';
 import TeamTab from './TeamTab';
 import {
@@ -117,6 +118,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   /** The Meetings tab's editor: a meeting with unsaved input, or a meeting request in flight. */
   const [meetingEditor, setMeetingEditor] = useState<TeamMeetingsEditorState>({ dirty: false, busy: false });
   const meetingHintId = useId();
+  const tabsId = useId();
 
   // The modal stays mounted while closed, so reseed the form each time it opens,
   // and again if the project, its members or the caller's rights change while open.
@@ -339,6 +341,29 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     projectRole: m.project_role,
   }));
 
+  // Only the team's Product Owner has the Meetings tab.
+  const tabItems: TabItem<TabId>[] = [
+    { value: 'details', label: 'Details', icon: <FileText size={16} aria-hidden="true" /> },
+    { value: 'team', label: 'Team', icon: <Users size={16} aria-hidden="true" /> },
+    ...(viewerIsProductOwner
+      ? [{ value: 'meetings' as const, label: 'Meetings', icon: <CalendarDays size={16} aria-hidden="true" /> }]
+      : []),
+  ];
+  const teamTab = (
+    <TeamTab
+      memberOptions={memberOptions}
+      projectOwnerId={initialRoles.projectOwnerId}
+      productOwnerId={productOwnerId}
+      onProductOwnerChange={setProductOwnerId}
+      scrumMasterId={scrumMasterId}
+      onScrumMasterChange={setScrumMasterId}
+      adminIds={adminIds}
+      onToggleAdmin={toggleAdmin}
+      canManageAdmins={canManageAdmins}
+      canEditProjectDetails={canEditProjectDetails}
+    />
+  );
+
   return (
     <>
       <Modal
@@ -356,34 +381,14 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
         closeDisabled={saving}
         tabs={
           canEditProjectDetails && (
-            <div className="edit-project__tabs">
-              <button
-                type="button"
-                className={`edit-project__tab ${activeTab === 'details' ? 'edit-project__tab--active' : ''}`}
-                onClick={() => setActiveTab('details')}
-              >
-                <Settings size={16} />
-                <span>Details</span>
-              </button>
-              <button
-                type="button"
-                className={`edit-project__tab ${activeTab === 'team' ? 'edit-project__tab--active' : ''}`}
-                onClick={() => setActiveTab('team')}
-              >
-                <Users size={16} />
-                <span>Team</span>
-              </button>
-              {viewerIsProductOwner && (
-                <button
-                  type="button"
-                  className={`edit-project__tab ${activeTab === 'meetings' ? 'edit-project__tab--active' : ''}`}
-                  onClick={() => setActiveTab('meetings')}
-                >
-                  <CalendarDays size={16} />
-                  <span>Meetings</span>
-                </button>
-              )}
-            </div>
+            <Tabs
+              idBase={tabsId}
+              ariaLabel="Edit project sections"
+              tabs={tabItems}
+              value={activeTab}
+              onChange={setActiveTab}
+              collapseOnPhone
+            />
           )
         }
         footer={
@@ -430,42 +435,39 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
           </div>
         }
       >
-        {activeTab === 'details' && (
-          <DetailsTab
-            name={name}
-            onNameChange={setName}
-            nameError={nameError}
-            description={description}
-            onDescriptionChange={setDescription}
-            teamSize={teamSize}
-            onTeamSizeChange={setTeamSize}
-            teamSizeError={teamSizeError}
-            logoPreview={logoPreview}
-            logoUrl={logoUrl}
-            onLogoFileChange={handleLogoFileChange}
-            onRemoveLogo={handleRemoveLogo}
-          />
-        )}
-        {(activeTab === 'team' || !canEditProjectDetails) && (
-          <TeamTab
-            memberOptions={memberOptions}
-            projectOwnerId={initialRoles.projectOwnerId}
-            productOwnerId={productOwnerId}
-            onProductOwnerChange={setProductOwnerId}
-            scrumMasterId={scrumMasterId}
-            onScrumMasterChange={setScrumMasterId}
-            adminIds={adminIds}
-            onToggleAdmin={toggleAdmin}
-            canManageAdmins={canManageAdmins}
-            canEditProjectDetails={canEditProjectDetails}
-          />
-        )}
-        {canEditProjectDetails && viewerIsProductOwner && (
-          // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
-          // Team edits do.
-          <div hidden={activeTab !== 'meetings'}>
-            <TeamMeetingsList variant="manage" canManage {...meetingsList} onEditorChange={setMeetingEditor} />
-          </div>
+        {canEditProjectDetails ? (
+          <>
+            {/* Details and Team keep their edits in this modal's state, so their panels can unmount. */}
+            <TabPanel idBase={tabsId} value="details" active={activeTab === 'details'}>
+              <DetailsTab
+                name={name}
+                onNameChange={setName}
+                nameError={nameError}
+                description={description}
+                onDescriptionChange={setDescription}
+                teamSize={teamSize}
+                onTeamSizeChange={setTeamSize}
+                teamSizeError={teamSizeError}
+                logoPreview={logoPreview}
+                logoUrl={logoUrl}
+                onLogoFileChange={handleLogoFileChange}
+                onRemoveLogo={handleRemoveLogo}
+              />
+            </TabPanel>
+            <TabPanel idBase={tabsId} value="team" active={activeTab === 'team'}>
+              {teamTab}
+            </TabPanel>
+            {viewerIsProductOwner && (
+              // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
+              // Team edits do.
+              <TabPanel idBase={tabsId} value="meetings" active={activeTab === 'meetings'} keepMounted>
+                <TeamMeetingsList variant="manage" canManage {...meetingsList} onEditorChange={setMeetingEditor} />
+              </TabPanel>
+            )}
+          </>
+        ) : (
+          // Someone who only manages admins sees the Team content alone, with no tab strip.
+          teamTab
         )}
         {apiError && (
           <Alert tone="error" className="edit-project__save-error" ref={saveErrorRef}>
