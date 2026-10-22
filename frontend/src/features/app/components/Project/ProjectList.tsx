@@ -1,8 +1,8 @@
 import React from 'react';
 import { Smile, Meh, Frown, ChevronRight, Eye } from 'lucide-react';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
-import SortableHeader from '@features/app/components/shared/SortableHeader';
-import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
+import { SortableHeader } from '@/components/Table/SortableHeader';
+import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
 import './ProjectList.scss';
 
 export type ProjectSentiment = 'positive' | 'neutral' | 'negative';

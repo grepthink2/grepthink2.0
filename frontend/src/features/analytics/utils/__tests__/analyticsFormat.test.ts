@@ -1,30 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import * as deltaFormat from '@/lib/deltaFormat';
-import { compactNumber, dateLabel, deltaPoints, percent, rangeLabel, signedPercent, weekLabel } from '../analyticsFormat';
+import { dateLabel, deltaPoints, percent, rangeLabel, signedPercent, weekLabel } from '../analyticsFormat';
 
 describe('analyticsFormat', () => {
-  it('compacts large numbers and keeps small ones exact', () => {
-    expect(compactNumber(0)).toBe('0');
-    expect(compactNumber(1284)).toBe('1,284');
-    expect(compactNumber(12900)).toBe('12.9K');
-    expect(compactNumber(1_250_000)).toBe('1.3M');
-    expect(compactNumber(null)).toBe('—');
-  });
-  it('rounds before it picks a unit and signs with a true minus', () => {
-    expect(compactNumber(999_950)).toBe('1M');
-    expect(compactNumber(10_000)).toBe('10K');
-    expect(compactNumber(9_999.6)).toBe('10K'); // the unit is picked after rounding
-    expect(compactNumber(12_900)).toBe('12.9K');
-    expect(compactNumber(1_300_000)).toBe('1.3M');
-    expect(compactNumber(-1284)).toBe('−1,284');
-    expect(compactNumber(-0)).toBe('0');
-  });
   it('formats rates', () => {
     expect(percent(0.82)).toBe('82%');
     expect(percent(0.8249, 1)).toBe('82.5%');
     expect(percent(null)).toBe('—');
   });
-  it('re-exports the delta helpers the metric card shares (lib/deltaFormat, tested there)', () => {
+  it('re-exports the delta helpers StatCard shares (lib/deltaFormat, tested there)', () => {
     expect(signedPercent).toBe(deltaFormat.signedPercent);
     expect(deltaPoints).toBe(deltaFormat.deltaPoints);
   });

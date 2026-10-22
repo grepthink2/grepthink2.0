@@ -1,0 +1,56 @@
+// Card — ported from design/components/display/display.css so the two stay diffable: the Card block,
+// then its line from the file's reduced-motion block. The stretched button's own padding, border,
+// background and font, and the radius marked below, beat index.css's global button rule; the rule's
+// border-colour transition has nothing to act on (no border). Changes and additions, marked below:
+// the card does not clip, so flush content and the stretch round their own corners and the card
+// rings a focused flush child; the stretched title takes no focus ring of its own.
+
+/* ── Card ───────────────────────────────────────────────── */
+// Codebase change: this line drops the design's `overflow: hidden`. The kit's Tooltip, Menu and
+// Popover render in place, so the clip cut off what sits in the header's actions, and it hid the
+// focus ring of a focusable child at the card's edge (a scrolling flush Table).
+.gt-card { position: relative; display: block; box-sizing: border-box; background: var(--gt-surface); border-radius: var(--gt-radius-md); font-family: var(--gt-font-sans); color: var(--gt-text-primary); text-align: left; }
+.gt-card--card     { box-shadow: var(--gt-shadow-card); }
+.gt-card--hairline { border: 1px solid var(--gt-border); box-shadow: var(--gt-shadow-hairline); }
+.gt-card--none     { box-shadow: none; }
+.gt-card--bordered { border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-shadow: none; }
+.gt-card--interactive { transition: box-shadow var(--gt-transition-fast), border-color var(--gt-transition-fast); }
+.gt-card--interactive:hover { box-shadow: var(--gt-shadow-hover); }
+.gt-card--interactive.gt-card--bordered:hover { border-color: var(--gt-border-strong); }
+.gt-card--interactive:has(.gt-card__link:focus-visible) { box-shadow: var(--gt-focus-ring); }
+.gt-card--selected { outline: 2px solid var(--gt-primary); outline-offset: -2px; }
+.gt-card__link { padding: 0; border: none; background: none; font: inherit; color: inherit; text-align: inherit; text-decoration: none; cursor: pointer; }
+// Codebase addition: index.css's global button rule gives the stretched button an 8px radius.
+.gt-card__link { border-radius: 0; }
+// Codebase change: the stretch takes the card's radius, not the design's `inherit` (the link's): the
+// card's clip used to round it, and without one its corners would reach past the card's.
+.gt-card__link::after { content: ''; position: absolute; inset: 0; border-radius: var(--gt-radius-md); }
+.gt-card--bordered .gt-card__link::after { border-radius: var(--gt-radius-sm); }
+.gt-card__link:focus-visible { outline: none; }
+// Codebase addition: index.css's global focus ring is a box-shadow on every focused link and button,
+// which would ring the title's text as well as the card. The card carries the ring (the rule above it).
+.gt-card__link:focus-visible { box-shadow: none; }
+.gt-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--gt-space-md); padding: var(--gt-space-lg) var(--gt-space-xl); border-bottom: 1px solid var(--gt-border); }
+.gt-card__heading { min-width: 0; }
+.gt-card__actions { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--gt-space-sm); flex-shrink: 0; }
+.gt-card__title { margin: 0 0 2px; font-size: 1.35rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); letter-spacing: var(--gt-tracking-tight); }
+.gt-card__subtitle { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-card__body { padding: var(--gt-space-lg) var(--gt-space-xl); }
+.gt-card__body--flush { padding: 0; }
+// Codebase addition: with no clip on the card, flush content clips itself, rounded where it meets the
+// card's corners: on top when nothing is above it, below when nothing follows. That clip hides a
+// focused child's own ring, so the card rings itself, as an interactive card does.
+.gt-card__body--flush { overflow: hidden; }
+.gt-card__body--flush:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.gt-card__body--flush:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.gt-card:has(> .gt-card__body--flush > :focus-visible) { box-shadow: var(--gt-focus-ring); }
+.gt-card__footer { position: relative; z-index: 1; display: flex; justify-content: flex-end; gap: var(--gt-space-sm); padding: var(--gt-space-md) var(--gt-space-xl); border-top: 1px solid var(--gt-border); }
+.gt-card--bordered .gt-card__header { padding: 12px 14px; border-bottom-color: var(--gt-border-subtle); }
+.gt-card--bordered .gt-card__body { padding: 12px 14px; }
+.gt-card--bordered .gt-card__title { font-size: 14px; letter-spacing: 0; }
+.gt-card--bordered .gt-card__footer { padding: 10px 14px; }
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-card--interactive { transition: none; }
+}

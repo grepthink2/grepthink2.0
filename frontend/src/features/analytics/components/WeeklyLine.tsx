@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
-import { compactNumber, weekLabel } from '../utils/analyticsFormat';
+import { compactNumber } from '@/lib/numberFormat';
+import { weekLabel } from '../utils/analyticsFormat';
 import { linePath, linearScale, niceMax, tickLabel, ticks } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
 import { ChartLegend } from './ChartLegend';

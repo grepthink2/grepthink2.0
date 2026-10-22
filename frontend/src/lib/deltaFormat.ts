@@ -1,6 +1,6 @@
-/** A relative change shown beside a figure: shared by the metric card (app shell) and the analytics page. */
+/** A relative change shown beside a figure: shared by StatCard (components/) and the analytics page. */
 
-/** A relative change in whole percentage points, the one rounding behind both the figure (`signedPercent`) and the metric card's tone; null without a baseline (null or NaN). */
+/** A relative change in whole percentage points, the one rounding behind both the figure (`signedPercent`) and StatCard's tone; null without a baseline (null or NaN). */
 export function deltaPoints(delta: number | null): number | null {
   if (delta === null || Number.isNaN(delta)) return null;
   return Math.round(delta * 100);

@@ -1,6 +1,6 @@
 /** Tiny scale and path helpers for the hand-rolled SVG charts (the BurnupChart idiom). */
 
-import { compactNumber } from './analyticsFormat';
+import { compactNumber } from '@/lib/numberFormat';
 
 export function linearScale(d0: number, d1: number, r0: number, r1: number): (v: number) => number {
   const span = d1 - d0;

@@ -1,7 +1,9 @@
 import { BarChart3, Clock, Layers, MessageSquare, School, Table as TableIcon, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { StatCard } from '@/components/StatCard/StatCard';
 import { useAuth } from '@/lib/auth';
 import type { AnalyticsSection, AnalyticsUnit, ApiAnalyticsDashboard } from '@/lib/api/types';
+import { compactNumber } from '@/lib/numberFormat';
 import '../analytics.scss';
 import { AnalyticsFilterRow } from '../components/AnalyticsFilterRow';
 import { BarsBySprint, type CharsPanel } from '../components/BarsBySprint';
@@ -10,12 +12,11 @@ import { CardTable } from '../components/CardTable';
 import { ChartCard, type ChartCardState } from '../components/ChartCard';
 import { SplitBar } from '../components/SplitBar';
 import { StackedBars, type StackedRow } from '../components/StackedBars';
-import { StatTile } from '../components/StatTile';
 import { TrendLines, TrendTable } from '../components/TrendLines';
 import { UnitToggle } from '../components/UnitToggle';
 import { WeeklyLine } from '../components/WeeklyLine';
 import { useAnalyticsDashboard } from '../hooks/useAnalyticsDashboard';
-import { compactNumber, dateLabel, rangeLabel } from '../utils/analyticsFormat';
+import { dateLabel, rangeLabel } from '../utils/analyticsFormat';
 import { downloadCsv, fileSlug, toCsv } from '../utils/csv';
 
 const FORBIDDEN = 'Analytics is available to instructors and maintainers.';
@@ -152,13 +153,15 @@ export default function AnalyticsPage() {
       />
       {failureNote && <p className="gt-analytics__error" role="alert">{failureNote}</p>}
       <section className="gt-analytics__tiles" aria-label="Overview">
-        <StatTile label="Classes" value={o?.active_classes ?? null} icon={School} hint={hintFor(o?.active_classes) ?? (o ? onRecord.classes : undefined)} loading={pending} />
-        <StatTile label="Teams" value={o?.teams ?? null} icon={Layers} accent="blue" hint={hintFor(o?.teams) ?? (o ? onRecord.teams : undefined)} loading={pending} />
-        <StatTile label="Students" value={o?.students ?? null} icon={Users} accent="purple" hint={hintFor(o?.students) ?? (o ? onRecord.students : undefined)} loading={pending} />
-        <StatTile
+        <StatCard compact format="compact" label="Classes" value={o?.active_classes ?? null} icon={<School size={16} aria-hidden="true" />} hint={hintFor(o?.active_classes) ?? (o ? onRecord.classes : undefined)} loading={pending} />
+        <StatCard compact format="compact" label="Teams" value={o?.teams ?? null} icon={<Layers size={16} aria-hidden="true" />} accent="blue" hint={hintFor(o?.teams) ?? (o ? onRecord.teams : undefined)} loading={pending} />
+        <StatCard compact format="compact" label="Students" value={o?.students ?? null} icon={<Users size={16} aria-hidden="true" />} accent="purple" hint={hintFor(o?.students) ?? (o ? onRecord.students : undefined)} loading={pending} />
+        <StatCard
+          compact
+          format="compact"
           label="Signed in (7d)"
           value={o?.active_users_7d ?? null}
-          icon={Clock}
+          icon={<Clock size={16} aria-hidden="true" />}
           accent="amber"
           hint={hintFor(o?.active_users_7d)
             ?? (o && o.active_users_7d === null ? 'Appears once sign-ins are recorded' : DEFINITIONS.active)}
@@ -168,20 +171,24 @@ export default function AnalyticsPage() {
           loading={pending}
         />
         {classView ? (
-          <StatTile
+          <StatCard
+            compact
+            format="compact"
             label="Team messages"
             value={d?.conversations.team_members ?? null}
-            icon={MessageSquare}
+            icon={<MessageSquare size={16} aria-hidden="true" />}
             delta={o ? { value: o.deltas.team_messages ?? null, vsLabel: vs, goodWhenUp: true } : undefined}
             trend={o?.trends.team_messages}
             hint={hintFor(d?.conversations.team_members) ?? `Direct messages are school-wide: ${compactNumber(d?.conversations.dm)}`}
             loading={pending}
           />
         ) : (
-          <StatTile
+          <StatCard
+            compact
+            format="compact"
             label="Messages"
             value={o?.messages ?? null}
-            icon={MessageSquare}
+            icon={<MessageSquare size={16} aria-hidden="true" />}
             delta={o ? { value: o.deltas.messages ?? null, vsLabel: vs, goodWhenUp: true } : undefined}
             trend={o?.trends.messages}
             hint={hintFor(o?.messages)}

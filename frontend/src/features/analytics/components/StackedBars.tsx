@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { AnalyticsBoardStatus, AnalyticsUnit } from '@/lib/api/types';
-import { compactNumber } from '../utils/analyticsFormat';
+import { compactNumber } from '@/lib/numberFormat';
 import { textWidth } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
 import { ChartLegend } from './ChartLegend';

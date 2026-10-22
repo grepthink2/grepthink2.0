@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronUp, Download, Info } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Download, Info } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Table, type TableColumn, type TableSort } from '@/components/Table/Table';
 import type { ApiAnalyticsBreakdownRow } from '@/lib/api/types';
 import { percent } from '../utils/analyticsFormat';
 
@@ -30,7 +31,29 @@ const BY_NAME: Sort = { key: 'name', dir: 'asc' };
 /** Names compare as people read them: "Team 2" before "Team 10", case and accents aside. */
 const NAMES = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-/** Per class or per team (brief §4 #12): sticky header, right-aligned tabular figures, a 3px meter under percentages, the folded row last and italic. */
+/** A cell: the name (with the folded row's explanation), a percentage over its 3px meter, or a figure; "—" when missing. */
+function cellOf(column: BreakdownColumn, row: ApiAnalyticsBreakdownRow): ReactNode {
+  const v = row[column.key];
+  if (column.kind !== 'text' && (v === null || v === undefined)) return <span className="gt-table__null">—</span>;
+  if (column.kind === 'text') {
+    return <>{String(v ?? '')}{row.kind === 'folded' ? <Info size={12} role="img" aria-label="Fewer than 3 people" className="gt-table__info" /> : null}</>;
+  }
+  if (column.kind === 'percent') {
+    return (
+      <>
+        {percent(v as number)}
+        <span className="gt-table__meter" aria-hidden="true"><span className="gt-table__meter-fill" style={{ width: `${Math.min(100, Math.max(0, Math.round((v as number) * 100)))}%` }} /></span>
+      </>
+    );
+  }
+  return (v as number).toLocaleString('en-US');
+}
+
+/**
+ * Per class or per team (brief §4 #12), on the shared Table with a sticky header: the name is each row's header,
+ * figures are right-aligned and tabular, a 3px meter sits under percentages, and the folded row comes last, in italics.
+ * It takes the design's breakdown look, `.gt-table--breakdown` in analytics.scss.
+ */
 export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
   const cols = useMemo(() => breakdownColumns(kind), [kind]);
   const [chosen, setSort] = useState<Sort>(BY_NAME);
@@ -47,50 +70,43 @@ export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
     };
     return [...real.sort(cmp), ...folded];
   }, [rows, sort]);
-  const toggle = (key: keyof ApiAnalyticsBreakdownRow) =>
-    setSort(sort.key === key ? { key, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'name' ? 'asc' : 'desc' });
+  // The Table asks for the next sort: the sorted column turns around, and another starts the way this table always has,
+  // names A–Z and figures largest first.
+  const onSort = (next: TableSort) => {
+    const key = next.key as keyof ApiAnalyticsBreakdownRow;
+    setSort(key === sort.key ? { key, dir: next.dir } : { key, dir: key === 'name' ? 'asc' : 'desc' });
+  };
+  const columns: TableColumn<ApiAnalyticsBreakdownRow>[] = [
+    ...cols.map((c): TableColumn<ApiAnalyticsBreakdownRow> => ({
+      key: c.key,
+      label: c.label,
+      sortable: true,
+      // the name is the row's header, as in the cards' twin tables
+      rowHeader: c.kind === 'text',
+      className: c.kind === 'text' ? undefined : 'gt-table__num',
+      render: (r) => cellOf(c, r),
+    })),
+    {
+      key: 'open',
+      label: <span className="gt-visually-hidden">Open</span>,
+      className: 'gt-table__num',
+      render: (r) => (r.kind === 'row' && r.href ? <Link className="gt-table__link" to={r.href} aria-label={`View ${r.name}`}>View</Link> : null),
+    },
+  ];
   return (
-    <div className="gt-table">
+    <div className="gt-table--breakdown">
       <div className="gt-table__bar">
         <button type="button" className="gt-table__export" onClick={onExport}><Download size={14} aria-hidden="true" /> Export CSV</button>
       </div>
-      <div className="gt-table__scroll">
-        <table className="gt-table__table">
-          <caption className="gt-table__caption">{kind === 'class' ? 'Breakdown by class' : 'Breakdown by team'}</caption>
-          <thead>
-            <tr>
-              {cols.map((c) => (
-                <th key={c.key} scope="col" aria-sort={sort.key === c.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'} className={c.kind === 'text' ? '' : 'gt-table__num'}>
-                  <button type="button" className="gt-table__sort" onClick={() => toggle(c.key)}>
-                    {c.label}
-                    {sort.key === c.key ? (sort.dir === 'asc' ? <ChevronUp size={12} aria-hidden="true" className="gt-table__sort-icon" /> : <ChevronDown size={12} aria-hidden="true" className="gt-table__sort-icon" />) : null}
-                  </button>
-                </th>
-              ))}
-              <th scope="col" aria-label="Open" />
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((r) => (
-              <tr key={r.id} className={r.kind === 'folded' ? 'gt-table__row--folded' : undefined}>
-                {cols.map((c) => {
-                  const v = r[c.key];
-                  // the name is the row's header, as in the cards' twin tables
-                  if (c.kind === 'text') return <th key={c.key} scope="row">{String(v ?? '')}{r.kind === 'folded' ? <Info size={12} role="img" aria-label="Fewer than 3 people" className="gt-table__info" /> : null}</th>;
-                  if (c.kind === 'percent') return (
-                    <td key={c.key} className="gt-table__num">
-                      {percent(v as number | null)}
-                      {typeof v === 'number' ? <span className="gt-table__meter" aria-hidden="true"><span className="gt-table__meter-fill" style={{ width: `${Math.min(100, Math.max(0, Math.round(v * 100)))}%` }} /></span> : null}
-                    </td>
-                  );
-                  return <td key={c.key} className="gt-table__num">{v === null || v === undefined ? '—' : (v as number).toLocaleString('en-US')}</td>;
-                })}
-                <td className="gt-table__num">{r.kind === 'row' && r.href ? <Link to={r.href} aria-label={`View ${r.name}`}>View</Link> : null}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        caption={kind === 'class' ? 'Breakdown by class' : 'Breakdown by team'}
+        columns={columns}
+        rows={sorted}
+        sort={sort}
+        onSort={onSort}
+        rowClassName={(r) => (r.kind === 'folded' ? 'gt-table__row--folded' : undefined)}
+        stickyHeader
+      />
     </div>
   );
 }

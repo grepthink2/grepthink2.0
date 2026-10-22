@@ -1,0 +1,52 @@
+// StatCard — ported from design/components/display/display.css so the two stay diffable: the StatCard
+// block, then its line from the file's reduced-motion block. The ⓘ is InfoPopover
+// (components/InfoPopover) and the loading value Skeleton, which bring their own styles. The stretched
+// button's own padding, border, radius and background beat index.css's global button rule, and the
+// rule's font and border-colour transition have nothing to act on (no text, no border). One addition,
+// marked below: the sparkline lets its dot's ring show past its box.
+
+/* ── StatCard (= DashboardMetricCard; `compact` = analytics StatTile) ── */
+.gt-stat-card {
+  position: relative; display: flex; flex-direction: column; gap: var(--gt-space-xs); box-sizing: border-box; width: 100%;
+  padding: var(--gt-space-md) var(--gt-space-md) var(--gt-space-sm);
+  background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-hairline);
+  font-family: var(--gt-font-sans); text-align: left;
+}
+.gt-stat-card__top { display: flex; align-items: center; justify-content: space-between; gap: var(--gt-space-sm); }
+.gt-stat-card__label-row { display: inline-flex; align-items: center; gap: 2px; min-width: 0; }
+.gt-stat-card__label { font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: var(--gt-tracking-wide); }
+.gt-stat-card__icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: var(--gt-radius-sm); }
+.gt-stat-card__value { font-size: 2rem; font-weight: var(--gt-weight-semibold); line-height: 1.1; color: var(--gt-text-primary); }
+.gt-stat-card__hint { min-height: 1.1em; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-stat-card--compact { padding: 14px var(--gt-space-md); gap: 6px; }
+.gt-stat-card--compact .gt-stat-card__value { font-size: var(--gt-text-h2); }
+.gt-stat-card__bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; min-height: 18px; }
+.gt-stat-card__meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gt-stat-card__delta { display: inline-flex; align-items: center; gap: 3px; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); white-space: nowrap; }
+.gt-stat-card__delta--good { color: var(--gt-success-text); }
+.gt-stat-card__delta--bad { color: var(--gt-error-text); }
+.gt-stat-card__delta--flat { color: var(--gt-text-tertiary); }
+.gt-stat-card__delta-value { font-variant-numeric: tabular-nums; }
+.gt-stat-card__delta-vs { margin-left: 3px; font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); white-space: normal; }
+.gt-stat-card__spark { display: block; flex-shrink: 0; width: 84px; height: 24px; }
+// Codebase addition: the last point's dot (r 3.5, a 2px ring) sits 3px inside the box at an extreme,
+// so its ring reaches 1.5px past the edge; the box lets it show rather than clip it.
+.gt-stat-card__spark { overflow: visible; }
+.gt-stat-card__spark-line { fill: none; stroke: var(--gt-chart-context); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.gt-stat-card__spark-dot { fill: var(--gt-primary); stroke: var(--gt-surface); stroke-width: 2; }
+.gt-stat-card__null { color: var(--gt-text-tertiary); }
+.gt-stat-card__value .gt-skeleton { display: inline-block; width: 64px; height: 22px; }
+.gt-stat-card--clickable { transition: box-shadow var(--gt-transition-fast), border-color var(--gt-transition-fast); }
+.gt-stat-card--clickable:hover { box-shadow: var(--gt-shadow-hover); border-color: var(--gt-border-strong); }
+.gt-stat-card__hit { position: absolute; inset: 0; z-index: 0; padding: 0; border: none; border-radius: inherit; background: transparent; cursor: pointer; }
+.gt-stat-card__hit:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-stat-card .gt-infopop { position: relative; z-index: 1; }
+.gt-stat-card--primary .gt-stat-card__icon { background: rgba(1, 129, 86, 0.14); color: var(--gt-primary); }
+.gt-stat-card--blue    .gt-stat-card__icon { background: rgba(39, 113, 255, 0.12); color: var(--gt-accent); }
+.gt-stat-card--purple  .gt-stat-card__icon { background: rgba(142, 68, 173, 0.14); color: var(--gt-purple); }
+.gt-stat-card--amber   .gt-stat-card__icon { background: rgba(245, 166, 35, 0.18); color: var(--gt-warning); }
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-stat-card--clickable { transition: none; }
+}

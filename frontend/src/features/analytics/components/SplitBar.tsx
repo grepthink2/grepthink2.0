@@ -1,4 +1,4 @@
-import { compactNumber } from '../utils/analyticsFormat';
+import { compactNumber } from '@/lib/numberFormat';
 import { ChartLegend } from './ChartLegend';
 
 export interface SplitSegment { key: string; label: string; value: number; note?: string; colorClass: string }

@@ -736,13 +736,13 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { unmount } = render(
       <EditProjectModal isOpen onClose={() => {}} project={project} projectMembers={[]} viewerIsProductOwner={false} />,
     );
-    expect(screen.getByRole('button', { name: 'Details' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Team' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Meetings' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Details' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Team' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Meetings' })).not.toBeInTheDocument();
     unmount();
 
     renderModal();
-    expect(screen.getByRole('button', { name: 'Meetings' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Meetings' })).toBeInTheDocument();
   });
 
   it('swaps Cancel and Save Changes for a single Done on the Meetings tab', async () => {
@@ -750,7 +750,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { onClose } = renderModal();
 
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.getByRole('region', { name: 'Team meetings' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
@@ -769,7 +769,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const name = screen.getByRole('textbox', { name: 'Project name' });
     await user.clear(name);
     await user.type(name, 'Beta');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
@@ -788,9 +788,9 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     ] as ApiProjectMember[];
     renderModal({ projectMembers: members });
 
-    await user.click(screen.getByRole('button', { name: 'Team' }));
+    await user.click(screen.getByRole('tab', { name: 'Team' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Select Scrum Master' }), 'u-ben');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
@@ -801,7 +801,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { onClose } = renderModal();
 
     await user.type(screen.getByRole('textbox', { name: 'Project name' }), ' 2');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -814,12 +814,12 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
 
     const name = screen.getByRole('textbox', { name: 'Project name' });
     await user.type(name, '!');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Details' }));
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
     await user.type(screen.getByRole('textbox', { name: 'Project name' }), '{Backspace}');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
   });
 
@@ -839,7 +839,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const user = userEvent.setup();
     const { onClose } = renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
     expect(titleBox()).toHaveFocus();
     await user.keyboard('{Escape}');
@@ -856,7 +856,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const user = userEvent.setup();
     const { onClose } = renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Delete Sprint 3 planning' }));
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
     await user.keyboard('{Escape}');
@@ -874,7 +874,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       const { onClose } = renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
 
@@ -892,14 +892,14 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
-      await user.click(screen.getByRole('button', { name: 'Details' }));
+      await user.click(screen.getByRole('tab', { name: 'Details' }));
 
       expect(screen.getByRole('textbox', { name: 'Project name' })).toBeInTheDocument();
       expect(screen.getByRole('region', { name: 'Team meetings', hidden: true })).not.toBeVisible();
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       expect(screen.getByRole('heading', { name: 'New meeting' })).toBeVisible();
       expect(titleBox()).toHaveValue('Retro');
     });
@@ -910,7 +910,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const onUpdate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
       renderModal({ meetingsList: { meetings: [meeting()], now: NOW, zone: LA, schoolZone: LA, onUpdate } });
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Edit Sprint 3 planning' }));
       // Saved as it was: nothing is unsaved, only the request in flight holds Done, so no hint.
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -927,10 +927,10 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
-      await user.click(screen.getByRole('button', { name: 'Details' }));
+      await user.click(screen.getByRole('tab', { name: 'Details' }));
 
       const save = screen.getByRole('button', { name: 'Save Changes' });
       expect(save).toBeDisabled();
@@ -943,7 +943,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       expect(done()).toBeEnabled();
       expect(screen.queryByText(HINT)).not.toBeInTheDocument();

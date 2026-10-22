@@ -27,7 +27,7 @@ const SCOPE: ApiAnalyticsScope = {
 };
 const renderPage = (path = `/app/analytics?institution=${DASHBOARD.meta.institution.id}`) =>
   render(<MemoryRouter initialEntries={[path]}><Routes><Route path="/app/analytics" element={<AnalyticsPage />} /></Routes></MemoryRouter>);
-const tile = (label: string) => screen.getByText(label, { selector: '.metric-card__label' }).closest('.metric-card') as HTMLElement;
+const tile = (label: string) => screen.getByText(label, { selector: '.gt-stat-card__label' }).closest('.gt-stat-card') as HTMLElement;
 const card = (title: RegExp) => screen.getByRole('heading', { name: title }).closest('.gt-chart-card') as HTMLElement;
 const unavailable = () => new ApiError(503, 'Service unavailable', 'Request failed with status 503', 'database_unavailable');
 /** The payload for CSE 115A: its team channels, and the school's direct messages beside them. */
@@ -36,7 +36,7 @@ const CLASS_VIEW: ApiAnalyticsDashboard = {
   meta: { ...DASHBOARD.meta, class: { id: 'c1', label: 'CSE 115A · Fall 2026' } },
   overview: { ...DASHBOARD.overview, trends: { ...DASHBOARD.overview.trends, team_messages: [40, 55] } },
 };
-const sparkVertices = (el: HTMLElement) => el.querySelector('.metric-card__spark polyline')!.getAttribute('points')!.split(' ').length;
+const sparkVertices = (el: HTMLElement) => el.querySelector('.gt-stat-card__spark path')!.getAttribute('d')!.split(' ').length;
 const SIGNED_IN_HINT = 'People of the school who signed in explicitly in the last 7 days (staying signed in does not count).';
 
 beforeEach(() => {
@@ -51,7 +51,7 @@ describe('AnalyticsPage', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText(DASHBOARD.meta.institution.name)).toBeInTheDocument());
     expect(screen.getByText('Classes')).toBeInTheDocument();
-    expect(screen.getByText('Messages').closest('.metric-card')).toBeTruthy();
+    expect(screen.getByText('Messages').closest('.gt-stat-card')).toBeTruthy();
     await waitFor(() => expect(within(tile('Classes')).getByText('4')).toBeInTheDocument()); // the payload's figures, not skeletons
     expect(within(tile('Messages')).getByText('1,284')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Conversations/ })).toBeInTheDocument();
