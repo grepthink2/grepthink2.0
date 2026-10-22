@@ -53,7 +53,12 @@ export interface TableProps<Row extends object = Record<string, unknown>>
   rowClassName?: (row: Row, index: number) => string | undefined;
   /** 6/8 × 12 padding, 13px cells. @default false */
   dense?: boolean;
-  /** The header row sticks inside a scrolling container. @default false */
+  /**
+   * The header row sticks while the table scrolls under it, which happens inside the Table's own
+   * wrapper only: its `overflow-x: auto` makes it the scrollport, so the header sticks only when the
+   * wrapper's height is limited (a `max-height` from the feature, through `className` or `style`), and
+   * not when a container around the Table scrolls. @default false
+   */
   stickyHeader?: boolean;
   /**
    * Set while the table overflows its wrapper: a focusable region named by the caption. JSX takes any
@@ -72,13 +77,13 @@ const byIdOrIndex = (row: object, index: number) => (row as { id?: string | numb
  * The data table, ported from design/components/display/Table.jsx: native table semantics, with
  * `scope="col"` headers and a visually hidden caption that names it. A sortable column's header is a
  * SortableHeader: a button that asks `onSort` for the next sort (ascending first, then the other way)
- * and a `<th>` with `aria-sort`. While `loading`, skeleton rows (hidden from assistive tech) stand in
- * and the table is `aria-busy`; with no rows, one row holds a compact card EmptyState. A row that opens
- * something carries a link (`rowTo`, `rowHref`) or button (`onRowClick`) in its first cell; the row
- * itself only shows hover, so no `<tr onClick>` that a keyboard cannot reach. `dense` rows suit
- * analytics breakdowns, and `stickyHeader` a scrolling card (its `max-height` is the feature's). The wrapper
- * scrolls sideways on phones, and while the table overflows it is a focusable region named by the
- * caption, so a keyboard can scroll it.
+ * and a `<th>` that carries `aria-sort` while it sorts the table. While `loading`, skeleton rows
+ * (hidden from assistive tech) stand in and the table is `aria-busy`; with no rows, one row holds a
+ * compact card EmptyState. A row that opens something carries a link (`rowTo`, `rowHref`) or button
+ * (`onRowClick`) in its first cell; the row itself only shows hover, so no `<tr onClick>` that a
+ * keyboard cannot reach. `dense` rows suit analytics breakdowns, and `stickyHeader` a scrolling card
+ * (its `max-height` is the feature's). The wrapper scrolls sideways on phones, and while the table
+ * overflows it is a focusable region named by the caption, so a keyboard can scroll it.
  *
  * Codebase-side: `caption` is required, since every table needs a name, and the region is labelled by
  * it (`aria-labelledby`), so a caption that is not a string names it too; `rowTo` renders the first

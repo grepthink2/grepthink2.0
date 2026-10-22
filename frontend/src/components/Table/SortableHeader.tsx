@@ -1,5 +1,5 @@
 import type { ReactNode, Ref, ThHTMLAttributes } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 import type { SortState } from './useTableSort';
 import './SortableHeader.scss';
 
@@ -22,18 +22,21 @@ export interface SortableHeaderProps<K extends string>
 
 /**
  * A sortable column header, ported from the header of design/components/display/Table.jsx: a
- * `<th scope="col">` with `aria-sort` (ascending, descending, or none while another column sorts the
- * table), holding a button that sorts by its column. The chevron points the way the column sorts,
- * faint until the column is the sorted one. The Table component renders it for a sortable column, and
- * a table of its own can render it in its header row with useTableSort.
+ * `<th scope="col">` holding a button that sorts by its column. While its column sorts the table, the
+ * `<th>` carries `aria-sort` (ascending or descending) and the chevron points the way it sorts; ARIA
+ * 1.2 puts `aria-sort` on the sorted column only, so the others carry none. The Table component renders
+ * it for a sortable column, and a table of its own can render it in its header row with useTableSort.
  *
- * Native props and `ref` reach the `<th>`.
+ * Codebase change: an unsorted column shows a faint up-and-down glyph, where the design's faint up
+ * chevron would promise a direction its first press may not take (the analytics breakdown sorts its
+ * figures largest first). Native props and `ref` reach the `<th>`.
  */
 export function SortableHeader<K extends string>({ label, sortKey, currentSort, onSort, ref, ...rest }: SortableHeaderProps<K>) {
   const direction = currentSort?.key === sortKey ? currentSort.direction : null;
-  const Icon = direction === 'desc' ? ChevronDown : ChevronUp;
+  // Unsorted, the glyph is neutral: a first press may sort either way.
+  const Icon = direction === null ? ChevronsUpDown : direction === 'desc' ? ChevronDown : ChevronUp;
   return (
-    <th {...rest} ref={ref} scope="col" aria-sort={direction === null ? 'none' : direction === 'asc' ? 'ascending' : 'descending'}>
+    <th {...rest} ref={ref} scope="col" aria-sort={direction === null ? undefined : direction === 'asc' ? 'ascending' : 'descending'}>
       <button
         type="button"
         className={['gt-table__sort', direction !== null ? 'gt-table__sort--active' : ''].filter(Boolean).join(' ')}

@@ -40,7 +40,10 @@ describe('SortableHeader', () => {
     render(<People />);
     expect(header('Name')).toHaveAttribute('scope', 'col');
     expect(header('Name')).toHaveAttribute('aria-sort', 'ascending');
-    expect(header('Age')).toHaveAttribute('aria-sort', 'none');
+    // ARIA 1.2 puts aria-sort on the sorted column only.
+    expect(header('Age')).not.toHaveAttribute('aria-sort');
+    // Unsorted, its glyph is neutral: a first press may sort either way.
+    expect(header('Age').querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevrons-up-down');
     expect(header('Age')).toHaveClass('num');
     const name = within(header('Name')).getByRole('button', { name: 'Name' });
     expect(name).toHaveAttribute('type', 'button');
@@ -55,19 +58,19 @@ describe('SortableHeader', () => {
     expect(name.querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevron-down');
     expect(firstColumn()).toEqual(['Cho', 'Ben', 'Ana']);
 
-    // Another column takes over, ascending; this one goes faint, its chevron pointing up again.
+    // Another column takes over, ascending; this one loses aria-sort and goes back to the faint neutral glyph.
     await userEvent.click(within(header('Age')).getByRole('button'));
     expect(header('Age')).toHaveAttribute('aria-sort', 'ascending');
-    expect(header('Name')).toHaveAttribute('aria-sort', 'none');
+    expect(header('Name')).not.toHaveAttribute('aria-sort');
     expect(name).not.toHaveClass('gt-table__sort--active');
-    expect(name.querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevron-up');
+    expect(name.querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevrons-up-down');
     expect(firstColumn()).toEqual(['Ben', 'Cho', 'Ana']);
   });
 
   it('is unsorted with no sort at all, and reports its own key', async () => {
     const onSort = vi.fn();
     render(<table><thead><tr><SortableHeader label="Due" sortKey="due" currentSort={null} onSort={onSort} /></tr></thead></table>);
-    expect(header('Due')).toHaveAttribute('aria-sort', 'none');
+    expect(header('Due')).not.toHaveAttribute('aria-sort');
     await userEvent.click(screen.getByRole('button', { name: 'Due' }));
     expect(onSort).toHaveBeenCalledWith('due');
   });

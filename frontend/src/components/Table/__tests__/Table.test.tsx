@@ -104,7 +104,9 @@ describe('Table', () => {
     const onSort = vi.fn();
     render(<Roster onSort={onSort} />);
     expect(header('Name')).toHaveAttribute('aria-sort', 'ascending');
-    expect(header('Team')).toHaveAttribute('aria-sort', 'none');
+    // ARIA 1.2 puts aria-sort on the sorted column only, and an unsorted column's glyph is neutral.
+    expect(header('Team')).not.toHaveAttribute('aria-sort');
+    expect(header('Team').querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevrons-up-down');
     expect(header('TSRs')).not.toHaveAttribute('aria-sort');
     expect(within(header('TSRs')).queryByRole('button')).not.toBeInTheDocument();
     const nameButton = within(header('Name')).getByRole('button', { name: 'Name' });
@@ -121,7 +123,7 @@ describe('Table', () => {
     await userEvent.click(within(header('Team')).getByRole('button'));
     expect(onSort).toHaveBeenLastCalledWith({ key: 'team', dir: 'asc' });
     expect(header('Team')).toHaveAttribute('aria-sort', 'ascending');
-    expect(header('Name')).toHaveAttribute('aria-sort', 'none');
+    expect(header('Name')).not.toHaveAttribute('aria-sort');
     expect(nameButton).not.toHaveClass('gt-table__sort--active');
     expect(names()).toEqual(['Ben Okafor', 'Ana Ruiz', 'Cho Park']);
     await userEvent.click(within(header('Team')).getByRole('button'));
@@ -142,8 +144,8 @@ describe('Table', () => {
   it('a sortable table with no sort yet starts each column ascending', async () => {
     const onSort = vi.fn();
     render(<Table caption="Roster" columns={COLUMNS} rows={ROWS} onSort={onSort} />);
-    expect(header('Name')).toHaveAttribute('aria-sort', 'none');
-    expect(header('Team')).toHaveAttribute('aria-sort', 'none');
+    expect(header('Name')).not.toHaveAttribute('aria-sort');
+    expect(header('Team')).not.toHaveAttribute('aria-sort');
     await userEvent.click(within(header('Team')).getByRole('button'));
     expect(onSort).toHaveBeenCalledWith({ key: 'team', dir: 'asc' });
   });
