@@ -1,0 +1,36 @@
+// SegmentedControl — ported from design/components/navigation/navigation.css so the two stay
+// diffable: the SegmentedControl block, then its lines from the file's phone and reduced-motion
+// blocks. The option's own border, radius, background, font and transition, and the size class's
+// padding and font size (every control has one), beat index.css's global button rule, which would
+// otherwise reach this raw button.
+
+/* ── SegmentedControl — same track; sizes to its options (full width on phones) ── */
+.gt-segmented { display: inline-flex; gap: 2px; max-width: 100%; padding: 4px; box-sizing: border-box; border-radius: var(--gt-radius-sm); background: var(--gt-gray-100); font-family: var(--gt-font-sans); }
+.gt-segmented--full { display: flex; width: 100%; }
+.gt-segmented__option {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box;
+  border: none; border-radius: 5px; background: transparent; font-family: var(--gt-font-sans); font-weight: var(--gt-weight-medium);
+  color: var(--gt-text-tertiary); white-space: nowrap; cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-segmented--full .gt-segmented__option { flex: 1 1 0; }
+.gt-segmented--md .gt-segmented__option { min-height: 30px; padding: 4px 14px; font-size: 0.8125rem; }
+.gt-segmented--sm .gt-segmented__option { min-height: 24px; padding: 2px 10px; font-size: var(--gt-text-caption); }
+.gt-segmented__option:hover:not(:disabled):not(.gt-segmented__option--active) { color: var(--gt-text-primary); }
+.gt-segmented__option:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-segmented__option:disabled { opacity: var(--gt-opacity-disabled); cursor: not-allowed; }
+.gt-segmented__option--active { background: var(--gt-surface); color: var(--gt-text-primary); font-weight: var(--gt-weight-semibold); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+.gt-segmented__icon { display: inline-flex; }
+.gt-segmented__count { font-size: 10.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
+
+/* ── Phones (< 768px) ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-segmented__option { min-height: 44px; }
+  .gt-segmented { display: flex; width: 100%; }
+  .gt-segmented__option { flex: 1 1 0; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-segmented__option { transition: none; }
+}
