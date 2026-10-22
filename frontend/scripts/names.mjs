@@ -119,13 +119,13 @@ export const NAMES_ALLOWLIST = [
   },
   {
     path: 'src/components/ErrorBoundary',
-    reason: 'The error boundary around each lazy route has no design counterpart.',
+    reason: 'The error boundary App.tsx puts around the routes has no design counterpart.',
   },
   {
     path: 'src/components/Markdown',
     reason:
-      'Holds MarkdownText, which the design keeps in scrum/CommentThread.jsx. Scrum comments, ' +
-      'messages and the project pages all render Markdown through it.',
+      "Holds MarkdownText, which the design keeps in scrum/CommentThread.jsx. Scrum's comments and " +
+      "story modal, the project page and the landing page's issue card render Markdown through it.",
   },
   {
     path: 'src/components/Skeleton/TableSkeleton.tsx',
@@ -166,8 +166,9 @@ export const NAMES_ALLOWLIST = [
     status: 'different name',
     keeps: 'Button',
     reason:
-      "AnalyticsPage builds the cards' tool buttons itself (.gt-analytics__toggle, " +
-      '.gt-analytics__refresh); they become Button (pressed, outline) when analytics moves onto the kit.',
+      'Analytics builds its tool buttons itself (.gt-analytics__toggle and .gt-analytics__refresh ' +
+      'in AnalyticsPage, .gt-table__export in BreakdownTable); they become Button (pressed, outline) ' +
+      'when analytics moves onto the kit.',
   },
   {
     design: 'ChartCardCheck',
@@ -227,7 +228,7 @@ export const NAMES_ALLOWLIST = [
     design: 'ConversationListItem',
     status: 'different name',
     keeps: 'ConversationList',
-    reason: 'ConversationList renders its rows (.gt-convo) itself.',
+    reason: 'ConversationList renders its rows (.messages-list__item) itself.',
   },
   {
     design: 'JoinRequestCard',
@@ -289,10 +290,11 @@ export const NAMES_ALLOWLIST = [
   {
     design: 'RoleSelect',
     status: 'different name',
-    keeps: 'Select',
+    keeps: 'TeamTab',
     reason:
-      "Edit Project's TeamTab picks roles with native selects (.edit-project__select); they " +
-      'become Select when the project screens move onto the kit.',
+      "Edit Project assigns roles the other way round: TeamTab's selects (.edit-project__select) " +
+      'pick the member who is Product Owner or Scrum Master, and AdminMemberCard toggles admin. ' +
+      "No screen changes one member's role from a dropdown.",
   },
   {
     design: 'TypingIndicator',
