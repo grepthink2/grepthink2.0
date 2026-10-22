@@ -4,8 +4,8 @@ import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
 import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
-import SortableHeader from '@features/app/components/shared/SortableHeader';
-import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
+import { SortableHeader } from '@/components/Table/SortableHeader';
+import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
 import './RosterList.scss';
 
 interface RosterListProps {

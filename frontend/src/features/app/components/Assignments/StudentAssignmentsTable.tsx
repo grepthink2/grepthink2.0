@@ -1,7 +1,7 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
-import SortableHeader from '@features/app/components/shared/SortableHeader';
-import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
+import { SortableHeader } from '@/components/Table/SortableHeader';
+import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
 import './StudentAssignmentsTable.scss';
 
 export type StudentAssignmentStatus = 'not_started' | 'in_progress' | 'submitted';

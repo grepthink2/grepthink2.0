@@ -59,15 +59,26 @@ describe('BreakdownTable', () => {
     expect(screen.getByRole('rowheader', { name: /Smaller groups \(1\)/ })).toHaveAttribute('scope', 'row');
     expect(screen.getByRole('link', { name: 'View CSE 115B' })).toHaveAttribute('href', '/app/analytics?institution=i1&class=c2');
   });
-  it('marks only the sorted column with an arrow', async () => {
+  it('marks the sorted column with its direction, every other sortable column with a faint arrow', async () => {
     renderTable();
-    const arrows = () => document.querySelectorAll('.gt-table__sort-icon');
-    expect(arrows()).toHaveLength(1);
-    expect(screen.getByRole('columnheader', { name: 'Class' }).querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevron-up');
+    const sorted = () => document.querySelectorAll('.gt-table__sort--active');
+    expect(document.querySelectorAll('.gt-table__sort-icon')).toHaveLength(7);
+    expect(sorted()).toHaveLength(1);
+    expect(screen.getByRole('columnheader', { name: 'Class' }).querySelector('.gt-table__sort--active .gt-table__sort-icon')).toHaveClass('lucide-chevron-up');
     const header = screen.getByRole('columnheader', { name: 'Team msgs' });
     await userEvent.click(within(header).getByRole('button'));
-    expect(arrows()).toHaveLength(1);
-    expect(header.querySelector('.gt-table__sort-icon')).toHaveClass('lucide-chevron-down');
+    expect(sorted()).toHaveLength(1);
+    expect(header.querySelector('.gt-table__sort--active .gt-table__sort-icon')).toHaveClass('lucide-chevron-down');
+  });
+  it('is the shared Table, dense with a sticky header, in the breakdown look, with a named View column', () => {
+    const { container } = renderTable();
+    const table = screen.getByRole('table', { name: 'Breakdown by class' });
+    expect(table).toHaveClass('gt-table', 'gt-table--dense', 'gt-table--sticky');
+    expect(container.querySelector('.gt-table--breakdown .gt-table-wrapper')).toContainElement(table);
+    expect(screen.getByRole('columnheader', { name: 'Open' })).not.toHaveAttribute('aria-sort');
+    // Figures sit right, under a header that sits right too.
+    expect(screen.getByRole('columnheader', { name: 'Teams' })).toHaveClass('gt-table__num');
+    expect(screen.getByText('228')).toHaveClass('gt-table__num');
   });
   it('sorts names as people read them, "Team 2" before "Team 10"', () => {
     const team = (id: string, name: string): ApiAnalyticsBreakdownRow => ({ id, name, kind: 'row', members: 4, team_messages: 1, stories: 1, tasks: 1, points_done_rate: null, on_time_rate: null, missing: 0, href: null });
