@@ -105,7 +105,6 @@ export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
         sort={sort}
         onSort={onSort}
         rowClassName={(r) => (r.kind === 'folded' ? 'gt-table__row--folded' : undefined)}
-        dense
         stickyHeader
       />
     </div>

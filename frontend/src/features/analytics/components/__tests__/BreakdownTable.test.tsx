@@ -107,10 +107,12 @@ describe('BreakdownTable', () => {
     expect(screen.getByRole('link', { name: 'View CSE 115B' })).toHaveClass('gt-table__link');
     expect(rule('.gt-table--breakdown .gt-table__null').getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
   });
-  it('is the shared Table, dense with a sticky header, in the breakdown look, with a named View column', () => {
+  it('is the shared Table with a sticky header, in the breakdown look, with a named View column', () => {
     const { container } = renderTable();
     const table = screen.getByRole('table', { name: 'Breakdown by class' });
-    expect(table).toHaveClass('gt-table', 'gt-table--dense', 'gt-table--sticky');
+    expect(table).toHaveClass('gt-table', 'gt-table--sticky');
+    // The breakdown look sets the rows' height, so the table asks for no dense rows.
+    expect(table).not.toHaveClass('gt-table--dense');
     expect(container.querySelector('.gt-table--breakdown .gt-table-wrapper')).toContainElement(table);
     expect(screen.getByRole('columnheader', { name: 'Open' })).not.toHaveAttribute('aria-sort');
     // Figures sit right, under a header that sits right too.

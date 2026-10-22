@@ -19,14 +19,15 @@ describe('CardTable', () => {
     expect(within(first).getAllByRole('cell').map((c) => c.textContent)).toEqual(['120', '34']);
   });
 
-  it('right-aligns the numeric columns, header and cells, on the shared dense Table in the breakdown look', () => {
+  it('right-aligns the numeric columns, header and cells, on the shared Table in the breakdown look', () => {
     const { container } = renderTable();
     expect(screen.getByRole('columnheader', { name: 'Week' })).not.toHaveClass('gt-table__num');
     expect(screen.getByRole('columnheader', { name: 'Team channels' })).toHaveClass('gt-table__num');
     expect(screen.getByText('120')).toHaveClass('gt-table__num');
     expect(screen.getByRole('rowheader', { name: 'Sep 7, 2026' })).not.toHaveClass('gt-table__num');
     const table = screen.getByRole('table');
-    expect(table).toHaveClass('gt-table', 'gt-table--dense', 'gt-table--sticky');
+    expect(table).toHaveClass('gt-table', 'gt-table--sticky');
+    expect(table).not.toHaveClass('gt-table--dense');
     expect(container.firstChild).toHaveClass('gt-table--breakdown');
   });
 });

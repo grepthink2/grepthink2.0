@@ -6,8 +6,8 @@ export interface CardTableRow { key: string; cells: ReactNode[] }
 export interface CardTableProps { caption: string; columns: CardTableColumn[]; rows: CardTableRow[] }
 
 /**
- * A card's figures as a table, the twin its Table toggle shows in place of the chart, on the shared Table with dense rows
- * and a header that sticks: a visually hidden caption names it, each row's first cell is that row's header, numeric
+ * A card's figures as a table, the twin its Table toggle shows in place of the chart, on the shared Table with a header
+ * that sticks: a visually hidden caption names it, each row's first cell is that row's header, numeric
  * columns align right, and it scrolls inside the card. It takes the design's breakdown look, as the breakdown table does
  * (`.gt-table--breakdown` in analytics.scss).
  */
@@ -21,7 +21,7 @@ export function CardTable({ caption, columns, rows }: CardTableProps) {
   }));
   return (
     <div className="gt-table--breakdown">
-      <Table caption={caption} columns={tableColumns} rows={rows} rowKey={(row) => row.key} dense stickyHeader />
+      <Table caption={caption} columns={tableColumns} rows={rows} rowKey={(row) => row.key} stickyHeader />
     </div>
   );
 }
