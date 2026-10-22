@@ -240,7 +240,10 @@ export const NAMES_ALLOWLIST = [
     design: 'MeetingCard',
     status: 'different name',
     keeps: 'TeamMeetingCard',
-    reason: "The TA pages' card for a team's weekly TA meeting (.ta-card).",
+    reason:
+      "The TA pages' card for a team's weekly TA meeting (.ta-card). The design keeps MeetingCard: " +
+      '"team meeting" means the one-off kind, so the codebase card takes a TA-meeting name when the TA pages ' +
+      'move onto the kit.',
   },
   {
     design: 'PieChartCard',
@@ -285,7 +288,9 @@ export const NAMES_ALLOWLIST = [
     design: 'TeamMemberCard',
     status: 'different name',
     keeps: 'AdminMemberCard',
-    reason: "Edit Project's member card (.edit-project__member-card), with the admin toggle.",
+    reason:
+      "Edit Project's member card (.edit-project__member-card), with the admin toggle. The design keeps the " +
+      "broader name, and the codebase card takes it when Edit Project's Team tab moves onto the kit.",
   },
   {
     design: 'RoleSelect',
@@ -346,13 +351,17 @@ export const NAMES_ALLOWLIST = [
     design: 'LandingHeader',
     status: 'different name',
     keeps: 'Header',
-    reason: "The landing page's header is features/landing/components/Header.tsx (.landing-header).",
+    reason:
+      "The landing page's header is features/landing/components/Header.tsx (.landing-header). Kept for good: " +
+      "the design's name says which header, and the app shell has a Header of its own.",
   },
   {
     design: 'LandingFooter',
     status: 'different name',
     keeps: 'Footer',
-    reason: "The landing page's footer is features/landing/components/Footer.tsx (.landing-footer).",
+    reason:
+      "The landing page's footer is features/landing/components/Footer.tsx (.landing-footer). Kept for good, " +
+      'with LandingHeader.',
   },
 
   // ── schedule ──────────────────────────────────────────────────────────────────────────────────

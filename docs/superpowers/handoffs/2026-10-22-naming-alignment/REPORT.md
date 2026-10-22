@@ -372,13 +372,13 @@ for an allowlisted export, the name the codebase keeps. *(allowlist)* marks a no
 - `AssignmentCard` (`domain/AssignmentCard.jsx`) → **StudentHomeDashboard** (`features/app/components/Home/StudentHomeDashboard.tsx`): Student Home builds its deadline rows in place (`.student-home__deadline-row`, the design's five statuses), and StudentAssignmentsTable its table rows.
 - `ConversationListItem` (`domain/ConversationListItem.jsx`) → **ConversationList** (`features/messages/components/ConversationList.tsx`): ConversationList renders its rows (`.messages-list__item`) itself.
 - `JoinRequestCard` (`domain/JoinRequestCard.jsx`) → **RequestsModal** (`features/app/components/Home/RequestsModal.tsx`): RequestsModal (`.requests-modal__card`) and Student Home (`.student-home__request-card`) build the request rows in place.
-- `MeetingCard` (`domain/MeetingCard.jsx`) → **TeamMeetingCard** (`features/app/components/TAManagement/TeamMeetingCard.tsx`): The TA pages' card for a team's weekly TA meeting (`.ta-card`).
+- `MeetingCard` (`domain/MeetingCard.jsx`) → **TeamMeetingCard** (`features/app/components/TAManagement/TeamMeetingCard.tsx`): The TA pages' card for a team's weekly TA meeting (`.ta-card`). The design keeps `MeetingCard`: "team meeting" means the one-off kind, so the codebase card takes a TA-meeting name when the TA pages move onto the kit.
 - `PieChartCard` (`domain/PieChartCard.jsx`) → **PieCharts** (`features/app/components/Roster/PieCharts.tsx`): The design's SVG stand-in for recharts. The roster's PieCharts, the stats' ProjectMembershipChart and the TSR ContributionsTab draw their pies with recharts.
 - `ProjectCard` (`domain/ProjectCard.jsx`) → **ProjectGrid** (`features/app/components/Project/ProjectGrid.tsx`): ProjectGrid renders each project tile (`.project-grid__card`) itself.
 - `RosterRow` (`domain/RosterRow.jsx`) → **RosterList** (`features/app/components/Roster/RosterList.tsx`): RosterList renders the roster's table rows and phone cards itself.
 - `TSRForm` (`domain/TSRForm.jsx`) → **TSRS** (`features/app/components/TSRS/TSRS.tsx`): The TSR flow: TSRS steps through ContributionsTab, TeamFeedbackTab and ScrumMasterTab.
 - `TSRSummaryCard` (`domain/TSRSummaryCard.jsx`) → **TSRView** (`features/app/components/TSRS/TSRView.tsx`): Staff read the submissions in TSRView's tables.
-- `TeamMemberCard` (`domain/TeamMemberCard.jsx`) → **AdminMemberCard** (`features/app/components/EditProject/AdminMemberCard.tsx`): Edit Project's member card (`.edit-project__member-card`), with the admin toggle.
+- `TeamMemberCard` (`domain/TeamMemberCard.jsx`) → **AdminMemberCard** (`features/app/components/EditProject/AdminMemberCard.tsx`): Edit Project's member card (`.edit-project__member-card`), with the admin toggle. The design keeps the broader name, and the codebase card takes it when Edit Project's Team tab moves onto the kit.
 - `RoleSelect` (`domain/TeamMemberCard.jsx`) → **TeamTab** (`features/app/components/EditProject/TeamTab.tsx`): Edit Project assigns roles the other way round: TeamTab's selects (`.edit-project__select`) pick the member who is Product Owner or Scrum Master, and AdminMemberCard toggles admin. No screen changes one member's role from a dropdown.
 - `TypingIndicator` (`domain/TypingIndicator.jsx`) → **MessagingSpotlight** (`features/landing/components/spotlights/MessagingSpotlight.tsx`): Only the landing page's messaging spotlight draws typing dots, in place (`.msg-live__typing`); the app's messages show none.
 - `AnnouncementPill` (`marketing/AnnouncementPill.jsx`) → **Hero** (`features/landing/components/Hero.tsx`): Hero renders its announcement pill (`.hero__announce`) itself.
@@ -387,8 +387,8 @@ for an allowlisted export, the name the codebase keeps. *(allowlist)* marks a no
 - `FeatureColumn` (`marketing/FeatureColumn.jsx`) → **Solutions** (`features/landing/components/Solutions.tsx`): Solutions renders its feature columns (`.feature-col`) and the app preview (`.preview-window`) itself.
 - `PreviewWindow` (`marketing/FeatureColumn.jsx`) → **Solutions** (`features/landing/components/Solutions.tsx`): Solutions renders its feature columns (`.feature-col`) and the app preview (`.preview-window`) itself.
 - `FloatCard` (`marketing/FloatCard.jsx`) → **FloatingCards** (`features/landing/components/FloatingCards.tsx`): FloatingCards renders each card (`.float-card`) itself.
-- `LandingFooter` (`marketing/LandingFooter.jsx`) → **Footer** (`features/landing/components/Footer.tsx`): The landing page's footer is `features/landing/components/Footer.tsx` (`.landing-footer`).
-- `LandingHeader` (`marketing/LandingHeader.jsx`) → **Header** (`features/landing/components/Header.tsx`): The landing page's header is `features/landing/components/Header.tsx` (`.landing-header`).
+- `LandingFooter` (`marketing/LandingFooter.jsx`) → **Footer** (`features/landing/components/Footer.tsx`): The landing page's footer is `features/landing/components/Footer.tsx` (`.landing-footer`). Kept for good, with LandingHeader.
+- `LandingHeader` (`marketing/LandingHeader.jsx`) → **Header** (`features/landing/components/Header.tsx`): The landing page's header is `features/landing/components/Header.tsx` (`.landing-header`). Kept for good: the design's name says which header, and the app shell has a Header of its own.
 - `Stage` (`marketing/StageCard.jsx`) → **Spotlight** (`features/landing/components/spotlights/Spotlight.tsx`): Spotlight renders the stage behind its cards (`.spotlight__stage`) itself.
 - `SCHEDULE_KINDS` (`schedule/ScheduleModel.jsx`) → **KINDS** (`features/schedule/scheduleModel.ts`): `scheduleModel.ts` keeps the kind palette private as KINDS and hands it out through kindMeta().
 
@@ -419,14 +419,14 @@ for an allowlisted export, the name the codebase keeps. *(allowlist)* marks a no
 | `AssignmentCard` | different name | `StudentHomeDashboard` | Student Home builds its deadline rows in place (`.student-home__deadline-row`, the design's five statuses), and StudentAssignmentsTable its table rows. |
 | `ConversationListItem` | different name | `ConversationList` | ConversationList renders its rows (`.messages-list__item`) itself. |
 | `JoinRequestCard` | different name | `RequestsModal` | RequestsModal (`.requests-modal__card`) and Student Home (`.student-home__request-card`) build the request rows in place. |
-| `MeetingCard` | different name | `TeamMeetingCard` | The TA pages' card for a team's weekly TA meeting (`.ta-card`). |
+| `MeetingCard` | different name | `TeamMeetingCard` | The TA pages' card for a team's weekly TA meeting (`.ta-card`). The design keeps MeetingCard: "team meeting" means the one-off kind, so the codebase card takes a TA-meeting name when the TA pages move onto the kit. |
 | `PieChartCard` | different name | `PieCharts` | The design's SVG stand-in for recharts. The roster's PieCharts, the stats' ProjectMembershipChart and the TSR ContributionsTab draw their pies with recharts. |
 | `BarChartCard` | design-only | — | The design's SVG stand-in for a recharts bar chart, which no screen draws; the analytics bars are BarsBySprint and StackedBars. |
 | `ProjectCard` | different name | `ProjectGrid` | ProjectGrid renders each project tile (`.project-grid__card`) itself. |
 | `RosterRow` | different name | `RosterList` | RosterList renders the roster's table rows and phone cards itself. |
 | `TSRForm` | different name | `TSRS` | The TSR flow: TSRS steps through ContributionsTab, TeamFeedbackTab and ScrumMasterTab. |
 | `TSRSummaryCard` | different name | `TSRView` | Staff read the submissions in TSRView's tables. |
-| `TeamMemberCard` | different name | `AdminMemberCard` | Edit Project's member card (`.edit-project__member-card`), with the admin toggle. |
+| `TeamMemberCard` | different name | `AdminMemberCard` | Edit Project's member card (`.edit-project__member-card`), with the admin toggle. The design keeps the broader name, and the codebase card takes it when Edit Project's Team tab moves onto the kit. |
 | `RoleSelect` | different name | `TeamTab` | Edit Project assigns roles the other way round: TeamTab's selects (`.edit-project__select`) pick the member who is Product Owner or Scrum Master, and AdminMemberCard toggles admin. No screen changes one member's role from a dropdown. |
 | `TypingIndicator` | different name | `MessagingSpotlight` | Only the landing page's messaging spotlight draws typing dots, in place (`.msg-live__typing`); the app's messages show none. |
 | `AnnouncementPill` | different name | `Hero` | Hero renders its announcement pill (`.hero__announce`) itself. |
@@ -435,8 +435,8 @@ for an allowlisted export, the name the codebase keeps. *(allowlist)* marks a no
 | `FeatureColumn`, `PreviewWindow` | different name | `Solutions` | Solutions renders its feature columns (`.feature-col`) and the app preview (`.preview-window`) itself. |
 | `FloatCard` | different name | `FloatingCards` | FloatingCards renders each card (`.float-card`) itself. |
 | `Stage` | different name | `Spotlight` | Spotlight renders the stage behind its cards (`.spotlight__stage`) itself. |
-| `LandingHeader` | different name | `Header` | The landing page's header is `features/landing/components/Header.tsx` (`.landing-header`). |
-| `LandingFooter` | different name | `Footer` | The landing page's footer is `features/landing/components/Footer.tsx` (`.landing-footer`). |
+| `LandingHeader` | different name | `Header` | The landing page's header is `features/landing/components/Header.tsx` (`.landing-header`). Kept for good: the design's name says which header, and the app shell has a Header of its own. |
+| `LandingFooter` | different name | `Footer` | The landing page's footer is `features/landing/components/Footer.tsx` (`.landing-footer`). Kept for good, with LandingHeader. |
 | `ScheduleList`, `ScheduleDivider` | not ported | — | They come with the Today's Schedule card and the /app/schedule agenda, which wait for GET /api/schedule. The rows are ported already: team meetings render ScheduleItem and ScheduleDayHeader. |
 | `SCHEDULE_KINDS` | different name | `KINDS` | `scheduleModel.ts` keeps the kind palette private as KINDS and hands it out through kindMeta(). |
 | `PointsChip`, `EstimateChip`, `PRLinkChip`, `UserPair` | same name | `Chips` | The four chips share `features/scrum/components/Chips.tsx`; the design groups them in `scrum/PointsChip.jsx`. |
@@ -450,27 +450,23 @@ The codebase's names win. Each change below lets an allowlist entry go, and the 
 
 **Rename or replace (the codebase has a component of its own for the same thing)**
 
-1. `marketing/LandingHeader` → `Header` and `marketing/LandingFooter` → `Footer`, after
-   `features/landing/components/Header.tsx` and `Footer.tsx`. The bundle's namespace is flat, and `Header` and `Footer`
-   are free in it today. See open question 2.
-2. `analytics/StatTile`: drop it and render `StatCard` with `compact`.
-3. `analytics/DefinitionPopover`: drop it and render `InfoPopover`.
-4. `analytics/ChartEmptyState`: drop it and render `EmptyState` with `variant="card"`.
-5. `ChartCardTool` → `Button` (`pressed` for the Table toggles, `outline` for Refresh and Export CSV), and
+1. `analytics/StatTile`: drop it and render `StatCard` with `compact`.
+2. `analytics/DefinitionPopover`: drop it and render `InfoPopover`.
+3. `analytics/ChartEmptyState`: drop it and render `EmptyState` with `variant="card"`.
+4. `ChartCardTool` → `Button` (`pressed` for the Table toggles, `outline` for Refresh and Export CSV), and
    `ChartCardCheck` → `Checkbox`. The codebase moves analytics onto both when the analytics screens adopt the kit.
-6. `domain/TeamMemberCard` → `AdminMemberCard`, Edit Project's member card. See open question 3.
 
 **Move (same names, other files)**
 
-7. `MarkdownText`: out of `scrum/CommentThread.jsx` and into the kit, in a file named `Markdown.jsx` (for example
+5. `MarkdownText`: out of `scrum/CommentThread.jsx` and into the kit, in a file named `Markdown.jsx` (for example
    `display/Markdown.jsx`). The codebase has it at `components/Markdown/MarkdownText.tsx`, and the check takes that home
    once the design groups it so.
-8. `SortableHeader`, with `useTableSort` beside it: export them from `display/Table.jsx`, which already draws that
+6. `SortableHeader`, with `useTableSort` beside it: export them from `display/Table.jsx`, which already draws that
    header cell. The codebase ships both in `components/Table/`.
-9. `scrum/PointsChip.jsx` → `scrum/Chips.jsx` (PointsChip, EstimateChip, PRLinkChip, UserPair), after
+7. `scrum/PointsChip.jsx` → `scrum/Chips.jsx` (PointsChip, EstimateChip, PRLinkChip, UserPair), after
    `features/scrum/components/Chips.tsx`.
-10. Optional: give `Skeleton` a file of its own (`feedback/Skeleton.jsx`), as the codebase has `components/Skeleton/`.
-    The check passes either way.
+8. Optional: give `Skeleton` a file of its own (`feedback/Skeleton.jsx`), as the codebase has `components/Skeleton/`.
+   The check passes either way.
 
 **Keep the design's name (the codebase has none to rename to)**
 
@@ -509,6 +505,13 @@ The codebase's names win. Each change below lets an allowlist entry go, and the 
   little there.
 - RoleSelect: Edit Project assigns roles the other way round, with one select per role that picks a member. No codebase
   name fits. To match the screen, draw TeamTab's Product Owner and Scrum Master pickers instead.
+- Kept on purpose (decided 2026-10-22):
+  - `LandingHeader` and `LandingFooter`, for good. They say which header and footer, and the app shell has a `Header`
+    of its own.
+  - `MeetingCard`. The codebase's `TeamMeetingCard` is the TA pages' card for a weekly *TA meeting*, and "team meeting"
+    means the one-off kind, so the codebase card takes a TA-meeting name when the TA pages move onto the kit.
+  - `TeamMemberCard`, the broader name for one member's card. The codebase's `AdminMemberCard` takes it when Edit
+    Project's Team tab moves onto the kit.
 
 **Documentation in `design/`**
 
@@ -521,18 +524,16 @@ The codebase's names win. Each change below lets an allowlist entry go, and the 
 `Badge status="live"` and `UnitToggle` becomes a `SegmentedControl`. The check will then warn for both, and the design
 can drop them in that round.
 
-## Open questions for the maintainer
+## Decided (2026-10-22)
 
-1. **MeetingCard and TeamMeetingCard.** The codebase's `TeamMeetingCard` (the TA pages) is a card for a team's weekly
-   *TA meeting*. AGENTS.md's vocabulary keeps "team meeting" for the one-off kind, which the design's `TeamMeetingForm`
-   and `TeamMeetingsList` already mean. Renaming the design's `MeetingCard` to `TeamMeetingCard` would carry that clash
-   into the design. Renaming the codebase card is a codebase rename, which this round does not make. The allowlist
-   records the pair until you choose.
-2. **LandingHeader and LandingFooter.** The rule says rename the design's to `Header` and `Footer` (item 1). But the
-   design's names match the blocks on both sides (`gt-landing-header`, `landing-header`), and the app shell has a
-   `Header` of its own. Rename, or keep the pair in the allowlist for good?
-3. **TeamMemberCard and AdminMemberCard.** They are the same unit, one member's card. The design's shows skills and any
-   actions; the codebase's has an admin toggle. Rename, or keep the design's broader name?
+1. **MeetingCard and TeamMeetingCard.** The design keeps `MeetingCard`. The codebase's `TeamMeetingCard` (the TA pages)
+   is a card for a team's weekly *TA meeting*, and AGENTS.md's vocabulary keeps "team meeting" for the one-off kind,
+   which the design's `TeamMeetingForm` and `TeamMeetingsList` already mean. So the codebase card takes a TA-meeting
+   name when the TA pages move onto the kit, and the allowlist records the pair until then.
+2. **LandingHeader and LandingFooter.** The design keeps both names for good. They match the blocks on both sides
+   (`gt-landing-header`, `landing-header`), and the app shell has a `Header` of its own. The allowlist keeps the pair.
+3. **TeamMemberCard and AdminMemberCard.** They are the same unit, one member's card. The design keeps the broader
+   `TeamMemberCard`, and the codebase card takes it when Edit Project's Team tab moves onto the kit.
 4. **CHART_COLORS.** Same name, different palette. The design's `PieChartCard.jsx` goes green, blue, then #54B999,
-   #B26A00, #7D3C98 and #8A8A8A. The TSR `ContributionsTab.tsx` goes green, blue, then #F59E0B, #EF4444, #8B5CF6 and
-   #EC4899. This is no naming problem, but worth settling when the TSR screens move onto the kit.
+   #B26A00, #7D3C98 and #8A8A8A; the TSR `ContributionsTab.tsx` goes green, blue, then #F59E0B, #EF4444, #8B5CF6 and
+   #EC4899. This isn't a naming problem: the TSR screens take the design's palette when they move onto the kit.
