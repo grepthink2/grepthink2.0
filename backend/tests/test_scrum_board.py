@@ -149,21 +149,51 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert by_key["US-B"]["estimate_hours"] == 5
     assert {s["key"]: s["estimate_hours"] for s in body["backlog"]}["US-D"] is None
 
-    # Live stories only: E is archived, D is backlog (its done task counts nowhere).
+    # Live stories only: E is archived, D is backlog (its done task counts nowhere). The burnup
+    # counts tasks, so C's 3 story points count nowhere: it has no tasks.
     assert {s["id"]: s["progress"] for s in body["sprints"]} == {
-        "S1": {"tasks_done": 1, "tasks_total": 2, "points_done": 3, "points_total": 5},
-        "S2": {"tasks_done": 1, "tasks_total": 2, "points_done": 5, "points_total": 8},
-        "S3": {"tasks_done": 0, "tasks_total": 0, "points_done": 0, "points_total": 3},
+        "S1": {
+            "tasks_done": 1,
+            "tasks_total": 2,
+            "points_done": 3,
+            "points_total": 5,
+            "hours_done": 0,
+            "hours_total": 0,
+        },
+        "S2": {
+            "tasks_done": 1,
+            "tasks_total": 2,
+            "points_done": 5,
+            "points_total": 8,
+            "hours_done": 3,
+            "hours_total": 5,
+        },
+        "S3": {
+            "tasks_done": 0,
+            "tasks_total": 0,
+            "points_done": 0,
+            "points_total": 0,
+            "hours_done": 0,
+            "hours_total": 0,
+        },
     }
 
-    # Per sprint (scope, completed): S1 (5, 3), S2 (8, 5; E is archived), S3 (3, 0).
-    assert body["burnup"]["cumulative"]["scope"] == [5, 13, 16]
-    assert body["burnup"]["cumulative"]["completed"] == [3, 8, 8]
+    # Every task in S2 has points: the burnup draws points, and hours are the other choice.
+    burnup = body["burnup"]
+    assert (burnup["unit"], burnup["units_available"], burnup["tasks_without_points"]) == (
+        "points",
+        ["points", "hours"],
+        0,
+    )
+    # Per sprint (scope, completed) in task points: S1 (5, 3), S2 (8, 5; E is archived), S3 (0, 0).
+    assert burnup["cumulative"]["scope"] == [5, 13, 13]
+    assert burnup["cumulative"]["completed"] == [3, 8, 8]
     # Snapshots started late, so past days come from the task_moves audit.
-    assert body["burnup"]["sprint"]["completed"][:4] == [0, 5, 5, 5]
+    assert burnup["sprint"]["completed"][:4] == [0, 5, 5, 5]
     [snap] = db.rows("sprint_burnup_days")
     assert (snap["sprint_id"], snap["day"]) == ("S2", TODAY.isoformat())
     assert (snap["scope_points"], snap["completed_points"]) == (8, 5)
+    assert (snap["scope_hours"], snap["completed_hours"]) == (5, 3)
 
 
 def test_board_names_each_tasks_dependencies_both_ways(monkeypatch, client):

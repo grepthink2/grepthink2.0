@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 BoardStatus = Literal["todo", "in_progress", "done"]
 EstimateScale = Literal["linear", "exponential", "fibonacci"]
+BurnupUnit = Literal["points", "hours"]
 TASK_TAGS = (
     "backend",
     "frontend",
@@ -125,12 +126,16 @@ class SprintOut(BaseModel):
 
 
 class SprintProgress(BaseModel):
-    """Tasks done over tasks, and points of done tasks over story points (the burnup's units)."""
+    """Tasks done over tasks, and the burnup's values in both units: the points of the sprint's
+    done tasks over the points of all its tasks, and the same in hours. The client shows the
+    burnup's unit."""
 
     tasks_done: int
     tasks_total: int
     points_done: int
     points_total: int
+    hours_done: int
+    hours_total: int
 
 
 class BoardSprintOut(SprintOut):
@@ -233,6 +238,13 @@ class BoardProject(BaseModel):
 
 
 class BurnupOut(BaseModel):
+    """The burnup in ``unit`` (spec D21). ``units_available`` are the units the selected sprint
+    can draw: points only when every task in it has points, hours always. ``tasks_without_points``
+    counts the sprint's tasks that keep it from points."""
+
+    unit: BurnupUnit
+    units_available: list[BurnupUnit]
+    tasks_without_points: int
     sprint: BurnupSeries | None = None
     cumulative: BurnupSeries
 

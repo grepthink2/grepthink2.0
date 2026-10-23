@@ -84,11 +84,12 @@ def test_creating_a_task_in_a_sprint_reads_the_burnup_totals_once(monkeypatch):
     db = scrum_db(
         monkeypatch,
         sprints=[dict(SPRINT)],
-        user_stories=[dict(STORY, sprint_id="sp1", points=3)],
+        user_stories=[dict(STORY, sprint_id="sp1", points=13)],
         tasks=[dict(TASK, status="done", points=2)],
     )
     controller.create_task(story_id="st1", user_id=UID, fields={"title": "x", "points": 1})
     [snap] = db.rows("sprint_burnup_days")
+    # The tasks' points, the new one's included; the story's 13 count nowhere (spec D21).
     assert (snap["scope_points"], snap["completed_points"]) == (3, 2)
     # The story, the writer check, the key, the insert, then the sprint's stories with their
     # tasks embedded (one read) and the snapshot's upsert.

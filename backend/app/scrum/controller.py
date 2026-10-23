@@ -28,7 +28,14 @@ from app.core import authz, events
 from app.core.db import fan_out, get_client
 from app.core.errors import AppError
 from app.notifications.controller import notify_mention
-from app.scrum.burnup import build_cumulative_series, build_sprint_series
+from app.scrum.burnup import (
+    Totals,
+    build_cumulative_series,
+    build_sprint_series,
+    default_unit,
+    holds_unit,
+    units_available,
+)
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
 from app.scrum.schedule import sprint_status
@@ -54,6 +61,9 @@ REPO_NOT_FOUND = "Repo not found"
 #: 422s raised from more than one place.
 BAD_DATE_RANGE = "ends_at must be on or after starts_at"
 TITLE_REQUIRED = "title cannot be null"
+#: 422: the board's ``?unit=`` is not a unit the selected sprint's burnup can draw (spec D21):
+#: points while one of its tasks has none, or a value that is neither points nor hours.
+UNIT_UNAVAILABLE = "Burnup unit not available for this sprint"
 #: 409: a story leaves through the backlog, so a sprint's scope never drops by deletion.
 STORY_IN_SPRINT = "Move the story to the backlog before deleting it"
 #: 409, code ``task_blocked``: a task in To do waits until every task it depends on is done.
@@ -320,11 +330,11 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     res = client.table("user_stories").update(payload).eq("id", str(story_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update story")
-    # Only scope-bearing edits move the burnup line. A snapshot costs two
-    # more sequential round-trips (one to recompute totals, one to upsert), so
-    # a title or description edit would pay two of its five for nothing —
-    # `completed` comes from task status, which a story write never touches.
-    if {"points", "sprint_id"} & payload.keys():
+    # Only a sprint change moves the burnup line: the burnup counts the sprint's tasks, and
+    # story points count nowhere (spec D21). A snapshot costs two more sequential round-trips
+    # (one to recompute totals, one to upsert), so a title, points or description edit would
+    # pay two of its five for nothing.
+    if "sprint_id" in payload:
         for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
             if sid:
                 _snapshot_burnup_safe(client, sid)
@@ -658,53 +668,67 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
 # ------------------------------------------------------------------- burnup ----
 
 
-def _totals(stories: list[dict], done_tasks: list[dict]) -> tuple[int, int]:
-    """(scope, completed): story points in the sprint, and points of its done tasks."""
-    scope = sum(s.get("points") or 0 for s in stories)
-    completed = sum(t.get("points") or 0 for t in done_tasks)
-    return scope, completed
+#: The task column that holds a task's value in each burnup unit.
+_UNIT_COLUMN = {"points": "points", "hours": "estimate_hours"}
+
+
+def _totals(stories: list[dict], done_tasks: list[dict]) -> Totals:
+    """The burnup's values for ``stories`` (live, ``tasks`` embedded) in both units (spec D21):
+    scope sums every task's estimate, completed the same over ``done_tasks``; a task without one
+    counts zero, and story points count nowhere."""
+    tasks = [t for s in stories for t in s.get("tasks") or []]
+    return Totals(
+        scope_points=sum(t.get("points") or 0 for t in tasks),
+        completed_points=sum(t.get("points") or 0 for t in done_tasks),
+        scope_hours=sum(t.get("estimate_hours") or 0 for t in tasks),
+        completed_hours=sum(t.get("estimate_hours") or 0 for t in done_tasks),
+        tasks_total=len(tasks),
+        tasks_with_points=sum(1 for t in tasks if t.get("points") is not None),
+    )
+
+
+def _done_tasks(stories: list[dict]) -> list[dict]:
+    """The done tasks of ``stories`` (``tasks`` embedded)."""
+    return [t for s in stories for t in s.get("tasks") or [] if t.get("status") == "done"]
 
 
 def _sprint_progress(stories: list[dict]) -> dict:
     """Live progress of one sprint from its live stories (``tasks`` embedded): tasks done over
-    tasks, and points of done tasks over story points — the burnup's units (``_totals``)."""
-    tasks = [t for s in stories for t in s["tasks"]]
-    done = [t for t in tasks if t.get("status") == "done"]
-    points_total, points_done = _totals(stories, done)
+    tasks, and the burnup's values in both units (``_totals``). The client shows the unit the
+    board's burnup draws."""
+    done = _done_tasks(stories)
+    totals = _totals(stories, done)
     return {
         "tasks_done": len(done),
-        "tasks_total": len(tasks),
-        "points_done": points_done,
-        "points_total": points_total,
+        "tasks_total": totals.tasks_total,
+        "points_done": totals.completed_points,
+        "points_total": totals.scope_points,
+        "hours_done": totals.completed_hours,
+        "hours_total": totals.scope_hours,
     }
 
 
-def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
+def _live_burnup_totals(client, sprint_id: str) -> Totals:
     """Totals straight from the database, for writes that have no board loaded: the sprint's
     live stories with their tasks embedded, in one read."""
     stories = (
         client.table("user_stories")
-        .select("id, points, tasks(points, status)")
+        .select("id, tasks(points, estimate_hours, status)")
         .eq("sprint_id", str(sprint_id))
         .is_("archived_at", "null")
         .execute()
     ).data or []
-    done = [t for s in stories for t in s.get("tasks") or [] if t.get("status") == "done"]
-    return _totals(stories, done)
+    return _totals(stories, _done_tasks(stories))
 
 
-def _snapshot_burnup_safe(client, sprint_id: str, totals: tuple[int, int] | None = None) -> None:
-    """Best-effort daily snapshot; never fails the triggering write.
-    Pass precomputed (scope, completed) via `totals` to skip the recompute."""
+def _snapshot_burnup_safe(client, sprint_id: str, totals: Totals | None = None) -> None:
+    """Best-effort daily snapshot in both units; never fails the triggering write.
+    Pass the sprint's precomputed `totals` to skip the recompute."""
     try:
-        scope, completed = totals if totals is not None else _live_burnup_totals(client, sprint_id)
+        if totals is None:
+            totals = _live_burnup_totals(client, sprint_id)
         client.table("sprint_burnup_days").upsert(
-            {
-                "sprint_id": str(sprint_id),
-                "day": _today_la().isoformat(),
-                "scope_points": scope,
-                "completed_points": completed,
-            },
+            {"sprint_id": str(sprint_id), "day": _today_la().isoformat(), **totals.values()},
             on_conflict="sprint_id,day",
         ).execute()
     except Exception:
@@ -712,20 +736,20 @@ def _snapshot_burnup_safe(client, sprint_id: str, totals: tuple[int, int] | None
 
 
 def _completed_by_day_from_moves(
-    client, task_points: dict[str, int], starts_at: date, ends_at: date
+    client, task_values: dict[str, int], starts_at: date, ends_at: date
 ) -> dict[str, int]:
-    """Exact completed points per LA day for the sprint's tasks, reconstructed from the
+    """Exact completed values per LA day for the sprint's tasks, reconstructed from the
     task_moves audit (spec D7: fills past days that predate the lazy snapshots).
 
-    ``task_points`` maps each task in the sprint's live stories to its points; the board
-    has those rows loaded already, so only the audit is read here.
+    ``task_values`` maps each task in the sprint's live stories to its value in the burnup's
+    unit; the board has those rows loaded already, so only the audit is read here.
     """
-    if not task_points:
+    if not task_values:
         return {}
     moves = (
         client.table("task_moves")
         .select("task_id, to_status, moved_at")
-        .in_("task_id", list(task_points))
+        .in_("task_id", list(task_values))
         .order("moved_at")
         .execute()
     ).data or []
@@ -740,7 +764,7 @@ def _completed_by_day_from_moves(
         while i < len(moves) and _la_day(moves[i]["moved_at"]) <= d:
             status[moves[i]["task_id"]] = moves[i]["to_status"]
             i += 1
-        out[d.isoformat()] = sum(task_points[tid] for tid, st in status.items() if st == "done")
+        out[d.isoformat()] = sum(task_values[tid] for tid, st in status.items() if st == "done")
         d += timedelta(days=1)
     return out
 
@@ -844,12 +868,18 @@ def _select_sprint(sprints: list[dict], sprint_id: str | None, today: date) -> d
     return sprints[0] if sprints else None
 
 
-def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
+def get_board(
+    *, project_id: str, user_id: str, sprint_id: str | None, unit: str | None = None
+) -> dict:
     """The whole board in three rounds of concurrent reads, whatever the sprint count.
 
     Round 1 needs only the project id; round 2 needs the story and sprint ids from
     round 1; round 3 needs the task ids and movers from round 2. Burnup totals come
     from those rows, not from another query per sprint.
+
+    The burnup draws ``unit`` (``points`` or ``hours``), by default points when every task in
+    the selected sprint has them, else hours (spec D21). Raises 422 :data:`UNIT_UNAVAILABLE`
+    for a ``unit`` the sprint cannot draw, before anything is written or recorded.
     """
     client = get_client()
     access = _board_access(client, project_id=project_id, user_id=user_id)
@@ -903,7 +933,10 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             "snaps": lambda: (
                 rows(
                     client.table("sprint_burnup_days")
-                    .select("sprint_id, day, scope_points, completed_points")
+                    .select(
+                        "sprint_id, day, scope_points, completed_points, scope_hours, "
+                        "completed_hours"
+                    )
                     .in_("sprint_id", sprint_ids)
                     .order("day")
                 )
@@ -1004,64 +1037,71 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
 
     progress = {s["id"]: _sprint_progress(live_stories(s["id"])) for s in sprints}
 
-    def sprint_totals(sid: str) -> tuple[int, int]:
+    def live_values(sid: str) -> dict:
+        """A sprint's burnup values from its live rows, named as a snapshot names them."""
         p = progress[sid]
-        return p["points_total"], p["points_done"]
+        return {
+            "scope_points": p["points_total"],
+            "completed_points": p["points_done"],
+            "scope_hours": p["hours_total"],
+            "completed_hours": p["hours_done"],
+        }
+
+    # The selected sprint's tasks decide the unit (spec D21): points when every one has them,
+    # else hours, unless ?unit= picks another the sprint can draw. Checked before the snapshot
+    # and the board_viewed event: a refused load writes and records nothing.
+    totals = _totals(stories, _done_tasks(stories))
+    available = units_available(totals)
+    if unit is None:
+        unit = default_unit(totals)
+    elif unit not in available:
+        raise HTTPException(status_code=422, detail=UNIT_UNAVAILABLE)
 
     snaps_by_sprint: dict[str, list[dict]] = {}
     for row in all_snaps:
         snaps_by_sprint.setdefault(row["sprint_id"], []).append(row)
 
     sprint_series = None
-    live_totals: tuple[int, int] | None = None
     if selected:
-        live_totals = sprint_totals(selected["id"])
-        _snapshot_burnup_safe(client, selected["id"], totals=live_totals)
+        _snapshot_burnup_safe(client, selected["id"], totals=totals)
         starts = date.fromisoformat(str(selected["starts_at"]))
         ends = date.fromisoformat(str(selected["ends_at"]))
         snaps = snaps_by_sprint.get(selected["id"], [])
         if today >= starts:
             day_key = today.isoformat()
             if not any(s["day"] == day_key for s in snaps):
-                snaps = [
-                    *snaps,
-                    {
-                        "day": day_key,
-                        "scope_points": live_totals[0],
-                        "completed_points": live_totals[1],
-                    },
-                ]
+                snaps = [*snaps, {"day": day_key, **totals.values()}]
         elapsed = (min(today, ends) - starts).days + 1 if today >= starts else 0
         completed_by_day = None
         if elapsed > len(snaps):  # snapshots started late — reconstruct from the audit
-            task_points = {
-                t["id"]: t.get("points") or 0
-                for s in live_stories(selected["id"])
-                for t in s["tasks"]
-            }
-            completed_by_day = _completed_by_day_from_moves(client, task_points, starts, ends)
+            column = _UNIT_COLUMN[unit]
+            task_values = {t["id"]: t.get(column) or 0 for s in stories for t in s["tasks"]}
+            completed_by_day = _completed_by_day_from_moves(client, task_values, starts, ends)
+        live = totals.values()
         sprint_series = build_sprint_series(
             snapshots=snaps,
             starts_at=starts,
             ends_at=ends,
             today=today,
-            live_scope=live_totals[0],
-            live_completed=live_totals[1],
+            live_scope=live[f"scope_{unit}"],
+            live_completed=live[f"completed_{unit}"],
             completed_by_day=completed_by_day,
+            unit=unit,
         )
         sprint_series["subtitle"] = f"{selected['starts_at']} – {selected['ends_at']}"
 
+    # One point per sprint: the selected sprint's live values; another sprint's last snapshot,
+    # or its live rows when it has none or that one holds nothing in the unit (written before the
+    # hours columns existed).
     cumulative_input = []
     for s in sprints:
-        if s["id"] == sel_id and live_totals is not None:
-            final = {"scope_points": live_totals[0], "completed_points": live_totals[1]}
-        elif snaps_by_sprint.get(s["id"]):
-            final = snaps_by_sprint[s["id"]][-1]  # ordered by day ascending
+        last = (snaps_by_sprint.get(s["id"]) or [None])[-1]  # ordered by day ascending
+        if s["id"] != sel_id and last is not None and holds_unit(last, unit):
+            final = last
         else:
-            scope, completed = sprint_totals(s["id"])
-            final = {"scope_points": scope, "completed_points": completed}
+            final = live_values(s["id"])
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
-    cumulative = build_cumulative_series(cumulative_input)
+    cumulative = build_cumulative_series(cumulative_input, unit=unit)
 
     # after every raise and outside fan_out: a refused or failed load is not a view
     events.record(
@@ -1077,7 +1117,13 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         "sprint_id": sel_id,
         "stories": stories,
         "backlog": backlog,
-        "burnup": {"sprint": sprint_series, "cumulative": cumulative},
+        "burnup": {
+            "unit": unit,
+            "units_available": available,
+            "tasks_without_points": totals.tasks_total - totals.tasks_with_points,
+            "sprint": sprint_series,
+            "cumulative": cumulative,
+        },
         "members": members,
         "access": access,
         "task_index": task_index,

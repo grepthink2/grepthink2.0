@@ -56,9 +56,14 @@ def _story_out(row: dict) -> StoryOut:
 
 
 def get_board(
-    project_id: str, sprint_id: str | None = None, user_id: str = Depends(require_user)
+    project_id: str,
+    sprint_id: str | None = None,
+    unit: str | None = None,
+    user_id: str = Depends(require_user),
 ) -> BoardResponse:
-    board = controller.get_board(project_id=project_id, user_id=user_id, sprint_id=sprint_id)
+    board = controller.get_board(
+        project_id=project_id, user_id=user_id, sprint_id=sprint_id, unit=unit
+    )
     return BoardResponse(**board)
 
 
