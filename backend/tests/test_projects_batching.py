@@ -9,6 +9,8 @@ rejected call writes nothing.
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 from fastapi import HTTPException
 
@@ -629,3 +631,34 @@ def test_create_project_budget(db, waves):
     assert waves == [2], waves
     assert db.executes == 3, _trace(db)
     assert not [q for q in db.queries if q["table"] == "sprints"], _trace(db)
+
+
+# A team's name is its students' own text: what create_project logs names ids only (AGENTS.md,
+# Sentry).
+
+
+def test_create_project_logs_the_new_team_by_ids_only(db, caplog):
+    with caplog.at_level(logging.INFO, logger="app.projects.controller"):
+        gamma = projects.create_project(CLASS, "Gamma Squad", "d", S6, 4)
+    [created] = [r for r in caplog.records if r.name == "app.projects.controller"]
+    assert created.levelno == logging.INFO
+    assert created.getMessage() == (
+        f"Project created | project_id={gamma['id']} class_id={CLASS} created_by={S6} "
+        "is_instructor=False"
+    )
+
+
+def test_a_failed_create_project_logs_ids_only(db, caplog, monkeypatch):
+    def bug(*_args, **_kwargs):
+        raise RuntimeError("a bug")
+
+    monkeypatch.setattr(projects, "_get_student_project_in_class", bug)
+    with caplog.at_level(logging.INFO, logger="app.projects.controller"):
+        assert _denied(projects.create_project, CLASS, "Gamma Squad", "d", S6, 4) == (
+            500,
+            "Failed to create project",
+        )
+    [error] = [r for r in caplog.records if r.name == "app.projects.controller"]
+    assert error.levelno == logging.ERROR
+    assert error.getMessage() == f"Error creating project | class_id={CLASS}"
+    assert error.exc_info is not None

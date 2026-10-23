@@ -16,9 +16,9 @@ route answers the class row itself, which carries the schedule.
 A team created in a class with a schedule (``POST /api/projects``, by a student or the instructor)
 gets the schedule's sprints at once: "Sprint 1" to "Sprint N", each numbered by its place in the
 schedule (``sequence``), for two round trips more. A team in a class without one gets none. The
-team is never lost to its sprints: when they cannot be made, it is created without them and a
-warning that names only ids is logged; the instructor's next schedule change makes them. The route
-answers the project row itself.
+team is never lost to its sprints: when they cannot be made, it is created without them and a line
+that names only ids is logged, a warning for a refusal or a database failure and an error for a
+bug; the instructor's next schedule change makes them. The route answers the project row itself.
 
 The instructor sets or changes the schedule later (``PATCH /api/classes/{class_id}/sprints``, all
 three fields required, the same fit rules), and every team's sprints follow it: the missing ones are
@@ -436,15 +436,24 @@ def test_a_new_team_in_a_class_without_a_schedule_gets_no_sprints(client, teams,
 
 
 @pytest.mark.parametrize(
-    "failure",
+    ("failure", "level"),
     [
-        pytest.param(HTTPException(status_code=409, detail="refused"), id="refused"),
-        pytest.param(DatabaseUnavailableError(operation="write", target="sprints"), id="outage"),
-        pytest.param(RuntimeError("a bug"), id="bug"),
+        # A refusal or a database failure is logged as a warning ...
+        pytest.param(
+            HTTPException(status_code=409, detail="refused"), logging.WARNING, id="refused"
+        ),
+        pytest.param(
+            DatabaseUnavailableError(operation="write", target="sprints"),
+            logging.WARNING,
+            id="outage",
+        ),
+        # ... and anything else is a bug, logged as an error with its traceback, so that Sentry
+        # records an event instead of a breadcrumb.
+        pytest.param(RuntimeError("a bug"), logging.ERROR, id="bug"),
     ],
 )
 def test_a_team_whose_sprints_cannot_be_made_is_created_without_them(
-    client, teams, monkeypatch, caplog, failure
+    client, teams, monkeypatch, caplog, failure, level
 ):
     def fail(*_args, **_kwargs):
         raise failure
@@ -462,13 +471,13 @@ def test_a_team_whose_sprints_cannot_be_made_is_created_without_them(
     ]
     assert [n["user_id"] for n in teams.rows("notifications")] == [INSTR]
     assert _sprints_of(teams, team["id"]) == []
-    [warning] = [r for r in caplog.records if r.name == "app.projects.controller"]
-    assert warning.levelno == logging.WARNING
+    [record] = [r for r in caplog.records if r.name == "app.projects.controller"]
+    assert record.levelno == level
     # Ids only: never the team's name (AGENTS.md, Sentry).
-    assert warning.getMessage() == (
+    assert record.getMessage() == (
         f"projects: sprint creation failed | project_id={team['id']} class_id={SCHEDULED}"
     )
-    assert warning.exc_info[1] is failure
+    assert record.exc_info[1] is failure
 
 
 # ------------------------------------------------------------ changing the schedule

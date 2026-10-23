@@ -121,8 +121,10 @@ def _is_instructor(user_id, class_id) -> bool:
 def _give_team_its_sprints(client, *, project_id: str, project_name: str, class_row: dict) -> None:
     """Make a new team's sprints from its class's sprint schedule; nothing when it has none.
 
-    Best effort, so a team is never lost to its sprints: any failure is logged at WARNING, with ids
-    only, and the team starts without them. The instructor's next schedule change
+    Best effort, so a team is never lost to its sprints: any failure is logged, with ids only, and
+    the team starts without them. A refusal or a database failure (an ``HTTPException``, which a
+    ``DatabaseError`` is) is logged at WARNING; anything else is a bug, logged at ERROR with its
+    traceback so that it reaches Sentry as an event. The instructor's next schedule change
     (``PATCH /api/classes/{class_id}/sprints``) makes them. Two round trips with a schedule (the
     team's numbered sprints, none yet, and one insert), none without.
     """
@@ -132,12 +134,18 @@ def _give_team_its_sprints(client, *, project_id: str, project_name: str, class_
             ensure_project_sprints(
                 client, project_id=project_id, project_name=project_name, schedule=schedule
             )
-    except Exception:
+    except HTTPException:
         logger.warning(
             "projects: sprint creation failed | project_id=%s class_id=%s",
             project_id,
             class_row.get("id"),
             exc_info=True,
+        )
+    except Exception:
+        logger.exception(
+            "projects: sprint creation failed | project_id=%s class_id=%s",
+            project_id,
+            class_row.get("id"),
         )
 
 
@@ -293,10 +301,10 @@ def create_project(
                     project_name=name,
                 )
 
+        # Ids only: the team's name is its students' own text (AGENTS.md, Sentry).
         logger.info(
-            "Project created | project_id=%s name=%r class_id=%s created_by=%s is_instructor=%s",
+            "Project created | project_id=%s class_id=%s created_by=%s is_instructor=%s",
             project.get("id"),
-            name,
             class_id,
             user_id,
             is_instructor,
@@ -305,7 +313,7 @@ def create_project(
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Error creating project | name=%r class_id=%s", name, class_id)
+        logger.exception("Error creating project | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to create project")
 
 
