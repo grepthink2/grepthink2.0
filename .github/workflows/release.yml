@@ -26,6 +26,7 @@ jobs:
     permissions:
       contents: write # the release creates the tag
     # Pushes close together run one at a time, so a later one finds the tag an earlier one made.
+    # GitHub keeps one pending run per group, so a release and a Dependabot merge landing together can tag the later commit: rare and harmless.
     concurrency:
       group: release-publish
       cancel-in-progress: false
@@ -39,9 +40,15 @@ jobs:
           version=$(node -p "require('./frontend/package.json').version")
           tag="v$version"
           notes="frontend/src/features/releases/notes/$version.md"
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+          # git ls-remote --exit-code: 0 when the tag exists, 2 when it does not, anything else when it failed.
+          rc=0
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null || rc=$?
+          if [ "$rc" -eq 0 ]; then
             echo "$tag exists"
             exit 0
+          elif [ "$rc" -ne 2 ]; then
+            echo "::error::Couldn't check the tag $tag: git ls-remote exited $rc"
+            exit 1
           fi
           if [ ! -f "$notes" ]; then
             echo "::error file=$notes::No release notes for $version"
@@ -64,6 +71,11 @@ jobs:
         run: |
           set -euo pipefail
           version=$(node -p "require('./frontend/package.json').version")
-          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+          # 0: the tag exists; 2: it does not; anything else: the check failed, which never fails the pull request.
+          rc=0
+          git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null || rc=$?
+          if [ "$rc" -eq 0 ]; then
             echo "::warning file=frontend/package.json::v$version is already tagged, so this release adds no notes. That is right for internal work only; otherwise add the notes and raise the version (README, \"Branches, releases and the database\")."
+          elif [ "$rc" -ne 2 ]; then
+            echo "::warning::Couldn't check the tag v$version: git ls-remote exited $rc"
           fi
