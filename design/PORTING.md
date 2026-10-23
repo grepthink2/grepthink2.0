@@ -171,7 +171,7 @@ there first, then the component reads it. The design's component CSS carries **n
      and `gt-sched-pulse` are deleted (PR #269 on the codebase side). The analytics LivePill follows when analytics adopts the kit.
 - **Codebase-side only (recorded, not mirrored):** Table's required `caption` named by `aria-labelledby`, overflow in both directions,
   `rowHeader` (`<th scope="row">` + the `.gt-table tbody th` rules), per-column `className`, `rowClassName`, native props and `ref`;
-  Card `ref` and `to` as a react-router Link; FieldShell `showCount`; CodeInput uncontrolled + `ref`; ConfirmDialog `className` / `ref`
+  Card `ref` and `to` as a react-router Link; FieldShell `showCount`; CodeInput `ref`; ConfirmDialog `className` / `ref`
   and per-try attempt state; InlineConfirm native props. They need no design counterpart.
 
 - **Adopted from the codebase, 2026-10-20 (PR #259, the button kit)** — now in the design, so the next re-port is a no-op:
