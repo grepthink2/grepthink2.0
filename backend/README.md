@@ -28,7 +28,7 @@ source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements-dev.txt   # runtime deps + pytest/ruff (requirements.txt = runtime only)
 
-# Run the development server
+# Run the development server (its reloader is watchfiles, which requirements-dev.txt installs)
 python run.py
 ```
 

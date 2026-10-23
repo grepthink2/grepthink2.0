@@ -63,9 +63,10 @@ src/
 
 ## Performance
 
-- Pages under `/app` are `React.lazy` routes inside AppView's `<Suspense>`; the auth pages load on demand too.
-- Heavy modals use `lazyModal(() => import('./SomeModal'), (p) => p.isOpen)`.
-- `vite.config.ts` splits `react` and `@supabase` into long-lived vendor chunks. Check the `npm run build` output when adding a dependency; the main chunk is about 250 kB.
+- Every page under `/app` except Home is a `React.lazy` route inside AppView's `<Suspense>`; the auth pages and the contact page load on demand too. Keep it that way: a page imported statically in `App.tsx`, or anything the shell (`AppView`, `Header`, `Sidebar`) imports statically, lands in the entry chunk every visitor downloads.
+- Heavy modals use `lazyModal(() => import('./SomeModal'), (p) => p.isOpen)`; Settings is one.
+- The Markdown renderer is its own chunk. The header's message previews load it on first open (`lazy` + `Suspense` in `Header.tsx`); nothing in the entry may import `react-markdown` or `MarkdownText` statically.
+- `vite.config.ts` splits `react` and `@supabase` into long-lived vendor chunks. Check the `npm run build` output when adding a dependency or a route; the entry chunk (`index-*.js`) is about 180 kB minified, 51 kB gzipped.
 - Memoise context provider values with `useMemo`, and keep expensive list work out of the render body.
 
 ## Styling
