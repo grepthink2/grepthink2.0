@@ -1,18 +1,34 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
+import { parseISO } from 'date-fns';
 import { Download, Trash2, X } from 'lucide-react';
 import type { Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
+import { api, type ApiClassSprintSchedule, type ApiSprintFrequency } from '@/lib/api';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
+import { Input } from '@/components/Input/Input';
+import { Select } from '@/components/Select/Select';
 import {
   buildClassExportCsv,
   buildExportFilename,
   downloadCsv,
   rosterStudentToExportRow,
 } from '@features/app/utils/exportClassCsv';
+import {
+  DEFAULT_SPRINT_COUNT,
+  DEFAULT_SPRINT_FREQUENCY,
+  MAX_SPRINTS,
+  MIN_SPRINTS,
+  SPRINT_COUNT_ERROR,
+  SPRINT_COUNT_HINT,
+  SPRINT_FREQUENCY_OPTIONS,
+  lastSprintLine,
+  parseSprintCount,
+  scheduleEnd,
+} from '@features/app/utils/sprintSchedule';
 import './ClassSettingsModal.scss';
 
 interface ClassSettingsModalProps {
@@ -21,9 +37,34 @@ interface ClassSettingsModalProps {
   classItem: Class | null;
 }
 
+/** The class's sprint schedule, or null while it has none (the API stores all three or none). */
+function savedSprintsOf(classItem: Class): ApiClassSprintSchedule | null {
+  const { sprint_count, sprint_frequency, sprints_start_on } = classItem;
+  return sprint_count != null && sprint_frequency != null && sprints_start_on != null
+    ? { sprint_count, sprint_frequency, sprints_start_on }
+    : null;
+}
+
+/** What a schedule change did: every team's sprints follow it, and a team made later gets them too. */
+function sprintsSavedNotice(teams: number): string {
+  if (teams === 0) return 'Sprints saved. New teams get them.';
+  return `Sprints updated for ${teams} team${teams === 1 ? '' : 's'}`;
+}
+
+/** The last sprint of a schedule and its last day. */
+function lastSprintOf({ sprint_count, sprint_frequency, sprints_start_on }: ApiClassSprintSchedule) {
+  return { k: sprint_count, endsOn: scheduleEnd(sprints_start_on, sprint_count, sprint_frequency) };
+}
+
 const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose, classItem }) => {
-  const { getClassStatus, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate, hideClassFromUI } =
-    useClass();
+  const {
+    getClassStatus,
+    setClassLifecycleStatus,
+    setClassExternalTasksUrl,
+    setClassEndDate,
+    setClassSprints,
+    hideClassFromUI,
+  } = useClass();
   const [isClosing, setIsClosing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [lifecycleStatus, setLifecycleStatus] = useState<ClassLifecycleStatus>('active');
@@ -47,10 +88,22 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [isSavingEndDate, setIsSavingEndDate] = useState(false);
   const [endDateSaveError, setEndDateSaveError] = useState<string | null>(null);
   const [endDateNotice, setEndDateNotice] = useState<string | null>(null);
+  // The class's sprint schedule: what the fields hold (the count as typed, so the box can be emptied
+  // and typed again), and the schedule last saved, null while the class has none. A class with none
+  // offers "Set up sprints", which shows the fields.
+  const [sprintCountText, setSprintCountText] = useState('');
+  const [sprintFrequency, setSprintFrequency] = useState<ApiSprintFrequency>(DEFAULT_SPRINT_FREQUENCY);
+  const [sprintsStartOn, setSprintsStartOn] = useState('');
+  const [savedSprints, setSavedSprints] = useState<ApiClassSprintSchedule | null>(null);
+  const [settingUpSprints, setSettingUpSprints] = useState(false);
+  const [isSavingSprints, setIsSavingSprints] = useState(false);
+  const [sprintsSaveError, setSprintsSaveError] = useState<string | null>(null);
+  const [sprintsNotice, setSprintsNotice] = useState<string | null>(null);
+  const sprintCountInput = useRef<HTMLInputElement>(null);
 
   // Each open (or a switch to another class while open) starts from that
-  // class's saved status, link and last day with no errors showing. Adjusted during render when
-  // the open class changes, instead of in an effect afterwards.
+  // class's saved status, link, last day and sprints with no errors showing. Adjusted during render
+  // when the open class changes, instead of in an effect afterwards.
   const openClass = isOpen ? classItem : null;
   const [prevOpenClass, setPrevOpenClass] = useState<Class | null>(null);
   if (openClass !== prevOpenClass) {
@@ -70,6 +123,17 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setIsSavingEndDate(false);
       setEndDateSaveError(null);
       setEndDateNotice(null);
+      // A class with no schedule starts from the one Create Class offers, its first sprint in the
+      // first week of term.
+      const sprints = savedSprintsOf(openClass);
+      setSavedSprints(sprints);
+      setSprintCountText(String(sprints?.sprint_count ?? DEFAULT_SPRINT_COUNT));
+      setSprintFrequency(sprints?.sprint_frequency ?? DEFAULT_SPRINT_FREQUENCY);
+      setSprintsStartOn(sprints?.sprints_start_on ?? openClass.start_date ?? '');
+      setSettingUpSprints(false);
+      setIsSavingSprints(false);
+      setSprintsSaveError(null);
+      setSprintsNotice(null);
     }
   }
 
@@ -85,6 +149,26 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const tasksUrlChanged = 'error' in parsedTasksUrl || parsedTasksUrl.url !== savedTasksUrl;
   // The API takes a day and never clears it, so Save waits for a day other than the saved one.
   const endDateChanged = endDate !== '' && endDate !== savedEndDate;
+
+  const sprintCount = parseSprintCount(sprintCountText);
+  // An empty box holds Save, as an empty day does; only a count that can't be used is an error.
+  const sprintCountError = sprintCountText !== '' && sprintCount === null ? SPRINT_COUNT_ERROR : undefined;
+  // The schedule the fields hold, once there is a count and a day to count from.
+  const sprintsShown: ApiClassSprintSchedule | null =
+    sprintCount !== null && sprintsStartOn !== ''
+      ? { sprint_count: sprintCount, sprint_frequency: sprintFrequency, sprints_start_on: sprintsStartOn }
+      : null;
+  const lastSprint = sprintsShown && lastSprintOf(sprintsShown);
+  // The API checks a schedule against the last day saved, not one picked and not saved yet. Holds Save.
+  const sprintsPastLastDay = lastSprint !== null && savedEndDate !== '' && lastSprint.endsOn > savedEndDate;
+  const sprintsChanged =
+    sprintsShown !== null &&
+    (savedSprints === null ||
+      sprintsShown.sprint_count !== savedSprints.sprint_count ||
+      sprintsShown.sprint_frequency !== savedSprints.sprint_frequency ||
+      sprintsShown.sprints_start_on !== savedSprints.sprints_start_on);
+  // Shown beside the last day of classes: the API refuses a day before it, so the schedule goes first.
+  const savedLastSprint = savedSprints && lastSprintOf(savedSprints);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -194,6 +278,42 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setEndDateSaveError(err instanceof Error ? err.message : 'Failed to update the last day of classes');
     } finally {
       if (openClassId.current === classId) setIsSavingEndDate(false);
+    }
+  };
+
+  /** Clear what the last save said once the schedule changes. */
+  const editSprints = () => {
+    setSprintsSaveError(null);
+    setSprintsNotice(null);
+  };
+
+  const saveSprints = async () => {
+    if (!classItem || isSavingSprints || sprintsShown === null) return;
+    const classId = classItem.id;
+    const schedule = sprintsShown;
+    setIsSavingSprints(true);
+    setSprintsSaveError(null);
+    setSprintsNotice(null);
+    try {
+      const { teams } = await setClassSprints(classId, schedule);
+      if (openClassId.current !== classId) return; // the dialog shows another class now
+      // Show the saved schedule with the fields enabled again, then put the keyboard back in the
+      // count box: Save turned disabled under it.
+      flushSync(() => {
+        setSavedSprints(schedule);
+        setSprintCountText(String(schedule.sprint_count));
+        setSprintFrequency(schedule.sprint_frequency);
+        setSprintsStartOn(schedule.sprints_start_on);
+        setSprintsNotice(sprintsSavedNotice(teams));
+        setIsSavingSprints(false);
+      });
+      sprintCountInput.current?.focus();
+    } catch (err) {
+      if (openClassId.current !== classId) return;
+      // The API's refusals (a team's story in a sprint the count drops, dates that don't fit) say what to do.
+      setSprintsSaveError(err instanceof Error ? err.message : 'Failed to update the sprint schedule');
+    } finally {
+      if (openClassId.current === classId) setIsSavingSprints(false);
     }
   };
 
@@ -308,6 +428,10 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                 disabled={isSavingEndDate}
               />
               <p className="class-settings-modal__hint">Before finals week</p>
+              {/* The saved schedule's last sprint: a last day before it is refused, so the schedule goes first */}
+              {savedLastSprint && (
+                <p className="class-settings-modal__hint">{lastSprintLine(savedLastSprint.k, savedLastSprint.endsOn)}</p>
+              )}
               <div className="class-settings-modal__link-actions">
                 <button
                   type="button"
@@ -326,6 +450,99 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                 <p className="class-settings-modal__export-error" role="alert">
                   {endDateSaveError}
                 </p>
+              )}
+            </section>
+
+            <section className="class-settings-modal__section">
+              <h2 id="class-settings-sprints-title" className="class-settings-modal__label">
+                Sprints
+              </h2>
+              {savedSprints === null && !settingUpSprints ? (
+                <button
+                  type="button"
+                  className="class-settings-modal__export-button"
+                  onClick={() => setSettingUpSprints(true)}
+                >
+                  Set up sprints
+                </button>
+              ) : (
+                <>
+                  {/* How many, how often and from when: every team's sprints follow them */}
+                  <div
+                    className="class-settings-modal__sprint-fields"
+                    role="group"
+                    aria-labelledby="class-settings-sprints-title"
+                  >
+                    <Input
+                      ref={sprintCountInput}
+                      label="How many"
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_SPRINTS}
+                      max={MAX_SPRINTS}
+                      step={1}
+                      value={sprintCountText}
+                      onChange={(e) => {
+                        setSprintCountText(e.target.value);
+                        editSprints();
+                      }}
+                      helperText={SPRINT_COUNT_HINT}
+                      error={sprintCountError}
+                      // Set up sprints went away as it was pressed: the keyboard goes on to the first field.
+                      autoFocus={settingUpSprints}
+                      // A change made while the save is in flight would be written over by the schedule being saved.
+                      disabled={isSavingSprints}
+                    />
+                    <Select
+                      label="Every"
+                      value={sprintFrequency}
+                      onChange={(e) => {
+                        setSprintFrequency(e.target.value as ApiSprintFrequency);
+                        editSprints();
+                      }}
+                      options={SPRINT_FREQUENCY_OPTIONS}
+                      disabled={isSavingSprints}
+                    />
+                    <DatePickerField
+                      label="First sprint starts"
+                      value={sprintsStartOn}
+                      onChange={(next) => {
+                        setSprintsStartOn(next);
+                        editSprints();
+                      }}
+                      disabledBefore={classItem.start_date ? parseISO(classItem.start_date) : undefined}
+                      disabled={isSavingSprints}
+                    />
+                  </div>
+                  {/* Always on the page, so a screen reader announces the line as it changes */}
+                  <p
+                    className={`class-settings-modal__sprint-preview${
+                      sprintsPastLastDay ? ' class-settings-modal__sprint-preview--past-end' : ''
+                    }`}
+                    role="status"
+                  >
+                    {lastSprint && lastSprintLine(lastSprint.k, lastSprint.endsOn, sprintsPastLastDay)}
+                  </p>
+                  <div className="class-settings-modal__link-actions">
+                    <button
+                      type="button"
+                      className="class-settings-modal__export-button class-settings-modal__save-button"
+                      onClick={() => void saveSprints()}
+                      disabled={!sprintsChanged || sprintsPastLastDay || isSavingSprints}
+                    >
+                      {isSavingSprints ? 'Saving…' : "Save and update every team's sprints"}
+                    </button>
+                    {/* Always on the page, so a screen reader announces the text when it appears */}
+                    <span className="class-settings-modal__link-notice" role="status">
+                      {sprintsNotice}
+                    </span>
+                  </div>
+                  {sprintsSaveError && (
+                    <p className="class-settings-modal__export-error" role="alert">
+                      {sprintsSaveError}
+                    </p>
+                  )}
+                </>
               )}
             </section>
 

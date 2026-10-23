@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { Upload, X } from 'lucide-react';
 import { api, type ApiSprintFrequency } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
@@ -11,9 +11,14 @@ import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import { Input } from '@/components/Input/Input';
 import { Select } from '@/components/Select/Select';
 import {
+  DEFAULT_SPRINT_COUNT,
+  DEFAULT_SPRINT_FREQUENCY,
   MAX_SPRINTS,
   MIN_SPRINTS,
+  SPRINT_COUNT_ERROR,
+  SPRINT_COUNT_HINT,
   SPRINT_FREQUENCY_OPTIONS,
+  lastSprintLine,
   parseSprintCount,
   scheduleEnd,
 } from '@features/app/utils/sprintSchedule';
@@ -30,10 +35,6 @@ const DEFAULT_TSR_COUNT: Record<Term, number> = {
   Fall: 5, Winter: 5, Spring: 5, Summer: 3,
 };
 
-/** The sprint schedule a new class starts with: five sprints of two weeks. */
-const DEFAULT_SPRINT_COUNT = '5';
-const DEFAULT_SPRINT_FREQUENCY: ApiSprintFrequency = 'biweekly';
-
 const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) => {
   const [courseName, setCourseName] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term>('Fall');
@@ -41,7 +42,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [termEndDate, setTermEndDate] = useState('');
   const [tsrCount, setTsrCount] = useState(DEFAULT_TSR_COUNT['Fall']);
   // The sprint schedule. The count is kept as typed, so the box can be emptied and typed again.
-  const [sprintCountText, setSprintCountText] = useState(DEFAULT_SPRINT_COUNT);
+  const [sprintCountText, setSprintCountText] = useState(String(DEFAULT_SPRINT_COUNT));
   const [sprintFrequency, setSprintFrequency] = useState<ApiSprintFrequency>(DEFAULT_SPRINT_FREQUENCY);
   // The first sprint's first day once one is picked; until then, the first week of term.
   const [chosenSprintsStartOn, setChosenSprintsStartOn] = useState<string | null>(null);
@@ -88,7 +89,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
 
   const sprintCount = parseSprintCount(sprintCountText);
   // An empty box holds Create Class, as an empty date does; only a value that can't be used is an error.
-  const sprintCountError = sprintCountText !== '' && sprintCount === null ? 'Enter a whole number from 1 to 20' : undefined;
+  const sprintCountError = sprintCountText !== '' && sprintCount === null ? SPRINT_COUNT_ERROR : undefined;
   const sprintsStartOn = chosenSprintsStartOn ?? termStartDate;
   // The last sprint and its last day, once there is a count and a day to count from.
   const lastSprint =
@@ -229,7 +230,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setTermStartDate('');
       setTermEndDate('');
       setTsrCount(DEFAULT_TSR_COUNT['Fall']);
-      setSprintCountText(DEFAULT_SPRINT_COUNT);
+      setSprintCountText(String(DEFAULT_SPRINT_COUNT));
       setSprintFrequency(DEFAULT_SPRINT_FREQUENCY);
       setChosenSprintsStartOn(null);
       setCsvFile(null);
@@ -370,7 +371,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                 step={1}
                 value={sprintCountText}
                 onChange={(e) => setSprintCountText(e.target.value)}
-                helperText="1–20"
+                helperText={SPRINT_COUNT_HINT}
                 error={sprintCountError}
               />
               <Select
@@ -393,10 +394,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               }`}
               role="status"
             >
-              {lastSprint &&
-                (sprintsPastLastDay
-                  ? `Sprint ${lastSprint.k} would end after the last day of classes`
-                  : `Sprint ${lastSprint.k} ends ${format(parseISO(lastSprint.endsOn), 'MMM d')}`)}
+              {lastSprint && lastSprintLine(lastSprint.k, lastSprint.endsOn, sprintsPastLastDay)}
             </p>
           </fieldset>
 

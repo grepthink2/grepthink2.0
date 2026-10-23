@@ -4,6 +4,7 @@ import type {
   ApiBulkInviteResult,
   ApiClass,
   ApiClassAttention,
+  ApiClassSprintSchedule,
   ApiProject,
   ApiRosterStudent,
   ApiRosterTimelineStudent,
@@ -89,10 +90,7 @@ export const classesApi = {
    * 409, each with a detail that says why; both are checked before anything is written. Answers the
    * updated class, its number of teams, and the sprints created, updated and deleted across them.
    */
-  updateClassSprints: async (
-    classId: string,
-    body: { sprint_count: number; sprint_frequency: ApiSprintFrequency; sprints_start_on: string },
-  ) => {
+  updateClassSprints: async (classId: string, body: ApiClassSprintSchedule) => {
     return apiRequest<{ class: ApiClass; teams: number; created: number; updated: number; deleted: number }>(
       `/api/classes/${classId}/sprints`,
       { method: 'PATCH', body: JSON.stringify(body) },

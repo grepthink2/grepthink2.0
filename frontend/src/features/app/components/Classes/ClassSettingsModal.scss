@@ -144,6 +144,35 @@
     }
   }
 
+  // Sprints: the three fields side by side where there is room (two to a row in this dialog, one on a
+  // phone), then the line that says when the last sprint ends.
+  &__sprint-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: $spacing-md;
+    align-items: start;
+
+    // The fields' labels sit under "Sprints", a step quieter than it.
+    .gt-field__label {
+      font-weight: $font-weight-medium;
+      color: $text-secondary;
+    }
+  }
+
+  // The hint's look; in the error colour while the last sprint would end after the last day of
+  // classes, which holds Save.
+  &__sprint-preview {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    line-height: 1.45;
+    font-family: $primary-font;
+
+    &--past-end {
+      color: var(--gt-error-text);
+    }
+  }
+
   &__status-toggle {
     display: inline-flex;
     align-self: flex-start;

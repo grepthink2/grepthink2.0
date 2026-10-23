@@ -57,6 +57,15 @@ export interface ApiClass {
   sprints_start_on?: string | null;
 }
 
+/** A class's sprint schedule as PATCH /api/classes/{class_id}/sprints takes it: all three are needed. */
+export interface ApiClassSprintSchedule {
+  /** How many sprints, 1–20. */
+  sprint_count: number;
+  sprint_frequency: ApiSprintFrequency;
+  /** The first sprint's first day (YYYY-MM-DD). */
+  sprints_start_on: string;
+}
+
 /**
  * Class-level role on a class_enrollments row. A TA is an enrollment with 'ta', whatever the
  * account role (profiles.role) is.

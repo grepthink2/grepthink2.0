@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { api, type ClassRole } from './api';
+import { api, type ApiClassSprintSchedule, type ClassRole } from './api';
 import { useAuth } from './auth';
 import { usePreview } from './previewContext';
 import {
@@ -107,6 +107,14 @@ interface ClassContextValue {
   setClassExternalTasksUrl: (classId: string, externalTasksUrl: string | null) => Promise<void>;
   /** Save the class's last day of classes (a YYYY-MM-DD day); the class list shows it at once. */
   setClassEndDate: (classId: string, endDate: string) => Promise<void>;
+  /**
+   * Save the class's sprint schedule, which every team's sprints follow; the class list shows it at
+   * once. Answers the class's number of teams and the sprints written across them.
+   */
+  setClassSprints: (
+    classId: string,
+    schedule: ApiClassSprintSchedule,
+  ) => Promise<{ teams: number; created: number; updated: number; deleted: number }>;
   hideClassFromUI: (classId: string) => void;
 }
 
@@ -301,6 +309,15 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [applyUpdatedClass],
   );
 
+  const setClassSprints = useCallback(
+    async (classId: string, schedule: ApiClassSprintSchedule) => {
+      const { class: updated, ...written } = await api.updateClassSprints(classId, schedule);
+      applyUpdatedClass(classId, updated);
+      return written;
+    },
+    [applyUpdatedClass],
+  );
+
   const hideClassFromUI = useCallback(
     (classId: string) => {
       const next = patchClassPreference(classId, { hidden: true });
@@ -429,6 +446,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setClassLifecycleStatus,
       setClassExternalTasksUrl,
       setClassEndDate,
+      setClassSprints,
       hideClassFromUI,
     }),
     [
@@ -449,6 +467,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setClassLifecycleStatus,
       setClassExternalTasksUrl,
       setClassEndDate,
+      setClassSprints,
       hideClassFromUI,
     ],
   );

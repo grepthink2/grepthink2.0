@@ -16,6 +16,17 @@ import type { ApiSprintFrequency } from '@/lib/api/types';
 export const MIN_SPRINTS = 1;
 export const MAX_SPRINTS = 20;
 
+/** The class forms' hint beside the count ("1–20"), and their error for a count they can't use. */
+export const SPRINT_COUNT_HINT = `${MIN_SPRINTS}–${MAX_SPRINTS}`;
+export const SPRINT_COUNT_ERROR = `Enter a whole number from ${MIN_SPRINTS} to ${MAX_SPRINTS}`;
+
+/**
+ * The schedule the class forms start from (Create Class, and Set up sprints in Class Settings): five
+ * sprints of two weeks.
+ */
+export const DEFAULT_SPRINT_COUNT = 5;
+export const DEFAULT_SPRINT_FREQUENCY: ApiSprintFrequency = 'biweekly';
+
 /** The frequencies in the forms' words, which follow "Every". */
 export const SPRINT_FREQUENCY_OPTIONS: { value: ApiSprintFrequency; label: string }[] = [
   { value: 'weekly', label: 'week' },
@@ -58,6 +69,16 @@ export function sprintWindows(
 /** The last sprint's last day: the day before sprint count+1 would start. */
 export function scheduleEnd(startOn: string, count: number, frequency: ApiSprintFrequency): string {
   return format(addDays(sprintStart(parseISO(startOn), count + 1, frequency), -1), DAY_FORMAT);
+}
+
+/**
+ * The class forms' line about the last sprint: "Sprint 5 ends Dec 1", or, while it would end after the
+ * last day of classes, "Sprint 5 would end after the last day of classes". `endsOn` is its last day.
+ */
+export function lastSprintLine(count: number, endsOn: string, pastLastDay = false): string {
+  return pastLastDay
+    ? `Sprint ${count} would end after the last day of classes`
+    : `Sprint ${count} ends ${format(parseISO(endsOn), 'MMM d')}`;
 }
 
 /** A sprint count as typed: a whole number from 1 to 20, or null for anything else, an empty box included. */

@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   updateClassStatus: vi.fn(),
   updateClassExternalTasksUrl: vi.fn(),
   updateClassEndDate: vi.fn(),
+  updateClassSprints: vi.fn(),
 }));
 const preview = vi.hoisted(() => ({ isPreviewing: false, exitPreview: vi.fn() }));
 
@@ -69,6 +70,8 @@ function Probe() {
       <output data-testid="selected-link">{selectedClass?.external_tasks_url ?? '-'}</output>
       <output data-testid="end-dates">{classes.map((c) => `${c.id}:${c.end_date ?? '-'}`).join(',')}</output>
       <output data-testid="selected-end-date">{selectedClass?.end_date ?? '-'}</output>
+      <output data-testid="sprints">{classes.map((c) => `${c.id}:${sprintsOf(c)}`).join(',')}</output>
+      <output data-testid="selected-sprints">{selectedClass ? sprintsOf(selectedClass) : '-'}</output>
       {classes.map((c) => (
         <button key={c.id} onClick={() => setSelectedClass(c)}>{`select ${c.id}`}</button>
       ))}
@@ -84,10 +87,20 @@ function Landing() {
   return <output data-testid="landed">{openedOn}</output>;
 }
 
+/** A class's sprint schedule as the probe shows it: "4 weekly 2026-09-28", or "-" for none. */
+function sprintsOf(c: { sprint_count?: number | null; sprint_frequency?: string | null; sprints_start_on?: string | null }) {
+  return c.sprint_count == null ? '-' : `${c.sprint_count} ${c.sprint_frequency} ${c.sprints_start_on}`;
+}
+
+const SPRINTS = { sprint_count: 4, sprint_frequency: 'weekly', sprints_start_on: '2026-09-28' } as const;
+
 /** What pages do: refresh on a timer or with a spinner, join a class, change a class's status. */
 function Controls() {
-  const { refreshClasses, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate } = useClass();
+  const { refreshClasses, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate, setClassSprints } =
+    useClass();
   const [joined, setJoined] = useState(false);
+  // What the last sprint schedule change wrote, as setClassSprints answers it.
+  const [written, setWritten] = useState('');
   const join = async () => {
     await refreshClasses(false, 'new'); // JoinClassModal / CreateClassModal
     setJoined(true); // ...then they navigate
@@ -100,6 +113,16 @@ function Controls() {
       <button onClick={() => void setClassLifecycleStatus('x', 'complete')}>complete x</button>
       <button onClick={() => void setClassExternalTasksUrl('x', 'https://tasks.example.org/x')}>link x</button>
       <button onClick={() => void setClassEndDate('x', '2026-12-04')}>last day x</button>
+      <button
+        onClick={() =>
+          void setClassSprints('x', SPRINTS).then(({ teams, created, updated, deleted }) =>
+            setWritten(`teams ${teams}, created ${created}, updated ${updated}, deleted ${deleted}`),
+          )
+        }
+      >
+        sprints x
+      </button>
+      <output data-testid="sprints-written">{written}</output>
       {joined && <Landing />}
     </>
   );
@@ -505,6 +528,33 @@ describe('refreshes', () => {
     await act(async () => stale.resolve({ classes: [cls('x', { my_role: 'instructor', end_date: null })] }));
     expect(text('end-dates')).toBe(`x:${DAY}`);
     expect(text('selected-end-date')).toBe(DAY);
+  });
+
+  it('shows a saved sprint schedule at once, keeps it when a refresh in flight answers the old one, and says what it wrote', async () => {
+    const NONE = { sprint_count: null, sprint_frequency: null, sprints_start_on: null };
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'instructor', ...NONE })] });
+    // The API answers the class row, its number of teams, and the sprints written across them.
+    api.updateClassSprints.mockResolvedValue({
+      class: cls('x', { my_role: 'instructor', ...SPRINTS }),
+      teams: 2,
+      created: 8,
+      updated: 0,
+      deleted: 0,
+    });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('sprints')).toBe('x:-'));
+    const stale = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(stale.promise);
+    at(60);
+    await regainFocus(); // a slow refresh goes out before the save
+    await act(async () => screen.getByText('sprints x').click());
+    expect(api.updateClassSprints).toHaveBeenCalledWith('x', SPRINTS);
+    await waitFor(() => expect(text('sprints')).toBe('x:4 weekly 2026-09-28'));
+    expect(text('selected-sprints')).toBe('4 weekly 2026-09-28'); // the selected class gets it too
+    expect(text('sprints-written')).toBe('teams 2, created 8, updated 0, deleted 0');
+    await act(async () => stale.resolve({ classes: [cls('x', { my_role: 'instructor', ...NONE })] }));
+    expect(text('sprints')).toBe('x:4 weekly 2026-09-28');
+    expect(text('selected-sprints')).toBe('4 weekly 2026-09-28');
   });
 
   it('still selects the class that a superseded refresh asked for', async () => {

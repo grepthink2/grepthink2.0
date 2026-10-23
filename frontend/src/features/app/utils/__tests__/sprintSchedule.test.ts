@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ApiSprintFrequency } from '@/lib/api/types';
 import {
+  DEFAULT_SPRINT_COUNT,
+  DEFAULT_SPRINT_FREQUENCY,
+  SPRINT_COUNT_ERROR,
+  SPRINT_COUNT_HINT,
   SPRINT_FREQUENCY_OPTIONS,
+  lastSprintLine,
   parseSprintCount,
   scheduleEnd,
   sprintWindows,
@@ -103,6 +108,28 @@ describe('parseSprintCount', () => {
     for (const text of ['', '0', '21', '-1', '2.5', '1e1', '05x', ' 5']) {
       expect(parseSprintCount(text)).toBeNull();
     }
+  });
+
+  it('is described by the hint and the error the class forms show beside the count', () => {
+    expect(SPRINT_COUNT_HINT).toBe('1–20');
+    expect(SPRINT_COUNT_ERROR).toBe('Enter a whole number from 1 to 20');
+  });
+});
+
+describe('lastSprintLine', () => {
+  it('names the last sprint and the day it ends, by the calendar', () => {
+    expect(lastSprintLine(5, '2026-12-01')).toBe('Sprint 5 ends Dec 1');
+    expect(lastSprintLine(1, '2027-01-03')).toBe('Sprint 1 ends Jan 3');
+  });
+
+  it('warns instead while the last sprint would end after the last day of classes', () => {
+    expect(lastSprintLine(5, '2026-12-20', true)).toBe('Sprint 5 would end after the last day of classes');
+  });
+});
+
+describe('the schedule a class starts from', () => {
+  it('is five sprints of two weeks', () => {
+    expect([DEFAULT_SPRINT_COUNT, DEFAULT_SPRINT_FREQUENCY]).toEqual([5, 'biweekly']);
   });
 });
 
