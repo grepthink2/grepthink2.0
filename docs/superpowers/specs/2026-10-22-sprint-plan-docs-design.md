@@ -125,8 +125,8 @@ on or before `end_date` (when set); otherwise 422 `SPRINTS_PAST_END` with the la
   `END_DATE_BEFORE_SPRINTS` naming that sprint and its end. The Sprints section shows "Sprint 5 ends
   Dec 1" beside the last-day field, so the instructor shortens the schedule first. ⚑
 - `scrum.controller.ensure_project_sprints(client, project_id, schedule)`: for sequences 1..N, insert
-  the missing ones in one bulk insert, and update the name and dates of existing sequenced ones that
-  differ (one update per changed row; a schedule change is rare). Sequences beyond N are deleted only
+  the missing ones in one bulk insert, and write the name and dates of existing sequenced ones that
+  differ in one bulk upsert (on `id`, leaving `status` out). Sequences beyond N are deleted only
   when they hold no stories and no plan beyond an untouched seed (a plan whose head is revision 1 of
   source `seed`, never finalized, goes with its sprint); otherwise 409 `SPRINTS_IN_USE` naming the team
   and the sprint, and nothing is written. PR 0 checks stories; PR A adds the plan rule when the table

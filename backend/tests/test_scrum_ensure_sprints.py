@@ -1,12 +1,14 @@
 """A team's sprints follow its class's sprint schedule (spec D20): ``ensure_project_sprints``.
 
 Sprint k of the schedule is the team's sprint whose ``sequence`` is k, named "Sprint k", over the
-schedule's k-th window. A call inserts the missing ones in one insert, updates in place each one
-whose name or dates differ (its stories stay in it), and deletes the ones beyond the count in one
-delete while no story is in them. When a story is in one, the call answers 409 ``SPRINTS_IN_USE``
-naming the team and the lowest such sprint, and writes nothing. A sprint made any other way
-(``sequence`` NULL, as every sprint made before schedules) is never touched, and neither is another
-team's.
+schedule's k-th window. One read takes the team's sequenced sprints with their stories. Then a call
+deletes the ones beyond the count in one delete while no story is in them, inserts the missing ones
+in one insert, and rewrites in one upsert each one whose name or dates differ, in place (its
+stories stay in it). When a story is in a sprint beyond the count, the call answers 409
+``SPRINTS_IN_USE`` naming the team and the lowest such sprint, and writes nothing. A sprint made
+any other way (``sequence`` NULL, as every sprint made before schedules) is never touched, and
+neither is another team's. A team's count either grows or shrinks, so a call costs at most three
+round trips.
 
 Through the real controller and a FakeSupabase; the windows are worked out by hand.
 """
@@ -118,6 +120,27 @@ def _writes(db) -> list[str]:
     return sorted(q["op"] for q in db.queries if q["op"] != "select")
 
 
+def _record_upserts(monkeypatch, db) -> list[tuple[list[dict], dict]]:
+    """Each ``sprints`` upsert's rows and options, as the controller sends them."""
+    upserts: list[tuple[list[dict], dict]] = []
+    table = db.table
+
+    def recording_table(name):
+        query = table(name)
+        if name == "sprints":
+            upsert = query.upsert
+
+            def recording_upsert(rows, **options):
+                upserts.append((rows, options))
+                return upsert(rows, **options)
+
+            query.upsert = recording_upsert
+        return query
+
+    monkeypatch.setattr(db, "table", recording_table)
+    return upserts
+
+
 def test_a_team_without_sprints_gets_them_all_in_one_insert(monkeypatch):
     db = _seed(monkeypatch)
     assert _ensure() == {"created": 3, "updated": 0, "deleted": 0}
@@ -152,7 +175,7 @@ def test_a_lower_count_deletes_the_empty_sprint_beyond_it(monkeypatch):
     assert _ensure(count=2) == {"created": 0, "updated": 0, "deleted": 1}
     assert [row["id"] for row in _ours(db)] == ["s1", "s2"]
     assert _writes(db) == ["delete"]
-    assert db.executes == 3  # the sprints, the stories in Sprint 3, the delete
+    assert db.executes == 2  # the sprints with their stories, the delete
     assert [story["sprint_id"] for story in db.rows("user_stories")] == ["s1", "s2"]
     assert _theirs(db) == [LEGACY, *OTHER_TEAM]
 
@@ -169,7 +192,7 @@ def test_a_story_beyond_the_count_refuses_the_change_and_nothing_is_written(monk
         "delete that plan"
     )
     assert _writes(db) == []
-    assert db.executes == 2  # the sprints and the stories in Sprint 3
+    assert db.executes == 1  # the sprints with their stories
     assert db.rows("sprints") == [LEGACY, *OTHER_TEAM, *sprints]
 
 
@@ -185,23 +208,67 @@ def test_the_refusal_names_the_lowest_sprint_in_use(monkeypatch):
     assert _writes(db) == []
 
 
-def test_a_new_frequency_moves_each_sprint_in_place(monkeypatch):
+def test_new_dates_rewrite_every_sprint_in_place_in_one_upsert(monkeypatch):
     db = _seed(monkeypatch, sprints=SCHEDULED, stories=[_story("B", "s2")])
+    upserts = _record_upserts(monkeypatch, db)
     assert _ensure(frequency="weekly") == {"created": 0, "updated": 3, "deleted": 0}
+    [(rows, options)] = upserts
+    assert options == {"on_conflict": "id"}
+    # Each row carries every NOT NULL column that has no default, and no status: the stored
+    # status is left as it is.
+    columns = {"id", "project_id", "sequence", "name", "starts_at", "ends_at"}
+    assert [set(row) for row in rows] == [columns] * 3
+    assert sorted(
+        (r["sequence"], r["id"], r["project_id"], r["name"], r["starts_at"], r["ends_at"])
+        for r in rows
+    ) == [
+        (1, "s1", PID, "Sprint 1", "2026-09-28", "2026-10-04"),
+        (2, "s2", PID, "Sprint 2", "2026-10-05", "2026-10-11"),
+        (3, "s3", PID, "Sprint 3", "2026-10-12", "2026-10-18"),
+    ]
     assert [(r["id"], r["name"], r["starts_at"], r["ends_at"]) for r in _ours(db)] == [
         ("s1", "Sprint 1", "2026-09-28", "2026-10-04"),
         ("s2", "Sprint 2", "2026-10-05", "2026-10-11"),
         ("s3", "Sprint 3", "2026-10-12", "2026-10-18"),
     ]
     assert db.rows("user_stories")[0]["sprint_id"] == "s2"  # the story stays in its sprint
-    assert _writes(db) == ["update"] * 3
-    assert db.executes == 4  # the sprints, then one update per sprint
+    assert _writes(db) == ["upsert"]
+    assert db.executes == 2  # the sprints with their stories, the upsert
     assert _theirs(db) == [LEGACY, *OTHER_TEAM]
 
 
-def test_one_call_inserts_renames_and_deletes(monkeypatch):
-    """Sprint 1 is right, Sprint 2 was renamed, Sprint 3 is missing, and Sprints 4 and 5, left
-    from a longer schedule, are empty: one insert, one update and one delete."""
+def test_a_higher_count_with_new_dates_costs_three_round_trips(monkeypatch):
+    db = _seed(monkeypatch, sprints=SCHEDULED)
+    assert _ensure(count=5, frequency="weekly") == {"created": 2, "updated": 3, "deleted": 0}
+    assert _windows(db) == [
+        (1, "Sprint 1", "2026-09-28", "2026-10-04"),
+        (2, "Sprint 2", "2026-10-05", "2026-10-11"),
+        (3, "Sprint 3", "2026-10-12", "2026-10-18"),
+        (4, "Sprint 4", "2026-10-19", "2026-10-25"),
+        (5, "Sprint 5", "2026-10-26", "2026-11-01"),
+    ]
+    assert _writes(db) == ["insert", "upsert"]
+    assert db.executes == 3  # the sprints with their stories, the insert, the upsert
+    assert _theirs(db) == [LEGACY, *OTHER_TEAM]
+
+
+def test_a_lower_count_with_new_dates_costs_three_round_trips(monkeypatch):
+    db = _seed(monkeypatch, sprints=SCHEDULED, stories=[_story("A", "s1")])
+    assert _ensure(count=2, frequency="weekly") == {"created": 0, "updated": 2, "deleted": 1}
+    assert [(r["id"], r["name"], r["starts_at"], r["ends_at"]) for r in _ours(db)] == [
+        ("s1", "Sprint 1", "2026-09-28", "2026-10-04"),
+        ("s2", "Sprint 2", "2026-10-05", "2026-10-11"),
+    ]
+    assert _writes(db) == ["delete", "upsert"]
+    assert db.executes == 3  # the sprints with their stories, the delete, the upsert
+    assert _theirs(db) == [LEGACY, *OTHER_TEAM]
+
+
+def test_a_gap_below_the_count_costs_one_write_of_each_kind(monkeypatch):
+    """Sprint 1 is right, Sprint 2 was renamed, Sprint 3 is missing, and Sprints 4 and 5 are
+    empty: one delete, one insert and one upsert, four round trips. Only a team edited by hand
+    looks like this: the schedule's own writes leave a team's sequences running from 1 with no
+    gap, so its count either grows or shrinks."""
     sprints = [
         _sprint(1, BIWEEKLY[0]),
         _sprint(2, BIWEEKLY[1], name="Kickoff"),
@@ -216,8 +283,8 @@ def test_one_call_inserts_renames_and_deletes(monkeypatch):
         (3, "Sprint 3", "2026-10-26", "2026-11-08"),
     ]
     assert [row["id"] for row in _ours(db)][:2] == ["s1", "s2"]
-    assert _writes(db) == ["delete", "insert", "update"]
-    assert db.executes == 5  # the sprints, the stories in Sprints 4 and 5, then the three writes
+    assert _writes(db) == ["delete", "insert", "upsert"]
+    assert db.executes == 4  # the sprints with their stories, then the three writes
     assert _theirs(db) == [LEGACY, *OTHER_TEAM]
 
 

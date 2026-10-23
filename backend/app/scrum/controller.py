@@ -263,65 +263,65 @@ def ensure_project_sprints(
 
     Sprint k of ``schedule`` is the team's sprint whose ``sequence`` is k, named "Sprint k"
     (:data:`~app.scrum.schedule.SPRINT_NAME`) and dated by the k-th window of
-    :func:`~app.scrum.schedule.sprint_windows`. The missing ones are inserted in one insert
-    (``status`` keeps its column default: the API derives it from the dates); each one whose name
-    or dates differ is updated in place, so its stories stay in it; the ones beyond
-    ``schedule.count`` are deleted in one delete. A sprint without a ``sequence`` (made through
-    :func:`create_sprint`) is never read or written. No burnup snapshot: a deleted sprint holds
-    no story, and a moved one keeps its tasks.
+    :func:`~app.scrum.schedule.sprint_windows`. One read takes the team's sequenced sprints with
+    the ids of their stories, archived ones included. Then, each only when there is something to
+    write, it deletes the sprints beyond ``schedule.count`` in one delete, inserts the missing ones
+    in one insert, and rewrites the ones whose name or dates differ in one upsert on ``id``, in
+    place, so their stories stay in them. Neither write sends ``status``: a new sprint takes the
+    column default, a rewritten one keeps its stored value, and the API derives it from the dates.
+    A sprint without a ``sequence`` (made through :func:`create_sprint`) is never read or written.
+    No burnup snapshot: a deleted sprint holds no story, and a moved one keeps its tasks.
 
     Who can call: the callers authorize (a team's creation, its class instructor's schedule
     change); nothing here checks a user. Returns ``{"created", "updated", "deleted"}`` counts.
     Raises 409 :data:`SPRINTS_IN_USE`, naming ``project_name`` and the lowest such k, when a story
-    is in a sprint beyond the count; nothing is written then. Round trips: one read of the
-    sprints; one of their stories when sprints beyond the count exist; then one insert, one update
-    per changed sprint and one delete, each only when there is something to write.
+    is in a sprint beyond the count; nothing is written then. Round trips: the read and at most
+    one of each write. The schedule's own writes leave a team's sequences running from 1 with no
+    gap, so its count either grows (the insert) or shrinks (the delete): three at most.
     """
     rows = (
         client.table("sprints")
-        .select("id, name, starts_at, ends_at, sequence")
+        .select("id, name, starts_at, ends_at, sequence, user_stories(id)")
         .eq("project_id", str(project_id))
         .not_.is_("sequence", "null")
         .execute()
     ).data or []
     by_sequence = {row["sequence"]: row for row in rows}
     extras = {k: row for k, row in by_sequence.items() if k > schedule.count}
-    if extras:
-        stories = (
-            client.table("user_stories")
-            .select("sprint_id")
-            .in_("sprint_id", [row["id"] for row in extras.values()])
-            .execute()
-        ).data or []
-        held = {str(story["sprint_id"]) for story in stories}
-        in_use = [k for k, row in extras.items() if str(row["id"]) in held]
-        if in_use:
-            detail = SPRINTS_IN_USE.format(team=project_name, k=min(in_use))
-            raise HTTPException(status_code=409, detail=detail)
+    in_use = [k for k, row in extras.items() if row.get("user_stories")]
+    if in_use:
+        detail = SPRINTS_IN_USE.format(team=project_name, k=min(in_use))
+        raise HTTPException(status_code=409, detail=detail)
 
     missing: list[dict] = []
-    changed: list[tuple[str, dict]] = []
+    changed: list[dict] = []
     windows = sprint_windows(schedule.start_on, schedule.count, schedule.frequency)
     for k, (starts_at, ends_at) in enumerate(windows, start=1):
-        fields = {
+        sprint = {
+            "project_id": str(project_id),
+            "sequence": k,
             "name": SPRINT_NAME.format(k=k),
             "starts_at": starts_at.isoformat(),
             "ends_at": ends_at.isoformat(),
         }
         row = by_sequence.get(k)
         if row is None:
-            missing.append({"project_id": str(project_id), "sequence": k, **fields})
-        elif row["name"] != fields["name"] or _sprint_days(row) != (starts_at, ends_at):
-            changed.append((row["id"], fields))
+            missing.append(sprint)
+        elif row["name"] != sprint["name"] or _sprint_days(row) != (starts_at, ends_at):
+            changed.append({"id": row["id"], **sprint})
 
-    # The delete runs first, nearest the story check: a story moved into one of these sprints in
-    # between would go to the backlog (``user_stories.sprint_id`` is ON DELETE SET NULL).
+    # The delete runs first, nearest the read that found these sprints empty: a story moved into
+    # one of them in between would go to the backlog (``user_stories.sprint_id`` is ON DELETE SET
+    # NULL).
     if extras:
         client.table("sprints").delete().in_("id", [row["id"] for row in extras.values()]).execute()
     if missing:
         client.table("sprints").insert(missing).execute()
-    for sprint_id, fields in changed:
-        client.table("sprints").update(fields).eq("id", str(sprint_id)).execute()
+    if changed:
+        # Postgres checks NOT NULL on the proposed row before it finds the conflict on ``id``, so
+        # each row carries every NOT NULL column that has no default; the update then sets only
+        # the columns sent.
+        client.table("sprints").upsert(changed, on_conflict="id").execute()
     return {"created": len(missing), "updated": len(changed), "deleted": len(extras)}
 
 

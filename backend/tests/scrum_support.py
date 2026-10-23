@@ -26,6 +26,7 @@ OUTSIDER = "outsider-1"
 
 RELATIONS = {
     ("projects", "classes"): ("class_id", "id", False),
+    ("sprints", "user_stories"): ("id", "sprint_id", True),  # the stories in each sprint
     ("tasks", "user_stories"): ("story_id", "id", False),  # a dependency's story key and sprint
     ("user_stories", "tasks"): ("id", "story_id", True),  # the live burnup totals
     # Embedded on a move's insert: the mover's name and the task's story (for its sprint).
