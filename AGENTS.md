@@ -412,6 +412,11 @@ The full agent-facing action catalog (method, params, role) lives at
   shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
   they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
   the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
+- **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
+  equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
+  release adds both in a `release/<version>` pull request into `beta`. After the release merges into
+  `main`, `.github/workflows/release.yml` tags it and publishes the GitHub release from the same file.
+  A deploy with nothing for users to read keeps the version and gets no tag.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

@@ -1,0 +1,69 @@
+name: Release
+
+# Tags each release on main and publishes its GitHub release from the release notes,
+# frontend/src/features/releases/notes/<version>.md (README, "Branches, releases and the database"):
+#   - push to main → when frontend/package.json's version has no v<version> tag yet, publish the
+#     GitHub release v<version> at the pushed commit, which creates the tag. Its title is the
+#     version and its body the notes file without the front matter. A deploy that keeps the
+#     version (a Dependabot security update, a release of internal work only) finds the tag and
+#     does nothing.
+#   - pull request from beta into main → a warning, never a failure, when the version is tagged
+#     already: the release adds no notes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Tag and publish the release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the release creates the tag
+    # Pushes close together run one at a time, so a later one finds the tag an earlier one made.
+    concurrency:
+      group: release-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - name: Publish v<version> unless it is tagged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./frontend/package.json').version")
+          tag="v$version"
+          notes="frontend/src/features/releases/notes/$version.md"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "$tag exists"
+            exit 0
+          fi
+          if [ ! -f "$notes" ]; then
+            echo "::error file=$notes::No release notes for $version"
+            exit 1
+          fi
+          # The body: the notes without the front matter and the blank lines after it. CRLF
+          # endings become LF first, as the notes test reads them.
+          awk '{ sub(/\r$/, "") } NR == 1 && $0 == "---" { fm = 1; next } fm && $0 == "---" { fm = 0; next } !fm' "$notes" \
+            | sed '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$version" --notes-file "$RUNNER_TEMP/notes.md"
+
+  version-check:
+    name: Version already tagged?
+    # Only the release pull request; Dependabot's security updates into main keep the version.
+    if: github.event_name == 'pull_request' && github.head_ref == 'beta'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Warn when the release adds no notes
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./frontend/package.json').version")
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "::warning file=frontend/package.json::v$version is already tagged, so this release adds no notes. That is right for internal work only; otherwise add the notes and raise the version (README, \"Branches, releases and the database\")."
+          fi
