@@ -441,12 +441,11 @@ describe('ClassSettingsModal — sprints', () => {
       sprints_start_on: '2026-09-28',
     });
     await waitFor(() => expect(notice()).toHaveTextContent(/^Sprints updated for 2 teams$/));
-    expect(save()).toBeDisabled(); // the saved schedule is the one shown
-    expect(howMany()).toHaveFocus(); // Save turned disabled under the keyboard
+    expect(howMany()).toHaveValue(4); // the saved schedule is the one shown
     expect(lastDaySection().getByText('Sprint 4 ends Oct 25')).toBeInTheDocument();
   });
 
-  it('shows the saved schedule, and its last sprint beside the last day, with Save waiting for a change', async () => {
+  it('shows the saved schedule, and its last sprint beside the last day until a change is saved', async () => {
     const user = userEvent.setup();
     renderSettings(course(FIVE_BIWEEKLY));
     expect(screen.queryByRole('button', { name: 'Set up sprints' })).not.toBeInTheDocument();
@@ -456,15 +455,26 @@ describe('ClassSettingsModal — sprints', () => {
     expect(firstSprint()).toHaveTextContent('First sprint starts: 2026-09-21');
     expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 29$/);
     expect(lastDaySection().getByText('Sprint 5 ends Nov 29')).toBeInTheDocument();
-    expect(save()).toBeDisabled();
 
     await user.selectOptions(every(), 'week');
     expect(preview()).toHaveTextContent(/^Sprint 5 ends Oct 25$/);
     // Beside the last day: the schedule saved, which the API checks a new last day against.
     expect(lastDaySection().getByText('Sprint 5 ends Nov 29')).toBeInTheDocument();
+  });
+
+  it('sends a saved schedule again without a change, which brings any team whose sprints lag back in line', async () => {
+    const user = userEvent.setup();
+    renderSettings(course(FIVE_BIWEEKLY));
     expect(save()).toBeEnabled();
-    await user.selectOptions(every(), 'two weeks');
-    expect(save()).toBeDisabled(); // back to the schedule the class has
+    await user.click(save());
+    expect(ctx.setClassSprints).toHaveBeenCalledWith('c1', {
+      sprint_count: 5,
+      sprint_frequency: 'biweekly',
+      sprints_start_on: '2026-09-21',
+    });
+    await waitFor(() => expect(notice()).toHaveTextContent(/^Sprints updated for 2 teams$/));
+    expect(save()).toBeEnabled(); // and again, should a team still lag
+    expect(ctx.setClassSprints).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -561,16 +571,25 @@ describe('ClassSettingsModal — sprints', () => {
     renderSettings(course(FIVE_BIWEEKLY));
     await setCount(user, '4');
     await user.click(save());
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    const saving = screen.getByRole('button', { name: 'Saving…' });
+    expect(saving).toBeDisabled();
     // A change made now would be written over by the schedule being saved when its answer lands.
     expect(howMany()).toBeDisabled();
     expect(every()).toBeDisabled();
     expect(firstSprint()).toBeDisabled();
+    // A browser moves focus off a button that turns disabled, to the page. jsdom keeps it on the
+    // button (and won't blur a disabled one), so the test puts it on the page.
+    act(() => {
+      document.body.tabIndex = -1;
+      document.body.focus();
+      document.body.removeAttribute('tabindex');
+    });
+    expect(document.body).toHaveFocus();
 
     await act(async () => finish({ teams: 3, created: 0, updated: 0, deleted: 3 }));
     expect(notice()).toHaveTextContent(/^Sprints updated for 3 teams$/);
     expect(howMany()).toBeEnabled();
-    expect(howMany()).toHaveFocus();
+    expect(save()).toHaveFocus(); // the keyboard is back on Save
     expect(ctx.setClassSprints).toHaveBeenCalledTimes(1);
   });
 
@@ -628,7 +647,7 @@ describe('ClassSettingsModal — sprints', () => {
     await act(async () => finish({ teams: 2, created: 0, updated: 0, deleted: 2 }));
 
     expect(howMany()).toHaveValue(4);
-    expect(save()).toBeDisabled();
+    expect(save()).toBeEnabled(); // "Save and update every team's sprints", not stuck on "Saving…"
     expect(notice()).toHaveTextContent(/^Sprints updated for 2 teams$/);
     expect(lastDaySection().getByText('Sprint 4 ends Nov 15')).toBeInTheDocument();
   });
@@ -638,11 +657,12 @@ describe('ClassSettingsModal — sprints', () => {
     const { rerender } = renderSettings(course());
     await user.click(setUp());
     await setCount(user, '4'); // not saved
+    await user.selectOptions(every(), 'week');
     rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={job} />);
     expect(setUp()).toBeInTheDocument(); // a class with no schedule offers to set one up again
     rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={course(FIVE_BIWEEKLY)} />);
     expect(howMany()).toHaveValue(5);
-    expect(save()).toBeDisabled();
+    expect(every()).toHaveDisplayValue('two weeks');
   });
 });
 

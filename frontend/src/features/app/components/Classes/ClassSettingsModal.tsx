@@ -99,7 +99,7 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [isSavingSprints, setIsSavingSprints] = useState(false);
   const [sprintsSaveError, setSprintsSaveError] = useState<string | null>(null);
   const [sprintsNotice, setSprintsNotice] = useState<string | null>(null);
-  const sprintCountInput = useRef<HTMLInputElement>(null);
+  const sprintsSaveButton = useRef<HTMLButtonElement>(null);
 
   // Each open (or a switch to another class while open) starts from that
   // class's saved status, link, last day and sprints with no errors showing. Adjusted during render
@@ -161,12 +161,6 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const lastSprint = sprintsShown && lastSprintOf(sprintsShown);
   // The API checks a schedule against the last day saved, not one picked and not saved yet. Holds Save.
   const sprintsPastLastDay = lastSprint !== null && savedEndDate !== '' && lastSprint.endsOn > savedEndDate;
-  const sprintsChanged =
-    sprintsShown !== null &&
-    (savedSprints === null ||
-      sprintsShown.sprint_count !== savedSprints.sprint_count ||
-      sprintsShown.sprint_frequency !== savedSprints.sprint_frequency ||
-      sprintsShown.sprints_start_on !== savedSprints.sprints_start_on);
   // Shown beside the last day of classes: the API refuses a day before it, so the schedule goes first.
   const savedLastSprint = savedSprints && lastSprintOf(savedSprints);
 
@@ -297,8 +291,8 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
     try {
       const { teams } = await setClassSprints(classId, schedule);
       if (openClassId.current !== classId) return; // the dialog shows another class now
-      // Show the saved schedule with the fields enabled again, then put the keyboard back in the
-      // count box: Save turned disabled under it.
+      // Show the saved schedule with Save enabled again, then put the keyboard back on Save: it was
+      // disabled while the save was in flight, so focus fell to the page.
       flushSync(() => {
         setSavedSprints(schedule);
         setSprintCountText(String(schedule.sprint_count));
@@ -307,7 +301,7 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
         setSprintsNotice(sprintsSavedNotice(teams));
         setIsSavingSprints(false);
       });
-      sprintCountInput.current?.focus();
+      sprintsSaveButton.current?.focus();
     } catch (err) {
       if (openClassId.current !== classId) return;
       // The API's refusals (a team's story in a sprint the count drops, dates that don't fit) say what to do.
@@ -474,7 +468,6 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                     aria-labelledby="class-settings-sprints-title"
                   >
                     <Input
-                      ref={sprintCountInput}
                       label="How many"
                       type="number"
                       inputMode="numeric"
@@ -525,10 +518,13 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   </p>
                   <div className="class-settings-modal__link-actions">
                     <button
+                      ref={sprintsSaveButton}
                       type="button"
                       className="class-settings-modal__export-button class-settings-modal__save-button"
                       onClick={() => void saveSprints()}
-                      disabled={!sprintsChanged || sprintsPastLastDay || isSavingSprints}
+                      // An unchanged schedule can be sent again: every team whose sprints lag behind it
+                      // (a team whose sprints were not made, a change that stopped partway) catches up.
+                      disabled={sprintsShown === null || sprintsPastLastDay || isSavingSprints}
                     >
                       {isSavingSprints ? 'Saving…' : "Save and update every team's sprints"}
                     </button>
