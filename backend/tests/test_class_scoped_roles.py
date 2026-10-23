@@ -65,6 +65,21 @@ ROUTES = [
         id="class-end-date",
     ),
     pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/sprints",
+        {
+            "json": {
+                "sprint_count": 4,
+                "sprint_frequency": "weekly",
+                "sprints_start_on": "2026-09-28",
+            }
+        },
+        f"{CLASSES}.update_class_sprints",
+        {"class": {"id": CLASS}, "teams": 0, "created": 0, "updated": 0, "deleted": 0},
+        ("instructor_id", "class_id"),
+        id="class-sprints",
+    ),
+    pytest.param(
         "post",
         f"/api/classes/{CLASS}/invite",
         {"json": {"student_email": "ann@ucsc.edu"}},

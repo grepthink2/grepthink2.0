@@ -56,15 +56,19 @@ export const classesApi = {
     });
   },
 
-  // Set or change the class's last day of classes, before finals (a YYYY-MM-DD day from the class's
-  // first week of term to 370 days after it; class instructor only). A day that would hide a week with
-  // attendance is refused with a 409 naming the earliest day that keeps it. Returns {message, class}
-  // with the updated class.
-  updateClassEndDate: async (classId: string, endDate: string) => {
-    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/end-date`, {
-      method: 'PATCH',
-      body: JSON.stringify({ end_date: endDate }),
-    });
+  /**
+   * Set or change the class's last day of classes, before finals (a YYYY-MM-DD day from the class's
+   * first week of term to 370 days after it; class instructor only). A day that would hide a week with
+   * attendance, or that falls before the class's last sprint ends, is refused with a 409 whose detail
+   * says what to do. Answers the updated class.
+   */
+  updateClassEndDate: async (classId: string, endDate: string): Promise<ApiClass> => {
+    const res = await apiRequest<ApiClass | { message: string; class: ApiClass }>(
+      `/api/classes/${classId}/end-date`,
+      { method: 'PATCH', body: JSON.stringify({ end_date: endDate }) },
+    );
+    // An older backend answers {message, class}.
+    return 'class' in res ? res.class : res;
   },
 
   // Join a class by course code (any account that has picked a role; the class instructor cannot

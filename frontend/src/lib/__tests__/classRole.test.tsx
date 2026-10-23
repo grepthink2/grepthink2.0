@@ -490,10 +490,8 @@ describe('refreshes', () => {
   it('shows a saved last day at once, and keeps it when a refresh in flight answers the old one', async () => {
     const DAY = '2026-12-04';
     api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'instructor', end_date: null })] });
-    api.updateClassEndDate.mockResolvedValue({
-      message: 'Last day of classes updated',
-      class: cls('x', { my_role: 'instructor', end_date: DAY }),
-    });
+    // The API answers the class row itself.
+    api.updateClassEndDate.mockResolvedValue(cls('x', { my_role: 'instructor', end_date: DAY }));
     renderProvider(<Controls />);
     await waitFor(() => expect(text('end-dates')).toBe('x:-'));
     const stale = deferred<unknown>();

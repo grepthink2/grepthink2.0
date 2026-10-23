@@ -15,6 +15,8 @@ from datetime import date, timedelta
 from itertools import pairwise
 from typing import NamedTuple
 
+from app.classes.terms import latest_last_day
+
 FREQUENCIES: tuple[str, ...] = ("weekly", "biweekly", "monthly")
 
 SPRINT_NAME = "Sprint {k}"
@@ -70,6 +72,19 @@ def schedule_end(start_on: date, count: int, frequency: str) -> date:
     return _sprint_start(start_on, count + 1, frequency) - timedelta(days=1)
 
 
+def latest_start_on(count: int, frequency: str) -> date:
+    """The latest first day a schedule of ``count`` sprints can have: from it, the day sprint
+    count+1 would start is still a ``date`` (the calendar ends on Dec 31, 9999), so
+    :func:`sprint_windows` and :func:`schedule_end` work it out; a day later, they would overflow.
+    """
+    if frequency == "monthly":
+        # The last day of the month ``count`` months before December 9999: every day of that month
+        # still has a month ``count`` on, and no later day does.
+        return _add_months(date.max, -count)
+    # Weekly and biweekly sprints are a fixed number of days apart, wherever they start.
+    return date.max - (_sprint_start(date.min, count + 1, frequency) - date.min)
+
+
 def sprint_status(starts_at: date, ends_at: date, today: date) -> str:
     """`completed` after `ends_at`, `active` from `starts_at` through `ends_at`, else `planned`."""
     if today > ends_at:
@@ -89,12 +104,22 @@ def schedule_problem(
 ) -> str | None:
     """Why the schedule does not fit the class's dates, or None when it fits.
 
-    `SPRINTS_BEFORE_START`: the first sprint starts before `class_start`. `SPRINTS_PAST_END`:
-    the last sprint ends after `class_end`. A class date that is not set allows any day on its
-    side; when both fail, the start is reported.
+    `SPRINTS_BEFORE_START`: the first sprint starts before `class_start`.
+    `SPRINTS_START_TOO_LATE`: it starts after the latest last day of classes `class_start` allows
+    (:func:`~app.classes.terms.latest_last_day`, the end of week 53 of term), or, whatever the class's
+    dates, after :func:`latest_start_on`, so late that the schedule's days would pass the end of the
+    calendar. `SPRINTS_PAST_END`: the last sprint ends after `class_end`. A class date that is not
+    set allows any day on its side, short of the calendar's end. The first problem in that order is
+    reported, so the last sprint's day is worked out only for a schedule the calendar holds: no
+    first day makes this raise.
     """
     if class_start is not None and start_on < class_start:
         return "SPRINTS_BEFORE_START"
+    latest = latest_start_on(count, frequency)
+    if class_start is not None:
+        latest = min(latest, latest_last_day(class_start))
+    if start_on > latest:
+        return "SPRINTS_START_TOO_LATE"
     if class_end is not None and schedule_end(start_on, count, frequency) > class_end:
         return "SPRINTS_PAST_END"
     return None

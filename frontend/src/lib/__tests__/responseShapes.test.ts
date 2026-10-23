@@ -164,6 +164,20 @@ describe('createClass', () => {
   });
 });
 
+describe('updateClassEndDate', () => {
+  it.each([
+    ['the class itself', CLASS],
+    ['{ message, class }', { message: 'Last day of classes updated', class: CLASS }],
+  ])('answers the class when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(classesApi.updateClassEndDate('c1', '2026-12-04')).resolves.toEqual(CLASS);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/classes/c1/end-date');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ end_date: '2026-12-04' });
+  });
+});
+
 describe('createProject', () => {
   it.each([
     ['the project itself', PROJECT],

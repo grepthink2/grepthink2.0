@@ -90,8 +90,8 @@ class CreateClassRequest(BaseModel):
     #: The class's sprint schedule (spec D20): how many sprints (1-20), how often, and the first
     #: sprint's first day, ``start_date`` when omitted. The limits here match the
     #: ``classes_sprint_schedule_valid`` CHECK. That the schedule fits the class's dates (it starts
-    #: on or after ``start_date`` and ends by ``end_date``) is checked by the controller, whose
-    #: 422 detail is a sentence the web client can show.
+    #: on or after ``start_date``, within a year of it, and ends by ``end_date``) is checked by the
+    #: controller, whose 422 detail is a sentence the web client can show.
     sprint_count: int = Field(..., ge=1, le=20)
     sprint_frequency: SprintFrequency
     sprints_start_on: datetime.date | None = None
@@ -146,6 +146,20 @@ class UpdateClassEndDateRequest(BaseModel):
     """
 
     end_date: datetime.date
+
+
+class UpdateClassSprintsRequest(BaseModel):
+    """Set or change the class's sprint schedule (class instructor only; spec D20).
+
+    All three values are required: how many sprints (1-20, as the ``classes_sprint_schedule_valid``
+    CHECK allows), how often, and the first sprint's first day. That the schedule fits the class's
+    dates needs the class row, so the controller checks it (422, with a sentence the web client can
+    show), and that no team has a story in a sprint the change would delete (409).
+    """
+
+    sprint_count: int = Field(..., ge=1, le=20)
+    sprint_frequency: SprintFrequency
+    sprints_start_on: datetime.date
 
 
 class AddManualRosterStudentRequest(BaseModel):

@@ -7,7 +7,9 @@ changes it later from Class Settings (``PATCH /api/classes/{class_id}/end-date``
 ``classes_end_date_after_start`` CHECK refuses a day before ``start_date``, or more than 370 days
 after it (53 weeks), in the database; the API refuses it first (422 when creating, 400 when
 changing), so a bad day never reaches the database as a 500. A change that would drop a week that
-already has attendance is refused too (409): TA Meetings could no longer open that week.
+already has attendance is refused too (409): TA Meetings could no longer open that week. So is a day
+before the class's last sprint ends (409, spec D20), with or without a first day: the instructor
+shortens the sprint schedule first. The route answers the class row itself.
 
 Who may call the PATCH is pinned with the other instructor-only routes in ``test_classes_authz.py``
 and ``test_class_scoped_roles.py``. That a new class stores the day only when one is given, and
@@ -246,6 +248,43 @@ def test_attendance_in_another_class_holds_no_week_back(db):
     assert _stored(db) == "2026-12-02"
 
 
+# ------------------------------------------------------------ the sprint schedule
+
+#: Four weekly sprints from Mon Sep 28: Sprint 4 runs Oct 19-25.
+FOUR_WEEKLY = {"sprint_count": 4, "sprint_frequency": "weekly", "sprints_start_on": "2026-09-28"}
+BEFORE_SPRINTS = "Sprint 4 ends 2026-10-25; change the sprint schedule first"
+
+
+@pytest.mark.parametrize("start", [START.isoformat(), None], ids=["first-day", "no-first-day"])
+def test_a_last_day_before_the_last_sprint_ends_is_refused_without_writing(db, start):
+    db.rows("classes")[0].update(FOUR_WEEKLY, start_date=start)
+    with pytest.raises(HTTPException) as err:
+        classes.update_class_end_date(CLASS, date(2026, 10, 24), INSTR)
+    assert (err.value.status_code, err.value.detail) == (409, BEFORE_SPRINTS)
+    assert _stored(db) is None
+    assert {q["op"] for q in db.queries} == {"select"}
+
+
+def test_the_last_day_may_be_the_day_the_last_sprint_ends_for_no_round_trip_more(db):
+    db.rows("classes")[0].update(FOUR_WEEKLY)
+    classes.update_class_end_date(CLASS, date(2026, 10, 25), INSTR)
+    assert _stored(db) == "2026-10-25"
+    # the owner check (with the schedule) beside the teams, the attendance read, the update
+    assert db.executes == 4
+
+
+def test_a_week_with_attendance_is_named_before_the_sprints(db):
+    db.rows("classes")[0].update(FOUR_WEEKLY)
+    _attended(db, 5)
+    # Oct 14 is in week 3, and before Sprint 4 ends: both refusals apply.
+    with pytest.raises(HTTPException) as err:
+        classes.update_class_end_date(CLASS, date(2026, 10, 14), INSTR)
+    assert (err.value.status_code, err.value.detail) == (
+        409,
+        "Week 5 already has attendance. Pick Oct 22, 2026 or later.",
+    )
+
+
 # ------------------------------------------------------------ the routes
 
 ROUTE = f"/api/classes/{CLASS}/end-date"
@@ -270,10 +309,8 @@ def _as(user_id: str) -> dict[str, str]:
 def test_the_route_hands_the_day_to_the_owner_check(client: TestClient, calls):
     res = client.patch(ROUTE, headers=_as(INSTR), json={"end_date": "2026-12-04"})
     assert res.status_code == 200, res.text
-    assert res.json() == {
-        "message": "Last day of classes updated",
-        "class": {"id": CLASS, "end_date": "2026-12-04"},
-    }
+    # The class row itself, not {"message": ..., "class": ...} (STYLE_GUIDE.md, Response Format).
+    assert res.json() == {"id": CLASS, "end_date": "2026-12-04"}
     assert calls == [(CLASS, date(2026, 12, 4), INSTR)]
 
 

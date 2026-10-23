@@ -19,6 +19,7 @@ from app.classes.models import (
     QueueInviteResponse,
     UpdateClassEndDateRequest,
     UpdateClassExternalTasksUrlRequest,
+    UpdateClassSprintsRequest,
     UpdateClassStatusRequest,
 )
 from app.dependencies import require_instructor, require_user
@@ -75,9 +76,19 @@ def update_class_end_date(
     user_id: str = Depends(require_user),
 ):
     """Set or change the class's last day of classes (the class instructor; checked in the
-    controller)."""
-    updated = controller.update_class_end_date(class_id, data.end_date, user_id)
-    return {"message": "Last day of classes updated", "class": updated}
+    controller). Answers the class row."""
+    return controller.update_class_end_date(class_id, data.end_date, user_id)
+
+
+def update_class_sprints(
+    class_id: UUID,
+    data: UpdateClassSprintsRequest,
+    user_id: str = Depends(require_user),
+):
+    """Set or change the class's sprint schedule, and every team's sprints follow it (the class
+    instructor; checked in the controller). Answers ``{class, teams, created, updated, deleted}``:
+    the class row, its number of teams and the sprints written across them."""
+    return controller.update_class_sprints(class_id, user_id, data)
 
 
 def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):

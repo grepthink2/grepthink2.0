@@ -295,7 +295,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setClassEndDate = useCallback(
     async (classId: string, endDate: string) => {
-      const { class: updated } = await api.updateClassEndDate(classId, endDate);
+      const updated = await api.updateClassEndDate(classId, endDate);
       applyUpdatedClass(classId, updated);
     },
     [applyUpdatedClass],

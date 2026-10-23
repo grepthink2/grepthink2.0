@@ -92,7 +92,7 @@
     {
       "id": "set_class_end_date", "title": "Set or change a class's last day of classes", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/end-date",
-      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance)"},
+      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance, or when the class's last sprint ends after it)"},
       "uiRoute": "/app/my-classes → Class Settings"
     },
 
