@@ -10,6 +10,7 @@ import ProjectList, {
   type ProjectSentiment,
 } from '@features/app/components/Project/ProjectList';
 import ProjectMembershipChart from '@features/app/components/Stats/ProjectMembershipChart';
+import '@features/app/components/Stats/ProjectHealth.scss';
 import './Projects.scss';
 
 const UNASSIGNED = 'Unassigned';
