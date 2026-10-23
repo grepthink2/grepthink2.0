@@ -20,13 +20,14 @@ vi.mock('@/lib/api', () => ({
 }));
 
 // A class at a school in Istanbul (UTC+3, no daylight saving).
-const classContext = vi.hoisted(() => ({
-  selectedClass: {
+const classContext = vi.hoisted(() => {
+  const selectedClass = {
     id: 'c1',
     name: 'SE 101',
     institution: { id: 'istinye', name: 'İstinye University', slug: 'istinye' },
-  },
-}));
+  };
+  return { selectedClass, classes: [selectedClass] };
+});
 vi.mock('@/lib/classContext', () => ({ useClass: () => classContext }));
 vi.mock('@/lib/auth', () => ({ useUser: () => ({ user: { id: 'me' } }) }));
 

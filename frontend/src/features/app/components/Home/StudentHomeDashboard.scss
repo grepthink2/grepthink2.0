@@ -1,17 +1,11 @@
 @use '@styles/index.scss' as *;
 
-// This file predates the --gt-* design-token system: the quick-action accent
-// colors below and the various status/priority accents scattered through the
-// rest of the file (reds, ambers, blues, greens, grays used for banners,
-// badges, and cards) are raw hex left over from before the token sweep, not
-// a reviewed bespoke choice. Left as-is (not part of this token sweep's
-// touched scope) rather than churned as a side effect of wiring the
+// This file predates the --gt-* design-token system: the status/priority
+// accents scattered through it (reds, ambers, blues, greens, grays used for
+// banners, badges, and cards) are raw hex left over from before the token
+// sweep, not a reviewed bespoke choice. Left as-is (not part of this token
+// sweep's touched scope) rather than churned as a side effect of wiring the
 // adherence lint — a real value sweep is follow-up work.
-
-// Quick actions: solid fills (same pattern as .add-assignment-btn)
-$quick-accent-hover: #1f5cd6;
-$quick-purple: #7d3c98;
-$quick-purple-hover: #6a3382;
 
 .student-home {
   min-height: calc(100vh - 64px);
@@ -21,74 +15,8 @@ $quick-purple-hover: #6a3382;
   position: relative;
 }
 
-.student-home__toolbar {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: $spacing-sm;
-  margin: 0;
-  width: 100%;
-
-  @media (max-width: 380px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.student-home__toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: 12.5px $spacing-sm;
-  border: none;
-  border-radius: $border-radius-sm;
-  font-family: $primary-font;
-  font-size: $font-size-base;
-  font-weight: $font-weight-semibold;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: $white;
-  cursor: pointer;
-  transition: background-color $transition-fast;
-
-  svg {
-    flex-shrink: 0;
-    color: inherit;
-  }
-
-  &:hover {
-    filter: none;
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  // Dead: the global :focus-visible rule (index.css) already forces a ring;
-  // no resting box-shadow here to layer with.
-
-  &--join {
-    background-color: $accent-color;
-
-    &:hover {
-      background-color: $quick-accent-hover;
-    }
-  }
-
-  &--messages {
-    background-color: $quick-purple;
-
-    &:hover {
-      background-color: $quick-purple-hover;
-    }
-  }
-
-  &--browse {
-    background-color: $primary-color;
-
-    &:hover {
-      background-color: $primary-hover;
-    }
-  }
+.student-home__join-banner {
+  margin-bottom: $spacing-lg;
 }
 
 .student-home__grid {

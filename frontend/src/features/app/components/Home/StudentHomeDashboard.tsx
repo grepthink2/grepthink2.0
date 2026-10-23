@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import {
-  BookOpen,
-  CalendarDays,
-  ChevronRight,
-  Clock,
-  FolderOpen,
-  Loader2,
-  MessageCircle,
-  X,
-} from 'lucide-react';
+import { CalendarDays, ChevronRight, Clock, Loader2, X } from 'lucide-react';
 import {
   differenceInCalendarDays,
   parseISO,
@@ -45,6 +36,8 @@ import {
   // buildFallbackDeadlineRows,
 } from './mockData';
 import RequestsModal from './RequestsModal';
+import { Alert } from '@/components/Alert/Alert';
+import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './StudentHomeDashboard.scss';
 
@@ -384,7 +377,8 @@ const StudentHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openJoinClassModal } = useOutletContext<AppOutletContext>();
-  const { selectedClass } = useClass();
+  // `classes` is every class the account is in: none at all is when Home offers to join one.
+  const { selectedClass, classes } = useClass();
   const zone = useSchoolTimezone(selectedClass?.institution?.id);
   const { user } = useUser();
 
@@ -714,6 +708,19 @@ const StudentHomeDashboard: React.FC = () => {
 
   return (
     <div className="student-home">
+      {classes.length === 0 && (
+        <Alert
+          className="student-home__join-banner"
+          actions={
+            <Button size="sm" onClick={() => openJoinClassModal()}>
+              Join Class
+            </Button>
+          }
+        >
+          Looks like you&apos;re not in any class yet. Join one with the class code your instructor
+          gave you.
+        </Alert>
+      )}
       <div className="student-home__grid">
         <div className="student-home__column student-home__column--main">
           <section
@@ -826,6 +833,126 @@ const StudentHomeDashboard: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            )}
+          </section>
+        </div>
+
+        <div className="student-home__column student-home__column--aside">
+          <section className="student-home__card" aria-labelledby="schedule-heading">
+            <div className="student-home__card-header">
+              <h2 id="schedule-heading" className="student-home__card-title">
+                Today&apos;s Schedule
+              </h2>
+            </div>
+            {/* TODO: wire real schedule data once calendar integration exists.
+            <ul className="student-home__schedule-list">
+              {MOCK_SCHEDULE.map((item) => (
+                <li key={item.id} className="student-home__schedule-item">
+                  <span className="student-home__schedule-time">{item.timeLabel}</span>
+                  <div className="student-home__schedule-body">
+                    <span
+                      className={`student-home__schedule-dot student-home__schedule-dot--${item.accent}`}
+                    />
+                    <div>
+                      <p className="student-home__schedule-title">{item.title}</p>
+                      <p className="student-home__schedule-sub">{item.subtitle}</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            */}
+            <div className="student-home__schedule-empty">
+              <div className="student-home__schedule-empty-icon" aria-hidden>
+                <CalendarDays size={22} strokeWidth={1.5} />
+              </div>
+              <p className="student-home__schedule-empty-title">
+                Class events and deadlines will appear here.
+              </p>
+            </div>
+          </section>
+
+          <section className="student-home__card" aria-labelledby="team-heading">
+            <div className="student-home__card-header">
+              <h2 id="team-heading" className="student-home__card-title">
+                Your team
+              </h2>
+              {teamProjectsInClass.length === 1 && (
+                <span className="student-home__team-project">{teamProjectsInClass[0].name}</span>
+              )}
+              {teamProjectsInClass.length >= 2 && teamProjectId ? (
+                <select
+                  id="team-project-select"
+                  className="student-home__team-project-select"
+                  aria-label="Select project to view team"
+                  value={teamProjectId}
+                  onChange={(e) => setSelectedTeamProjectId(e.target.value || null)}
+                >
+                  {teamProjectsInClass.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+            {teamLoading ? (
+              <ul className="student-home__team-list" aria-busy="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="student-home__team-item">
+                    <div className="student-home__team-avatar-wrap">
+                      <Skeleton circle height={40} />
+                    </div>
+                    <div className="student-home__team-text">
+                      <Skeleton width="60%" height={13} />
+                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : teamMembers.length === 0 ? (
+              <p className="student-home__empty">
+                {selectedClass
+                  ? 'Join a project in this class to see your teammates here.'
+                  : 'Select a class and join a project to see your team.'}
+              </p>
+            ) : (
+              <ul className="student-home__team-list">
+                {teamMembers.map((m) => {
+                  const isYou = user?.id === m.userId;
+                  return (
+                    <li key={m.userId} className="student-home__team-item">
+                      <div className="student-home__team-avatar-wrap">
+                        {m.avatarUrl ? (
+                          <img
+                            src={m.avatarUrl}
+                            alt={m.displayName}
+                            className="student-home__team-avatar student-home__team-avatar--photo"
+                          />
+                        ) : (
+                          <div
+                            className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
+                          >
+                            {m.initials}
+                          </div>
+                        )}
+                        {m.presence !== 'none' && (
+                          <span
+                            className={`student-home__status-dot student-home__status-dot--${m.presence}`}
+                          />
+                        )}
+                      </div>
+                      <div className="student-home__team-text">
+                        <span className="student-home__team-name">
+                          {m.displayName}
+                          {isYou && <span className="student-home__you">(You)</span>}
+                        </span>
+                        <span className="student-home__team-role">{m.roleLabel}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </section>
 
@@ -1039,156 +1166,6 @@ const StudentHomeDashboard: React.FC = () => {
                   <p className="student-home__empty">No pending requests.</p>
                 )}
             </div>
-          </section>
-        </div>
-
-        <div className="student-home__column student-home__column--aside">
-          <div className="student-home__toolbar" role="toolbar" aria-label="Quick actions">
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--join"
-              aria-label="Join a class with course code"
-              onClick={() => openJoinClassModal()}
-            >
-              <BookOpen size={16} aria-hidden />
-              Join Class
-            </button>
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--messages"
-              aria-label="Open messages"
-              onClick={() => navigate('/app/messages')}
-            >
-              <MessageCircle size={16} aria-hidden />
-              Messages
-            </button>
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--browse"
-              aria-label="Browse class projects"
-              onClick={() => navigate('/app/browse-projects')}
-            >
-              <FolderOpen size={16} aria-hidden />
-              Browse
-            </button>
-          </div>
-
-          <section className="student-home__card" aria-labelledby="schedule-heading">
-            <div className="student-home__card-header">
-              <h2 id="schedule-heading" className="student-home__card-title">
-                Today&apos;s Schedule
-              </h2>
-            </div>
-            {/* TODO: wire real schedule data once calendar integration exists.
-            <ul className="student-home__schedule-list">
-              {MOCK_SCHEDULE.map((item) => (
-                <li key={item.id} className="student-home__schedule-item">
-                  <span className="student-home__schedule-time">{item.timeLabel}</span>
-                  <div className="student-home__schedule-body">
-                    <span
-                      className={`student-home__schedule-dot student-home__schedule-dot--${item.accent}`}
-                    />
-                    <div>
-                      <p className="student-home__schedule-title">{item.title}</p>
-                      <p className="student-home__schedule-sub">{item.subtitle}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            */}
-            <div className="student-home__schedule-empty">
-              <div className="student-home__schedule-empty-icon" aria-hidden>
-                <CalendarDays size={22} strokeWidth={1.5} />
-              </div>
-              <p className="student-home__schedule-empty-title">
-                Class events and deadlines will appear here.
-              </p>
-            </div>
-          </section>
-
-          <section className="student-home__card" aria-labelledby="team-heading">
-            <div className="student-home__card-header">
-              <h2 id="team-heading" className="student-home__card-title">
-                Your team
-              </h2>
-              {teamProjectsInClass.length === 1 && (
-                <span className="student-home__team-project">{teamProjectsInClass[0].name}</span>
-              )}
-              {teamProjectsInClass.length >= 2 && teamProjectId ? (
-                <select
-                  id="team-project-select"
-                  className="student-home__team-project-select"
-                  aria-label="Select project to view team"
-                  value={teamProjectId}
-                  onChange={(e) => setSelectedTeamProjectId(e.target.value || null)}
-                >
-                  {teamProjectsInClass.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-            </div>
-            {teamLoading ? (
-              <ul className="student-home__team-list" aria-busy="true">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <li key={i} className="student-home__team-item">
-                    <div className="student-home__team-avatar-wrap">
-                      <Skeleton circle height={40} />
-                    </div>
-                    <div className="student-home__team-text">
-                      <Skeleton width="60%" height={13} />
-                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : teamMembers.length === 0 ? (
-              <p className="student-home__empty">
-                {selectedClass
-                  ? 'Join a project in this class to see your teammates here.'
-                  : 'Select a class and join a project to see your team.'}
-              </p>
-            ) : (
-              <ul className="student-home__team-list">
-                {teamMembers.map((m) => {
-                  const isYou = user?.id === m.userId;
-                  return (
-                    <li key={m.userId} className="student-home__team-item">
-                      <div className="student-home__team-avatar-wrap">
-                        {m.avatarUrl ? (
-                          <img
-                            src={m.avatarUrl}
-                            alt={m.displayName}
-                            className="student-home__team-avatar student-home__team-avatar--photo"
-                          />
-                        ) : (
-                          <div
-                            className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
-                          >
-                            {m.initials}
-                          </div>
-                        )}
-                        {m.presence !== 'none' && (
-                          <span
-                            className={`student-home__status-dot student-home__status-dot--${m.presence}`}
-                          />
-                        )}
-                      </div>
-                      <div className="student-home__team-text">
-                        <span className="student-home__team-name">
-                          {m.displayName}
-                          {isYou && <span className="student-home__you">(You)</span>}
-                        </span>
-                        <span className="student-home__team-role">{m.roleLabel}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
           </section>
         </div>
       </div>
