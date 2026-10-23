@@ -116,7 +116,7 @@ def test_a_status_sent_to_the_update_route_is_ignored(monkeypatch, client):
     db = _seed(monkeypatch, date(2026, 10, 22))
     res = client.patch("/api/scrum/sprints/A", json={"status": "active"}, headers=_headers())
     assert res.status_code == 200
-    assert res.json()["sprint"]["status"] == "completed"  # A ended on 10-14
+    assert res.json()["status"] == "completed"  # A ended on 10-14
     assert [q for q in db.queries if q["op"] != "select"] == []  # nothing written
     assert db.rows("sprints")[0]["status"] == "planned"
 
@@ -135,7 +135,7 @@ def test_an_update_answers_the_status_of_the_new_dates(monkeypatch, client):
         headers=_headers(),
     )
     assert res.status_code == 200
-    assert {k: res.json()["sprint"][k] for k in ("ends_at", "status")} == {
+    assert {k: res.json()[k] for k in ("ends_at", "status")} == {
         "ends_at": "2026-10-21",
         "status": "completed",
     }
@@ -166,7 +166,7 @@ def test_a_created_sprint_answers_the_status_of_its_dates(monkeypatch, client):
         headers=_headers(),
     )
     assert res.status_code == 200
-    assert res.json()["sprint"]["status"] == "active"
+    assert res.json()["status"] == "active"
     assert db.rows("sprints")[-1]["status"] == "planned"  # the column keeps its default
 
 

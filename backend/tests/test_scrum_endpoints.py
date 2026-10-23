@@ -1,5 +1,7 @@
 """Route registration + auth smoke tests for the scrum module."""
 
+from datetime import date
+
 import pytest
 
 from app.scrum import controller
@@ -93,6 +95,26 @@ def test_posting_a_comment_answers_the_comment(monkeypatch, client, parent, pare
     body = res.json()
     assert (body["body_md"], body["author_name"]) == ("Looks good", "Tony Wu")
     assert not {"message", "comment"} & set(body)
+
+
+def test_the_sprint_routes_answer_the_sprint_itself(monkeypatch, client):
+    """Creating and updating a sprint answer the sprint, with the status of its dates, not
+    wrapped in {message, sprint}."""
+    monkeypatch.setattr(controller, "_today_la", lambda: date(2026, 10, 22))
+    db = scrum_db(monkeypatch)
+    headers = header_for("tony@ucsc.edu", sub=UID)
+    dates = {"starts_at": "2026-10-19", "ends_at": "2026-11-01"}
+
+    res = client.post(
+        f"/api/projects/{PID}/scrum/sprints", headers=headers, json={"name": "Sprint 1", **dates}
+    )
+    assert res.status_code == 200
+    [row] = db.rows("sprints")
+    assert res.json() == {"id": row["id"], "name": "Sprint 1", **dates, "status": "active"}
+
+    res = client.patch(f"/api/scrum/sprints/{row['id']}", headers=headers, json={"name": "Kickoff"})
+    assert res.status_code == 200
+    assert res.json() == {"id": row["id"], "name": "Kickoff", **dates, "status": "active"}
 
 
 def test_a_blocked_move_answers_409_with_its_code(monkeypatch, client):

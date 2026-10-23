@@ -25,7 +25,6 @@ from app.scrum.models import (
     ScrumRepoResponse,
     ScrumReposListResponse,
     SprintOut,
-    SprintResponse,
     StoryOut,
     StoryResponse,
     SummaryCounts,
@@ -86,7 +85,7 @@ def update_settings(
 
 def create_sprint(
     project_id: str, body: CreateSprintRequest, user_id: str = Depends(require_user)
-) -> SprintResponse:
+) -> SprintOut:
     row = controller.create_sprint(
         project_id=project_id,
         user_id=user_id,
@@ -94,22 +93,16 @@ def create_sprint(
         starts_at=body.starts_at,
         ends_at=body.ends_at,
     )
-    return SprintResponse(
-        message="Sprint created successfully",
-        sprint=SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")}),
-    )
+    return SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")})
 
 
 def update_sprint(
     sprint_id: str, body: UpdateSprintRequest, user_id: str = Depends(require_user)
-) -> SprintResponse:
+) -> SprintOut:
     row = controller.update_sprint(
         sprint_id=sprint_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return SprintResponse(
-        message="Sprint updated successfully",
-        sprint=SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")}),
-    )
+    return SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")})
 
 
 def create_story(

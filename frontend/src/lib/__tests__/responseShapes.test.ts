@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ApiAssignmentTsrEntry, ApiScrumComment, ApiScrumTask } from '../api/types';
+import type {
+  ApiAssignmentTsrEntry,
+  ApiScrumComment,
+  ApiScrumSprint,
+  ApiScrumTask,
+} from '../api/types';
 
-// The three calls are checked at the `apiRequest` seam. Each answers its resource whichever shape
+// These calls are checked at the `apiRequest` seam. Each answers its resource whichever shape
 // the backend sends: the resource itself, or { message, <resource> } from a backend deployed
 // before this client (the two deploy separately).
 const apiRequest = vi.hoisted(() => vi.fn());
@@ -38,6 +43,13 @@ const COMMENT: ApiScrumComment = {
   author_name: 'Tony Wu',
   body_md: 'Looks good',
   created_at: '2026-10-21T12:00:00Z',
+};
+const SPRINT: ApiScrumSprint = {
+  id: 'sp1',
+  name: 'Sprint 1',
+  starts_at: '2026-10-19',
+  ends_at: '2026-11-01',
+  status: 'active',
 };
 const ENTRY: ApiAssignmentTsrEntry = {
   tsr_id: 'tsr1',
@@ -78,6 +90,35 @@ describe('createScrumComment', () => {
     expect(path).toBe('/api/scrum/tasks/t1/comments');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({ body_md: 'Looks good' });
+  });
+});
+
+describe('createSprint', () => {
+  it.each([
+    ['the sprint itself', SPRINT],
+    ['{ message, sprint }', { message: 'Sprint created successfully', sprint: SPRINT }],
+  ])('answers the sprint when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    const fields = { name: 'Sprint 1', starts_at: '2026-10-19', ends_at: '2026-11-01' };
+    await expect(scrumApi.createSprint('p1', fields)).resolves.toEqual(SPRINT);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/projects/p1/scrum/sprints');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual(fields);
+  });
+});
+
+describe('updateSprint', () => {
+  it.each([
+    ['the sprint itself', SPRINT],
+    ['{ message, sprint }', { message: 'Sprint updated successfully', sprint: SPRINT }],
+  ])('answers the sprint when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(scrumApi.updateSprint('sp1', { name: 'Sprint 1' })).resolves.toEqual(SPRINT);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/scrum/sprints/sp1');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ name: 'Sprint 1' });
   });
 });
 

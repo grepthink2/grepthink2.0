@@ -263,11 +263,6 @@ class BoardSummaryResponse(BaseModel):
     backlog_stories: int
 
 
-class SprintResponse(BaseModel):
-    message: str
-    sprint: SprintOut
-
-
 class StoryResponse(BaseModel):
     message: str
     story: StoryOut

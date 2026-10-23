@@ -42,21 +42,25 @@ export const scrumApi = {
   createSprint: async (
     projectId: string,
     body: { name: string; starts_at: string; ends_at: string },
-  ) => {
-    return apiRequest<{ message: string; sprint: ApiScrumSprint }>(
+  ): Promise<ApiScrumSprint> => {
+    const res = await apiRequest<ApiScrumSprint | { message: string; sprint: ApiScrumSprint }>(
       `/api/projects/${projectId}/scrum/sprints`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, sprint}.
+    return 'sprint' in res ? res.sprint : res;
   },
 
   updateSprint: async (
     sprintId: string,
     body: ApiUpdateSprintBody,
-  ) => {
-    return apiRequest<{ message: string; sprint: ApiScrumSprint }>(
+  ): Promise<ApiScrumSprint> => {
+    const res = await apiRequest<ApiScrumSprint | { message: string; sprint: ApiScrumSprint }>(
       `/api/scrum/sprints/${sprintId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, sprint}.
+    return 'sprint' in res ? res.sprint : res;
   },
 
   createStory: async (projectId: string, body: ApiCreateStoryBody) => {
