@@ -12,10 +12,7 @@ const api = vi.hoisted(() => ({
   getMyJoinRequests: vi.fn(),
   getInstitutions: vi.fn(),
 }));
-vi.mock('@/lib/api', () => ({
-  api,
-  emptyMySubmissions: () => ({ tsrs: [], feedback_assignment_ids: [] }),
-}));
+vi.mock('@/lib/api', () => ({ api }));
 
 const SE101 = { id: 'c1', name: 'SE 101' };
 const classContext = vi.hoisted(() => ({
@@ -50,8 +47,6 @@ beforeEach(() => {
   classContext.selectedClass = SE101;
   classContext.classes = [SE101];
   api.getInstitutions.mockResolvedValue([]);
-  api.getAssignments.mockResolvedValue({ assignments: [] });
-  api.getMySubmissions.mockResolvedValue({ tsrs: [], feedback_assignment_ids: [] });
   api.getProjects.mockResolvedValue({ projects: [] });
   api.getProjectMembers.mockResolvedValue({ members: [] });
   api.getIncomingJoinRequests.mockResolvedValue({ requests: [] });
@@ -89,10 +84,20 @@ describe('StudentHomeDashboard layout', () => {
     expect(screen.queryByRole('button', { name: /browse/i })).not.toBeInTheDocument();
   });
 
-  it('puts Requests in the side column, directly below the team card', () => {
+  it('has no deadlines card and reads no assignments', async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: /deadlines/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(api.getAssignments).not.toHaveBeenCalled();
+    expect(api.getMySubmissions).not.toHaveBeenCalled();
+  });
+
+  it("puts Today's Schedule in the main column and Requests directly below the team card", () => {
     const { container } = renderDashboard();
-    const aside = container.querySelector('.student-home__column--aside');
-    const headings = [...(aside?.querySelectorAll('h2') ?? [])].map((h) => h.textContent);
-    expect(headings.slice(-2)).toEqual(['Your team', 'Requests']);
+    const headings = (column: string) =>
+      [...container.querySelectorAll(`.student-home__column--${column} h2`)].map((h) => h.textContent);
+    expect(headings('main')).toEqual(["Today's Schedule"]);
+    expect(headings('aside')).toEqual(['Your team', 'Requests']);
   });
 });

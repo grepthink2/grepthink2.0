@@ -1,5 +1,3 @@
-import { addDays, format, startOfDay } from 'date-fns';
-
 /** Mock-only data for the student home (no backend for schedule / demo requests). */
 
 export interface MockScheduleItem {
@@ -70,45 +68,3 @@ export const MOCK_OUTGOING_JOIN_REQUESTS: MockJoinRequest[] = [
     awaitingMeta: 'Awaiting Response • Just 2 days ago',
   },
 ];
-
-export type MockDeadlineStatus = 'due_soon' | 'not_started' | 'in_progress';
-
-export interface MockFallbackDeadline {
-  id: string;
-  name: string;
-  courseLabel: string;
-  dueLabel: string;
-  status: MockDeadlineStatus;
-  highlight?: boolean;
-}
-
-/**
- * Demo deadlines when no class is selected — due dates are computed from today’s date.
- */
-export function buildFallbackDeadlineRows(courseLabel: string): MockFallbackDeadline[] {
-  const base = startOfDay(new Date());
-  return [
-    {
-      id: 'mock-d1',
-      name: 'Team Status Report 1',
-      courseLabel,
-      dueLabel: format(addDays(base, 7), 'MMM d, yyyy'),
-      status: 'due_soon',
-    },
-    {
-      id: 'mock-d2',
-      name: 'Team Status Report 2',
-      courseLabel,
-      dueLabel: format(addDays(base, 14), 'MMM d, yyyy'),
-      status: 'not_started',
-    },
-    {
-      id: 'mock-d3',
-      name: 'Team Status Report 3',
-      courseLabel,
-      dueLabel: format(addDays(base, 21), 'MMM d, yyyy'),
-      status: 'in_progress',
-      highlight: true,
-    },
-  ];
-}
