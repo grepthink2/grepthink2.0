@@ -51,6 +51,35 @@ const SECTION_ORDER: readonly ReleaseSectionKind[] = ['new', 'improved', 'fixed'
 const FRONT_MATTER_ENTRY = /^([A-Za-z][\w-]*): (.*)$/;
 const HTML_TAG = /<[a-zA-Z/!]/;
 
+/** What would start a block of its own inside an item, checked after up to three spaces of indent. */
+const BLOCK_STARTS: readonly (readonly [RegExp, string])[] = [
+  [/^#{1,6}(\s|$)/, 'no headings inside an item'],
+  [/^>/, 'no block quotes inside an item'],
+  // A row that starts with "|", or a delimiter row such as "--- | ---" (a table needs one).
+  [/^\||^:?-+:?\s*\|/, 'no tables inside an item'],
+  [/^(```|~~~)/, 'no code blocks inside an item'],
+  // A thematic break ("---", "* * *"), or the "===" or "---" line under a setext heading.
+  [/^(?:[-*_=](?:\s*[-*_=]){2,}|=+|-+)\s*$/, 'no horizontal rules or underlined headings inside an item'],
+];
+
+/**
+ * Why an item's text, or a continuation line, would start a block inside the item, or null. `content` is the line
+ * without its first two characters ("- " or the continuation's two spaces), so it starts at column 2: four or more
+ * columns of indent after that make an indented code block, and a tab moves to the next multiple of four.
+ */
+function blockMarkdownIn(content: string): string | null {
+  let column = 0;
+  let index = 0;
+  while (content[index] === ' ' || content[index] === '\t') {
+    column += content[index] === '\t' ? 4 - ((column + 2) % 4) : 1;
+    index++;
+  }
+  if (column >= 4) return 'no indented code blocks inside an item';
+  const rest = content.slice(index);
+  const block = BLOCK_STARTS.find(([pattern]) => pattern.test(rest));
+  return block ? block[1] : null;
+}
+
 function isCalendarDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;
@@ -130,6 +159,11 @@ export function parseRelease(fileName: string, text: string): Release {
     if (!isItem && !isContinuation) {
       throw new ReleaseNotesError(fileName, lineNumber, 'only "- " list items in a section');
     }
+    if (isItem && !/^- \S/.test(line)) {
+      throw new ReleaseNotesError(fileName, lineNumber, 'an item needs its text right after "- "');
+    }
+    const block = blockMarkdownIn(line.slice(2));
+    if (block) throw new ReleaseNotesError(fileName, lineNumber, block);
     if (line.includes('![')) throw new ReleaseNotesError(fileName, lineNumber, 'no images');
     if (HTML_TAG.test(line)) throw new ReleaseNotesError(fileName, lineNumber, 'no HTML');
     open.lines.push(line);

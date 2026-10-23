@@ -24,29 +24,56 @@ it('parses a fixes-only file', () =>
   ]));
 it('reads CRLF files the same', () =>
   expect(parseRelease('0.91.0.md', FILE.replaceAll('\n', '\r\n'))).toEqual(parseRelease('0.91.0.md', FILE)));
+it('keeps continuations and nested lists, and reads "#" without a space as text', () =>
+  expect(parseRelease('0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- #hashtag, *a* and **b**\n  a => b\n  - nested\n').sections).toEqual([
+    { kind: 'new', markdown: '- #hashtag, *a* and **b**\n  a => b\n  - nested' },
+  ]));
+
+/** The message of the error `run` throws, so a test can compare all of it. */
+function thrownMessage(run: () => unknown): string {
+  try {
+    run();
+  } catch (error) {
+    return (error as Error).message;
+  }
+  throw new Error('expected an error, but nothing was thrown');
+}
 
 it.each([
-  ['v0.91.0.md', FILE, /^v0\.91\.0\.md:1: file name must be MAJOR\.MINOR\.PATCH\.md$/],
-  ['0.91.0.md', 'date: 2026-10-23\n## New\n- a', /:1: /],
-  ['0.91.0.md', '---\ndate: 2026-10-23\ntitle: x\n---\n## New\n- a', /:3: unknown key "title"$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\ndate: 2026-10-24\n---\n## New\n- a', /:3: "date" given twice$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\nhello\n---\n## New\n- a', /:3: front matter lines must be "key: value"$/],
-  ['0.91.0.md', '---\n---\n## New\n- a', /:1: missing "date"$/],
-  ['0.91.0.md', '---\ndate: 2026-02-30\n---\n## New\n- a', /:2: "2026-02-30" is not a calendar date$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n## New\n- a', /:1: front matter is not closed$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\nHello\n## New\n- a', /:4: only sections after the front matter$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## Changed\n- a', /:4: unexpected heading "## Changed"$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## Fixed\n- a\n## New\n- b', /:6: sections must be New, Improved, Fixed, each at most once$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n\n## Fixed\n- a', /:4: "## New" has no items$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n### Details', /:6: unexpected heading "### Details"$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n* a', /:5: only "- " list items in a section$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n1. a', /:5: only "- " list items in a section$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n> a', /:5: only "- " list items in a section$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n  a', /:5: only "- " list items in a section$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- see ![x](y.png)', /:5: no images$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- <b>a</b>', /:5: no HTML$/],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n', /:1: no sections$/],
-])('refuses %s: %j', (name, text, message) => expect(() => parseRelease(name, text)).toThrow(message));
+  ['v0.91.0.md', FILE, 'v0.91.0.md:1: file name must be MAJOR.MINOR.PATCH.md'],
+  ['0.91.0.md', 'date: 2026-10-23\n## New\n- a', '0.91.0.md:1: the file must start with "---"'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\ntitle: x\n---\n## New\n- a', '0.91.0.md:3: unknown key "title"'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\ndate: 2026-10-24\n---\n## New\n- a', '0.91.0.md:3: "date" given twice'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\nhello\n---\n## New\n- a', '0.91.0.md:3: front matter lines must be "key: value"'],
+  ['0.91.0.md', '---\n---\n## New\n- a', '0.91.0.md:1: missing "date"'],
+  ['0.91.0.md', '---\ndate: 2026-02-30\n---\n## New\n- a', '0.91.0.md:2: "2026-02-30" is not a calendar date'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n## New\n- a', '0.91.0.md:1: front matter is not closed'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\nHello\n## New\n- a', '0.91.0.md:4: only sections after the front matter'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## Changed\n- a', '0.91.0.md:4: unexpected heading "## Changed"'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## Fixed\n- a\n## New\n- b', '0.91.0.md:6: sections must be New, Improved, Fixed, each at most once'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n\n## Fixed\n- a', '0.91.0.md:4: "## New" has no items'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n### Details', '0.91.0.md:6: unexpected heading "### Details"'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n* a', '0.91.0.md:5: only "- " list items in a section'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n1. a', '0.91.0.md:5: only "- " list items in a section'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n> a', '0.91.0.md:5: only "- " list items in a section'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n  a', '0.91.0.md:5: only "- " list items in a section'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- ', '0.91.0.md:5: an item needs its text right after "- "'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- # Big', '0.91.0.md:5: no headings inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  ## Sub', '0.91.0.md:6: no headings inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- > q', '0.91.0.md:5: no block quotes inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  | b | c |', '0.91.0.md:6: no tables inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  b | c\n  --- | ---', '0.91.0.md:7: no tables inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  ```\n  b\n  ```', '0.91.0.md:6: no code blocks inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  ~~~', '0.91.0.md:6: no code blocks inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n\n      code', '0.91.0.md:7: no indented code blocks inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n\n  \t\tcode', '0.91.0.md:7: no indented code blocks inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- ---', '0.91.0.md:5: no horizontal rules or underlined headings inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  ---', '0.91.0.md:6: no horizontal rules or underlined headings inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  =', '0.91.0.md:6: no horizontal rules or underlined headings inside an item'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- see ![x](y.png)', '0.91.0.md:5: no images'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- <b>a</b>', '0.91.0.md:5: no HTML'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n', '0.91.0.md:1: no sections'],
+])('refuses %s: %j', (name, text, message) => expect(thrownMessage(() => parseRelease(name, text))).toBe(message));
 
 it('sorts newest first', () =>
   expect(
