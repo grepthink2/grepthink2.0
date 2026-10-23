@@ -7,7 +7,6 @@ import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import ClassRouteGuard from '@features/app/components/Layout/ClassRouteGuard';
 import { lazyModal } from '@/lib/lazyModal';
 import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
-import Settings from '@features/app/pages/Settings';
 import PageFallback from '@features/app/components/PageFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { ClassProvider } from '@/lib/classContext';
@@ -19,7 +18,8 @@ import { useSearchIndex } from '@features/search/hooks/useSearchIndex';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
 
-// Both modals load on first open; the create-class form pulls in the date picker.
+// The modals load on first open; the create-class form pulls in the date picker, and
+// Settings is a whole page of account forms.
 const CreateClassModal = lazyModal(
   () => import('@/features/app/components/Classes/CreateClassModal'),
   (p) => p.isOpen,
@@ -28,6 +28,7 @@ const JoinClassModal = lazyModal(
   () => import('@/features/app/components/Classes/JoinClassModal'),
   (p) => p.isOpen,
 );
+const Settings = lazyModal(() => import('@features/app/pages/Settings'), (p) => p.isOpen);
 
 /** Phones get the sidebar as an off-canvas drawer (Sidebar's own breakpoint). */
 const PHONE_QUERY = '(max-width: 768px)';
