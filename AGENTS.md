@@ -343,14 +343,19 @@ The full agent-facing action catalog (method, params, role) lives at
   tests).
 - **Times: store instants, compute in the school's zone, show in the viewer's.**
   - The database holds `timestamptz` instants.
-  - Calendar boundaries (a day, a term week, a deadline's `due_at`) are computed in the school's zone:
-    `institutions.timezone`, read through `app.institutions.controller.institution_timezone()`.
+  - Calendar boundaries (a day, a term week, a deadline's `due_at`, the scrum board's burnup day) are
+    computed in the school's zone: `institutions.timezone`, read through
+    `app.institutions.controller.institution_timezone()`. A controller with no class row at hand embeds
+    `classes(institution_id)` in a read it makes anyway: scrum's `_board_access` does, and answers the
+    project's `institution_id` along with the caller's access.
   - The web client shows times in the viewer's zone, with the campus time beside them when the two
     differ (`features/schedule/scheduleModel.ts` `zoneDiffers` / `viewerZone`,
-    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`).
-  - Known exceptions, still to fix: the scrum board's day boundary is hard-coded to Pacific
-    (`app/scrum/controller.py`), the Final Reviews page shows the browser's zone with no campus time,
-    and the web client's fallback `SCHOOL_ZONE` is a Pacific constant.
+    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`). The campus zone is the class's school's, from
+    `useSchoolTimezone(class.institution.id)` (`lib/institutions.ts`), and the components and helpers
+    that show campus time take it as an argument, with no default of their own. `SCHOOL_ZONE`
+    (`lib/schoolZone.ts`, Pacific) is only that hook's last resort, when no school's zone is known, and
+    `viewerZone()`'s when the browser cannot say where it is.
+  - Known exception, still to fix: the Final Reviews page shows the browser's zone with no campus time.
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
