@@ -551,15 +551,21 @@ def _pick_course_code(client) -> str | None:
     return next((code for code in candidates if code not in taken), None)
 
 
+def _day_label(day: datetime.date) -> str:
+    """A day as the class routes' refusals name it: "Dec 4, 2026"."""
+    return f"{day:%b} {day.day}, {day.year}"
+
+
 #: 422: a class's sprint schedule (spec D20) must fit the class's dates. Its first sprint can't
 #: start before the class's first week of term, nor after the latest last day of classes the class
 #: allows (the end of week 53, as ``END_TOO_LATE`` bounds the last day itself), and its last one
-#: can't end after the Sunday of the week that holds the last day of classes, ``end`` (ISO).
+#: can't end after the Sunday of the week that holds the last day of classes, ``end``. Days are
+#: named as :func:`_day_label` names them ("Dec 4, 2026"), as the attendance refusal does.
 SPRINTS_BEFORE_START = "The first sprint starts before the class does"
 SPRINTS_START_TOO_LATE = "The first sprint must start within a year of the first week of term"
 SPRINTS_PAST_END = "The sprints run past the last day of classes ({end})"
 #: 409: a last day of classes whose week ends before the class's last sprint does (spec D20). ``k``
-#: is the sprint count and ``end`` the last sprint's last day (ISO).
+#: is the sprint count and ``end`` the last sprint's last day ("Dec 6, 2026").
 END_DATE_BEFORE_SPRINTS = "Sprint {k} ends {end}; change the sprint schedule first"
 
 
@@ -594,7 +600,7 @@ def _require_schedule_fits(
         raise HTTPException(status_code=422, detail=SPRINTS_START_TOO_LATE)
     if problem == "SPRINTS_PAST_END":
         raise HTTPException(
-            status_code=422, detail=SPRINTS_PAST_END.format(end=class_end.isoformat())
+            status_code=422, detail=SPRINTS_PAST_END.format(end=_day_label(class_end))
         )
 
 
@@ -927,10 +933,7 @@ def _refuse_hiding_attendance(
         earliest = start + datetime.timedelta(weeks=week - 1)
         raise HTTPException(
             status_code=409,
-            detail=(
-                f"Week {week} already has attendance. "
-                f"Pick {earliest:%b} {earliest.day}, {earliest.year} or later."
-            ),
+            detail=f"Week {week} already has attendance. Pick {_day_label(earliest)} or later.",
         )
 
 
@@ -992,7 +995,7 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
                 raise HTTPException(
                     status_code=409,
                     detail=END_DATE_BEFORE_SPRINTS.format(
-                        k=schedule.count, end=last_day.isoformat()
+                        k=schedule.count, end=_day_label(last_day)
                     ),
                 )
 

@@ -491,7 +491,7 @@ describe('ClassSettingsModal — sprints', () => {
 
   it.each([
     [409, 'Team Rocket already uses Sprint 5; lower the count after they move their stories or delete that plan'],
-    [422, 'The sprints run past the last day of classes (2026-12-11)'],
+    [422, 'The sprints run past the last day of classes (Dec 11, 2026)'],
   ])('shows the API refusing the schedule (%i) in its own words, and keeps what was chosen', async (status, detail) => {
     const user = userEvent.setup();
     ctx.setClassSprints.mockRejectedValue(Object.assign(new Error(detail), { status, detail }));

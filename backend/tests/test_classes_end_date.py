@@ -254,7 +254,8 @@ def test_attendance_in_another_class_holds_no_week_back(db):
 #: Four weekly sprints from Mon Sep 28: Sprint 4 runs Oct 19-25, so the last day of classes may be
 #: any day from Mon Oct 19, the first day of the week (Monday to Sunday) that Sprint 4 ends in.
 FOUR_WEEKLY = {"sprint_count": 4, "sprint_frequency": "weekly", "sprints_start_on": "2026-09-28"}
-BEFORE_SPRINTS = "Sprint 4 ends 2026-10-25; change the sprint schedule first"
+#: Its day named as the attendance refusal names one ("Pick Oct 22, 2026 or later.").
+BEFORE_SPRINTS = "Sprint 4 ends Oct 25, 2026; change the sprint schedule first"
 
 
 @pytest.mark.parametrize("start", [START.isoformat(), None], ids=["first-day", "no-first-day"])

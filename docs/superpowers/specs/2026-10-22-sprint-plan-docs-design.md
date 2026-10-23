@@ -115,9 +115,9 @@ on or after the class's `start_date` (`SPRINTS_BEFORE_START`) and at most 370 da
 last day of classes (`SPRINTS_START_TOO_LATE`, which also refuses a day so late that the schedule's days
 would pass the calendar's end); the last sprint ending on or before the Sunday of the week (Monday to
 Sunday) that holds `end_date` (`schedule.latest_sprint_end`; `SPRINTS_PAST_END`, with the last day in
-the detail). Sprints that start on a Monday end on a Sunday, so a term that runs Monday to Friday keeps
-the sprints that end on the Sunday after its last day. A class date that is not set allows any day on its
-side.
+the detail as the attendance refusal names a day, "Dec 4, 2026"). Sprints that start on a Monday end on
+a Sunday, so a term that runs Monday to Friday keeps the sprints that end on the Sunday after its last
+day. A class date that is not set allows any day on its side.
 
 - `POST /api/classes` (`CreateClassRequest`): `sprint_count` and `sprint_frequency` required;
   `sprints_start_on` optional, defaulting to `start_date`. The web form (`Classes/CreateClassModal.tsx`)
@@ -129,9 +129,9 @@ side.
   sprints" for a class that has none.
 - `PATCH /api/classes/{class_id}/end-date` (`classes/controller.py:872`) also refuses a day whose week
   ends before the last sprint does (the same `latest_sprint_end`), as it already refuses a day that
-  would hide attendance weeks: 409 `END_DATE_BEFORE_SPRINTS` naming that sprint and its end. The Sprints
-  section shows "Sprint 5 ends Dec 1" beside the last-day field, so the instructor shortens the schedule
-  first. ⚑
+  would hide attendance weeks: 409 `END_DATE_BEFORE_SPRINTS` naming that sprint and its end ("Sprint 5
+  ends Dec 6, 2026; …"). The Sprints section shows "Sprint 5 ends Dec 1" beside the last-day field, so
+  the instructor shortens the schedule first. ⚑
 - `scrum.controller.ensure_project_sprints(client, *, project_id, project_name, schedule)`: for
   sequences 1..N, insert the missing ones in one bulk insert, and write the name and dates of
   existing sequenced ones that differ in one bulk upsert (on `id`, leaving `status` out). Sequences
