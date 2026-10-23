@@ -8,10 +8,10 @@
  * to this shape at the edge of the feature, never in here.
  */
 import {
-  SCHOOL_ZONE,
   dayKey,
   fmtTime,
   fmtTimeRange,
+  viewerZone,
   zoneLabel,
   type ScheduleItemData,
   type SchedulePerson,
@@ -155,7 +155,7 @@ function wallParts(d: Date, zone: string): { date: string; time: string } {
 }
 
 /** 'YYYY-MM-DD' + 'HH:MM' read on `zone`'s clock → the instant. */
-export function zonedToInstant(date: string, time: string, zone: string = SCHOOL_ZONE): Date {
+export function zonedToInstant(date: string, time: string, zone: string = viewerZone()): Date {
   const [y, mo, d] = date.split('-').map(Number);
   const [h, mi] = time.split(':').map(Number);
   const wall = Date.UTC(y, mo - 1, d, h, mi);
@@ -170,12 +170,12 @@ export function zonedToInstant(date: string, time: string, zone: string = SCHOOL
 }
 
 /** Date/ISO → { date: 'YYYY-MM-DD', time: 'HH:MM' } on `zone`'s clock. */
-export function instantToZoned(when: string | Date, zone: string = SCHOOL_ZONE): { date: string; time: string } {
+export function instantToZoned(when: string | Date, zone: string = viewerZone()): { date: string; time: string } {
   return wallParts(toDate(when), zone);
 }
 
-/** "3:00 PM PT" (+ " · Wed" when the campus day differs) for a date + time typed on the viewer's clock; null until both are set. */
-export function campusTimeOf(date: string, time: string, zone: string, schoolZone: string = SCHOOL_ZONE): string | null {
+/** "3:00 PM PT" (+ " · Wed" when the campus day differs) for a date + time typed on the viewer's clock (`zone`); null until both are set. `schoolZone` is the class's school's, never a guess. */
+export function campusTimeOf(date: string, time: string, zone: string, schoolZone: string): string | null {
   if (!date || !time) return null;
   const inst = zonedToInstant(date, time, zone);
   const sameDay = dayKey(inst, zone) === dayKey(inst, schoolZone);
@@ -186,7 +186,7 @@ export function campusTimeOf(date: string, time: string, zone: string, schoolZon
 /** { day: 'Tue, Oct 20' (adds the year when it isn't this one), start: '3:00', end: '4:00 PM', range: '3:00 – 4:00 PM' } */
 export function fmtMeetingWhen(
   m: TeamMeeting,
-  zone: string = SCHOOL_ZONE,
+  zone: string = viewerZone(),
   now: Date = new Date(),
 ): { day: string; start: string; end: string; range: string } {
   const s = toDate(m.startsAt);
@@ -207,7 +207,7 @@ export function fmtMeetingWhen(
 }
 
 /* ── Form draft + validation ───────────────────────────────────────────────────────────────── */
-export function draftFrom(m: TeamMeeting | null, zone: string = SCHOOL_ZONE): TeamMeetingDraft {
+export function draftFrom(m: TeamMeeting | null, zone: string = viewerZone()): TeamMeetingDraft {
   if (!m) return { title: '', date: '', time: '', durationMinutes: TEAM_MEETING_DEFAULT_DURATION, location: '', zoomUrl: '', note: '' };
   const z = instantToZoned(m.startsAt, zone);
   return {
@@ -237,7 +237,7 @@ export function isHttpUrl(s: string): boolean {
  */
 export function validateTeamMeeting(
   draft: TeamMeetingDraft,
-  { now = new Date(), zone = SCHOOL_ZONE, creating = true }: { now?: Date; zone?: string; creating?: boolean } = {},
+  { now = new Date(), zone = viewerZone(), creating = true }: { now?: Date; zone?: string; creating?: boolean } = {},
 ): TeamMeetingValidation {
   const errors: TeamMeetingValidation['errors'] = {};
   const title = (draft.title || '').trim();

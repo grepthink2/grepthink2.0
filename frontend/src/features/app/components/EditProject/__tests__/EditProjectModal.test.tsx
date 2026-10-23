@@ -90,6 +90,14 @@ describe('EditProjectModal', () => {
     expect(screen.getByRole('tabpanel', { name: 'Meetings' })).toContainElement(screen.getByRole('region', { name: 'Team meetings' }));
   });
 
+  it('gives the Product Owner no Meetings tab without the team’s meetings (and their school’s zone) to show', () => {
+    renderModal({ viewerIsProductOwner: true, initialTab: 'meetings' });
+    const list = within(dialog()).getByRole('tablist', { name: 'Edit project sections' });
+    expect(within(list).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Details', 'Team']);
+    // Asked to open on Meetings, it opens on Details instead.
+    expect(screen.getByRole('tab', { name: 'Details' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('is named Manage Project Admins for someone who only manages admins', () => {
     renderModal({ canEditProjectDetails: false, canManageAdmins: true });
     const admins = screen.getByRole('dialog', { name: 'Manage Project Admins' });

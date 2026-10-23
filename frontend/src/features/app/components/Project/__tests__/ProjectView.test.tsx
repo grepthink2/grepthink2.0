@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen, waitForElementToBeRemoved, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiProject, ApiProjectMeeting, ApiProjectMember } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
+import { clearInstitutionsCache } from '@/lib/institutions';
 import type { ProjectMember } from '../projectMembers';
 
 const deleteProject = vi.hoisted(() => vi.fn());
@@ -18,8 +19,10 @@ vi.mock('@/lib/api', () => ({
   api: { deleteProject, getScrumSummary, getProjectMeetings, createProjectMeeting, getInstitutions },
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'creator' } }) }));
+// The viewer's classes: none, unless a test needs the project's class to name its school.
+const classContext = vi.hoisted(() => ({ classes: [] as unknown[] }));
 vi.mock('@/lib/classContext', () => ({
-  useClass: () => ({ selectedClass: { id: 'c1' }, classes: [] }),
+  useClass: () => ({ selectedClass: { id: 'c1' }, classes: classContext.classes }),
   useClassRole: () => 'student',
 }));
 vi.mock('@features/messages/components/MessageButton', () => ({ MessageButton: () => null }));
@@ -279,6 +282,29 @@ describe('ProjectView — the team meetings card', () => {
     expect(await within(card()!).findByText('Design review')).toBeInTheDocument();
     expect(within(card()!).getByText('Alpha')).toBeInTheDocument(); // the team, in the row's context line
     expect(within(card()!).queryByRole('button', { name: 'Manage' })).not.toBeInTheDocument();
+  });
+
+  it('gives the campus time of the class’s school, not Pacific', async () => {
+    // The class is at İstinye and the schools list names its zone; the viewer's own clock is Santa Cruz's.
+    classContext.classes = [{ id: 'c1', institution: { id: 'istinye', name: 'İstinye University', slug: 'istinye' } }];
+    clearInstitutionsCache();
+    getInstitutions.mockResolvedValueOnce([
+      { id: 'istinye', name: 'İstinye University', slug: 'istinye', email_domains: ['istinye.edu.tr'], timezone: 'Europe/Istanbul' },
+    ]);
+    const viewerZone = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
+      timeZone: 'America/Los_Angeles',
+    } as Intl.ResolvedDateTimeFormatOptions);
+    try {
+      getProjectMeetings.mockResolvedValueOnce({ meetings: [row()], can_manage: false });
+      renderView({ userRoleOnProject: 'member' });
+
+      await within(card()!).findByText('Design review');
+      await waitFor(() => expect(card()).toHaveTextContent('Times in PT · campus is GMT+3'));
+    } finally {
+      viewerZone.mockRestore();
+      classContext.classes = [];
+      clearInstitutionsCache();
+    }
   });
 
   it('sits between Sprint progress and Roles needed', async () => {
