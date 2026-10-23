@@ -42,16 +42,16 @@ describe('CountBadge', () => {
     expect(badge).toHaveAttribute('title', 'Four teams');
   });
 
-  it('is the neutral 18px pill, and resets the tracking and style of the tab it sits in', () => {
+  it('is the neutral 18px pill, and resets the case, tracking and style of the tab it sits in', () => {
     render(<CountBadge count={1} />);
-    const [box, reset] = cssRules('.gt-count');
+    const [box, look] = cssRules('.gt-count');
     expect(box.getPropertyValue('height')).toBe('18px');
     expect(box.getPropertyValue('min-width')).toBe('18px');
     expect(box.getPropertyValue('box-sizing')).toBe('border-box');
     expect(box.getPropertyValue('font-variant-numeric')).toBe('tabular-nums');
-    expect(reset.getPropertyValue('letter-spacing')).toBe('normal');
-    expect(reset.getPropertyValue('font-style')).toBe('normal');
-    const [look] = cssRules('.gt-count').slice(2);
+    expect(box.getPropertyValue('text-transform')).toBe('none');
+    expect(box.getPropertyValue('letter-spacing')).toBe('normal');
+    expect(box.getPropertyValue('font-style')).toBe('normal');
     expect(look.getPropertyValue('background')).toBe('var(--gt-gray-100)');
     expect(look.getPropertyValue('color')).toBe('var(--gt-text-secondary)');
   });

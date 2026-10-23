@@ -84,12 +84,12 @@ describe('BreakdownTable', () => {
     expect(head.getPropertyValue('border-bottom')).toBe('1px solid var(--gt-border)');
     // The body cells, the row's own header (the name) among them.
     const cell = rule('.gt-table--breakdown .gt-table tbody th');
-    expect(cell).toBe(rule('.gt-table--breakdown .gt-table td'));
+    expect(cssRules('.gt-table--breakdown .gt-table td')).toContain(cell);
     expect(cell.getPropertyValue('height')).toBe('36px');
     expect(cell.getPropertyValue('border-bottom')).toBe('1px solid var(--gt-border-subtle)');
     expect(cell.getPropertyValue('font-size')).toBe('12.5px');
     // The design's heights leave out the cell's 1px rule: its cells are content boxes.
-    expect(rule('.gt-table--breakdown .gt-table td').getPropertyValue('padding')).toBe('0px 10px');
+    expect(cell.getPropertyValue('padding')).toBe('0px 10px');
     expect(cssRules('.gt-table--breakdown .gt-table th').map((r) => r.getPropertyValue('box-sizing'))).toContain('content-box');
     const folded = rule('.gt-table--breakdown .gt-table .gt-table__row--folded td');
     expect(folded.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');

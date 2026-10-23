@@ -65,12 +65,15 @@ describe('Tag', () => {
     expect(remove.getPropertyValue('border-style')).toBe('none');
     expect(remove.getPropertyValue('border-radius')).toBe('4px');
     expect(remove.getPropertyValue('background')).toBe('transparent');
+    expect(remove.getPropertyValue('font')).toBe('inherit');
+    expect(remove.getPropertyValue('transition')).toBe('opacity var(--gt-transition-fast), background-color var(--gt-transition-fast)');
+    expect(cssRules('.gt-tag__remove', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
     expect(cssRules('.gt-tag__remove:focus-visible')[0].getPropertyValue('box-shadow')).toBe('var(--gt-focus-ring-tight)');
     const [hit] = cssRules('.gt-tag__remove::after', 'max-width: 767px');
     expect(hit.getPropertyValue('inset')).toBe('-13px');
-    const [tag, reset] = cssRules('.gt-tag');
+    const [tag] = cssRules('.gt-tag');
     expect(tag.getPropertyValue('box-sizing')).toBe('border-box');
-    expect(reset.getPropertyValue('text-transform')).toBe('none');
-    expect(reset.getPropertyValue('letter-spacing')).toBe('normal');
+    expect(tag.getPropertyValue('text-transform')).toBe('none');
+    expect(tag.getPropertyValue('letter-spacing')).toBe('normal');
   });
 });

@@ -1,6 +1,5 @@
 // Avatar — ported from design/components/display/display.css so the two stay diffable: the Avatar
-// block (the avatar and AvatarGroup). Two additions, marked below: the initials reset the text styles
-// of the row they sit in, and a grouped avatar keeps the design's size inside its ring.
+// block (the avatar and AvatarGroup).
 
 /* ── Avatar (one palette: --gt-avatar-1…6 via hashColor) ── */
 .gt-avatar {
@@ -8,8 +7,7 @@
   border-radius: 50%; background-color: var(--gt-avatar-1); color: var(--gt-text-inverse);
   font-family: var(--gt-font-sans); font-weight: var(--gt-weight-semibold); object-fit: cover; user-select: none;
 }
-// Codebase addition: the initials inherit the text styles of the row, heading or caption the avatar
-// sits in, so a tracked or italic one would reach them. Reset them here.
+/* the initials reset the text styles of the row, heading or caption the avatar sits in */
 .gt-avatar { text-transform: none; letter-spacing: normal; font-style: normal; }
 .gt-avatar--xs { width: 20px; height: 20px; font-size: 8px; }
 .gt-avatar--sm { width: 28px; height: 28px; font-size: 10px; }
@@ -19,9 +17,6 @@
 .gt-avatar--square { border-radius: var(--gt-radius-sm); }
 .gt-avatar--extra { background-color: var(--gt-gray-200); color: var(--gt-text-secondary); }
 .gt-avatar-group { display: inline-flex; align-items: center; }
-.gt-avatar-group .gt-avatar { border: 2px solid var(--gt-surface); }
-// Codebase addition: the design's .gt-avatar sets no box-sizing, so its 2px ring sits outside the
-// face (a 28px avatar is 32px across in a group). index.css makes every box border-box, which would
-// draw the ring inside and shrink the face to 24px; content-box puts it back outside.
-.gt-avatar-group .gt-avatar { box-sizing: content-box; }
+/* content-box: the 2px ring sits outside the face, so a grouped sm avatar is 32px across under the app's border-box reset too */
+.gt-avatar-group .gt-avatar { box-sizing: content-box; border: 2px solid var(--gt-surface); }
 .gt-avatar-group .gt-avatar + .gt-avatar { margin-left: -8px; }

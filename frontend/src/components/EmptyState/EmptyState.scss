@@ -1,6 +1,6 @@
 // EmptyState — ported from design/components/feedback/feedback.css so the two stay diffable: the
 // EmptyState block (page · card · quiet · error). The retry link's own padding, border, background,
-// radius and font beat index.css's global button rule. One change, marked below: the card's height.
+// radius and font beat index.css's global button rule.
 
 /* ── EmptyState — page · card · quiet · error ─────────── */
 .gt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gt-space-sm); padding: var(--gt-space-xxl) var(--gt-space-lg); text-align: center; font-family: var(--gt-font-sans); }
@@ -9,10 +9,7 @@
 .gt-empty__title { margin: 0; font-size: 1.25rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
 .gt-empty__desc { max-width: 400px; margin: 0; font-size: var(--gt-text-body); color: var(--gt-text-secondary); }
 .gt-empty__action { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gt-space-sm); margin-top: var(--gt-space-md); }
-// Codebase change: the design's min-height is 120px on a content box (its .gt-empty sets no
-// box-sizing); index.css makes every box border-box, so the 28px top and bottom padding go back in:
-// 120 + 56 = 176, the design's height.
-.gt-empty--card { min-height: 176px; padding: 28px 16px; gap: 6px; }
+.gt-empty--card { box-sizing: border-box; min-height: 176px; padding: 28px 16px; gap: 6px; } /* border-box: the padding counts, so the card is 176px in the app too */
 .gt-empty--card .gt-empty__icon { width: 36px; height: 36px; margin-bottom: 4px; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
 .gt-empty--card .gt-empty__title { font-size: 13px; }
 .gt-empty--card .gt-empty__desc, .gt-empty__hint { max-width: 320px; margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-snug); color: var(--gt-text-tertiary); }

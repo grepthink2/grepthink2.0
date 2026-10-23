@@ -375,6 +375,8 @@ describe('Table', () => {
     expect(open.getPropertyValue('border-radius')).toBe('4px');
     expect(open.getPropertyValue('background')).toBe('none');
     expect(open.getPropertyValue('font-weight')).toBe('var(--gt-weight-semibold)');
+    expect(open.getPropertyValue('transition')).toBe('color var(--gt-transition-fast)');
+    expect(cssRules('.gt-table__open', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
     expect(cssRules('.gt-table__open:focus-visible')[0].getPropertyValue('box-shadow')).toBe('var(--gt-focus-ring-tight)');
   });
 });

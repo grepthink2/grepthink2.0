@@ -1,9 +1,9 @@
 // Slider — ported from design/components/primitives/primitives.css so the two stay diffable: the
 // Slider block, then its lines from the file's phone and reduced-motion blocks. The exact-value input
 // wears Input's classes (gt-input gt-input--compact) from components/Input/Input.scss, which the
-// component imports; its 44px on phones comes from there. One addition, marked below: the range's
-// own box drops index.css's focus ring, which the thumb carries. The thumb's shadow keeps the
-// design's rgba(): no --gt-shadow-* token matches it.
+// component imports; its 44px on phones comes from there. The range's own box drops index.css's focus
+// ring but keeps the rule's transparent outline, so forced-colours mode, which drops shadows, still
+// marks the focus. The thumb's shadow keeps the design's rgba(): no --gt-shadow-* token matches it.
 
 /* ── Slider (labelled range; TSR contributions) ─────────── */
 /* --gt-slider-frac (0–1) and the optional --gt-slider-accent are set inline by Slider.tsx */
@@ -13,9 +13,7 @@
 .gt-slider__fill { position: absolute; top: 0; bottom: 0; left: 0; width: calc(var(--gt-slider-frac, 0) * (100% - 20px) + 10px); background: var(--gt-slider-accent, var(--gt-primary)); }
 .gt-slider__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
 .gt-slider__input:focus { outline: none; }
-// Codebase addition: index.css rings the box of every control with keyboard focus, and the range's
-// box is the whole control; the design rings the thumb alone (below). The global rule's transparent
-// outline stays, so forced-colours mode, which drops shadows, still marks the focus.
+/* the ring is the thumb's alone: the range's own box drops the global ring, which would outline the whole control */
 .gt-slider__input:focus-visible { box-shadow: none; }
 .gt-slider__input::-webkit-slider-runnable-track { height: 24px; background: transparent; border: none; }
 .gt-slider__input::-moz-range-track { height: 24px; background: transparent; border: none; }

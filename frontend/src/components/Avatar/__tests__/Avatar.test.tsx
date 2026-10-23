@@ -193,10 +193,10 @@ describe('AvatarGroup', () => {
 
   it('draws the ring outside each face, as the design sizes it, and overlaps them', () => {
     render(<AvatarGroup names={TEAM} />);
-    const [ring, box] = cssRules('.gt-avatar-group .gt-avatar');
+    const [ring] = cssRules('.gt-avatar-group .gt-avatar');
     expect(ring.getPropertyValue('border')).toBe('2px solid var(--gt-surface)');
     // The design's box is content-box; index.css's border-box would draw the ring inside the face.
-    expect(box.getPropertyValue('box-sizing')).toBe('content-box');
+    expect(ring.getPropertyValue('box-sizing')).toBe('content-box');
     expect(cssRules('.gt-avatar-group .gt-avatar + .gt-avatar')[0].getPropertyValue('margin-left')).toBe('-8px');
     const [extra] = cssRules('.gt-avatar--extra');
     expect(extra.getPropertyValue('background-color')).toBe('var(--gt-gray-200)');
