@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,8 +18,12 @@ const state = vi.hoisted(() => ({
   currentSchool: null as School | null,
   classes: [] as ClassRow[],
 }));
-// The day each mocked picker picks when clicked: the first week of term, and the last day of classes.
-const picks = vi.hoisted(() => ({ start: '', end: '' }));
+// The day each mocked picker picks when clicked: the first week of term, the last day of classes, and
+// the day the first sprint starts.
+const picks = vi.hoisted(() => ({ start: '', end: '', sprints: '' }));
+type PickerProps = { label: string; value: string; onChange: (value: string) => void; disabledBefore?: Date };
+// The props each mocked picker last rendered with, by label.
+const pickers = vi.hoisted(() => ({}) as Record<string, PickerProps>);
 const refreshClasses = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 
 vi.mock('@/lib/institutions', () => ({
@@ -35,11 +39,16 @@ vi.mock('@/lib/classContext', () => ({
 vi.mock('@/lib/api', () => ({ api: { createClass: vi.fn(), uploadClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that picks a date is enough here.
 vi.mock('@/components/DatePickerField/DatePickerField', () => ({
-  DatePickerField: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
-    <button type="button" onClick={() => onChange(label === 'Last Day of Classes' ? picks.end : picks.start)}>
-      {label}
-    </button>
-  ),
+  DatePickerField: (props: PickerProps) => {
+    pickers[props.label] = props;
+    const day = () =>
+      props.label === 'Last Day of Classes' ? picks.end : props.label === 'First sprint starts' ? picks.sprints : picks.start;
+    return (
+      <button type="button" onClick={() => props.onChange(day())}>
+        {props.label}
+      </button>
+    );
+  },
 }));
 
 import { api } from '@/lib/api';
@@ -69,7 +78,9 @@ beforeEach(() => {
   state.currentSchool = null;
   state.classes = [];
   picks.start = '2026-09-28';
-  picks.end = '2026-09-28'; // the last day may be the first day: a one-day course is still valid
+  // Ten weeks and four days on: room for the five two-week sprints the form starts with, which end on Dec 6.
+  picks.end = '2026-12-11';
+  picks.sprints = '';
 });
 
 describe('CreateClassModal — date labels', () => {
@@ -197,7 +208,7 @@ describe('CreateClassModal — last day of classes', () => {
     await fillCourse(user);
     await user.click(submit());
     expect(api.createClass).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'SE 301', start_date: '2026-09-28', end_date: '2026-09-28' }),
+      expect.objectContaining({ name: 'SE 301', start_date: '2026-09-28', end_date: '2026-12-11' }),
     );
   });
 
@@ -217,14 +228,16 @@ describe('CreateClassModal — last day of classes', () => {
     picks.end = '2026-09-21';
     renderModal();
     await fillCourse(user);
+    // Every sprint ends after that day, but the sprints are not what is wrong: this error says what is.
+    expect(screen.queryByText(/would end after the last day of classes/)).not.toBeInTheDocument();
     await user.click(submit());
     expect(await screen.findByText("The last day of classes can't be before the first week of term")).toBeInTheDocument();
     expect(api.createClass).not.toHaveBeenCalled();
 
-    picks.end = '2026-12-04';
+    picks.end = '2026-12-11';
     await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
     await user.click(submit());
-    expect(api.createClass).toHaveBeenCalledWith(expect.objectContaining({ start_date: '2026-09-28', end_date: '2026-12-04' }));
+    expect(api.createClass).toHaveBeenCalledWith(expect.objectContaining({ start_date: '2026-09-28', end_date: '2026-12-11' }));
     expect(screen.queryByText(/can't be before the first week of term/)).not.toBeInTheDocument();
   });
 
@@ -264,18 +277,165 @@ describe('CreateClassModal — last day of classes', () => {
 });
 
 describe('CreateClassModal — sprint schedule', () => {
+  const howMany = () => screen.getByRole('spinbutton', { name: 'How many' });
+  const every = () => screen.getByRole('combobox', { name: 'Every' });
+  const firstSprint = () => screen.getByRole('button', { name: 'First sprint starts' });
+  const preview = () => screen.getByRole('status');
+
+  async function setCount(user: ReturnType<typeof userEvent.setup>, count: string) {
+    await user.clear(howMany());
+    await user.type(howMany(), count);
+  }
+
   beforeEach(() => {
     state.institutions = []; // no school to pick
+    picks.start = '2026-09-21';
+    picks.end = '2026-12-04';
+  });
+  afterEach(() => vi.restoreAllMocks()); // the console spy
+
+  it('asks how many sprints, how often and from when, starting at five every two weeks', () => {
+    renderModal();
+    const sprints = screen.getByRole('group', { name: 'Sprints' });
+    expect(within(sprints).getByRole('spinbutton', { name: 'How many' })).toHaveValue(5);
+    expect(howMany()).toHaveAccessibleDescription('1–20');
+    expect(within(sprints).getByRole('combobox', { name: 'Every' })).toHaveDisplayValue('two weeks');
+    expect(within(every()).getAllByRole('option').map((o) => o.textContent)).toEqual(['week', 'two weeks', 'month']);
+    expect(within(sprints).getByRole('button', { name: 'First sprint starts' })).toBeInTheDocument();
+    expect(preview()).toBeEmptyDOMElement(); // nothing to count from before the first week of term
   });
 
-  it('creates the class with five sprints, two weeks each', async () => {
+  it('shows the day the last sprint ends, and holds Create Class while it would end after the last day of classes', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user); // Sep 21 to Dec 4
+    await setCount(user, '5');
+    await user.selectOptions(every(), 'two weeks');
+    // Five two-week sprints from Sep 21: the last runs from Nov 16 to Nov 29.
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 29$/);
+    expect(submit()).toBeEnabled();
+
+    picks.end = '2026-11-01';
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    expect(preview()).toHaveTextContent(/^Sprint 5 would end after the last day of classes$/);
+    expect(submit()).toBeDisabled();
+  });
+
+  it('creates the class with the schedule, its first sprint starting with the first week of term', async () => {
     const user = userEvent.setup();
     renderModal();
     await fillCourse(user);
     await user.click(submit());
-    expect(api.createClass).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'SE 301', sprint_count: 5, sprint_frequency: 'biweekly' }),
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'SE 301',
+          start_date: '2026-09-21',
+          end_date: '2026-12-04',
+          sprint_count: 5,
+          sprint_frequency: 'biweekly',
+          sprints_start_on: '2026-09-21',
+        }),
+      ),
     );
+  });
+
+  it('counts the sprints chosen, at the frequency chosen', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.selectOptions(every(), 'week');
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Oct 25$/);
+
+    await setCount(user, '2');
+    await user.selectOptions(every(), 'month');
+    expect(preview()).toHaveTextContent(/^Sprint 2 ends Nov 20$/);
+    await user.click(submit());
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith(expect.objectContaining({ sprint_count: 2, sprint_frequency: 'monthly' })),
+    );
+  });
+
+  it('starts the first sprint with the first week of term until a day is picked for it', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user); // Sep 21
+    picks.start = '2026-09-14';
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 22$/); // followed it to Sep 14
+
+    picks.sprints = '2026-09-21';
+    await user.click(firstSprint());
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 29$/);
+    picks.start = '2026-09-07';
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 29$/); // picked: it stays
+
+    await user.click(submit());
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith(
+        expect.objectContaining({ start_date: '2026-09-07', sprints_start_on: '2026-09-21' }),
+      ),
+    );
+  });
+
+  it('offers no day before the first week of term for the first sprint', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    expect(pickers['First sprint starts'].disabledBefore).toBeUndefined();
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(pickers['First sprint starts'].disabledBefore).toEqual(new Date(2026, 8, 21)); // Sep 21, local midnight
+  });
+
+  it('takes a whole number of sprints from 1 to 20, and holds Create Class until it has one', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.clear(howMany());
+    expect(submit()).toBeDisabled();
+    expect(howMany()).not.toHaveAttribute('aria-invalid'); // an empty box is not an error yet
+    expect(preview()).toBeEmptyDOMElement();
+
+    await user.type(howMany(), '21');
+    expect(howMany()).toHaveAttribute('aria-invalid', 'true');
+    expect(howMany()).toHaveAccessibleDescription('Enter a whole number from 1 to 20');
+    expect(preview()).toBeEmptyDOMElement();
+    expect(submit()).toBeDisabled();
+
+    await setCount(user, '4');
+    expect(howMany()).not.toHaveAttribute('aria-invalid');
+    expect(preview()).toHaveTextContent(/^Sprint 4 ends Nov 15$/);
+    expect(submit()).toBeEnabled();
+  });
+
+  it('shows the API refusing the schedule in its own words', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const refusal = 'The first sprint starts before the class does';
+    vi.mocked(api.createClass).mockRejectedValueOnce(Object.assign(new Error(refusal), { status: 422, detail: refusal }));
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(await screen.findByText(refusal)).toBeInTheDocument();
+  });
+
+  it('starts the next class with the schedule the form opened with', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await setCount(user, '2');
+    await user.selectOptions(every(), 'month');
+    picks.sprints = '2026-09-28';
+    await user.click(firstSprint());
+    await user.click(submit());
+    await waitFor(() => expect(screen.getByPlaceholderText('e.g., CSE 115A')).toHaveValue('')); // the form reset
+
+    expect(howMany()).toHaveValue(5);
+    expect(every()).toHaveDisplayValue('two weeks');
+    expect(preview()).toBeEmptyDOMElement();
+    picks.start = '2026-09-14';
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Nov 22$/); // the first sprint follows the term again
   });
 });
 

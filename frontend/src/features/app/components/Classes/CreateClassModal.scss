@@ -194,6 +194,50 @@
   font-size: $font-size-sm;
 }
 
+// Sprints: three fields side by side (fewer per row on a narrow screen), then the line that says when
+// the last sprint ends.
+.create-class-modal__sprints {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.create-class-modal__sprints-legend {
+  padding: 0;
+  margin-bottom: $spacing-sm;
+}
+
+.create-class-modal__sprint-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: $spacing-md;
+  align-items: start;
+}
+
+// The fields' labels sit under "Sprints", a step quieter than it.
+.create-class-modal__sprints .gt-field__label {
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+}
+
+// In the error colour while the last sprint would end after the last day of classes, which holds
+// Create Class.
+.create-class-modal__sprint-preview {
+  margin: 0;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  font-family: $primary-font;
+  color: $text-secondary;
+
+  &--past-end {
+    color: var(--gt-error-text);
+  }
+}
+
 // Term Selection Buttons
 .create-class-modal__term-buttons {
   display: flex;

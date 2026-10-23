@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
 import { Upload, X } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type ApiSprintFrequency } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useInstitutionsWithRetry } from '@/lib/institutions';
 import { isPastLatestLastDay } from '@/lib/lastDayOfClasses';
 import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { Input } from '@/components/Input/Input';
+import { Select } from '@/components/Select/Select';
+import {
+  MAX_SPRINTS,
+  MIN_SPRINTS,
+  SPRINT_FREQUENCY_OPTIONS,
+  parseSprintCount,
+  scheduleEnd,
+} from '@features/app/utils/sprintSchedule';
 import './CreateClassModal.scss';
 
 type Term = 'Fall' | 'Winter' | 'Spring' | 'Summer';
@@ -20,12 +30,21 @@ const DEFAULT_TSR_COUNT: Record<Term, number> = {
   Fall: 5, Winter: 5, Spring: 5, Summer: 3,
 };
 
+/** The sprint schedule a new class starts with: five sprints of two weeks. */
+const DEFAULT_SPRINT_COUNT = '5';
+const DEFAULT_SPRINT_FREQUENCY: ApiSprintFrequency = 'biweekly';
+
 const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) => {
   const [courseName, setCourseName] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term>('Fall');
   const [termStartDate, setTermStartDate] = useState('');
   const [termEndDate, setTermEndDate] = useState('');
   const [tsrCount, setTsrCount] = useState(DEFAULT_TSR_COUNT['Fall']);
+  // The sprint schedule. The count is kept as typed, so the box can be emptied and typed again.
+  const [sprintCountText, setSprintCountText] = useState(DEFAULT_SPRINT_COUNT);
+  const [sprintFrequency, setSprintFrequency] = useState<ApiSprintFrequency>(DEFAULT_SPRINT_FREQUENCY);
+  // The first sprint's first day once one is picked; until then, the first week of term.
+  const [chosenSprintsStartOn, setChosenSprintsStartOn] = useState<string | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   // The class's "Tasks - External" link. Checked once you leave the box (or submit), not mid-word.
   const [tasksUrl, setTasksUrl] = useState('');
@@ -66,6 +85,20 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
     : tasksUrlChecked && 'error' in parsedTasksUrl
       ? parsedTasksUrl.error
       : null;
+
+  const sprintCount = parseSprintCount(sprintCountText);
+  // An empty box holds Create Class, as an empty date does; only a value that can't be used is an error.
+  const sprintCountError = sprintCountText !== '' && sprintCount === null ? 'Enter a whole number from 1 to 20' : undefined;
+  const sprintsStartOn = chosenSprintsStartOn ?? termStartDate;
+  // The last sprint and its last day, once there is a count and a day to count from.
+  const lastSprint =
+    sprintCount !== null && sprintsStartOn
+      ? { k: sprintCount, endsOn: scheduleEnd(sprintsStartOn, sprintCount, sprintFrequency) }
+      : null;
+  // Holds Create Class (the API refuses it too). A last day before the first week of term is left to
+  // the check that says so on Create Class: the sprints are not what is wrong then.
+  const sprintsPastLastDay =
+    lastSprint !== null && termEndDate !== '' && termEndDate >= termStartDate && lastSprint.endsOn > termEndDate;
 
   const handleTermChange = (term: Term) => {
     setSelectedTerm(term);
@@ -143,6 +176,8 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setError('The last day of classes must be within a year of the first week of term');
       return;
     }
+    // Create Class is disabled while either holds, as it is while a date is missing.
+    if (sprintCount === null || sprintsPastLastDay) return;
     if ('error' in parsedTasksUrl) {
       // The box says why; focus takes a screen reader there, and no older error stays up.
       setError(null);
@@ -165,10 +200,9 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         tsr_count: tsrCount,
         institution_id: institutionId || undefined,
         external_tasks_url: parsedTasksUrl.url ?? undefined,
-        // The form has no sprint fields: every class gets five sprints, two weeks each, from its
-        // first week of term (the first day the API takes when none is sent).
-        sprint_count: 5,
-        sprint_frequency: 'biweekly',
+        sprint_count: sprintCount,
+        sprint_frequency: sprintFrequency,
+        sprints_start_on: sprintsStartOn,
       });
 
       const createdId = created?.id;
@@ -195,6 +229,9 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setTermStartDate('');
       setTermEndDate('');
       setTsrCount(DEFAULT_TSR_COUNT['Fall']);
+      setSprintCountText(DEFAULT_SPRINT_COUNT);
+      setSprintFrequency(DEFAULT_SPRINT_FREQUENCY);
+      setChosenSprintsStartOn(null);
       setCsvFile(null);
       setTasksUrl('');
       setTasksUrlChecked(false);
@@ -320,6 +357,49 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
             <p className="create-class-modal__description">Before finals week</p>
           </div>
 
+          {/* Sprints: how many, how often, and from when. Every team made in the class gets them. */}
+          <fieldset className="create-class-modal__sprints">
+            <legend className="create-class-modal__label create-class-modal__sprints-legend">Sprints</legend>
+            <div className="create-class-modal__sprint-fields">
+              <Input
+                label="How many"
+                type="number"
+                inputMode="numeric"
+                min={MIN_SPRINTS}
+                max={MAX_SPRINTS}
+                step={1}
+                value={sprintCountText}
+                onChange={(e) => setSprintCountText(e.target.value)}
+                helperText="1–20"
+                error={sprintCountError}
+              />
+              <Select
+                label="Every"
+                value={sprintFrequency}
+                onChange={(e) => setSprintFrequency(e.target.value as ApiSprintFrequency)}
+                options={SPRINT_FREQUENCY_OPTIONS}
+              />
+              <DatePickerField
+                label="First sprint starts"
+                value={sprintsStartOn}
+                onChange={setChosenSprintsStartOn}
+                disabledBefore={termStartDate ? parseISO(termStartDate) : undefined}
+              />
+            </div>
+            {/* Always on the page, so a screen reader announces the line as it changes */}
+            <p
+              className={`create-class-modal__sprint-preview${
+                sprintsPastLastDay ? ' create-class-modal__sprint-preview--past-end' : ''
+              }`}
+              role="status"
+            >
+              {lastSprint &&
+                (sprintsPastLastDay
+                  ? `Sprint ${lastSprint.k} would end after the last day of classes`
+                  : `Sprint ${lastSprint.k} ends ${format(parseISO(lastSprint.endsOn), 'MMM d')}`)}
+            </p>
+          </fieldset>
+
           {/* TSR Count */}
           <div className="create-class-modal__field">
             <label className="create-class-modal__label">
@@ -437,6 +517,8 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                 !courseName.trim() ||
                 !termStartDate.trim() ||
                 !termEndDate.trim() ||
+                sprintCount === null ||
+                sprintsPastLastDay ||
                 schoolsPending ||
                 schoolsFailed ||
                 (needsInstitution && !institutionId)
