@@ -14,6 +14,7 @@ import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsMo
 import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import '@features/app/components/Classes/CreateClassModal.scss';
 import './MyClasses.scss';
 
 // Loads on first open; the form pulls in the date picker.

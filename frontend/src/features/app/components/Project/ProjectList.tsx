@@ -3,6 +3,7 @@ import { Smile, Meh, Frown, ChevronRight, Eye } from 'lucide-react';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import { SortableHeader } from '@/components/Table/SortableHeader';
 import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
+import '@features/app/components/Modules/AssignmentList.scss';
 import './ProjectList.scss';
 
 export type ProjectSentiment = 'positive' | 'neutral' | 'negative';
