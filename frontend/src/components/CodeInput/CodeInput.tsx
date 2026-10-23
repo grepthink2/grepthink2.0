@@ -39,7 +39,7 @@ const selectionOf = (el: HTMLInputElement) => ({ start: el.selectionStart ?? 0, 
  * on the first box, fills every box from there, dropping what a code cannot hold. The value has no
  * holes: a tap on a box past it lands on the first empty one, so the row is one target.
  *
- * Codebase-side: it works uncontrolled too, `ref` reaches the first box, and `autoFocus` is the first
+ * It works uncontrolled too. Codebase-side: `ref` reaches the first box, and `autoFocus` is the first
  * empty box's own.
  */
 export function CodeInput({

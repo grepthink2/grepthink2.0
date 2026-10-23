@@ -27,9 +27,9 @@ export interface SortableHeaderProps<K extends string>
  * 1.2 puts `aria-sort` on the sorted column only, so the others carry none. The Table component renders
  * it for a sortable column, and a table of its own can render it in its header row with useTableSort.
  *
- * Codebase change: an unsorted column shows a faint up-and-down glyph, where the design's faint up
- * chevron would promise a direction its first press may not take (the analytics breakdown sorts its
- * figures largest first). Native props and `ref` reach the `<th>`.
+ * An unsorted column shows a faint up-and-down glyph: an up chevron would promise a direction its
+ * first press may not take (the analytics breakdown sorts its figures largest first). Native props
+ * and `ref` reach the `<th>`.
  */
 export function SortableHeader<K extends string>({ label, sortKey, currentSort, onSort, ref, ...rest }: SortableHeaderProps<K>) {
   const direction = currentSort?.key === sortKey ? currentSort.direction : null;

@@ -50,9 +50,9 @@ export interface TabsProps<V extends string = string>
  * CountBadge; `collapseOnPhone` shows icon-only tabs under 768px while each label stays in its tab's
  * name.
  *
- * Codebase-side: pressing the selected tab, or an arrow landing back on it, reports no change; a
- * space keeps the count apart from the label in the tab's name; and without `idBase` the tabs carry
- * no `aria-controls`, which would point at no panel. Native props and `ref` reach the tablist.
+ * Without `idBase` the tabs carry no `aria-controls`, which would point at no panel. Codebase-side:
+ * pressing the selected tab, or an arrow landing back on it, reports no change, and a space keeps the
+ * count apart from the label in the tab's name. Native props and `ref` reach the tablist.
  */
 export function Tabs<V extends string = string>({
   tabs, value, onChange, ariaLabel, idBase, activation = 'automatic', size = 'md', collapseOnPhone = false,

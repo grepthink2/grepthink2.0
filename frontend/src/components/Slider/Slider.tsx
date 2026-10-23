@@ -71,13 +71,15 @@ const tidy = (n: number) => +n.toFixed(6);
  * it changes. `color` (a token reference) tints the fill and the thumb, and an error turns both
  * `--gt-error`. On phones the control is 44px tall, and so is the number input.
  *
+ * When the range is not a whole number of steps, the top is the last step inside max, where the
+ * browser's range stops (0…10 in 3s stops at 9). The shown value is snapped and clamped too, so a value
+ * passed off a step shows where the thumb sits. The range's own box drops index.css's focus ring, so
+ * the ring is the thumb's alone.
+ *
  * Native props and `ref` reach the range input, before its own attributes; `className` goes on the
  * field. Codebase-side: a caller's `aria-describedby` comes ahead of the help or error, on the number
  * input too; a caller's `onKeyDown` runs first, and PageUp / PageDown do nothing when it prevents the
- * default. When the range is not a whole number of steps, the top is the last step inside max, where the
- * browser's range stops (0…10 in 3s stops at 9). The shown value is snapped and clamped too, so a value
- * passed off a step shows where the thumb sits, and one that is not a number shows min. The range's own
- * box drops index.css's focus ring, so the ring is the thumb's alone, as the design draws it.
+ * default; and a value that is not a number shows min.
  */
 export function Slider({
   id, label, hideLabel = false, value, defaultValue, onChange, min = 0, max = 100, step = 1, pageStep, unit = '',
