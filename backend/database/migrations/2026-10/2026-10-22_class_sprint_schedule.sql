@@ -17,10 +17,11 @@
 --
 -- Applied: DEV — pending   PROD — pending
 --
---   * classes_sprint_schedule_valid: no schedule (all three NULL: every class that exists today, until
---     its instructor sets one), or a count of 1–20, one of the three frequencies and a start day.
---     As written it also passes a start day with a NULL count or frequency: a CHECK passes on NULL,
---     and the second branch is NULL rather than false then. The API always writes the three together.
+--   * classes_sprint_schedule_valid: all three set, or none. None is a class with no schedule (every
+--     class that exists today, until its instructor sets one); all three is a count of 1–20, one of
+--     the three frequencies and a start day. The second branch spells out
+--     `sprint_count IS NOT NULL AND sprint_frequency IS NOT NULL` because a CHECK passes on NULL:
+--     without it, a start day with no count or no frequency would pass.
 --   * Fitting the dates to the class is the API's rule, not the CHECK's: it refuses a first sprint that
 --     starts before start_date or a last one that ends after end_date (422), and a last day of classes
 --     before the last sprint ends (409).
@@ -50,7 +51,8 @@ ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS sprints_start_on date;
 ALTER TABLE public.classes DROP CONSTRAINT IF EXISTS classes_sprint_schedule_valid;
 ALTER TABLE public.classes ADD CONSTRAINT classes_sprint_schedule_valid CHECK (
   (sprint_count IS NULL AND sprint_frequency IS NULL AND sprints_start_on IS NULL)
-  OR (sprint_count BETWEEN 1 AND 20
+  OR (sprint_count IS NOT NULL AND sprint_frequency IS NOT NULL
+      AND sprint_count BETWEEN 1 AND 20
       AND sprint_frequency IN ('weekly', 'biweekly', 'monthly')
       AND sprints_start_on IS NOT NULL)
 );

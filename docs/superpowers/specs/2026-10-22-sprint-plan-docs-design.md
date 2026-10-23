@@ -92,7 +92,8 @@ ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS sprints_start_on date;
 ALTER TABLE public.classes DROP CONSTRAINT IF EXISTS classes_sprint_schedule_valid;
 ALTER TABLE public.classes ADD CONSTRAINT classes_sprint_schedule_valid CHECK (
   (sprint_count IS NULL AND sprint_frequency IS NULL AND sprints_start_on IS NULL)
-  OR (sprint_count BETWEEN 1 AND 20
+  OR (sprint_count IS NOT NULL AND sprint_frequency IS NOT NULL
+      AND sprint_count BETWEEN 1 AND 20
       AND sprint_frequency IN ('weekly', 'biweekly', 'monthly')
       AND sprints_start_on IS NOT NULL)
 );
