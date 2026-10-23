@@ -21,6 +21,8 @@ from pydantic import (
 from app.classes import terms
 
 ClassStatus = Literal["active", "complete"]
+#: How often a class's sprints start (``app.scrum.schedule.FREQUENCIES``).
+SprintFrequency = Literal["weekly", "biweekly", "monthly"]
 
 #: Why a last day of classes is refused when it falls before the term's first day: a 422 when a
 #: class is created, a 400 when a class's day is changed. The classes_end_date_after_start CHECK
@@ -85,6 +87,14 @@ class CreateClassRequest(BaseModel):
     institution_id: UUID | None = None
     #: The class's task board elsewhere, shown as "Tasks - External" in its sidebar.
     external_tasks_url: ExternalTasksUrl = None
+    #: The class's sprint schedule (spec D20): how many sprints (1-20), how often, and the first
+    #: sprint's first day, ``start_date`` when omitted. The limits here match the
+    #: ``classes_sprint_schedule_valid`` CHECK. That the schedule fits the class's dates (it starts
+    #: on or after ``start_date`` and ends by ``end_date``) is checked by the controller, whose
+    #: 422 detail is a sentence the web client can show.
+    sprint_count: int = Field(..., ge=1, le=20)
+    sprint_frequency: SprintFrequency
+    sprints_start_on: datetime.date | None = None
 
     @model_validator(mode="after")
     def end_is_within_the_term(self) -> Self:

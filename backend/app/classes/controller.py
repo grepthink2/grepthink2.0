@@ -26,6 +26,7 @@ from app.institutions.controller import (
 )
 from app.outbox import controller as outbox
 from app.outbox import invite_jobs
+from app.scrum.schedule import Schedule, schedule_problem
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -549,6 +550,37 @@ def _pick_course_code(client) -> str | None:
     return next((code for code in candidates if code not in taken), None)
 
 
+#: 422: a class's sprint schedule (spec D20) must fit the class's dates. Its first sprint can't
+#: start before the class's first week of term, and its last one can't end after the last day of
+#: classes, ``end`` (ISO).
+SPRINTS_BEFORE_START = "The first sprint starts before the class does"
+SPRINTS_PAST_END = "The sprints run past the last day of classes ({end})"
+
+
+def _require_schedule_fits(
+    schedule: Schedule,
+    *,
+    class_start: datetime.date | None,
+    class_end: datetime.date | None,
+) -> None:
+    """422 :data:`SPRINTS_BEFORE_START` when ``schedule`` starts before ``class_start``, 422
+    :data:`SPRINTS_PAST_END` when its last sprint ends after ``class_end``. A class date that is
+    not set allows any day on its side. Reads nothing."""
+    problem = schedule_problem(
+        start_on=schedule.start_on,
+        count=schedule.count,
+        frequency=schedule.frequency,
+        class_start=class_start,
+        class_end=class_end,
+    )
+    if problem == "SPRINTS_BEFORE_START":
+        raise HTTPException(status_code=422, detail=SPRINTS_BEFORE_START)
+    if problem == "SPRINTS_PAST_END":
+        raise HTTPException(
+            status_code=422, detail=SPRINTS_PAST_END.format(end=class_end.isoformat())
+        )
+
+
 def create_class(
     name: str,
     description: str | None,
@@ -559,6 +591,10 @@ def create_class(
     institution_id: UUID | str | None = None,
     external_tasks_url: str | None = None,
     end_date: datetime.date | None = None,
+    *,
+    sprint_count: int,
+    sprint_frequency: str,
+    sprints_start_on: datetime.date | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -571,8 +607,17 @@ def create_class(
     sidebar link; omitted, the class has none. ``end_date`` (the request model refuses one before
     ``start_date``) is the class's last day of classes; omitted, none is stored and the class
     keeps its term's fixed length.
+
+    ``sprint_count``, ``sprint_frequency`` and ``sprints_start_on`` (``start_date`` when omitted)
+    are the class's sprint schedule (spec D20). It must start on or after ``start_date`` and end
+    by ``end_date`` when there is one: 422 otherwise (:func:`_require_schedule_fits`), before
+    anything is read or written.
+
+    Returns the class row.
     """
+    schedule = Schedule(sprints_start_on or start_date, sprint_count, sprint_frequency)
     try:
+        _require_schedule_fits(schedule, class_start=start_date, class_end=end_date)
         if institution_id is not None and not is_known_institution(institution_id):
             raise HTTPException(status_code=400, detail="Unknown institution")
 
@@ -593,6 +638,9 @@ def create_class(
             "term": term,
             "start_date": start_date.isoformat(),
             "status": "active",
+            "sprint_count": schedule.count,
+            "sprint_frequency": schedule.frequency,
+            "sprints_start_on": schedule.start_on.isoformat(),
         }
         if description is not None:
             class_data["description"] = description

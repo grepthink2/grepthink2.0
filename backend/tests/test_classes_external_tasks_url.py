@@ -29,7 +29,13 @@ from tests.fake_supabase import FakeSupabase
 INSTR = "10000000-0000-0000-0000-000000000001"
 CLASS = "c0000000-0000-0000-0000-000000000001"
 EXISTING = "https://tasks.grepthink2.com/cse115a"
-NEW_CLASS = {"name": "CSE 115A", "term": "Fall", "start_date": "2026-09-24"}
+NEW_CLASS = {
+    "name": "CSE 115A",
+    "term": "Fall",
+    "start_date": "2026-09-24",
+    "sprint_count": 5,
+    "sprint_frequency": "biweekly",
+}
 
 #: The web client's cases too: what the web accepts, the API must accept (else a 422 in the
 #: dialog), so both suites read one table.

@@ -15,6 +15,7 @@ import type {
 export const classesApi = {
 
   // Classes
+  /** Create a class (an instructor account); answers the class created. */
   createClass: async (data: {
     name: string;
     description?: string;
@@ -26,11 +27,13 @@ export const classesApi = {
     institution_id?: string;
     /** The class's "Tasks - External" link; omit for none. */
     external_tasks_url?: string;
-  }) => {
-    return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
+  }): Promise<ApiClass> => {
+    const res = await apiRequest<ApiClass | { message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    // An older backend answers {message, class}.
+    return 'class' in res ? res.class : res;
   },
 
   getClasses: async () => {

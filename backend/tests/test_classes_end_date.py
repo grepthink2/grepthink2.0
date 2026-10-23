@@ -37,7 +37,13 @@ PROJECT = "d0000000-0000-0000-0000-000000000001"
 OTHER_PROJECT = "d0000000-0000-0000-0000-000000000002"  # a team in OTHER_CLASS
 START = date(2026, 9, 24)
 LATEST = START + timedelta(days=370)  # the end of week 53
-NEW_CLASS = {"name": "CSE 115A", "term": "Fall", "start_date": START}
+NEW_CLASS = {
+    "name": "CSE 115A",
+    "term": "Fall",
+    "start_date": START,
+    "sprint_count": 5,
+    "sprint_frequency": "biweekly",
+}
 #: What a day more than a year after the first week of term is refused with (422 when creating,
 #: 400 when changing), spelled out as the instructor reads it.
 END_TOO_LATE = "The last day of classes must be within a year of the first week of term."

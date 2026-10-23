@@ -89,10 +89,12 @@ class TestRequireInstructor:
                 "description": "Soft Eng",
                 "term": "Spring",
                 "start_date": "2026-04-01",
+                "sprint_count": 5,
+                "sprint_frequency": "biweekly",
             },
         )
         assert r.status_code == 200
-        assert r.json()["class"]["id"] == "cls-1"
+        assert r.json() == {"id": "cls-1", "name": "115C"}
         mock_create_class.assert_called_once()
 
     @pytest.mark.parametrize("role", ["student", None], ids=["student", "no role yet"])
@@ -107,6 +109,8 @@ class TestRequireInstructor:
                 "description": "Soft Eng",
                 "term": "Spring",
                 "start_date": "2026-04-01",
+                "sprint_count": 5,
+                "sprint_frequency": "biweekly",
             },
         )
         assert r.status_code == 403

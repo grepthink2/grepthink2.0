@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   ApiAssignmentTsrEntry,
+  ApiClass,
   ApiScrumComment,
   ApiScrumSprint,
   ApiScrumTask,
@@ -13,6 +14,7 @@ const apiRequest = vi.hoisted(() => vi.fn());
 vi.mock('../api/client', () => ({ apiRequest }));
 
 import { assignmentsApi } from '../api/assignments';
+import { classesApi } from '../api/classes';
 import { scrumApi } from '../api/scrum';
 
 const TASK: ApiScrumTask = {
@@ -49,6 +51,20 @@ const SPRINT: ApiScrumSprint = {
   name: 'Sprint 1',
   starts_at: '2026-10-19',
   ends_at: '2026-11-01',
+  status: 'active',
+};
+const CLASS: ApiClass = {
+  id: 'c1',
+  name: 'CSE 115A',
+  description: 'Fall term',
+  course_code: 'FREE0001',
+  created_by: 'u1',
+  created_at: '2026-10-23T12:00:00Z',
+  term: 'Fall',
+  start_date: '2026-09-21',
+  end_date: '2026-12-04',
+  year: 2026,
+  image_url: 'https://cdn.example/class-banner.svg',
   status: 'active',
 };
 const ENTRY: ApiAssignmentTsrEntry = {
@@ -119,6 +135,21 @@ describe('updateSprint', () => {
     expect(path).toBe('/api/scrum/sprints/sp1');
     expect(init.method).toBe('PATCH');
     expect(JSON.parse(init.body)).toEqual({ name: 'Sprint 1' });
+  });
+});
+
+describe('createClass', () => {
+  it.each([
+    ['the class itself', CLASS],
+    ['{ message, class }', { message: 'Class created successfully', class: CLASS }],
+  ])('answers the class when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    const fields = { name: 'CSE 115A', term: 'Fall', start_date: '2026-09-21', end_date: '2026-12-04' };
+    await expect(classesApi.createClass(fields)).resolves.toEqual(CLASS);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/classes');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual(fields);
   });
 });
 

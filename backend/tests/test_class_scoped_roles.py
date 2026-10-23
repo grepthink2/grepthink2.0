@@ -261,7 +261,13 @@ def test_creating_a_class_still_needs_the_instructor_role(client: TestClient, mo
     res = client.post(
         "/api/classes",
         headers=_as(OWNER),
-        json={"name": "CSE 115A", "term": "Fall", "start_date": "2026-09-24"},
+        json={
+            "name": "CSE 115A",
+            "term": "Fall",
+            "start_date": "2026-09-24",
+            "sprint_count": 5,
+            "sprint_frequency": "biweekly",
+        },
     )
     assert (res.status_code, res.json()["detail"]) == (403, "Instructor role required")
 

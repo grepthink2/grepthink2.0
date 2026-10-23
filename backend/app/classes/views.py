@@ -25,7 +25,8 @@ from app.dependencies import require_instructor, require_user
 
 
 def create_class(data: CreateClassRequest, user_id: str = Depends(require_instructor)):
-    result = controller.create_class(
+    """Create a class with its sprint schedule (an instructor account). Answers the class row."""
+    return controller.create_class(
         data.name,
         data.description,
         data.term,
@@ -35,8 +36,10 @@ def create_class(data: CreateClassRequest, user_id: str = Depends(require_instru
         institution_id=data.institution_id,
         external_tasks_url=data.external_tasks_url,
         end_date=data.end_date,
+        sprint_count=data.sprint_count,
+        sprint_frequency=data.sprint_frequency,
+        sprints_start_on=data.sprints_start_on,
     )
-    return {"message": "Class created successfully", "class": result}
 
 
 def get_classes(user_id: str = Depends(require_user)):

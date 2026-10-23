@@ -156,7 +156,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
 
     try {
       const description = `${selectedTerm} term`;
-      const result = await api.createClass({
+      const created = await api.createClass({
         name: courseName,
         description,
         term: selectedTerm,
@@ -167,7 +167,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         external_tasks_url: parsedTasksUrl.url ?? undefined,
       });
 
-      const createdId = result.class?.id;
+      const createdId = created?.id;
       if (!createdId) {
         throw new Error('Class was created but no class id was returned');
       }

@@ -20,13 +20,14 @@ const state = vi.hoisted(() => ({
 }));
 // The day each mocked picker picks when clicked: the first week of term, and the last day of classes.
 const picks = vi.hoisted(() => ({ start: '', end: '' }));
+const refreshClasses = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 
 vi.mock('@/lib/institutions', () => ({
   useInstitutionsWithRetry: () => ({ institutions: state.institutions, retry: vi.fn() }),
 }));
 vi.mock('@/lib/classContext', () => ({
   useClass: () => ({
-    refreshClasses: vi.fn(() => Promise.resolve()),
+    refreshClasses,
     currentSchool: state.currentSchool,
     classes: state.classes,
   }),
@@ -62,7 +63,8 @@ const submit = () => screen.getByRole('button', { name: 'Create Class' });
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(api.createClass).mockResolvedValue({ message: 'ok', class: { id: 'new', name: 'SE 301', created_by: 'me', created_at: '' } });
+  // The class row itself, as POST /api/classes answers.
+  vi.mocked(api.createClass).mockResolvedValue({ id: 'new', name: 'SE 301', created_by: 'me', created_at: '' });
   state.institutions = undefined;
   state.currentSchool = null;
   state.classes = [];
@@ -156,6 +158,28 @@ describe('CreateClassModal — school', () => {
     await user.click(submit());
     expect(api.createClass).toHaveBeenCalledTimes(1);
     expect(vi.mocked(api.createClass).mock.calls[0][0].institution_id).toBeUndefined();
+  });
+});
+
+describe('CreateClassModal — the class just created', () => {
+  beforeEach(() => {
+    state.institutions = []; // no school to pick
+  });
+
+  it('uploads the roster to the class the API answers with, and selects that class', async () => {
+    const user = userEvent.setup();
+    const roster = new File(['Student Name,Email\n'], 'roster.csv', { type: 'text/csv' });
+    const { container } = render(
+      <MemoryRouter>
+        <CreateClassModal isOpen onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    await fillCourse(user);
+    await user.upload(container.querySelector<HTMLInputElement>('input[type="file"]')!, roster);
+    await user.click(submit());
+
+    await waitFor(() => expect(api.uploadClassRoster).toHaveBeenCalledWith('new', roster));
+    expect(refreshClasses).toHaveBeenCalledWith(false, 'new');
   });
 });
 
