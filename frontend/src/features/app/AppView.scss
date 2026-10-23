@@ -47,6 +47,18 @@
   animation: app-nav-backdrop-fade-in 0.15s ease both;
 }
 
+/* A modal that failed to load: its Reload alert floats bottom-right, over the page. */
+.app-modal-load-error {
+  position: fixed;
+  right: var(--gt-space-lg);
+  bottom: var(--gt-space-lg);
+  width: 360px;
+  max-width: calc(100vw - 2 * var(--gt-space-lg));
+  z-index: var(--gt-z-tooltip);
+  border-radius: var(--gt-radius-sm);
+  box-shadow: var(--gt-shadow-pop);
+}
+
 @keyframes app-nav-backdrop-fade-in {
   from {
     opacity: 0;

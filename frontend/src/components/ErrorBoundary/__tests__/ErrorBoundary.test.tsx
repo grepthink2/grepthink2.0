@@ -49,4 +49,14 @@ describe('ErrorBoundary', () => {
     );
     expect(screen.getByText('all good')).toBeInTheDocument();
   });
+
+  it('shows the fallback it is given in place of the default message', () => {
+    render(
+      <ErrorBoundary fallback={<p>small notice</p>}>
+        <Bomb />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('small notice')).toBeInTheDocument();
+    expect(screen.queryByText('Something went wrong')).toBeNull();
+  });
 });

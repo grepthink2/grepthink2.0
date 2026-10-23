@@ -4,6 +4,8 @@ interface ErrorBoundaryProps {
   children: React.ReactNode;
   /** Changing this value clears a caught error; pass the route path to recover on navigation. */
   resetKey?: unknown;
+  /** Shown in place of the default full-screen message, for a boundary around a small piece. */
+  fallback?: React.ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -38,6 +40,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render(): React.ReactNode {
     if (!this.state.error) return this.props.children;
+    if (this.props.fallback !== undefined) return this.props.fallback;
     return (
       <div
         role="alert"
