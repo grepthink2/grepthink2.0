@@ -51,6 +51,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
     { key: 'name', direction: 'asc' },
   );
 
+  // A profile with no name comes back with its address as the name: show the address once, as the link.
+  const renderPersonName = (name: string, email: string) =>
+    name === email ? null : <div className="projects-table__person-name">{name}</div>;
+
   const renderSentiment = (sentiment: ProjectSentiment) => {
     const label =
       sentiment === 'positive' ? 'Positive' : sentiment === 'neutral' ? 'Neutral' : 'Negative';
@@ -138,7 +142,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                   <td className="assignment-list__td-title">{project.name}</td>
                   <td>{project.students}</td>
                   <td className="projects-table__person-cell">
-                    <div className="projects-table__person-name">{project.poName}</div>
+                    {renderPersonName(project.poName, project.poEmail)}
                     {project.poEmail ? (
                       <a className="projects-table__person-email" href={`mailto:${project.poEmail}`}>{project.poEmail}</a>
                     ) : (
@@ -146,7 +150,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                     )}
                   </td>
                   <td className="projects-table__person-cell">
-                    <div className="projects-table__person-name">{project.smName}</div>
+                    {renderPersonName(project.smName, project.smEmail)}
                     {project.smEmail ? (
                       <a className="projects-table__person-email" href={`mailto:${project.smEmail}`}>{project.smEmail}</a>
                     ) : (
@@ -194,7 +198,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
               {renderSentiment(project.sentiment)}
             </div>
             <div className="projects-table__person-cell">
-              <div className="projects-table__person-name">{project.poName}</div>
+              {renderPersonName(project.poName, project.poEmail)}
               {project.poEmail ? (
                 <a
                   className="projects-table__person-email"
