@@ -211,7 +211,7 @@ cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/l
 .venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
 .venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env
 .venv/bin/python -m pytest --cov            # same, plus coverage (.coveragerc: branch, fail_under)
-.venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env)
+.venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env; its reloader, watchfiles, comes with requirements-dev.txt)
 
 # Frontend (Node 24)
 cd frontend && npm ci
@@ -406,6 +406,11 @@ The full agent-facing action catalog (method, params, role) lives at
   (`require("typescript")` returns only its version; the rest is under `typescript/unstable/*`), so
   a tool that loads the compiler API, such as typescript-eslint, cannot be added without
   TypeScript 6 beside it (Microsoft's `@typescript/typescript6` package, under an `npm:` alias).
+- **The entry chunk stays lean.** Every `/app` page except Home is a `lazy()` route in
+  `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
+  shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
+  they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
+  the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
