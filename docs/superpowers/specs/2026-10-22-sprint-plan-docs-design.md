@@ -76,7 +76,7 @@ own. Student text in anyone's logs. A plan that is slower than the Google Doc it
 | D17 | **Tables are named by document kind** (`project_documents.kind`), with `sprint_plan` the only kind now. | release plan and sprint report later |
 | D18 | **No streaming.** The slug idles over the field while the request runs and sweeps once the whole response is in. ⚑ | The Vercel Python runtime has no safe streaming path; a sweep after the fact reads the same. |
 | D19 | **Link fields are server-owned.** A save copies `story_id` / `task_id` and the linked item's snapshot fields per item from the head revision; values in the request are ignored for linked items. ⚑ | A client must not be able to point a plan item at an arbitrary board row, or edit a linked item around the board. |
-| D20 | **Sprints come from the class.** A class carries `sprint_count` (1–20), `sprint_frequency` (weekly, biweekly, monthly) and `sprints_start_on`; creating a class requires the first two, and the schedule must end by the class's last day. Every team gets "Sprint 1 … N" created when the team is created, empty; an instructor who sets or changes the schedule later regenerates them for every team. No "New sprint" control anywhere in the web client. | maintainer, round 2 |
+| D20 | **Sprints come from the class.** A class carries `sprint_count` (1–20), `sprint_frequency` (weekly, biweekly, monthly) and `sprints_start_on`; creating a class requires the first two, and the schedule must end by the Sunday of the week (Monday to Sunday) that holds the class's last day. Every team gets "Sprint 1 … N" created when the team is created, empty; an instructor who sets or changes the schedule later regenerates them for every team. No "New sprint" control anywhere in the web client. | maintainer, round 2 |
 | D21 | **The burnup draws in points or hours, and counts tasks on both lines.** Scope is the sum of the sprint's task estimates in the unit, completed the same sum over done tasks. Points are available only when every task in the sprint has points; hours are the fallback and may be partial. Points when available, else hours; with both, the chart offers a toggle. When it can't draw points it says so and nudges: "Add points to tasks for a points burnup", and the board shows tasks without points with a faint dashed points chip. ⚑ (task-based scope, the completeness rule, the toggle) | maintainer, round 2. Today scope is story points and completed is task points (`_totals`), so a sprint whose tasks carry points but whose stories don't draws completed above scope; counting tasks on both lines removes that. PROD has no sprint data yet (no screen has ever created a sprint), so the snapshot columns can change meaning. |
 | D22 | **Sprint status is derived from dates**: `completed` after `ends_at`, `active` from `starts_at` through `ends_at`, else `planned`; the stored column is no longer read and the update route stops accepting a status. The board opens on today's sprint. ⚑ | Auto-created sprints have nobody to flip them; the pills and the "latest active" default would lie. |
 
@@ -113,8 +113,11 @@ last day (monthly); it ends the day before the next one starts; the name is `Spr
 must fit the class's dates, each failure a 422 (`schedule_problem` reports the first): `sprints_start_on`
 on or after the class's `start_date` (`SPRINTS_BEFORE_START`) and at most 370 days after it, the latest
 last day of classes (`SPRINTS_START_TOO_LATE`, which also refuses a day so late that the schedule's days
-would pass the calendar's end); the last sprint ending on or before `end_date` (`SPRINTS_PAST_END`, with
-the last day in the detail). A class date that is not set allows any day on its side.
+would pass the calendar's end); the last sprint ending on or before the Sunday of the week (Monday to
+Sunday) that holds `end_date` (`schedule.latest_sprint_end`; `SPRINTS_PAST_END`, with the last day in
+the detail). Sprints that start on a Monday end on a Sunday, so a term that runs Monday to Friday keeps
+the sprints that end on the Sunday after its last day. A class date that is not set allows any day on its
+side.
 
 - `POST /api/classes` (`CreateClassRequest`): `sprint_count` and `sprint_frequency` required;
   `sprints_start_on` optional, defaulting to `start_date`. The web form (`Classes/CreateClassModal.tsx`)
@@ -124,10 +127,11 @@ the last day in the detail). A class date that is not set allows any day on its 
   sprints_start_on}`): validates, writes the class, then regenerates every team's sprints (below).
   `ClassSettingsModal.tsx` gets a "Sprints" section beside the last day of classes, with "Set up
   sprints" for a class that has none.
-- `PATCH /api/classes/{class_id}/end-date` (`classes/controller.py:872`) also refuses a day before the
-  last sprint's end, as it already refuses a day that would hide attendance weeks: 409
-  `END_DATE_BEFORE_SPRINTS` naming that sprint and its end. The Sprints section shows "Sprint 5 ends
-  Dec 1" beside the last-day field, so the instructor shortens the schedule first. ⚑
+- `PATCH /api/classes/{class_id}/end-date` (`classes/controller.py:872`) also refuses a day whose week
+  ends before the last sprint does (the same `latest_sprint_end`), as it already refuses a day that
+  would hide attendance weeks: 409 `END_DATE_BEFORE_SPRINTS` naming that sprint and its end. The Sprints
+  section shows "Sprint 5 ends Dec 1" beside the last-day field, so the instructor shortens the schedule
+  first. ⚑
 - `scrum.controller.ensure_project_sprints(client, *, project_id, project_name, schedule)`: for
   sequences 1..N, insert the missing ones in one bulk insert, and write the name and dates of
   existing sequenced ones that differ in one bulk upsert (on `id`, leaving `status` out). Sequences
@@ -774,10 +778,11 @@ accessible name ("No points yet").
 Backend (`pytest`, `FakeSupabase` / `ScrumFake`):
 
 - `tests/test_class_sprint_schedule.py`: the date arithmetic (weekly, biweekly, monthly incl. the
-  31st → 30th clamp), `SPRINTS_PAST_END`, create-class requires the fields, `create_project` creates
-  the team's sprints, PATCH regenerates (insert missing, update changed, delete empty extras,
+  31st → 30th clamp), `SPRINTS_PAST_END` (a Monday-to-Friday term keeps the sprints that end on its last
+  Sunday, and refuses one that ends a day later), create-class requires the fields, `create_project`
+  creates the team's sprints, PATCH regenerates (insert missing, update changed, delete empty extras,
   `SPRINTS_IN_USE`; an untouched seed does not count), unsequenced sprints untouched, the end-date
-  route refusing a day before the last sprint, budgets.
+  route refusing a day whose week ends before the last sprint does, budgets.
 - `tests/test_scrum_sprint_status.py`: derived status at each boundary (`_today_la` patched), default
   sprint selection, `update_sprint` ignores a status.
 - `tests/test_scrum_burnup_units.py`: `_totals` in both units from task values (story points ignored),

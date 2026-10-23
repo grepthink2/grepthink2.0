@@ -27,7 +27,8 @@
 --   * Fitting the dates to the class is the API's rule, not the CHECK's (_require_schedule_fits in
 --     app/classes/controller.py): it refuses a first sprint that starts before start_date or more than
 --     370 days after it (or so late that the schedule would pass the end of the calendar), or a last one
---     that ends after end_date (422), and a last day of classes before the last sprint ends (409).
+--     that ends after the Sunday of the week (Monday to Sunday) that holds end_date (422), and a last
+--     day of classes whose week ends before the last sprint does (409).
 --   * sprints.sequence: k for the sprint the schedule made as "Sprint k", 1 or more
 --     (sprints_sequence_check); NULL for a sprint made any other way, which the schedule never touches.
 --   * sprints_project_sequence_uq: one sprint per team and k. Partial: NULL-sequence sprints stay

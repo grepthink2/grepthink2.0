@@ -26,6 +26,7 @@ import {
   SPRINT_COUNT_HINT,
   SPRINT_FREQUENCY_OPTIONS,
   lastSprintLine,
+  latestSprintEnd,
   parseSprintCount,
   scheduleEnd,
 } from '@features/app/utils/sprintSchedule';
@@ -159,8 +160,10 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       ? { sprint_count: sprintCount, sprint_frequency: sprintFrequency, sprints_start_on: sprintsStartOn }
       : null;
   const lastSprint = sprintsShown && lastSprintOf(sprintsShown);
-  // The API checks a schedule against the last day saved, not one picked and not saved yet. Holds Save.
-  const sprintsPastLastDay = lastSprint !== null && savedEndDate !== '' && lastSprint.endsOn > savedEndDate;
+  // The last sprint may end as late as the Sunday of the last day's week. The API checks a schedule
+  // against the last day saved, not one picked and not saved yet. Holds Save.
+  const sprintsPastLastDay =
+    lastSprint !== null && savedEndDate !== '' && lastSprint.endsOn > latestSprintEnd(savedEndDate);
   // Shown beside the last day of classes: the API refuses a day before it, so the schedule goes first.
   const savedLastSprint = savedSprints && lastSprintOf(savedSprints);
 

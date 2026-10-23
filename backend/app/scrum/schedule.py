@@ -72,6 +72,20 @@ def schedule_end(start_on: date, count: int, frequency: str) -> date:
     return _sprint_start(start_on, count + 1, frequency) - timedelta(days=1)
 
 
+def latest_sprint_end(end_date: date) -> date:
+    """The latest day a class's last sprint may end: the Sunday of the week (Monday to Sunday)
+    that holds ``end_date``, the last day of classes.
+
+    Sprints that start on a Monday end on a Sunday, so a term whose last day is a Friday keeps the
+    sprint that ends two days later; a last day that is a Sunday ends its own week. ``date.max``
+    when that Sunday would pass the end of the calendar.
+    """
+    to_sunday = timedelta(days=6 - end_date.weekday())  # weekday(): Monday 0 to Sunday 6
+    if end_date > date.max - to_sunday:
+        return date.max
+    return end_date + to_sunday
+
+
 def latest_start_on(count: int, frequency: str) -> date:
     """The latest first day a schedule of ``count`` sprints can have: from it, the day sprint
     count+1 would start is still a ``date`` (the calendar ends on Dec 31, 9999), so
@@ -108,10 +122,11 @@ def schedule_problem(
     `SPRINTS_START_TOO_LATE`: it starts after the latest last day of classes `class_start` allows
     (:func:`~app.classes.terms.latest_last_day`, the end of week 53 of term), or, whatever the class's
     dates, after :func:`latest_start_on`, so late that the schedule's days would pass the end of the
-    calendar. `SPRINTS_PAST_END`: the last sprint ends after `class_end`. A class date that is not
-    set allows any day on its side, short of the calendar's end. The first problem in that order is
-    reported, so the last sprint's day is worked out only for a schedule the calendar holds: no
-    first day makes this raise.
+    calendar. `SPRINTS_PAST_END`: the last sprint ends after the Sunday of the week that holds
+    `class_end` (:func:`latest_sprint_end`). A class date that is not set allows any day on its
+    side, short of the calendar's end. The first problem in that order is reported, so the last
+    sprint's day is worked out only for a schedule the calendar holds: no first day makes this
+    raise.
     """
     if class_start is not None and start_on < class_start:
         return "SPRINTS_BEFORE_START"
@@ -120,6 +135,7 @@ def schedule_problem(
         latest = min(latest, latest_last_day(class_start))
     if start_on > latest:
         return "SPRINTS_START_TOO_LATE"
-    if class_end is not None and schedule_end(start_on, count, frequency) > class_end:
+    last_day = schedule_end(start_on, count, frequency)
+    if class_end is not None and last_day > latest_sprint_end(class_end):
         return "SPRINTS_PAST_END"
     return None

@@ -9,7 +9,7 @@
  * stays that day in every time zone; `new Date('yyyy-MM-dd')` would read UTC midnight, which is the
  * day before west of UTC.
  */
-import { addDays, addMonths, format, parseISO } from 'date-fns';
+import { addDays, addMonths, endOfISOWeek, format, parseISO } from 'date-fns';
 import type { ApiSprintFrequency } from '@/lib/api/types';
 
 /** The fewest and the most sprints a class can have: the API's limits. */
@@ -72,8 +72,19 @@ export function scheduleEnd(startOn: string, count: number, frequency: ApiSprint
 }
 
 /**
+ * The latest day a class's last sprint may end: the Sunday of the week (Monday to Sunday) that holds
+ * `lastDay`, the last day of classes. Sprints that start on a Monday end on a Sunday, so a term whose
+ * last day is a Friday keeps the sprint that ends two days later; a last day that is a Sunday ends its
+ * own week. The API's rule (`latest_sprint_end` in backend/app/scrum/schedule.py).
+ */
+export function latestSprintEnd(lastDay: string): string {
+  return format(endOfISOWeek(parseISO(lastDay)), DAY_FORMAT);
+}
+
+/**
  * The class forms' line about the last sprint: "Sprint 5 ends Dec 1", or, while it would end after the
- * last day of classes, "Sprint 5 would end after the last day of classes". `endsOn` is its last day.
+ * Sunday that `latestSprintEnd` allows, "Sprint 5 would end after the last day of classes". `endsOn` is
+ * its last day.
  */
 export function lastSprintLine(count: number, endsOn: string, pastLastDay = false): string {
   return pastLastDay

@@ -8,8 +8,9 @@ changes it later from Class Settings (``PATCH /api/classes/{class_id}/end-date``
 after it (53 weeks), in the database; the API refuses it first (422 when creating, 400 when
 changing), so a bad day never reaches the database as a 500. A change that would drop a week that
 already has attendance is refused too (409): TA Meetings could no longer open that week. So is a day
-before the class's last sprint ends (409, spec D20), with or without a first day: the instructor
-shortens the sprint schedule first. The route answers the class row itself.
+whose week (Monday to Sunday) ends before the class's last sprint does (409, spec D20), with or
+without a first day: the instructor shortens the sprint schedule first. The route answers the class
+row itself.
 
 Who may call the PATCH is pinned with the other instructor-only routes in ``test_classes_authz.py``
 and ``test_class_scoped_roles.py``. That a new class stores the day only when one is given, and
@@ -250,26 +251,34 @@ def test_attendance_in_another_class_holds_no_week_back(db):
 
 # ------------------------------------------------------------ the sprint schedule
 
-#: Four weekly sprints from Mon Sep 28: Sprint 4 runs Oct 19-25.
+#: Four weekly sprints from Mon Sep 28: Sprint 4 runs Oct 19-25, so the last day of classes may be
+#: any day from Mon Oct 19, the first day of the week (Monday to Sunday) that Sprint 4 ends in.
 FOUR_WEEKLY = {"sprint_count": 4, "sprint_frequency": "weekly", "sprints_start_on": "2026-09-28"}
 BEFORE_SPRINTS = "Sprint 4 ends 2026-10-25; change the sprint schedule first"
 
 
 @pytest.mark.parametrize("start", [START.isoformat(), None], ids=["first-day", "no-first-day"])
-def test_a_last_day_before_the_last_sprint_ends_is_refused_without_writing(db, start):
+def test_a_last_day_whose_week_ends_before_the_last_sprint_is_refused_without_writing(db, start):
     db.rows("classes")[0].update(FOUR_WEEKLY, start_date=start)
     with pytest.raises(HTTPException) as err:
-        classes.update_class_end_date(CLASS, date(2026, 10, 24), INSTR)
+        # Sun Oct 18 ends the week before the one Sprint 4 ends in.
+        classes.update_class_end_date(CLASS, date(2026, 10, 18), INSTR)
     assert (err.value.status_code, err.value.detail) == (409, BEFORE_SPRINTS)
     assert _stored(db) is None
     assert {q["op"] for q in db.queries} == {"select"}
 
 
-def test_the_last_day_may_be_the_day_the_last_sprint_ends_for_no_round_trip_more(db):
+@pytest.mark.parametrize(
+    "day",
+    [date(2026, 10, 19), date(2026, 10, 23), date(2026, 10, 25)],
+    ids=["monday", "friday", "sunday-the-sprint-ends"],
+)
+def test_the_last_day_may_be_any_day_of_the_week_the_last_sprint_ends_in(db, day):
     db.rows("classes")[0].update(FOUR_WEEKLY)
-    classes.update_class_end_date(CLASS, date(2026, 10, 25), INSTR)
-    assert _stored(db) == "2026-10-25"
-    # the owner check (with the schedule) beside the teams, the attendance read, the update
+    classes.update_class_end_date(CLASS, day, INSTR)
+    assert _stored(db) == day.isoformat()
+    # the owner check (with the schedule) beside the teams, the attendance read, the update: no
+    # round trip more
     assert db.executes == 4
 
 

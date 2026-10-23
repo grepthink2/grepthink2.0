@@ -7,6 +7,7 @@ import {
   SPRINT_COUNT_HINT,
   SPRINT_FREQUENCY_OPTIONS,
   lastSprintLine,
+  latestSprintEnd,
   parseSprintCount,
   scheduleEnd,
   sprintWindows,
@@ -93,6 +94,30 @@ describe('scheduleEnd', () => {
   it('agrees with the last window', () => {
     for (const frequency of FREQUENCIES) {
       expect(scheduleEnd('2026-08-31', 12, frequency)).toBe(sprintWindows('2026-08-31', 12, frequency)[11].endsAt);
+    }
+  });
+});
+
+describe('latestSprintEnd', () => {
+  it('is the Sunday of the week, Monday to Sunday, that holds the last day of classes', () => {
+    // Mon Mar 8 to Sun Mar 14, 2027 is one week.
+    for (const day of ['2027-03-08', '2027-03-09', '2027-03-10', '2027-03-11', '2027-03-12', '2027-03-13', '2027-03-14']) {
+      expect(latestSprintEnd(day)).toBe('2027-03-14');
+    }
+    expect(latestSprintEnd('2027-03-15')).toBe('2027-03-21'); // a Monday starts the next week
+    expect(latestSprintEnd('2027-12-30')).toBe('2028-01-02'); // a Thursday, across a month and a year
+    // Daylight time ends on Sun Nov 1, 2026 in the US: still the same day.
+    expect(latestSprintEnd('2026-10-30')).toBe('2026-11-01');
+  });
+
+  it('lets a term from Monday to Friday keep the sprints that end on its last Sunday, and no later', () => {
+    // Mon Jan 4 to Fri Mar 12, 2027: five two-week sprints, or ten one-week ones, end on Sun Mar 14.
+    for (const [count, frequency] of [[5, 'biweekly'], [10, 'weekly']] as const) {
+      expect(scheduleEnd('2027-01-04', count, frequency)).toBe('2027-03-14');
+      expect(scheduleEnd('2027-01-04', count, frequency) <= latestSprintEnd('2027-03-12')).toBe(true);
+      // From Tue Jan 5 they end on Mon Mar 15, a day past that Sunday.
+      expect(scheduleEnd('2027-01-05', count, frequency)).toBe('2027-03-15');
+      expect(scheduleEnd('2027-01-05', count, frequency) <= latestSprintEnd('2027-03-12')).toBe(false);
     }
   });
 });

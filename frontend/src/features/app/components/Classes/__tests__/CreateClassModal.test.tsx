@@ -321,6 +321,47 @@ describe('CreateClassModal — sprint schedule', () => {
     expect(submit()).toBeDisabled();
   });
 
+  it('lets a term from Monday to Friday keep the sprints that end on its last Sunday, and no later', async () => {
+    const user = userEvent.setup();
+    picks.start = '2027-01-04';
+    picks.end = '2027-03-12';
+    renderModal();
+    await fillCourse(user); // Mon Jan 4 to Fri Mar 12
+    // Five two-week sprints, then ten one-week ones: both end on Sun Mar 14, two days after the last day.
+    expect(preview()).toHaveTextContent(/^Sprint 5 ends Mar 14$/);
+    expect(submit()).toBeEnabled();
+    await user.selectOptions(every(), 'week');
+    await setCount(user, '10');
+    expect(preview()).toHaveTextContent(/^Sprint 10 ends Mar 14$/);
+    expect(submit()).toBeEnabled();
+
+    // From Tue Jan 5 they would end on Mon Mar 15, a day past that Sunday.
+    picks.sprints = '2027-01-05';
+    await user.click(firstSprint());
+    expect(preview()).toHaveTextContent(/^Sprint 10 would end after the last day of classes$/);
+    expect(submit()).toBeDisabled();
+    // A last day of classes that is itself a Sunday ends its own week.
+    picks.end = '2027-03-14';
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    expect(preview()).toHaveTextContent(/^Sprint 10 would end after the last day of classes$/);
+    picks.sprints = '2027-01-04';
+    await user.click(firstSprint());
+    expect(preview()).toHaveTextContent(/^Sprint 10 ends Mar 14$/);
+
+    await user.click(submit());
+    await waitFor(() =>
+      expect(api.createClass).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start_date: '2027-01-04',
+          end_date: '2027-03-14',
+          sprint_count: 10,
+          sprint_frequency: 'weekly',
+          sprints_start_on: '2027-01-04',
+        }),
+      ),
+    );
+  });
+
   it('creates the class with the schedule, its first sprint starting with the first week of term', async () => {
     const user = userEvent.setup();
     renderModal();

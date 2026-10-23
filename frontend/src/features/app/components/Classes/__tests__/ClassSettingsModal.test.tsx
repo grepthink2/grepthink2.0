@@ -519,12 +519,31 @@ describe('ClassSettingsModal — sprints', () => {
     expect(save()).toBeEnabled();
   });
 
+  it.each([
+    ['Friday', '2026-12-11'],
+    ['Sunday', '2026-12-13'],
+  ])(
+    'lets the last sprint end on the Sunday of the week that holds the last day of classes (a %s), and no later',
+    async (_weekday, lastDay) => {
+      const user = userEvent.setup();
+      renderSettings({ ...course(FIVE_BIWEEKLY), end_date: lastDay });
+      await setCount(user, '6'); // the sixth runs from Mon Nov 30 to Sun Dec 13
+      expect(preview()).toHaveTextContent(/^Sprint 6 ends Dec 13$/);
+      expect(preview()).not.toHaveClass('class-settings-modal__sprint-preview--past-end');
+      expect(save()).toBeEnabled();
+      picks.day = '2026-09-22'; // from Tue Sep 22, the sixth would end on Mon Dec 14
+      await user.click(firstSprint());
+      expect(preview()).toHaveTextContent(/^Sprint 6 would end after the last day of classes$/);
+      expect(save()).toBeDisabled();
+    },
+  );
+
   it('writes the line about the last sprint as a hint, in the error colour while it would end too late', async () => {
     const user = userEvent.setup();
     renderSettings(course(FIVE_BIWEEKLY));
     expect(preview()).toHaveClass('class-settings-modal__hint');
     expect(preview()).not.toHaveClass('class-settings-modal__sprint-preview--past-end');
-    await setCount(user, '6');
+    await setCount(user, '7'); // the seventh would end on Sun Dec 27, after the week of Fri Dec 11
     expect(preview()).toHaveClass('class-settings-modal__hint', 'class-settings-modal__sprint-preview--past-end');
     // The hint's look, so the two can't drift apart: the modifier changes the colour and nothing else.
     expect(cssRules('.class-settings-modal__sprint-preview')).toEqual([]);
@@ -536,12 +555,12 @@ describe('ClassSettingsModal — sprints', () => {
   it('counts from the last day of classes saved, as the API does, not from one picked and not saved yet', async () => {
     const user = userEvent.setup();
     renderSettings(course(FIVE_BIWEEKLY));
-    await setCount(user, '6');
-    picks.day = '2026-12-18';
+    await setCount(user, '7'); // the seventh ends on Sun Dec 27
+    picks.day = '2026-12-25'; // the Friday of that week
     await user.click(lastDayField());
-    expect(preview()).toHaveTextContent(/^Sprint 6 would end after the last day of classes$/);
+    expect(preview()).toHaveTextContent(/^Sprint 7 would end after the last day of classes$/);
     await user.click(screen.getByRole('button', { name: 'Save last day' }));
-    await waitFor(() => expect(preview()).toHaveTextContent(/^Sprint 6 ends Dec 13$/));
+    await waitFor(() => expect(preview()).toHaveTextContent(/^Sprint 7 ends Dec 27$/));
     expect(save()).toBeEnabled();
   });
 

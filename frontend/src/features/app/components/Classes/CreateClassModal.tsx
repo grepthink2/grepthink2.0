@@ -19,6 +19,7 @@ import {
   SPRINT_COUNT_HINT,
   SPRINT_FREQUENCY_OPTIONS,
   lastSprintLine,
+  latestSprintEnd,
   parseSprintCount,
   scheduleEnd,
 } from '@features/app/utils/sprintSchedule';
@@ -96,10 +97,14 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
     sprintCount !== null && sprintsStartOn
       ? { k: sprintCount, endsOn: scheduleEnd(sprintsStartOn, sprintCount, sprintFrequency) }
       : null;
-  // Holds Create Class (the API refuses it too). A last day before the first week of term is left to
-  // the check that says so on Create Class: the sprints are not what is wrong then.
+  // The last sprint may end as late as the Sunday of the last day's week. Holds Create Class (the API
+  // refuses it too). A last day before the first week of term is left to the check that says so on
+  // Create Class: the sprints are not what is wrong then.
   const sprintsPastLastDay =
-    lastSprint !== null && termEndDate !== '' && termEndDate >= termStartDate && lastSprint.endsOn > termEndDate;
+    lastSprint !== null &&
+    termEndDate !== '' &&
+    termEndDate >= termStartDate &&
+    lastSprint.endsOn > latestSprintEnd(termEndDate);
 
   const handleTermChange = (term: Term) => {
     setSelectedTerm(term);

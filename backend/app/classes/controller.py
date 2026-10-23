@@ -27,7 +27,7 @@ from app.institutions.controller import (
 from app.outbox import controller as outbox
 from app.outbox import invite_jobs
 from app.scrum.controller import SPRINTS_IN_USE, ensure_project_sprints
-from app.scrum.schedule import Schedule, schedule_end, schedule_problem
+from app.scrum.schedule import Schedule, latest_sprint_end, schedule_end, schedule_problem
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -554,12 +554,12 @@ def _pick_course_code(client) -> str | None:
 #: 422: a class's sprint schedule (spec D20) must fit the class's dates. Its first sprint can't
 #: start before the class's first week of term, nor after the latest last day of classes the class
 #: allows (the end of week 53, as ``END_TOO_LATE`` bounds the last day itself), and its last one
-#: can't end after the last day of classes, ``end`` (ISO).
+#: can't end after the Sunday of the week that holds the last day of classes, ``end`` (ISO).
 SPRINTS_BEFORE_START = "The first sprint starts before the class does"
 SPRINTS_START_TOO_LATE = "The first sprint must start within a year of the first week of term"
 SPRINTS_PAST_END = "The sprints run past the last day of classes ({end})"
-#: 409: a last day of classes before the class's last sprint ends (spec D20). ``k`` is the sprint
-#: count and ``end`` the last sprint's last day (ISO).
+#: 409: a last day of classes whose week ends before the class's last sprint does (spec D20). ``k``
+#: is the sprint count and ``end`` the last sprint's last day (ISO).
 END_DATE_BEFORE_SPRINTS = "Sprint {k} ends {end}; change the sprint schedule first"
 
 
@@ -576,7 +576,8 @@ def _require_schedule_fits(
     - :data:`SPRINTS_START_TOO_LATE`: it starts after the latest last day of classes
       ``class_start`` allows, or so late that its days would pass the end of the calendar, which
       bounds a class with no dates too (a day that late can only be a typo, so the same sentence);
-    - :data:`SPRINTS_PAST_END`: its last sprint ends after ``class_end``.
+    - :data:`SPRINTS_PAST_END`: its last sprint ends after the Sunday of the week (Monday to
+      Sunday) that holds ``class_end`` (:func:`~app.scrum.schedule.latest_sprint_end`).
 
     A class date that is not set allows any day on its side. No first day makes this raise anything
     else, so a stored schedule's days can always be worked out. Reads nothing."""
@@ -626,8 +627,8 @@ def create_class(
 
     ``sprint_count``, ``sprint_frequency`` and ``sprints_start_on`` (``start_date`` when omitted)
     are the class's sprint schedule (spec D20). It must start on or after ``start_date``, within a
-    year of it, and end by ``end_date`` when there is one: 422 otherwise
-    (:func:`_require_schedule_fits`), before anything is read or written.
+    year of it, and end by the Sunday of the week that holds ``end_date`` when there is one: 422
+    otherwise (:func:`_require_schedule_fits`), before anything is read or written.
 
     Returns the class row.
     """
@@ -946,9 +947,10 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
 
     A class with no ``start_date`` has nothing to count from or to fall before, so any day goes
     there: its weeks stay the term's fixed length. A class with a sprint schedule, with or without
-    a ``start_date``, also needs the day on or after its last sprint's last day (409
-    :data:`END_DATE_BEFORE_SPRINTS`, naming that sprint and day): the instructor shortens the
-    schedule first. Nothing is written when a day is refused.
+    a ``start_date``, also needs the day in the week (Monday to Sunday) its last sprint ends in, or
+    later (:func:`~app.scrum.schedule.latest_sprint_end`; 409 :data:`END_DATE_BEFORE_SPRINTS`,
+    naming that sprint and its last day): the instructor shortens the schedule first. Nothing is
+    written when a day is refused.
 
     Round trips: the owner check (it reads ``term``, ``start_date`` and the sprint schedule with the
     class) runs beside the class's team ids; then one attendance read, only for a class with a
@@ -986,7 +988,7 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
         schedule = Schedule.from_class(class_row)
         if schedule is not None:
             last_day = schedule_end(schedule.start_on, schedule.count, schedule.frequency)
-            if last_day > end_date:
+            if last_day > latest_sprint_end(end_date):
                 raise HTTPException(
                     status_code=409,
                     detail=END_DATE_BEFORE_SPRINTS.format(

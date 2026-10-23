@@ -90,8 +90,9 @@ class CreateClassRequest(BaseModel):
     #: The class's sprint schedule (spec D20): how many sprints (1-20), how often, and the first
     #: sprint's first day, ``start_date`` when omitted. The limits here match the
     #: ``classes_sprint_schedule_valid`` CHECK. That the schedule fits the class's dates (it starts
-    #: on or after ``start_date``, within a year of it, and ends by ``end_date``) is checked by the
-    #: controller, whose 422 detail is a sentence the web client can show.
+    #: on or after ``start_date``, within a year of it, and ends by the Sunday of the week that
+    #: holds ``end_date``) is checked by the controller, whose 422 detail is a sentence the web
+    #: client can show.
     sprint_count: int = Field(..., ge=1, le=20)
     sprint_frequency: SprintFrequency
     sprints_start_on: datetime.date | None = None

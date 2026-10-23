@@ -5,12 +5,13 @@ A class carries ``sprint_count`` (1-20), ``sprint_frequency`` (weekly, biweekly 
 ``sprints_start_on``, the first sprint's first day. ``POST /api/classes`` requires the count and the
 frequency; the first day defaults to the class's first week of term (``start_date``). The schedule
 must fit the class's dates: a first sprint that starts before ``start_date``, or a last one that ends
-after the last day of classes (``end_date``), is refused with a 422 whose detail is the sentence the
-web client shows, before anything is read or written. So is a first sprint that starts after the
-latest last day of classes the class allows (a year after its first week of term), or so late that
-the schedule's dates would pass the end of the calendar, whatever the class's dates. A class with no
-last day takes a schedule of any length. The route answers the class row itself, which carries the
-schedule.
+after the Sunday of the week (Monday to Sunday) that holds the last day of classes (``end_date``),
+is refused with a 422 whose detail is the sentence the web client shows, before anything is read or
+written. So is a first sprint that starts after the latest last day of classes the class allows (a
+year after its first week of term), or so late that the schedule's dates would pass the end of the
+calendar, whatever the class's dates. A term that runs Monday to Friday keeps the sprints that end
+on the Sunday after its last day, and a class with no last day takes a schedule of any length. The
+route answers the class row itself, which carries the schedule.
 
 A team created in a class with a schedule (``POST /api/projects``, by a student or the instructor)
 gets the schedule's sprints at once: "Sprint 1" to "Sprint N", each numbered by its place in the
@@ -116,6 +117,11 @@ def _schedule(row: dict) -> tuple:
             id="later-first-day-ending-on-the-last-day",
         ),
         pytest.param(
+            {"sprints_start_on": "2026-09-28"},  # Sprint 5 ends Sun Dec 6
+            (5, "biweekly", "2026-09-28"),
+            id="last-sprint-ends-on-the-sunday-after-the-last-day",
+        ),
+        pytest.param(
             {"sprint_count": 1, "sprint_frequency": "weekly"},
             (1, "weekly", "2026-09-21"),
             id="one-weekly-sprint",
@@ -176,14 +182,15 @@ def test_a_class_needs_a_sprint_count_and_frequency(client, db, body):
             id="last-day-in-sprint-3",
         ),
         pytest.param(
-            {"end_date": "2026-11-28"},
-            "The sprints run past the last day of classes (2026-11-28)",
-            id="last-day-before-sprint-5-ends",
+            # The Sunday before the week Sprint 5 ends in (Mon Nov 23 to Sun Nov 29).
+            {"end_date": "2026-11-22"},
+            "The sprints run past the last day of classes (2026-11-22)",
+            id="last-day-a-week-before-sprint-5-ends",
         ),
         pytest.param(
-            {"sprints_start_on": "2026-09-27"},  # Sprint 5 would end Sat Dec 5
+            {"sprints_start_on": "2026-09-29"},  # Sprint 5 would end Mon Dec 7
             "The sprints run past the last day of classes (2026-12-04)",
-            id="later-first-day-ending-past-the-last-day",
+            id="last-sprint-ending-a-day-past-the-sunday-after-the-last-day",
         ),
         pytest.param(
             {"sprints_start_on": "2026-09-14"},
@@ -197,6 +204,49 @@ def test_a_schedule_that_does_not_fit_the_class_is_refused_before_anything_is_wr
 ):
     res = _create(client, {**BODY, **changes})
     assert (res.status_code, res.json()["detail"]) == (422, detail)
+    assert db.executes == 0
+
+
+#: A ten-week term from Mon Jan 4 to Fri Mar 12, 2027. Five biweekly sprints and ten weekly ones
+#: from its first day both end on Sun Mar 14.
+TEN_WEEKS = {**BODY, "term": "Winter", "start_date": "2027-01-04", "end_date": "2027-03-12"}
+TEN_WEEK_SCHEDULES = pytest.mark.parametrize(
+    ("count", "frequency"), [(5, "biweekly"), (10, "weekly")], ids=["5-biweekly", "10-weekly"]
+)
+#: The term's last day of classes: its Friday, or the Sunday that ends its last week.
+LAST_DAYS = pytest.mark.parametrize("last_day", ["2027-03-12", "2027-03-14"], ids=["fri", "sun"])
+
+
+@TEN_WEEK_SCHEDULES
+@LAST_DAYS
+def test_a_term_from_monday_to_friday_takes_the_sprints_that_end_on_its_last_sunday(
+    client, db, count, frequency, last_day
+):
+    body = {**TEN_WEEKS, "end_date": last_day, "sprint_count": count, "sprint_frequency": frequency}
+    res = _create(client, body)
+    assert res.status_code == 200, res.text
+    [row] = db.rows("classes")
+    assert _schedule(row) == (count, frequency, "2027-01-04")
+
+
+@TEN_WEEK_SCHEDULES
+@LAST_DAYS
+def test_a_term_from_monday_to_friday_refuses_sprints_that_end_a_day_past_its_last_sunday(
+    client, db, count, frequency, last_day
+):
+    # From Tue Jan 5, the same sprints end on Mon Mar 15.
+    body = {
+        **TEN_WEEKS,
+        "end_date": last_day,
+        "sprint_count": count,
+        "sprint_frequency": frequency,
+        "sprints_start_on": "2027-01-05",
+    }
+    res = _create(client, body)
+    assert (res.status_code, res.json()["detail"]) == (
+        422,
+        f"The sprints run past the last day of classes ({last_day})",
+    )
     assert db.executes == 0
 
 
@@ -694,9 +744,9 @@ def test_a_story_in_a_sprint_the_change_would_delete_refuses_it_before_anything_
             id="a-week-before-the-first-week",
         ),
         pytest.param(
-            {"sprint_count": 10},  # Sprint 10 would end Sun Dec 6
+            {"sprint_count": 11},  # Sprint 11 would end Sun Dec 13, a week past Sun Dec 6
             "The sprints run past the last day of classes (2026-12-04)",
-            id="past-the-last-day",
+            id="past-the-sunday-after-the-last-day",
         ),
         pytest.param({"sprints_start_on": "9999-12-25"}, START_TOO_LATE, id="far-future"),
     ],
@@ -709,6 +759,15 @@ def test_a_change_that_does_not_fit_the_class_is_refused_before_anything_is_writ
     assert _schedule(_term(term)) == (None, None, None)
     # The owner check (with the class's dates) beside the teams, nothing more.
     assert sorted(_trace(term)) == ["classes:select", "projects:select"]
+
+
+def test_a_change_may_end_on_the_sunday_after_the_last_day(client, term):
+    # TERM's last day of classes is Fri Dec 4; ten weekly sprints from Mon Sep 28 end on Sun Dec 6.
+    res = _change(client, {**FOUR_WEEKLY, "sprint_count": 10})
+    assert res.status_code == 200, res.text
+    assert _schedule(_term(term)) == (10, "weekly", "2026-09-28")
+    for team in TEAMS:
+        assert _numbered(term, team)[-1] == (10, "Sprint 10", "2026-11-30", "2026-12-06")
 
 
 def test_a_class_with_no_dates_refuses_a_first_day_past_the_end_of_the_calendar(client, term):
@@ -806,7 +865,7 @@ def test_a_team_whose_sprints_fail_to_follow_fails_the_change_and_sending_it_aga
     assert _numbered(term, BRAVO) == FOUR_WEEKLY_SPRINTS
 
 
-def test_a_class_with_no_last_day_takes_a_schedule_then_refuses_a_last_day_before_it_ends(
+def test_a_class_with_no_last_day_takes_a_schedule_then_refuses_a_last_day_a_week_before_it_ends(
     client, term
 ):
     _term(term)["end_date"] = None
@@ -819,14 +878,15 @@ def test_a_class_with_no_last_day_takes_a_schedule_then_refuses_a_last_day_befor
             json={"end_date": day},
         )
 
-    res = set_last_day("2026-10-24")
+    # Sprint 4 ends on Sun Oct 25: a last day must be in that week (from Mon Oct 19) or later.
+    res = set_last_day("2026-10-18")
     assert (res.status_code, res.json()["detail"]) == (
         409,
         "Sprint 4 ends 2026-10-25; change the sprint schedule first",
     )
     assert _term(term)["end_date"] is None
-    res = set_last_day("2026-10-25")
+    res = set_last_day("2026-10-19")
     assert res.status_code == 200, res.text
     # The class row itself, not {"message": ..., "class": ...} (STYLE_GUIDE.md, Response Format).
     assert res.json() == _term(term)
-    assert _term(term)["end_date"] == "2026-10-25"
+    assert _term(term)["end_date"] == "2026-10-19"
