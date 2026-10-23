@@ -45,10 +45,12 @@ class CreateSprintRequest(BaseModel):
 
 
 class UpdateSprintRequest(BaseModel):
+    """No ``status``: it follows the dates (spec D22). Unknown fields are ignored, so a status
+    an older client still sends is dropped silently."""
+
     name: str | None = Field(None, min_length=1, max_length=80)
     starts_at: date | None = None
     ends_at: date | None = None
-    status: Literal["planned", "active", "completed"] | None = None
 
 
 class CreateStoryRequest(BaseModel):

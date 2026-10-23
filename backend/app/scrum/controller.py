@@ -31,6 +31,7 @@ from app.notifications.controller import notify_mention
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
+from app.scrum.schedule import sprint_status
 from app.utils.mentions import extract_mention_ids
 from app.utils.profiles import profile_display_name
 
@@ -157,6 +158,20 @@ def update_settings(*, project_id: str, user_id: str, estimate_scale: str) -> No
         raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
 
+def _sprint_days(row: dict) -> tuple[date, date]:
+    """A sprint row's first and last days (PostgREST sends dates as ISO text)."""
+    return date.fromisoformat(str(row["starts_at"])), date.fromisoformat(str(row["ends_at"]))
+
+
+def _with_status(row: dict, today: date) -> dict:
+    """A copy of sprint ``row`` whose ``status`` follows its dates and ``today`` (spec D22).
+
+    The stored ``sprints.status`` is never read (the queries here leave it out): nothing flips
+    it for the sprints a class schedule creates.
+    """
+    return {**row, "status": sprint_status(*_sprint_days(row), today)}
+
+
 def create_sprint(*, project_id: str, user_id: str, name: str, starts_at, ends_at) -> dict:
     client = get_client()
     _require_writer(client, project_id=project_id, user_id=user_id)
@@ -176,13 +191,13 @@ def create_sprint(*, project_id: str, user_id: str, name: str, starts_at, ends_a
     )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create sprint")
-    return res.data[0]
+    return _with_status(res.data[0], _today_la())
 
 
 def _get_sprint_or_404(client, sprint_id: str) -> dict:
     res = (
         client.table("sprints")
-        .select("id, project_id, name, starts_at, ends_at, status")
+        .select("id, project_id, name, starts_at, ends_at")
         .eq("id", str(sprint_id))
         .maybe_single()
         .execute()
@@ -200,16 +215,18 @@ def _require_sprint_in_project(client, sprint_id: str, project_id: str) -> None:
 
 
 def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
+    """Rename a sprint or move its dates. Its status follows the dates, so a ``status`` in
+    ``fields`` is dropped like any other key; the sprint comes back with the derived one."""
     client = get_client()
     sprint = _get_sprint_or_404(client, sprint_id)
     _require_writer(client, project_id=sprint["project_id"], user_id=user_id)
     allowed = {
         k: (str(v) if k in ("starts_at", "ends_at") else v)
         for k, v in fields.items()
-        if k in ("name", "starts_at", "ends_at", "status") and v is not None
+        if k in ("name", "starts_at", "ends_at") and v is not None
     }
     if not allowed:
-        return sprint
+        return _with_status(sprint, _today_la())
     eff_start = date.fromisoformat(allowed.get("starts_at", str(sprint["starts_at"])))
     eff_end = date.fromisoformat(allowed.get("ends_at", str(sprint["ends_at"])))
     if eff_end < eff_start:
@@ -217,7 +234,7 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     res = client.table("sprints").update(allowed).eq("id", str(sprint_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update sprint")
-    return res.data[0]
+    return _with_status(res.data[0], _today_la())
 
 
 # ------------------------------------------------------------ stories, tasks ----
@@ -806,22 +823,25 @@ def _name_for(client, user_id: str | None) -> str | None:
 # -------------------------------------------------------------------- board ----
 
 
-def _select_sprint(sprints: list[dict], sprint_id: str | None) -> dict | None:
+def _select_sprint(sprints: list[dict], sprint_id: str | None, today: date) -> dict | None:
     """The sprint the board shows, from ``sprints`` ordered by ``starts_at``.
 
     The sprint named by ``sprint_id`` (404 :data:`SPRINT_NOT_FOUND` when the project has
-    none by that id); without one, the latest active sprint, else the latest sprint, else
-    None (no sprints yet).
+    none by that id). Without one, today's sprint by its dates (spec D22): the one whose
+    dates hold ``today`` (the later-starting one where sprints made through the API
+    overlap), else the latest one that has started, else the first; None with no sprints.
     """
     if sprint_id:
         selected = next((s for s in sprints if s["id"] == str(sprint_id)), None)
         if not selected:
             raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
         return selected
-    active = [s for s in sprints if s["status"] == "active"]
-    if active:
-        return sorted(active, key=lambda s: s["starts_at"])[-1]
-    return sprints[-1] if sprints else None
+    statuses = [sprint_status(*_sprint_days(s), today) for s in sprints]
+    active = [s for s, status in zip(sprints, statuses, strict=True) if status == "active"]
+    started = [s for s, status in zip(sprints, statuses, strict=True) if status != "planned"]
+    if active or started:
+        return (active or started)[-1]
+    return sprints[0] if sprints else None
 
 
 def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
@@ -845,7 +865,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             ),
             "sprints": lambda: rows(
                 client.table("sprints")
-                .select("id, name, starts_at, ends_at, status")
+                .select("id, name, starts_at, ends_at")
                 .eq("project_id", pid)
                 .order("starts_at")
             ),
@@ -863,10 +883,11 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             ),
         }
     )
-    project, sprints = first["project"], first["sprints"]
-    all_stories, member_rows = first["stories"], first["members"]
+    project, all_stories, member_rows = first["project"], first["stories"], first["members"]
+    today = _today_la()
+    sprints = [_with_status(s, today) for s in first["sprints"]]
 
-    selected = _select_sprint(sprints, sprint_id)
+    selected = _select_sprint(sprints, sprint_id, today)
 
     story_ids = [s["id"] for s in all_stories]
     sprint_ids = [s["id"] for s in sprints]
@@ -993,7 +1014,6 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
 
     sprint_series = None
     live_totals: tuple[int, int] | None = None
-    today = _today_la()
     if selected:
         live_totals = sprint_totals(selected["id"])
         _snapshot_burnup_safe(client, selected["id"], totals=live_totals)
@@ -1078,7 +1098,7 @@ def get_summary(*, project_id: str, user_id: str) -> dict:
         {
             "sprints": lambda: rows(
                 client.table("sprints")
-                .select("id, name, starts_at, ends_at, status")
+                .select("id, name, starts_at, ends_at")
                 .eq("project_id", pid)
                 .order("starts_at")
             ),
@@ -1089,7 +1109,10 @@ def get_summary(*, project_id: str, user_id: str) -> dict:
             ),
         }
     )
-    sprint = _select_sprint(reads["sprints"], None)
+    # The sprint the board opens on, with the status the board shows for it.
+    today = _today_la()
+    sprint = _select_sprint(reads["sprints"], None, today)
+    sprint = _with_status(sprint, today) if sprint else None
     stories = reads["stories"]
 
     # The board's own split: a sprint shows its live stories, and its Backlog view lists the

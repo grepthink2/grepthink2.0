@@ -15,14 +15,15 @@ TODAY = date(2026, 9, 10)
 URL = f"/api/projects/{PID}/scrum/board"
 
 
-def _sprint(sid, name, starts, ends, status):
+def _sprint(sid, name, starts, ends):
+    """Stored ``planned``, the column's default: the status comes from the dates."""
     return {
         "id": sid,
         "project_id": PID,
         "name": name,
         "starts_at": starts,
         "ends_at": ends,
-        "status": status,
+        "status": "planned",
     }
 
 
@@ -64,9 +65,9 @@ def _seed(monkeypatch):
     return scrum_db(
         monkeypatch,
         sprints=[
-            _sprint("S1", "Sprint 1", "2026-08-10", "2026-08-23", "completed"),
-            _sprint("S2", "Sprint 2", "2026-09-07", "2026-09-20", "active"),
-            _sprint("S3", "Sprint 3", "2026-09-21", "2026-10-04", "planned"),
+            _sprint("S1", "Sprint 1", "2026-08-10", "2026-08-23"),
+            _sprint("S2", "Sprint 2", "2026-09-07", "2026-09-20"),  # holds TODAY
+            _sprint("S3", "Sprint 3", "2026-09-21", "2026-10-04"),
         ],
         user_stories=[
             _story("A", "S1", 5, "1"),
@@ -132,7 +133,7 @@ def test_board_shape_and_burnup(monkeypatch, client):
     body = res.json()
 
     assert body["access"] == "member" and body["ai_enabled"] is False
-    assert body["sprint_id"] == "S2"  # the active sprint
+    assert body["sprint_id"] == "S2"  # the sprint holding TODAY
     assert [s["id"] for s in body["stories"]] == ["B"]
     assert [s["id"] for s in body["backlog"]] == ["D", "E"]  # unscheduled + archived
     [story] = body["stories"]
