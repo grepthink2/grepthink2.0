@@ -221,7 +221,7 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-Every component (185 exports) is an intentional addition —
+Every component (182 exports) is an intentional addition —
 confirmed, not a naming slip. The Figma file's own component sets were generic UI-kit library artifacts (Scrollbar, Monitor,
 Thumb, Grid…) — materialized once in `components/figma-reference/`, unused by any screen, and removed 2026-10-20 — so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
@@ -401,7 +401,7 @@ family for the student, Product Owner, TA and instructor lenses; the backend exi
 - Badge status keys `signups.open` / `signups.closed` / `slot.free` / `slot.yours` / `slot.past` / `review.no_review_ta` / `review.no_product_owner` — kit addition to `BADGE_STATUS` (colours by the alignment round's rule)
 
 #### Every export, by group — each one confirmed an intentional addition
-The complete list (185 exports, re-confirmed 2026-10-22 against the compiled bundle). None of them is a renamed Figma component: the
+The complete list (182 exports, re-confirmed 2026-10-22 against the compiled bundle). None of them is a renamed Figma component: the
 .fig's own families (Arrow, Grid, Icons, Monitor, Navigation, Scrollbar, Thumb, 3D Avatars, Calendar) are generic UI-kit artifacts with no
 product counterpart, so none is built. Every name below is an intentional addition, named after the codebase feature it mirrors.
 
