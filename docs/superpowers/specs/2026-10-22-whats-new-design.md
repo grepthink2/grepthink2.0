@@ -84,7 +84,7 @@ date: 2026-10-23
 
 ## Fixed
 
-- A live meeting on your schedule shows a blue Live badge again.
+- A team meeting in progress shows a blue Live badge on the project page.
 ```
 
 - **Front matter** holds one key, `date`: the day the release reaches `main`, on the campus calendar. If the
