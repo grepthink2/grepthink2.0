@@ -3,8 +3,7 @@
 **Date:** 2026-10-22
 **Base:** `origin/beta` at `50f65d16` (code references below are to that head). New work branches from it.
 **Status:** draft for the maintainer's approval. Decisions marked ⚑ are mine; the others are the
-maintainer's (2026-10-21/22, two rounds). Part 0 is built (PR 0, `feat/class-sprint-schedule`); the
-rest is not.
+maintainer's (2026-10-21/22, two rounds). Part 0 is built (PR 0); the rest is not.
 
 ## The ask
 
@@ -117,7 +116,7 @@ would pass the calendar's end); the last sprint ending on or before the Sunday o
 Sunday) that holds `end_date` (`schedule.latest_sprint_end`; `SPRINTS_PAST_END`, with the last day in
 the detail as the attendance refusal names a day, "Dec 4, 2026"). Sprints that start on a Monday end on
 a Sunday, so a term that runs Monday to Friday keeps the sprints that end on the Sunday after its last
-day. A class date that is not set allows any day on its side.
+day. A class date that is not set allows any day on its side, short of the calendar's end.
 
 - `POST /api/classes` (`CreateClassRequest`): `sprint_count` and `sprint_frequency` required;
   `sprints_start_on` optional, defaulting to `start_date`. The web form (`Classes/CreateClassModal.tsx`)
@@ -145,8 +144,8 @@ day. A class date that is not set allows any day on its side.
 - `POST /api/projects/{id}/scrum/sprints` (`create_sprint`) stays for API callers; the web client no
   longer offers it and the catalog entry says so. Removing it is a follow-up decision.
 - Copy: the empty board reads "This class has no sprint schedule yet. Your instructor sets it in Class
-  Settings." (members) / "Set the sprint schedule in Class Settings to create this team's sprints."
-  (instructor).
+  Settings." (everyone but the class instructor) / "Set the sprint schedule in Class Settings to create
+  this team's sprints." (instructor).
 
 ### Derived sprint status (D22)
 
@@ -170,9 +169,9 @@ points columns are as old as the table, so a 0/0 points row is a real zero.
   completed = the same sum over done tasks; story points no longer feed the burnup. `_live_burnup_totals`,
   `_snapshot_burnup_safe` and the `final` snapshot of the cumulative series carry both units;
   `_sprint_progress` (the sprint picker's "12/20 pts") returns tasks, points and hours together, and the
-  picker shows the unit the board's burnup draws ("12/20 h" in hours). An edit that changes a task's
-  points or hours, and the delete of a task that had either, take a snapshot; a story's points edit
-  takes none.
+  picker shows the unit the board's burnup draws ("12/20 h" in hours). An edit that changes the points
+  or hours of a task in a sprint, and the delete of a task in a sprint that had either, take a snapshot;
+  a story's points edit takes none.
 - `burnup.build_sprint_series(..., unit)` reads `scope_<unit>` / `completed_<unit>`;
   `_completed_by_day_from_moves(client, task_values, ...)` takes the task → value map in the chosen
   unit.
@@ -836,7 +835,8 @@ deleted).
 - **PR 0, board groundwork (Part 0):** the class schedule migration and the burnup-hours migration
   (DEV applied before the tests run against it), `scrum/schedule.py`, create-class and class-settings
   changes, `ensure_project_sprints` and its hook, derived status, burnup units and the points nudge,
-  `lib/api/classes.ts`, catalog, AGENTS.md (sprints come from the class; status derived).
+  `lib/api/classes.ts`, catalog, AGENTS.md (sprints come from the class; status derived; the burnup
+  counts tasks in hours or points).
 - **PR A, documents backend + client contract:** both documents migrations and the prune cron file,
   `app/documents` without refine (delete included), the summary's `plan`, the class list, the plan
   rule in `ensure_project_sprints`'s in-use check, notifications, email kind, events,

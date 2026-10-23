@@ -307,8 +307,13 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       sprintsSaveButton.current?.focus();
     } catch (err) {
       if (openClassId.current !== classId) return;
-      // The API's refusals (a team's story in a sprint the count drops, dates that don't fit) say what to do.
-      setSprintsSaveError(err instanceof Error ? err.message : 'Failed to update the sprint schedule');
+      // The API's refusals (a team's story in a sprint the count drops, dates that don't fit) say what to
+      // do. Show it with Save enabled again, then put the keyboard back on Save, as after a save that worked.
+      flushSync(() => {
+        setSprintsSaveError(err instanceof Error ? err.message : 'Failed to update the sprint schedule');
+        setIsSavingSprints(false);
+      });
+      sprintsSaveButton.current?.focus();
     } finally {
       if (openClassId.current === classId) setIsSavingSprints(false);
     }

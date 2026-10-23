@@ -360,7 +360,8 @@ The full agent-facing action catalog (method, params, role) lives at
   never touches it.
 - **Sprint status is derived from dates.** `scrum.schedule.sprint_status` makes a sprint `planned`,
   `active` (from `starts_at` through `ends_at`) or `completed` by the Pacific day (`_today_la()`),
-  and the board opens on today's sprint, else the latest one that has started (`_select_sprint`).
+  and the board opens on today's sprint, else the latest one that has started, else the first
+  (`_select_sprint`).
   Nothing writes or reads the stored `sprints.status` column: `update_sprint` drops a `status`.
 - **The burnup counts tasks in hours or points.** Scope is the sum of the sprint's task estimates
   (`tasks.points` or `tasks.estimate_hours`) and completed the same sum over its done tasks; story

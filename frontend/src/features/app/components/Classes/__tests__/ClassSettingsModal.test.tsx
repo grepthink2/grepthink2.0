@@ -626,6 +626,30 @@ describe('ClassSettingsModal — sprints', () => {
     expect(ctx.setClassSprints).toHaveBeenCalledTimes(1);
   });
 
+  it('puts the keyboard back on Save after a refused save too, with the refusal showing', async () => {
+    const user = userEvent.setup();
+    let refuse: (error: Error) => void = () => {};
+    ctx.setClassSprints.mockReturnValueOnce(new Promise<Written>((_resolve, reject) => (refuse = reject)));
+    renderSettings(course(FIVE_BIWEEKLY));
+    await setCount(user, '4');
+    await user.click(save());
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    // As above: the browser would have moved focus to the page while Save was disabled.
+    act(() => {
+      document.body.tabIndex = -1;
+      document.body.focus();
+      document.body.removeAttribute('tabindex');
+    });
+    expect(document.body).toHaveFocus();
+
+    const detail = 'Team Rocket already uses Sprint 5; lower the count after they move their stories or delete that plan';
+    await act(async () => refuse(Object.assign(new Error(detail), { status: 409, detail })));
+    expect(screen.getByRole('alert')).toHaveTextContent(detail);
+    expect(howMany()).toHaveValue(4); // what was chosen stays, to change or send again
+    expect(save()).toBeEnabled();
+    expect(save()).toHaveFocus();
+  });
+
   it('forgets an earlier failure or notice once the schedule changes', async () => {
     const user = userEvent.setup();
     ctx.setClassSprints.mockRejectedValueOnce(new Error('Failed to update the sprint schedule'));
