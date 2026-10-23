@@ -117,6 +117,42 @@ def test_the_sprint_routes_answer_the_sprint_itself(monkeypatch, client):
     assert res.json() == {"id": row["id"], "name": "Kickoff", **dates, "status": "active"}
 
 
+def test_the_story_and_task_edit_routes_answer_the_row_itself(monkeypatch, client):
+    """Editing a story or a task answers the story or the task, not wrapped in {message, story}
+    or {message, task} (STYLE_GUIDE.md, Response Format)."""
+    db = scrum_db(
+        monkeypatch,
+        user_stories=[dict(STORY)],
+        tasks=[
+            {
+                "id": "t1",
+                "story_id": "st1",
+                "project_id": PID,
+                "key": "GT-1",
+                "title": "Index",
+                "status": "todo",
+                "reporter_id": UID,
+                "tags": [],
+            }
+        ],
+    )
+    headers = header_for("tony@ucsc.edu", sub=UID)
+
+    res = client.patch("/api/scrum/stories/st1", headers=headers, json={"title": "Find a ride"})
+    assert res.status_code == 200
+    story = res.json()
+    assert (story["id"], story["key"], story["title"]) == ("st1", "US-1", "Find a ride")
+    assert not {"message", "story"} & set(story)
+    assert db.rows("user_stories")[0]["title"] == "Find a ride"
+
+    res = client.patch("/api/scrum/tasks/t1", headers=headers, json={"title": "Index rides"})
+    assert res.status_code == 200
+    task = res.json()
+    assert (task["id"], task["key"], task["title"]) == ("t1", "GT-1", "Index rides")
+    assert not {"message", "task"} & set(task)
+    assert db.rows("tasks")[0]["title"] == "Index rides"
+
+
 def test_a_blocked_move_answers_409_with_its_code(monkeypatch, client):
     """The web client keys its refresh on the code; an API consumer can too."""
     task = {"story_id": "st1", "project_id": PID, "title": "t", "reporter_id": UID, "tags": []}

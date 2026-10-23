@@ -6,6 +6,7 @@ import type {
   ApiScrumBoard,
   ApiScrumComment,
   ApiScrumSprint,
+  ApiScrumStory,
   ApiScrumTask,
 } from '../api/types';
 
@@ -41,6 +42,21 @@ const TASK: ApiScrumTask = {
   comment_count: 0,
   depends_on: [],
   blocks: [],
+};
+/** A single-row story response: no tasks, and so no hours. */
+const STORY: ApiScrumStory = {
+  id: 's1',
+  sprint_id: 'sp1',
+  key: 'US-1',
+  title: 'Find a ride',
+  description_md: null,
+  points: 5,
+  estimate_hours: null,
+  reporter_id: 'u1',
+  assignee_id: null,
+  archived_at: null,
+  comment_count: 0,
+  tasks: [],
 };
 const COMMENT: ApiScrumComment = {
   id: 'c1',
@@ -129,6 +145,34 @@ describe('moveScrumTask', () => {
     expect(path).toBe('/api/scrum/tasks/t1/move');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({ to_status: 'done' });
+  });
+});
+
+describe('updateStory', () => {
+  it.each([
+    ['the story itself', STORY],
+    ['{ message, story }', { message: 'Story updated successfully', story: STORY }],
+  ])('answers the story when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(scrumApi.updateStory('s1', { points: 5 })).resolves.toEqual(STORY);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/scrum/stories/s1');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ points: 5 });
+  });
+});
+
+describe('updateScrumTask', () => {
+  it.each([
+    ['the task itself', TASK],
+    ['{ message, task }', { message: 'Task updated successfully', task: TASK }],
+  ])('answers the task when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(scrumApi.updateScrumTask('t1', { points: 3 })).resolves.toEqual(TASK);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/scrum/tasks/t1');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ points: 3 });
   });
 });
 

@@ -259,7 +259,7 @@ export function useScrumBoard(
     const seq = nextWrite(storyId);
     local(body as Partial<ApiScrumStory>);
     try {
-      const { story } = await api.updateStory(storyId, body);
+      const story = await api.updateStory(storyId, body);
       // A newer edit is already on screen and in flight — its response wins.
       if (writeSeq.current.get(storyId) !== seq) return story;
       // The PATCH response carries no children — keep the ones already loaded.
@@ -285,7 +285,7 @@ export function useScrumBoard(
     const seq = nextWrite(taskId);
     local(body as Partial<ApiScrumTask>);
     try {
-      const { task } = await api.updateScrumTask(taskId, body);
+      const task = await api.updateScrumTask(taskId, body);
       if (writeSeq.current.get(taskId) !== seq) return task;   // superseded
       // The response has no dependency lists, comment count or mover's name: the board's stay.
       setBoard((prev) => (prev ? {

@@ -228,7 +228,7 @@ describe('ScrumBoardPage story detail', () => {
   });
 
   it('moves a backlog story to the shown sprint', async () => {
-    vi.mocked(api.updateStory).mockResolvedValue({ message: 'ok', story: makeStory({ id: 's9', sprint_id: 'sp1' }) });
+    vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's9', sprint_id: 'sp1' }));
     renderAt();
     await screen.findByText('Login flow');
     await userEvent.click(screen.getByRole('tab', { name: 'Backlog' }));

@@ -121,11 +121,12 @@ def create_story(
 
 def update_story(
     story_id: str, body: UpdateStoryRequest, user_id: str = Depends(require_user)
-) -> StoryResponse:
+) -> StoryOut:
+    """Edit or move a story. Answers the story as saved, without its tasks."""
     row = controller.update_story(
         story_id=story_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return StoryResponse(message="Story updated successfully", story=_story_out(row))
+    return _story_out(row)
 
 
 def delete_story(story_id: str, user_id: str = Depends(require_user)) -> Response:
@@ -144,11 +145,12 @@ def create_task(
 
 def update_task(
     task_id: str, body: UpdateTaskRequest, user_id: str = Depends(require_user)
-) -> TaskResponse:
+) -> TaskOut:
+    """Edit a task. Answers the task as saved."""
     row = controller.update_task(
         task_id=task_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return TaskResponse(message="Task updated successfully", task=_task_out(row))
+    return _task_out(row)
 
 
 def delete_task(task_id: str, user_id: str = Depends(require_user)) -> Response:

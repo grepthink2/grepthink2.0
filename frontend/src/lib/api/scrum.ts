@@ -79,11 +79,14 @@ export const scrumApi = {
     );
   },
 
-  updateStory: async (storyId: string, body: ApiUpdateStoryBody) => {
-    return apiRequest<{ message: string; story: ApiScrumStory }>(
+  /** The story as saved, without its tasks. */
+  updateStory: async (storyId: string, body: ApiUpdateStoryBody): Promise<ApiScrumStory> => {
+    const res = await apiRequest<ApiScrumStory | { message: string; story: ApiScrumStory }>(
       `/api/scrum/stories/${storyId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, story}.
+    return 'story' in res ? res.story : res;
   },
 
   /** A backlog story and its tasks; 409 for a story in a sprint (move it to the backlog first). */
@@ -98,11 +101,14 @@ export const scrumApi = {
     );
   },
 
-  updateScrumTask: async (taskId: string, body: ApiUpdateTaskBody) => {
-    return apiRequest<{ message: string; task: ApiScrumTask }>(
+  /** The task as saved. */
+  updateScrumTask: async (taskId: string, body: ApiUpdateTaskBody): Promise<ApiScrumTask> => {
+    const res = await apiRequest<ApiScrumTask | { message: string; task: ApiScrumTask }>(
       `/api/scrum/tasks/${taskId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, task}.
+    return 'task' in res ? res.task : res;
   },
 
   deleteScrumTask: async (taskId: string) => {

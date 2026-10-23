@@ -134,7 +134,7 @@ describe('useScrumBoard', () => {
   it('a slow earlier points write cannot overwrite a newer one', async () => {
     // The reported bug: pick 13, then 5 before the first PATCH lands. The 13
     // response arrives last and used to snap the picker back to 13.
-    const resolvers: Array<(v: { message: string; story: ApiScrumStory }) => void> = [];
+    const resolvers: Array<(v: ApiScrumStory) => void> = [];
     vi.mocked(api.updateStory).mockImplementation(
       () => new Promise((res) => { resolvers.push(res); }) as ReturnType<typeof api.updateStory>,
     );
@@ -148,8 +148,8 @@ describe('useScrumBoard', () => {
     expect(result.current.board!.stories[0].points).toBe(5);
 
     // Server answers out of order: the stale 13 lands last.
-    await act(async () => { resolvers[1]({ message: 'ok', story: makeStory({ points: 5 }) }); });
-    await act(async () => { resolvers[0]({ message: 'ok', story: makeStory({ points: 13 }) }); });
+    await act(async () => { resolvers[1](makeStory({ points: 5 })); });
+    await act(async () => { resolvers[0](makeStory({ points: 13 })); });
 
     expect(result.current.board!.stories[0].points).toBe(5);
   });
@@ -174,7 +174,7 @@ describe('useScrumBoard', () => {
   it('a task save that changes its hours changes the story sum at once, before the board reloads', async () => {
     // The reload behind the save answers the server's sum.
     vi.mocked(api.getScrumBoard).mockResolvedValueOnce(hoursBoard()).mockResolvedValue(hoursBoard(8));
-    let resolveSave: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    let resolveSave: (v: ApiScrumTask) => void = () => {};
     vi.mocked(api.updateScrumTask).mockReturnValue(
       new Promise((res) => { resolveSave = res; }) as ReturnType<typeof api.updateScrumTask>,
     );
@@ -187,14 +187,14 @@ describe('useScrumBoard', () => {
     expect(storyHours(result.current.board!.stories[0])).toBe(10);   // optimistic
     expect(api.getScrumBoard).toHaveBeenCalledTimes(1);               // nothing waits for a reload
 
-    await act(async () => { resolveSave({ message: 'ok', task: makeTask({ id: 't1', estimate_hours: 8 }) }); });
+    await act(async () => { resolveSave(makeTask({ id: 't1', estimate_hours: 8 })); });
     expect(storyHours(result.current.board!.stories[0])).toBe(10);
     expect(api.getScrumBoard).toHaveBeenCalledTimes(2);   // then one quiet reload, for the burnup
   });
 
   it('reloads the board quietly once after a task save that changes its points, for the burnup', async () => {
     const before = makeTask();   // makeBoard()'s task: no points, no hours
-    vi.mocked(api.updateScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ points: 3 }) });
+    vi.mocked(api.updateScrumTask).mockResolvedValue(makeTask({ points: 3 }));
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     vi.mocked(api.getScrumBoard).mockClear();   // count the reload only
@@ -213,7 +213,7 @@ describe('useScrumBoard', () => {
     const bare = makeTask({ id: 'b', key: 'T-2' });
     vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({ stories: [makeStory({ tasks: [estimated, bare] })] }));
     vi.mocked(api.updateScrumTask).mockImplementation(async (id, body) => ({
-      message: 'ok', task: { ...(id === 'a' ? estimated : bare), title: body.title! },
+      ...(id === 'a' ? estimated : bare), title: body.title!,
     }));
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -240,9 +240,7 @@ describe('useScrumBoard', () => {
   it('a story points change keeps the story sum', async () => {
     vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
     // A single-row story response: no tasks, and so no hours.
-    vi.mocked(api.updateStory).mockResolvedValue({
-      message: 'ok', story: makeStory({ points: 13, estimate_hours: null }),
-    });
+    vi.mocked(api.updateStory).mockResolvedValue(makeStory({ points: 13, estimate_hours: null }));
 
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -507,10 +505,9 @@ describe('useScrumBoard dependencies', () => {
   it('a task save keeps its dependencies, comment count and mover', async () => {
     vi.mocked(api.getScrumBoard).mockResolvedValue(dependencyBoard());
     // update_task's response: no dependency rows, no comment count, no mover's name.
-    vi.mocked(api.updateScrumTask).mockResolvedValue({
-      message: 'ok',
-      task: makeTask({ id: 'a', key: 'GT-2', title: 'x', moved_by: 'u1', moved_at: '2026-08-20T12:00:00Z' }),
-    });
+    vi.mocked(api.updateScrumTask).mockResolvedValue(
+      makeTask({ id: 'a', key: 'GT-2', title: 'x', moved_by: 'u1', moved_at: '2026-08-20T12:00:00Z' }),
+    );
     const { result, task } = await renderBoard();
 
     await act(async () => { await result.current.updateTask('a', { title: 'x' }); });
