@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   ApiAssignmentTsrEntry,
   ApiClass,
+  ApiProject,
   ApiScrumComment,
   ApiScrumSprint,
   ApiScrumTask,
@@ -15,6 +16,7 @@ vi.mock('../api/client', () => ({ apiRequest }));
 
 import { assignmentsApi } from '../api/assignments';
 import { classesApi } from '../api/classes';
+import { projectsApi } from '../api/projects';
 import { scrumApi } from '../api/scrum';
 
 const TASK: ApiScrumTask = {
@@ -66,6 +68,15 @@ const CLASS: ApiClass = {
   year: 2026,
   image_url: 'https://cdn.example/class-banner.svg',
   status: 'active',
+};
+const PROJECT: ApiProject = {
+  id: 'p1',
+  class_id: 'c1',
+  name: 'Trailhead',
+  description: 'Bike sharing',
+  created_by: 'u1',
+  created_at: '2026-10-23T12:00:00Z',
+  team_size: 4,
 };
 const ENTRY: ApiAssignmentTsrEntry = {
   tsr_id: 'tsr1',
@@ -148,6 +159,21 @@ describe('createClass', () => {
     await expect(classesApi.createClass(fields)).resolves.toEqual(CLASS);
     const [path, init] = apiRequest.mock.calls[0];
     expect(path).toBe('/api/classes');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual(fields);
+  });
+});
+
+describe('createProject', () => {
+  it.each([
+    ['the project itself', PROJECT],
+    ['{ message, project }', { message: 'Project created successfully', project: PROJECT }],
+  ])('answers the project when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    const fields = { class_id: 'c1', name: 'Trailhead', description: 'Bike sharing', team_size: 4 };
+    await expect(projectsApi.createProject(fields)).resolves.toEqual(PROJECT);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/projects');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual(fields);
   });

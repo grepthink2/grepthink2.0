@@ -11,10 +11,9 @@ from fastapi import HTTPException
 
 from app.core import authz
 from app.core.db import fan_out, get_client
-from app.database.client import (
-    query_pool,
-    retry_on_disconnect,
-)
+from app.database.client import retry_on_disconnect
+from app.scrum.controller import ensure_project_sprints
+from app.scrum.schedule import Schedule
 from app.utils.profiles import profile_display_name
 
 # Project member roles. Keep in sync with the DB CHECK constraint on project_members.role.
@@ -119,6 +118,29 @@ def _is_instructor(user_id, class_id) -> bool:
     return authz.is_class_instructor(get_client(), user_id, class_id)
 
 
+def _give_team_its_sprints(client, *, project_id: str, project_name: str, class_row: dict) -> None:
+    """Make a new team's sprints from its class's sprint schedule; nothing when it has none.
+
+    Best effort, so a team is never lost to its sprints: any failure is logged at WARNING, with ids
+    only, and the team starts without them. The instructor's next schedule change
+    (``PATCH /api/classes/{class_id}/sprints``) makes them. Two round trips with a schedule (the
+    team's numbered sprints, none yet, and one insert), none without.
+    """
+    try:
+        schedule = Schedule.from_class(class_row)
+        if schedule is not None:
+            ensure_project_sprints(
+                client, project_id=project_id, project_name=project_name, schedule=schedule
+            )
+    except Exception:
+        logger.warning(
+            "projects: sprint creation failed | project_id=%s class_id=%s",
+            project_id,
+            class_row.get("id"),
+            exc_info=True,
+        )
+
+
 def create_project(
     class_id: UUID,
     name: str,
@@ -137,7 +159,8 @@ def create_project(
     Create a new project within a class.
 
     The class instructor (its creator) may create projects with sponsor information; anyone
-    enrolled (student or TA) may create one without it.
+    enrolled (student or TA) may create one without it. In a class with a sprint schedule the new
+    team gets its sprints right after the insert, best effort (:func:`_give_team_its_sprints`).
 
     Args:
         class_id: Class unique identifier
@@ -154,7 +177,7 @@ def create_project(
         sponsor_description: Optional description of the sponsor (class instructor only)
 
     Returns:
-        Dictionary containing project data
+        The project row as inserted
 
     Raises:
         HTTPException: If class not found, user lacks permission, or database error occurs
@@ -163,25 +186,30 @@ def create_project(
         client = get_client()
         cid = str(class_id)
 
-        # Fan out the two independent verifications. The enrollment lookup
-        # is only needed when the caller is not the class instructor, but it's a
-        # cheap select on an indexed pair (``class_id``, ``user_id``); pre-fetching
-        # it in parallel removes a sequential round-trip from an enrolled member's
+        # Both verifications in one wave: the class (its instructor and sprint schedule) and the
+        # caller's enrollment. The enrollment is only needed when the caller is not the class
+        # instructor, but it's a cheap select on an indexed pair (``class_id``, ``user_id``);
+        # reading it beside the class removes a sequential round-trip from an enrolled member's
         # create path without measurably hurting the instructor path.
-        class_future = query_pool.submit(
-            lambda: client.table("classes").select("id, created_by").eq("id", cid).execute()
-        )
-        enrollment_future = query_pool.submit(
-            lambda: (
-                client.table("class_enrollments")
-                .select("id")
-                .eq("class_id", cid)
-                .eq("user_id", user_id)
-                .execute()
-            )
+        reads = fan_out(
+            {
+                "class": lambda: (
+                    client.table("classes")
+                    .select("id, created_by, sprint_count, sprint_frequency, sprints_start_on")
+                    .eq("id", cid)
+                    .execute()
+                ),
+                "enrollment": lambda: (
+                    client.table("class_enrollments")
+                    .select("id")
+                    .eq("class_id", cid)
+                    .eq("user_id", user_id)
+                    .execute()
+                ),
+            }
         )
 
-        class_result = class_future.result()
+        class_result = reads["class"]
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
@@ -190,7 +218,7 @@ def create_project(
         is_instructor = str(class_row.get("created_by")) == str(user_id)
 
         if not is_instructor:
-            enrollment = enrollment_future.result()
+            enrollment = reads["enrollment"]
             if not enrollment.data:
                 raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
@@ -236,6 +264,12 @@ def create_project(
             raise HTTPException(status_code=500, detail="Failed to create project")
 
         project = result.data[0]
+
+        # The sprints come right after the insert, so a later step's failure cannot leave the team
+        # without them.
+        _give_team_its_sprints(
+            client, project_id=project["id"], project_name=name, class_row=class_row
+        )
 
         # Anyone enrolled who creates a project is automatically added as product owner
         if not is_instructor:

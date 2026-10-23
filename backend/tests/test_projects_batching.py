@@ -1,4 +1,4 @@
-"""Behaviour + round-trip budgets for project reads and the join-request flow.
+"""Behaviour + round-trip budgets for project reads, project creation and the join-request flow.
 
 Each ``*_budget`` test bounds the Supabase round trips and checks that every read
 ran in a single ``fan_out`` wave (about one round trip of latency). The other tests
@@ -603,3 +603,29 @@ def test_rejected_join_requests_write_nothing_and_keep_the_old_team(db):
     assert not any(q["op"] in WRITE_OPS for q in db.queries), _trace(db)
     assert {m["user_id"] for m in db.rows("project_members") if m["project_id"] == P1} == {S1, S2}
     assert db.rows("notifications") == []
+
+
+# ------------------------------------------------------------------- create_project
+
+
+def test_create_project_budget(db, waves):
+    """CLASS has no sprint schedule, so nothing reads or writes sprints; a class with one costs two
+    round trips more (tests/test_class_sprint_schedule.py)."""
+    gamma = projects.create_project(CLASS, "Gamma", "d", S6, 4)  # S6 is enrolled, on no team
+    assert [
+        (m["project_id"], m["role"]) for m in db.rows("project_members") if m["user_id"] == S6
+    ] == [(gamma["id"], "product owner")]
+    # One wave (the class, S6's enrollment); CLASS's teams and S6's memberships in them; the
+    # insert; S6's member row and the recount (a read and a write); the instructor's notification
+    # (S6's profile, the insert).
+    assert waves == [2], waves
+    assert db.executes == 10, _trace(db)
+    assert not [q for q in db.queries if q["table"] == "sprints"], _trace(db)
+
+    db.reset_counter()
+    waves.clear()
+    projects.create_project(CLASS, "Delta", "d", INSTR, 4)
+    # One wave (the class, an enrollment the instructor turns out not to need); the insert.
+    assert waves == [2], waves
+    assert db.executes == 3, _trace(db)
+    assert not [q for q in db.queries if q["table"] == "sprints"], _trace(db)
