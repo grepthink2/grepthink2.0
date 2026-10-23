@@ -264,10 +264,11 @@ The full agent-facing action catalog (method, params, role) lives at
   role, so Row-Level Security does **not** protect you (RLS is on for every table, and most
   have no policies). A missing membership/ownership check in a controller is an
   IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
-- **Two distinct project-TA roles (by design):** `projects.assigned_ta_id` = the
-  *meeting TA* (runs the weekly meeting + takes attendance; `app/attendance`).
-  `project_review_tas` = the *review TA* (reviews TSRs; `app/tas`). Both draw
-  from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
+- **Two project-TA roles (by design):** `projects.assigned_ta_id` = the team's *assigned TA*
+  (runs the weekly meeting, takes attendance and reviews the team's TSRs; set through
+  `app/attendance`). `project_review_tas` = the *second end-of-quarter reviewer* (at most one per
+  team; `app/tas`), a different class TA than the assigned one, who is reviewer #1 and is not
+  stored there. Both draw from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
 - **`meetings` holds two kinds of row.** `kind = 'ta_meeting'` is a TA's weekly slot
