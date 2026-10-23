@@ -85,11 +85,12 @@ const shows = (node: ReactNode) => node !== undefined && node !== null && node !
  * card, and `selected` draws the green border (with `aria-pressed` on a button card). The types ask
  * an interactive card for a title and one target; a card without a title stays a plain surface.
  *
+ * `to` is an in-app route and `href` another site; a selected link card carries `aria-current="true"`,
+ * so its state is more than the outline; the button calls `onClick` with no arguments; and the focus
+ * ring is the card's alone (index.css would ring the title too).
+ *
  * Native props and `ref` reach the card's root. Codebase-side: `to` renders a react-router `Link`, so
- * an in-app card opens without reloading the app (`href` is for another site), as Button's `to` does;
- * a selected link card carries `aria-current="true"`, so its state is more than the outline; the
- * button calls `onClick` with no arguments; and the focus ring is the card's alone (index.css would
- * ring the title too).
+ * an in-app card opens without reloading the app, as Button's `to` does.
  */
 export function Card({
   children, header, footer, title, subtitle, actions, titleAs: Title = 'h3', shadow = 'card', bordered = false,

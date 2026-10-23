@@ -101,6 +101,8 @@ describe('SortableHeader', () => {
     expect(button.getPropertyValue('background')).toBe('none');
     expect(button.getPropertyValue('font')).toBe('inherit');
     expect(button.getPropertyValue('color')).toBe('inherit');
+    expect(button.getPropertyValue('transition')).toBe('color var(--gt-transition-fast)');
+    expect(cssRules('.gt-table__sort', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
     expect(cssRules('.gt-table__sort:focus-visible')[0].getPropertyValue('box-shadow')).toBe('var(--gt-focus-ring-tight)');
     expect(cssRules('.gt-table__sort-icon')[0].getPropertyValue('opacity')).toBe('0.35');
     expect(cssRules('.gt-table__sort--active .gt-table__sort-icon')[0].getPropertyValue('opacity')).toBe('1');

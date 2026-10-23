@@ -1,3 +1,4 @@
+// Intentional addition: Slider — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface SliderProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'defaultValue' | 'onChange' | 'type' | 'min' | 'max' | 'step' | 'color'> {
@@ -10,7 +11,7 @@ export interface SliderProps extends Omit<React.InputHTMLAttributes<HTMLInputEle
   value?: number;
   /** Uncontrolled start value. @default min */
   defaultValue?: number;
-  /** Receives the new number (snapped to `step`, clamped to min…max). */
+  /** Receives the new number (snapped to the steps from `min`; the top is the last step inside `max`). */
   onChange?: (value: number) => void;
   /** @default 0 */
   min?: number;

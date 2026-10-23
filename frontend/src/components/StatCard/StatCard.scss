@@ -2,10 +2,9 @@
 // block, then its line from the file's reduced-motion block. The ⓘ is InfoPopover
 // (components/InfoPopover) and the loading value Skeleton, which bring their own styles. The stretched
 // button's own padding, border, radius and background beat index.css's global button rule, and the
-// rule's font and border-colour transition have nothing to act on (no text, no border). One addition,
-// marked below: the sparkline lets its dot's ring show past its box.
+// rule's font and border-colour transition have nothing to act on (no text, no border).
 
-/* ── StatCard (= DashboardMetricCard; `compact` = analytics StatTile) ── */
+/* ── StatCard (= DashboardMetricCard; `compact` = the analytics tiles) ── */
 .gt-stat-card {
   position: relative; display: flex; flex-direction: column; gap: var(--gt-space-xs); box-sizing: border-box; width: 100%;
   padding: var(--gt-space-md) var(--gt-space-md) var(--gt-space-sm);
@@ -28,10 +27,7 @@
 .gt-stat-card__delta--flat { color: var(--gt-text-tertiary); }
 .gt-stat-card__delta-value { font-variant-numeric: tabular-nums; }
 .gt-stat-card__delta-vs { margin-left: 3px; font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); white-space: normal; }
-.gt-stat-card__spark { display: block; flex-shrink: 0; width: 84px; height: 24px; }
-// Codebase addition: the last point's dot (r 3.5, a 2px ring) sits 3px inside the box at an extreme,
-// so its ring reaches 1.5px past the edge; the box lets it show rather than clip it.
-.gt-stat-card__spark { overflow: visible; }
+.gt-stat-card__spark { display: block; flex-shrink: 0; width: 84px; height: 24px; overflow: visible; } /* the end dot's ring sits 3px inside the box at an extreme */
 .gt-stat-card__spark-line { fill: none; stroke: var(--gt-chart-context); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 .gt-stat-card__spark-dot { fill: var(--gt-primary); stroke: var(--gt-surface); stroke-width: 2; }
 .gt-stat-card__null { color: var(--gt-text-tertiary); }

@@ -27,6 +27,8 @@
 .gt-tabs--sm { padding: 3px; }
 .gt-tabs--sm .gt-tabs__tab { min-height: 28px; padding: 3px 10px; font-size: 12px; }
 .gt-tabs__panel:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: var(--gt-radius-sm); }
+/* the hidden attribute is the browser's weakest style: a feature class that sets display (flex, grid) would show a kept-mounted panel */
+.gt-tabs__panel[hidden] { display: none; }
 
 /* ── Pagination ─────────────────────────────────────────── */
 .gt-pagination {
@@ -180,6 +182,8 @@
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {
   .gt-tabs__tab, .gt-segmented__option { min-height: 44px; }
+  /* the size rules have two classes and would win: repeat the 44px with their selectors */
+  .gt-tabs--sm .gt-tabs__tab, .gt-segmented--md .gt-segmented__option, .gt-segmented--sm .gt-segmented__option { min-height: 44px; }
   .gt-segmented { display: flex; width: 100%; }
   .gt-segmented__option { flex: 1 1 0; }
   .gt-filter-chip, .gt-filter-chip--sm { height: 44px; }

@@ -1,3 +1,4 @@
+// Intentional addition: Chips, PointsChip, EstimateChip, PRLinkChip, UserPair — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface PointsChipProps {
@@ -44,3 +45,5 @@ export function EstimateChip(props: EstimateChipProps): React.JSX.Element;
 export function PRLinkChip(props: PRLinkChipProps): React.JSX.Element;
 /** Reporter → assignee avatar pair. */
 export function UserPair(props: UserPairProps): React.JSX.Element;
+/** The four chips under one name, for the bundle (design-only, like ModKey): the file is `Chips.jsx` after the codebase's `features/scrum/components/Chips.tsx`. */
+export const Chips: { PointsChip: typeof PointsChip; EstimateChip: typeof EstimateChip; PRLinkChip: typeof PRLinkChip; UserPair: typeof UserPair };

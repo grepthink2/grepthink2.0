@@ -1,7 +1,8 @@
+// Intentional addition: AVATAR_COLORS, Avatar, AvatarGroup — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLElement> {
-  /** Full name or email — initials, colour and the accessible name come from it. */
+  /** Full name or email — initials, colour and the accessible name come from it ("Avatar" when empty). */
   name?: string;
   /** Photo; when it fails to load the initials show instead. */
   src?: string;
@@ -11,11 +12,13 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLElement> {
   square?: boolean;
   /** Beside a visible name: `aria-hidden` and an empty alt, so the initials are not read twice. @default false */
   decorative?: boolean;
+  /** Merges over the hashed colour (a caller's own colour wins). */
+  style?: React.CSSProperties;
 }
 
 export interface AvatarGroupProps {
   names: string[];
-  /** Max avatars before collapsing to "+n". @default 4 */
+  /** Max avatars before collapsing to "+n"; at least 1. @default 4 */
   max?: number;
   /** @default 'sm' */
   size?: 'xs' | 'sm' | 'md';

@@ -162,9 +162,8 @@
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-/* The toast's fades, as in Toast.scss. search.css, scrum.css and the combobox borrow them — still one definition each. */
+/* The toast's leaving fade, as in Toast.scss; its entrance fade gt-fade-in is a shared keyframe (keyframes.css) since search, scrum and the combobox borrow it. */
 @keyframes gt-fade-out { to { opacity: 0; } }
-@keyframes gt-fade-in { from { opacity: 0; } }
 .gt-toast-stack {
   position: fixed;
   bottom: var(--gt-space-lg);
@@ -254,7 +253,7 @@
 .gt-empty__title { margin: 0; font-size: 1.25rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
 .gt-empty__desc { max-width: 400px; margin: 0; font-size: var(--gt-text-body); color: var(--gt-text-secondary); }
 .gt-empty__action { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gt-space-sm); margin-top: var(--gt-space-md); }
-.gt-empty--card { min-height: 120px; padding: 28px 16px; gap: 6px; }
+.gt-empty--card { box-sizing: border-box; min-height: 176px; padding: 28px 16px; gap: 6px; } /* border-box: the padding counts, so the card is 176px in the app too */
 .gt-empty--card .gt-empty__icon { width: 36px; height: 36px; margin-bottom: 4px; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
 .gt-empty--card .gt-empty__title { font-size: 13px; }
 .gt-empty--card .gt-empty__desc, .gt-empty__hint { max-width: 320px; margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-snug); color: var(--gt-text-tertiary); }

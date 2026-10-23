@@ -48,7 +48,7 @@ describe('UnreadBadge', () => {
     render(<UnreadBadge count={1} />);
     const [box] = cssRules('.gt-unread');
     expect(box.getPropertyValue('height')).toBe('18px');
-    const [, , look] = cssRules('.gt-unread');
+    const [, look] = cssRules('.gt-unread');
     expect(look.getPropertyValue('background')).toBe('var(--gt-error)');
     expect(look.getPropertyValue('color')).toBe('var(--gt-text-inverse)');
     expect(look.getPropertyValue('font-weight')).toBe('var(--gt-weight-bold)');

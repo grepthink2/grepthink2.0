@@ -138,15 +138,15 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   Combobox (+comboFilter), Checkbox, RadioGroup (list + card), Toggle, DatePickerField (+parseDateValue), FileUpload
   (+formatFileSize), MarkdownEditor (+renderMarkdownLite), Slider; galleries `primitives` (buttons), `fields`, `choice`, `upload`, `slider`
 - `components/display/` — Badge (+BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES), CountBadge, UnreadBadge, Tag, Avatar
-  (+AvatarGroup, AVATAR_COLORS, hashColor, initialsOf), Card, Table, StatCard, ProgressBar, Tooltip, InfoPopover; galleries
-  `display`, `cards`
+  (+AvatarGroup, AVATAR_COLORS, hashColor, initialsOf), Card, Table (+SortableHeader, useTableSort), StatCard, ProgressBar, Tooltip, InfoPopover,
+  Markdown (MarkdownText — moved from `scrum/` 2026-10-22); galleries `display`, `cards`
 - `components/feedback/` — Modal (+useDialog), ConfirmDialog (+InlineConfirm), Drawer, Alert, Toast (+ToastStack), Popover,
   Menu (+MenuItem, MenuSeparator), Spinner, EmptyState (+NoClassSelected, Skeleton); galleries `feedback`, `dialogs`,
   `toast`, `popover`
 - `components/navigation/` — Tabs (+TabPanel), SegmentedControl, FilterChip (+FilterChipGroup), Stepper, Pagination,
   SidebarNavItem (+SidebarSectionTitle)
 - `components/gallery.css` — chrome for the component cards (forced hover / focus, phone frame); not ported
-- `components/domain/` — RosterRow, ProjectCard, TeamMemberCard (+RoleSelect), JoinRequestCard,
+- `components/domain/` — RosterRow, ProjectCard, TeamMemberCard, JoinRequestCard,
   AssignmentCard, TSRForm, TSRSummaryCard, RankedProjectSlot, ConversationListItem
   (+MessageBubble, MessageComposer; UnreadBadge moved to `display/`), TypingIndicator, MeetingCard, PieChartCard (+BarChartCard,
   CHART_COLORS)
@@ -155,8 +155,8 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   the two former starting points, moved 2026-10-21 (templates stay out of `_ds_bundle.js`, which also stops App.jsx rendering into every page)
 - `ui_kits/grepthink/` — the feature screens: `analytics.html` (one dashboard per institution — filled / empty / loading / refetching / error)
 - `components/analytics/` — analytics layer (2026-10 feature design, see `design_handoff_analytics/`):
-  AnalyticsFilterRow (+RANGE_PRESETS), StatTile, ChartCard (+ChartCardTool, ChartCardCheck), UnitToggle, LivePill,
-  ChartLegend (+AnalyticsIcon), ChartTooltip (+ChartFormat helpers), DefinitionPopover, ChartEmptyState,
+  AnalyticsFilterRow (+RANGE_PRESETS), ChartCard, UnitToggle, LivePill,
+  ChartLegend (+AnalyticsIcon), ChartTooltip (+ChartFormat helpers),
   WeeklyLine, SplitBar, StackedBars (+BOARD_STATUSES), TimelinessBars (+TIMELINESS_BUCKETS), OnTimeMeter,
   BarsBySprint, TrendLines, BreakdownTable (+BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS)
 - `components/search/` — global ⌘K search layer (2026-10 feature design, see `design_handoff_search/`):
@@ -186,10 +186,10 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `guidelines/motion-system.html` — proposed motion system (nine previews; tokens local to the card) · `assets/slug.svg` — the
   original banana-slug mark (gold fill, UCSC-blue line) used by panel 8
 - `components/scrum/` — scrum-board layer (2026-08 feature design, not in fig/codebase yet):
-  ScrumBoard, TaskCard, StoryCard, TagBadge (10 work tags), PointsChip (+EstimateChip,
+  ScrumBoard, TaskCard, StoryCard, TagBadge (10 work tags), Chips (PointsChip, EstimateChip,
   PRLinkChip, UserPair), BurnupChart, ScalePicker (+PointPicker, ESTIMATE_SCALES), MentionListbox (async
   @mention autocomplete — Popover-family consumer),
-  CommentThread (+MarkdownText), AIDraftButton, BacklogRow
+  CommentThread (MarkdownText is `display/Markdown` now), AIDraftButton, BacklogRow
 - `components/assistant/` — Project assistant layer (2026-09): AssistantIcon (+AssistantMark),
   AssistantSuggestionCard, StalledFlag, ReportCheckCard, UnlinkedPRChip — each in `surface="app"`
   (flat) and `surface="landing"` (floating shell)
@@ -241,7 +241,7 @@ relative to the .fig's vocabulary, named after the codebase feature it mirrors:
 - `Avatar` — intentional addition; initials avatars per the written spec
 - `AvatarGroup` — intentional addition; overlapping avatar row with +n overflow
 - `Card` — intentional addition; the 2.61px-shadow white surface
-- `Table` — intentional addition; StudentAssignmentsTable + SortableHeader idiom
+- `Table` — intentional addition; StudentAssignmentsTable + SortableHeader idiom (`SortableHeader` and `useTableSort` exported from `Table.jsx`, as the codebase ships them in `components/Table/`)
 - `StatCard` — intentional addition; mirrors DashboardMetricCard
 - `ProgressBar` — intentional addition; contribution/completion meters
 - `Tooltip` — intentional addition; per the written spec
@@ -259,7 +259,6 @@ relative to the .fig's vocabulary, named after the codebase feature it mirrors:
 - `RosterRow` — intentional addition; class roster row composite
 - `ProjectCard` — intentional addition; the Figma "Project 6" card recreated parametrically
 - `TeamMemberCard` — intentional addition; project Team tab member card
-- `RoleSelect` — intentional addition; native-select role dropdown
 - `JoinRequestCard` — intentional addition; join request / invite row
 - `AssignmentCard` — intentional addition; assignment row with status action
 - `TSRForm` — intentional addition; Team Status Report peer-eval form
@@ -311,25 +310,23 @@ requirements; no counterpart in the Figma file or codebase yet; see
 - `ScrumBoard` (+`BOARD_COLUMNS`, the fixed TODO / In Progress / Done columns) — TODO / In Progress / Done drag & drop board with move auditing
 - `TaskCard` / `StoryCard` — task & User Story units (points, estimates, reporter → assignee)
 - `TagBadge` (+`TASK_TAGS`, the 10 tags in canonical order) — the 10 work-type tags (backend … docs), token-derived colors
-- `PointsChip` / `EstimateChip` / `PRLinkChip` / `UserPair` — scrum metadata chips
+- `PointsChip` / `EstimateChip` / `PRLinkChip` / `UserPair` — scrum metadata chips (`scrum/Chips.jsx`; `Chips` is the file's bundle namespace, design-only like `ModKey`)
 - `BurnupChart` — sprint + cumulative burnup (SVG stand-in for recharts)
 - `ScalePicker` / `PointPicker` — linear / exponential / fibonacci estimate scales
-- `CommentThread` / `MarkdownText` — markdown comments with @mentions (demo renderer;
-  production reuses the codebase's markdown + mention semantics)
+- `CommentThread` — markdown comments with @mentions (renders the kit's `MarkdownText`, `display/Markdown.jsx`)
 - `AIDraftButton` — free-tier LLM drafting affordance (Cloudflare Workers AI via serverless proxy)
 - `BacklogRow` — story archive / backlog row with restore
 
 Analytics layer (`components/analytics/`, 2026-10 — designed from the maintainer's analytics brief;
 all intentional additions; chart colors are the `--gt-chart-*` slots validated in the brief's §6):
 - `AnalyticsFilterRow` — the one filter row (class select, range chips, custom-range popover)
-- `StatTile` — `DashboardMetricCard` + delta + sparkline slots (port by extending the app component)
-- `ChartCard` / `ChartCardTool` / `ChartCardCheck` — chart container owning loading / refetching / empty / error chrome; header tool button and checkbox
+- the tiles are `StatCard` with `compact` (StatTile left 2026-10-22)
+- `ChartCard` — chart container owning loading / refetching / empty / error chrome; its header tools are the kit's `Button` (`pressed` / `outline`) and `Checkbox`
 - `UnitToggle` — Tasks | Points segmented measure swap
 - `LivePill` — marks the range-independent scrum snapshot
 - `ChartLegend` / `AnalyticsIcon` — legend with line/rect swatches + status icons; lucide-shaped glyphs
 - `ChartTooltip` / `ChartFormat` — tooltip surface + shared measure/format helpers
-- `DefinitionPopover` — "How this is counted" ⓘ popover (composes the Popover surface)
-- `ChartEmptyState` — per-card empty state (`.gt-empty--card`, a compact modifier of the page-level `EmptyState`)
+- the ⓘ is the kit's `InfoPopover` and the per-card empty state the kit's `EmptyState` with `variant="card"` (DefinitionPopover and ChartEmptyState left 2026-10-22)
 - `WeeklyLine` — weekly two-series line (messages)
 - `SplitBar` — team channels vs direct, with a mixed-scope fallback
 - `StackedBars` — live task snapshot by sprint, board colors
@@ -375,7 +372,8 @@ additions; the project's own one-off meetings, kind `meeting` in the schedule la
 - `parseDateValue` — intentional addition; helper for the DatePickerField string contract
 - `CountBadge` — intentional addition; the neutral count pill (tab counts, list totals)
 - `UnreadBadge` — intentional addition; moved from `domain/ConversationListItem` to `display/` as the one red unread pill
-- `InfoPopover` — intentional addition; promoted from analytics' DefinitionPopover; replaces StatTooltip and GroupTooltip
+- `InfoPopover` — intentional addition; promoted from analytics (its DefinitionPopover alias left 2026-10-22); replaces StatTooltip and GroupTooltip
+- `Markdown` (`MarkdownText`) — intentional addition; the kit's Markdown renderer, `display/Markdown.jsx` ↔ `components/Markdown/`; `Markdown` is the file's bundle namespace (design-only, like `ModKey`)
 - `BADGE_STATUS`, `BADGE_CATEGORY`, `PROJECT_ROLES` — intentional additions; the status colour rule and category / role presets behind Badge
 - `ConfirmDialog` — intentional addition; replaces ConfirmModal, `window.confirm` and `alert()`
 - `InlineConfirm` — intentional addition; the row-level delete inside a dialog (team meetings' confirm row)
@@ -402,17 +400,213 @@ family for the student, Product Owner, TA and instructor lenses; the backend exi
 - `FinalReviewsModel` (+`SLOT_MINUTES`, `SLOT_POST_MAX`, `FR_LENSES`, `FR_REASONS`) — pure rules, grouping, states and copy (successes, refusals, confirmations)
 - Badge status keys `signups.open` / `signups.closed` / `slot.free` / `slot.yours` / `slot.past` / `review.no_review_ta` / `review.no_product_owner` — kit addition to `BADGE_STATUS` (colours by the alignment round's rule)
 
-#### Every export, by group
-The complete, confirmed list (185 exports); none of them is a renamed Figma component.
-- `components/primitives/` — intentional additions: `Button`, `Checkbox`, `CodeInput`, `Combobox`, `DatePickerField`, `FieldShell`, `FileUpload`, `IconButton`, `Input`, `MarkdownEditor`, `PasswordField`, `RadioGroup`, `SearchField`, `Select`, `Slider`, `Textarea`, `Toggle`
-- `components/display/` — intentional additions: `AVATAR_COLORS`, `Avatar`, `AvatarGroup`, `BADGE_CATEGORY`, `BADGE_STATUS`, `Badge`, `Card`, `CountBadge`, `InfoPopover`, `PROJECT_ROLES`, `ProgressBar`, `StatCard`, `Table`, `Tag`, `Tooltip`, `UnreadBadge`
-- `components/feedback/` — intentional additions: `Alert`, `ConfirmDialog`, `Drawer`, `EmptyState`, `InlineConfirm`, `Menu`, `MenuItem`, `MenuSeparator`, `Modal`, `NoClassSelected`, `Popover`, `Skeleton`, `Spinner`, `Toast`, `ToastStack`
-- `components/navigation/` — intentional additions: `FilterChip`, `FilterChipGroup`, `Pagination`, `SegmentedControl`, `SidebarNavItem`, `SidebarSectionTitle`, `Stepper`, `TabPanel`, `Tabs`
-- `components/domain/` — intentional additions: `AssignmentCard`, `BarChartCard`, `CHART_COLORS`, `ConversationListItem`, `JoinRequestCard`, `MeetingCard`, `MessageBubble`, `MessageComposer`, `PieChartCard`, `ProjectCard`, `RankedProjectSlot`, `RoleSelect`, `RosterRow`, `TEAM_MEETING_DEFAULT_DURATION`, `TEAM_MEETING_DURATIONS`, `TEAM_MEETING_NOTE_MAX`, `TEAM_MEETING_TITLE_MAX`, `TSRForm`, `TSRSummaryCard`, `TeamMeetingForm`, `TeamMeetingsList`, `TeamMeetingsModel`, `TeamMemberCard`, `TypingIndicator`
-- `components/scrum/` — intentional additions: `AIDraftButton`, `BOARD_COLUMNS`, `BacklogRow`, `BurnupChart`, `CommentThread`, `ESTIMATE_SCALES`, `EstimateChip`, `MarkdownText`, `MentionListbox`, `PRLinkChip`, `PointPicker`, `PointsChip`, `ScalePicker`, `ScrumBoard`, `StoryCard`, `TASK_TAGS`, `TagBadge`, `TaskCard`, `UserPair`
-- `components/assistant/` — intentional additions: `AssistantIcon`, `AssistantMark`, `AssistantSuggestionCard`, `ReportCheckCard`, `StalledFlag`, `UnlinkedPRChip`
-- `components/analytics/` — intentional additions: `AnalyticsFilterRow`, `AnalyticsIcon`, `BOARD_STATUSES`, `BREAKDOWN_COLUMNS`, `BarsBySprint`, `BreakdownTable`, `ChartCard`, `ChartCardCheck`, `ChartCardTool`, `ChartEmptyState`, `ChartFormat`, `ChartLegend`, `ChartTooltip`, `DefinitionPopover`, `LivePill`, `OnTimeMeter`, `RANGE_PRESETS`, `SplitBar`, `StackedBars`, `StatTile`, `TEAM_BREAKDOWN_COLUMNS`, `TIMELINESS_BUCKETS`, `TIMELINESS_COLUMNS`, `TimelinessBars`, `TrendLines`, `UnitToggle`, `WeeklyLine`
-- `components/search/` — intentional additions: `CommandPalette`, `EntityIcon`, `Kbd`, `MatchText`, `ModKey`, `ResultGroup`, `ResultRow`, `SEARCH_ENTITIES`, `SearchModel`, `SearchPagination`, `SearchTrigger`
-- `components/schedule/` — intentional additions: `COUNTDOWN_DAYS`, `JOIN_WINDOW_MS`, `SCHEDULE_KINDS`, `SCHOOL_ZONE`, `ScheduleDayHeader`, `ScheduleDivider`, `ScheduleIcon`, `ScheduleItem`, `ScheduleList`, `ScheduleModel`
-- `components/marketing/` — intentional additions: `AnnouncementPill`, `ClosingBand`, `ContactCard`, `Eyebrow`, `FeatureColumn`, `FloatCard`, `FloatingCards`, `Hero`, `LandingFooter`, `LandingHeader`, `MarketingBadge`, `PreviewWindow`, `Spotlight`, `Stage`, `StageCard`
-- `components/finalreviews/` — intentional additions: `FR_LENSES`, `FR_REASONS`, `FinalReviewsHeader`, `FinalReviewsIcon`, `FinalReviewsModel`, `PostSlotsDrawer`, `ReviewWorkspaceHeader`, `SLOT_MINUTES`, `SLOT_POST_MAX`, `SlotActionDialog`, `SlotBoard`, `SlotRow`, `SlotTime`, `TeamReview`, `UnbookedTeams`, `ZoomRoomField`
+#### Every export, by group — each one confirmed an intentional addition
+The complete list (185 exports, re-confirmed 2026-10-22 against the compiled bundle). None of them is a renamed Figma component: the
+.fig's own families (Arrow, Grid, Icons, Monitor, Navigation, Scrollbar, Thumb, 3D Avatars, Calendar) are generic UI-kit artifacts with no
+product counterpart, so none is built. Every name below is an intentional addition, named after the codebase feature it mirrors.
+
+**`components/primitives/`** (17)
+- `Button` — intentional addition (`components/primitives/Button.jsx`)
+- `Checkbox` — intentional addition (`components/primitives/Checkbox.jsx`)
+- `CodeInput` — intentional addition (`components/primitives/CodeInput.jsx`)
+- `Combobox` — intentional addition (`components/primitives/Combobox.jsx`)
+- `DatePickerField` — intentional addition (`components/primitives/DatePickerField.jsx`)
+- `FieldShell` — intentional addition (`components/primitives/FieldShell.jsx`)
+- `FileUpload` — intentional addition (`components/primitives/FileUpload.jsx`)
+- `IconButton` — intentional addition (`components/primitives/IconButton.jsx`)
+- `Input` — intentional addition (`components/primitives/Input.jsx`)
+- `MarkdownEditor` — intentional addition (`components/primitives/MarkdownEditor.jsx`)
+- `PasswordField` — intentional addition (`components/primitives/PasswordField.jsx`)
+- `RadioGroup` — intentional addition (`components/primitives/RadioGroup.jsx`)
+- `SearchField` — intentional addition (`components/primitives/SearchField.jsx`)
+- `Select` — intentional addition (`components/primitives/Select.jsx`)
+- `Slider` — intentional addition (`components/primitives/Slider.jsx`)
+- `Textarea` — intentional addition (`components/primitives/Textarea.jsx`)
+- `Toggle` — intentional addition (`components/primitives/Toggle.jsx`)
+
+**`components/display/`** (19)
+- `AVATAR_COLORS` — intentional addition (`components/display/Avatar.jsx`)
+- `Avatar` — intentional addition (`components/display/Avatar.jsx`)
+- `AvatarGroup` — intentional addition (`components/display/Avatar.jsx`)
+- `BADGE_CATEGORY` — intentional addition (`components/display/Badge.jsx`)
+- `BADGE_STATUS` — intentional addition (`components/display/Badge.jsx`)
+- `Badge` — intentional addition (`components/display/Badge.jsx`)
+- `Card` — intentional addition (`components/display/Card.jsx`)
+- `CountBadge` — intentional addition (`components/display/CountBadge.jsx`)
+- `InfoPopover` — intentional addition (`components/display/InfoPopover.jsx`)
+- `Markdown` — intentional addition (`components/display/Markdown.jsx`; the file's bundle namespace, design-only)
+- `MarkdownText` — intentional addition (`components/display/Markdown.jsx`; moved from `scrum/CommentThread.jsx` 2026-10-22)
+- `PROJECT_ROLES` — intentional addition (`components/display/Badge.jsx`)
+- `ProgressBar` — intentional addition (`components/display/ProgressBar.jsx`)
+- `StatCard` — intentional addition (`components/display/StatCard.jsx`)
+- `SortableHeader` — intentional addition (`components/display/Table.jsx`; exported with `useTableSort` 2026-10-22)
+- `Table` — intentional addition (`components/display/Table.jsx`)
+- `Tag` — intentional addition (`components/display/Tag.jsx`)
+- `Tooltip` — intentional addition (`components/display/Tooltip.jsx`)
+- `UnreadBadge` — intentional addition (`components/display/UnreadBadge.jsx`)
+
+**`components/feedback/`** (15)
+- `Alert` — intentional addition (`components/feedback/Alert.jsx`)
+- `ConfirmDialog` — intentional addition (`components/feedback/ConfirmDialog.jsx`)
+- `Drawer` — intentional addition (`components/feedback/Drawer.jsx`)
+- `EmptyState` — intentional addition (`components/feedback/EmptyState.jsx`)
+- `InlineConfirm` — intentional addition (`components/feedback/ConfirmDialog.jsx`)
+- `Menu` — intentional addition (`components/feedback/Menu.jsx`)
+- `MenuItem` — intentional addition (`components/feedback/Menu.jsx`)
+- `MenuSeparator` — intentional addition (`components/feedback/Menu.jsx`)
+- `Modal` — intentional addition (`components/feedback/Modal.jsx`)
+- `NoClassSelected` — intentional addition (`components/feedback/EmptyState.jsx`)
+- `Popover` — intentional addition (`components/feedback/Popover.jsx`)
+- `Skeleton` — intentional addition (`components/feedback/EmptyState.jsx`)
+- `Spinner` — intentional addition (`components/feedback/Spinner.jsx`)
+- `Toast` — intentional addition (`components/feedback/Toast.jsx`)
+- `ToastStack` — intentional addition (`components/feedback/Toast.jsx`)
+
+**`components/navigation/`** (9)
+- `FilterChip` — intentional addition (`components/navigation/FilterChip.jsx`)
+- `FilterChipGroup` — intentional addition (`components/navigation/FilterChip.jsx`)
+- `Pagination` — intentional addition (`components/navigation/Pagination.jsx`)
+- `SegmentedControl` — intentional addition (`components/navigation/SegmentedControl.jsx`)
+- `SidebarNavItem` — intentional addition (`components/navigation/SidebarNavItem.jsx`)
+- `SidebarSectionTitle` — intentional addition (`components/navigation/SidebarNavItem.jsx`)
+- `Stepper` — intentional addition (`components/navigation/Stepper.jsx`)
+- `TabPanel` — intentional addition (`components/navigation/Tabs.jsx`)
+- `Tabs` — intentional addition (`components/navigation/Tabs.jsx`)
+
+**`components/domain/`** (23)
+- `AssignmentCard` — intentional addition (`components/domain/AssignmentCard.jsx`)
+- `BarChartCard` — intentional addition (`components/domain/PieChartCard.jsx`)
+- `CHART_COLORS` — intentional addition (`components/domain/PieChartCard.jsx`)
+- `ConversationListItem` — intentional addition (`components/domain/ConversationListItem.jsx`)
+- `JoinRequestCard` — intentional addition (`components/domain/JoinRequestCard.jsx`)
+- `MeetingCard` — intentional addition (`components/domain/MeetingCard.jsx`)
+- `MessageBubble` — intentional addition (`components/domain/ConversationListItem.jsx`)
+- `MessageComposer` — intentional addition (`components/domain/ConversationListItem.jsx`)
+- `PieChartCard` — intentional addition (`components/domain/PieChartCard.jsx`)
+- `ProjectCard` — intentional addition (`components/domain/ProjectCard.jsx`)
+- `RankedProjectSlot` — intentional addition (`components/domain/RankedProjectSlot.jsx`)
+- `RosterRow` — intentional addition (`components/domain/RosterRow.jsx`)
+- `TEAM_MEETING_DEFAULT_DURATION` — intentional addition (`components/domain/TeamMeetingsModel.jsx`)
+- `TEAM_MEETING_DURATIONS` — intentional addition (`components/domain/TeamMeetingsModel.jsx`)
+- `TEAM_MEETING_NOTE_MAX` — intentional addition (`components/domain/TeamMeetingsModel.jsx`)
+- `TEAM_MEETING_TITLE_MAX` — intentional addition (`components/domain/TeamMeetingsModel.jsx`)
+- `TSRForm` — intentional addition (`components/domain/TSRForm.jsx`)
+- `TSRSummaryCard` — intentional addition (`components/domain/TSRSummaryCard.jsx`)
+- `TeamMeetingForm` — intentional addition (`components/domain/TeamMeetingForm.jsx`)
+- `TeamMeetingsList` — intentional addition (`components/domain/TeamMeetingsList.jsx`)
+- `TeamMeetingsModel` — intentional addition (`components/domain/TeamMeetingsModel.jsx`)
+- `TeamMemberCard` — intentional addition (`components/domain/TeamMemberCard.jsx`)
+- `TypingIndicator` — intentional addition (`components/domain/TypingIndicator.jsx`)
+
+**`components/scrum/`** (19)
+- `AIDraftButton` — intentional addition (`components/scrum/AIDraftButton.jsx`)
+- `BOARD_COLUMNS` — intentional addition (`components/scrum/ScrumBoard.jsx`)
+- `BacklogRow` — intentional addition (`components/scrum/BacklogRow.jsx`)
+- `BurnupChart` — intentional addition (`components/scrum/BurnupChart.jsx`)
+- `CommentThread` — intentional addition (`components/scrum/CommentThread.jsx`)
+- `ESTIMATE_SCALES` — intentional addition (`components/scrum/ScalePicker.jsx`)
+- `Chips` — intentional addition (`components/scrum/Chips.jsx`; the file's bundle namespace)
+- `EstimateChip` — intentional addition (`components/scrum/Chips.jsx`)
+- `MentionListbox` — intentional addition (`components/scrum/MentionListbox.jsx`)
+- `PRLinkChip` — intentional addition (`components/scrum/Chips.jsx`)
+- `PointPicker` — intentional addition (`components/scrum/ScalePicker.jsx`)
+- `PointsChip` — intentional addition (`components/scrum/Chips.jsx`)
+- `ScalePicker` — intentional addition (`components/scrum/ScalePicker.jsx`)
+- `ScrumBoard` — intentional addition (`components/scrum/ScrumBoard.jsx`)
+- `StoryCard` — intentional addition (`components/scrum/StoryCard.jsx`)
+- `TASK_TAGS` — intentional addition (`components/scrum/TagBadge.jsx`)
+- `TagBadge` — intentional addition (`components/scrum/TagBadge.jsx`)
+- `TaskCard` — intentional addition (`components/scrum/TaskCard.jsx`)
+- `UserPair` — intentional addition (`components/scrum/Chips.jsx`)
+
+**`components/assistant/`** (6)
+- `AssistantIcon` — intentional addition (`components/assistant/AssistantIcon.jsx`)
+- `AssistantMark` — intentional addition (`components/assistant/AssistantIcon.jsx`)
+- `AssistantSuggestionCard` — intentional addition (`components/assistant/AssistantSuggestionCard.jsx`)
+- `ReportCheckCard` — intentional addition (`components/assistant/ReportCheckCard.jsx`)
+- `StalledFlag` — intentional addition (`components/assistant/StalledFlag.jsx`)
+- `UnlinkedPRChip` — intentional addition (`components/assistant/UnlinkedPRChip.jsx`)
+
+**`components/analytics/`** (22)
+- `AnalyticsFilterRow` — intentional addition (`components/analytics/AnalyticsFilterRow.jsx`)
+- `AnalyticsIcon` — intentional addition (`components/analytics/ChartLegend.jsx`)
+- `BOARD_STATUSES` — intentional addition (`components/analytics/StackedBars.jsx`)
+- `BREAKDOWN_COLUMNS` — intentional addition (`components/analytics/BreakdownTable.jsx`)
+- `BarsBySprint` — intentional addition (`components/analytics/BarsBySprint.jsx`)
+- `BreakdownTable` — intentional addition (`components/analytics/BreakdownTable.jsx`)
+- `ChartCard` — intentional addition (`components/analytics/ChartCard.jsx`)
+- `ChartFormat` — intentional addition (`components/analytics/ChartTooltip.jsx`)
+- `ChartLegend` — intentional addition (`components/analytics/ChartLegend.jsx`)
+- `ChartTooltip` — intentional addition (`components/analytics/ChartTooltip.jsx`)
+- `LivePill` — intentional addition (`components/analytics/LivePill.jsx`)
+- `OnTimeMeter` — intentional addition (`components/analytics/OnTimeMeter.jsx`)
+- `RANGE_PRESETS` — intentional addition (`components/analytics/AnalyticsFilterRow.jsx`)
+- `SplitBar` — intentional addition (`components/analytics/SplitBar.jsx`)
+- `StackedBars` — intentional addition (`components/analytics/StackedBars.jsx`)
+- `TEAM_BREAKDOWN_COLUMNS` — intentional addition (`components/analytics/BreakdownTable.jsx`)
+- `TIMELINESS_BUCKETS` — intentional addition (`components/analytics/TimelinessBars.jsx`)
+- `TIMELINESS_COLUMNS` — intentional addition (`components/analytics/BreakdownTable.jsx`)
+- `TimelinessBars` — intentional addition (`components/analytics/TimelinessBars.jsx`)
+- `TrendLines` — intentional addition (`components/analytics/TrendLines.jsx`)
+- `UnitToggle` — intentional addition (`components/analytics/UnitToggle.jsx`)
+- `WeeklyLine` — intentional addition (`components/analytics/WeeklyLine.jsx`)
+
+**`components/search/`** (11)
+- `CommandPalette` — intentional addition (`components/search/CommandPalette.jsx`)
+- `EntityIcon` — intentional addition (`components/search/EntityIcon.jsx`)
+- `Kbd` — intentional addition (`components/search/Kbd.jsx`)
+- `MatchText` — intentional addition (`components/search/MatchText.jsx`)
+- `ModKey` — intentional addition (`components/search/Kbd.jsx`)
+- `ResultGroup` — intentional addition (`components/search/ResultRow.jsx`)
+- `ResultRow` — intentional addition (`components/search/ResultRow.jsx`)
+- `SEARCH_ENTITIES` — intentional addition (`components/search/SearchModel.jsx`)
+- `SearchModel` — intentional addition (`components/search/SearchModel.jsx`)
+- `SearchPagination` — intentional addition (`components/search/SearchPagination.jsx`)
+- `SearchTrigger` — intentional addition (`components/search/SearchTrigger.jsx`)
+
+**`components/schedule/`** (10)
+- `COUNTDOWN_DAYS` — intentional addition (`components/schedule/ScheduleModel.jsx`)
+- `JOIN_WINDOW_MS` — intentional addition (`components/schedule/ScheduleModel.jsx`)
+- `SCHEDULE_KINDS` — intentional addition (`components/schedule/ScheduleModel.jsx`)
+- `SCHOOL_ZONE` — intentional addition (`components/schedule/ScheduleModel.jsx`)
+- `ScheduleDayHeader` — intentional addition (`components/schedule/ScheduleDayHeader.jsx`)
+- `ScheduleDivider` — intentional addition (`components/schedule/ScheduleDivider.jsx`)
+- `ScheduleIcon` — intentional addition (`components/schedule/ScheduleItem.jsx`)
+- `ScheduleItem` — intentional addition (`components/schedule/ScheduleItem.jsx`)
+- `ScheduleList` — intentional addition (`components/schedule/ScheduleList.jsx`)
+- `ScheduleModel` — intentional addition (`components/schedule/ScheduleModel.jsx`)
+
+**`components/marketing/`** (15)
+- `AnnouncementPill` — intentional addition (`components/marketing/AnnouncementPill.jsx`)
+- `ClosingBand` — intentional addition (`components/marketing/ClosingBand.jsx`)
+- `ContactCard` — intentional addition (`components/marketing/ContactCard.jsx`)
+- `Eyebrow` — intentional addition (`components/marketing/Eyebrow.jsx`)
+- `FeatureColumn` — intentional addition (`components/marketing/FeatureColumn.jsx`)
+- `FloatCard` — intentional addition (`components/marketing/FloatCard.jsx`)
+- `FloatingCards` — intentional addition (`components/marketing/FloatCard.jsx`)
+- `Hero` — intentional addition (`components/marketing/Hero.jsx`)
+- `LandingFooter` — intentional addition (`components/marketing/LandingFooter.jsx`)
+- `LandingHeader` — intentional addition (`components/marketing/LandingHeader.jsx`)
+- `MarketingBadge` — intentional addition (`components/marketing/Eyebrow.jsx`)
+- `PreviewWindow` — intentional addition (`components/marketing/FeatureColumn.jsx`)
+- `Spotlight` — intentional addition (`components/marketing/Spotlight.jsx`)
+- `Stage` — intentional addition (`components/marketing/StageCard.jsx`)
+- `StageCard` — intentional addition (`components/marketing/StageCard.jsx`)
+
+**`components/finalreviews/`** (16)
+- `FR_LENSES` — intentional addition (`components/finalreviews/FinalReviewsModel.jsx`)
+- `FR_REASONS` — intentional addition (`components/finalreviews/FinalReviewsModel.jsx`)
+- `FinalReviewsHeader` — intentional addition (`components/finalreviews/FinalReviewsHeader.jsx`)
+- `FinalReviewsIcon` — intentional addition (`components/finalreviews/FinalReviewsIcon.jsx`)
+- `FinalReviewsModel` — intentional addition (`components/finalreviews/FinalReviewsModel.jsx`)
+- `PostSlotsDrawer` — intentional addition (`components/finalreviews/PostSlotsDrawer.jsx`)
+- `ReviewWorkspaceHeader` — intentional addition (`components/finalreviews/ReviewWorkspaceHeader.jsx`)
+- `SLOT_MINUTES` — intentional addition (`components/finalreviews/FinalReviewsModel.jsx`)
+- `SLOT_POST_MAX` — intentional addition (`components/finalreviews/FinalReviewsModel.jsx`)
+- `SlotActionDialog` — intentional addition (`components/finalreviews/SlotActionDialog.jsx`)
+- `SlotBoard` — intentional addition (`components/finalreviews/SlotBoard.jsx`)
+- `SlotRow` — intentional addition (`components/finalreviews/SlotRow.jsx`)
+- `SlotTime` — intentional addition (`components/finalreviews/SlotTime.jsx`)
+- `TeamReview` — intentional addition (`components/finalreviews/TeamReview.jsx`)
+- `UnbookedTeams` — intentional addition (`components/finalreviews/UnbookedTeams.jsx`)
+- `ZoomRoomField` — intentional addition (`components/finalreviews/FinalReviewsHeader.jsx`)

@@ -1,3 +1,4 @@
+// Intentional addition: ChartCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import { AnalyticsIconName } from './ChartLegend';
 
@@ -20,14 +21,15 @@ export interface ChartCardProps extends Omit<React.HTMLAttributes<HTMLElement>, 
   title: React.ReactNode;
   /** One-line, sentence case. */
   subtitle?: React.ReactNode;
-  /** "How this is counted" popover content (string = body only). */
+  /** "How this is counted" — the kit's InfoPopover (string = body only). */
   definition?: string | ChartCardDefinition;
   /** Adds the LIVE pill — the card ignores the range. @default false */
   live?: boolean;
-  /** Header tools: UnitToggle, compare toggle, Table toggle, Export. */
+  /** Header tools: UnitToggle, the kit's Checkbox (compare), Button `pressed` (Table toggle) and `outline` (Refresh, Export CSV). */
   actions?: React.ReactNode;
   /** @default 'ready' */
   state?: ChartCardState;
+  /** The empty state's copy — rendered as the kit's EmptyState, `variant="card"`. */
   emptyMessage?: ChartCardEmpty;
   /** @default 'This card could not load.' */
   errorMessage?: string;
@@ -48,24 +50,3 @@ export interface ChartCardProps extends Omit<React.HTMLAttributes<HTMLElement>, 
  * @startingPoint section="Analytics" subtitle="Chart card with header tools and all five states" viewport="700x320"
  */
 export function ChartCard(props: ChartCardProps): React.JSX.Element;
-
-export interface ChartCardToolProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon?: AnalyticsIconName;
-  label: React.ReactNode;
-  /** Renders the toggled state (aria-pressed). Omit for plain actions like Export. */
-  pressed?: boolean;
-}
-
-/** 28px header tool button (Table toggle, Export CSV). */
-export function ChartCardTool(props: ChartCardToolProps): React.JSX.Element;
-
-export interface ChartCardCheckProps {
-  label: React.ReactNode;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  disabled?: boolean;
-  className?: string;
-}
-
-/** Header checkbox ("Compare with previous range"). */
-export function ChartCardCheck(props: ChartCardCheckProps): React.JSX.Element;

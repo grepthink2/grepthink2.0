@@ -2,8 +2,7 @@
 // block, then its lines from the file's phone and reduced-motion blocks. A tab's count is CountBadge
 // (components/CountBadge), which brings its own styles. The tab's own padding, border, radius,
 // background, font and transition beat index.css's global button rule, which would otherwise reach
-// this raw button. Two additions, marked below: an inactive panel stays hidden, and sm tabs reach
-// 44px on phones.
+// this raw button.
 
 /* ── Tabs — the grey segmented track (Edit Project, Requests, scrum Board / Backlog / Burnup,
    TA meeting tabs, member manager). Tabs stretch across their container; a SegmentedControl
@@ -29,15 +28,13 @@
 .gt-tabs--sm { padding: 3px; }
 .gt-tabs--sm .gt-tabs__tab { min-height: 28px; padding: 3px 10px; font-size: 12px; }
 .gt-tabs__panel:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: var(--gt-radius-sm); }
-// Codebase addition: the hidden attribute hides an inactive panel through the browser's own style, the
-// weakest there is, so a feature class that sets `display` (flex, grid) would show a kept-mounted panel.
+/* the hidden attribute is the browser's weakest style: a feature class that sets display (flex, grid) would show a kept-mounted panel */
 .gt-tabs__panel[hidden] { display: none; }
 
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {
   .gt-tabs__tab { min-height: 44px; }
-  // Codebase addition: the sm size rule has two classes and outranks the line above, so sm tabs stayed
-  // 28px on phones. This rule matches it. The design's navigation.css has the same gap.
+  /* the size rules have two classes and would win: repeat the 44px with their selectors */
   .gt-tabs--sm .gt-tabs__tab { min-height: 44px; }
   /* icon-only tabs: the label leaves the screen, not the accessible name */
   .gt-tabs--collapse .gt-tabs__tab--has-icon .gt-tabs__label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
 <link rel="stylesheet" href="../gallery.css">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -94,7 +95,7 @@ function Demo() {
           <Card shadow="hairline" padded={false}><Table caption="Class roster" columns={COLS} rows={rows} sort={sort} onSort={setSort} rowHref={(r) => `#s${r.id}`} /></Card>
           <Card shadow="hairline" padded={false}><Table caption="Loading roster" columns={COLS} rows={[]} loading skeletonRows={4} /></Card>
           <Card shadow="hairline" padded={false}><Table caption="Filtered roster" columns={COLS} rows={[]} emptyText="No students match these filters." /></Card>
-          <Card shadow="hairline" padded={false}><div style={{ maxHeight: 170, overflow: 'auto' }}><Table dense stickyHeader caption="Breakdown" columns={COLS} rows={[...rows, ...rows.map((r) => ({ ...r, id: r.id + 10 }))]} onRowClick={() => {}} /></div></Card>
+          <Card shadow="hairline" padded={false}><Table dense stickyHeader style={{ maxHeight: 170 }} caption="Breakdown" columns={COLS} rows={[...rows, ...rows.map((r) => ({ ...r, id: r.id + 10 }))]} onRowClick={() => {}} /></Card>
         </div>
       </div>
 

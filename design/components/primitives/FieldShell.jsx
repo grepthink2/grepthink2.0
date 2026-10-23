@@ -9,7 +9,8 @@ const bucketOf = (remaining) =>
 
 /**
  * The field shell every form control shares: label (visible or visually hidden), "(optional)"
- * marker, the control, then the error (replacing the help line) and the character counter.
+ * marker (after a real space, so the control's name reads "Description (optional)"), the control,
+ * then the error (replacing the help line) and the character counter.
  * Wires `aria-describedby` / `aria-invalid` for the control through a render prop:
  * `children({ id, labelId, describedBy, invalid })`.
  * Counter: "128 / 500"; past the limit the text is kept and flagged (`--over`), never cut.
@@ -46,7 +47,7 @@ export function FieldShell({
       {label && (
         <Label id={labelId} className={hideLabel ? 'gt-visually-hidden' : 'gt-field__label'} htmlFor={group ? undefined : fieldId}>
           {label}
-          {optional && <span className="gt-field__optional">(optional)</span>}
+          {optional && <> <span className="gt-field__optional">(optional)</span></>}
         </Label>
       )}
       {typeof children === 'function' ? children(ctx) : children}

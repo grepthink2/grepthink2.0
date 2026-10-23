@@ -1,3 +1,4 @@
+// Intentional addition: TEAM_MEETING_TITLE_MAX, TEAM_MEETING_NOTE_MAX, TEAM_MEETING_DEFAULT_DURATION, TEAM_MEETING_DURATIONS, TeamMeetingsModel — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { ScheduleItemData, SchedulePerson } from '../schedule/ScheduleModel';
 

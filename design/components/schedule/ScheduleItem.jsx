@@ -153,7 +153,7 @@ export function ScheduleItem({
           <span className="gt-sched-item__title">
             {item.href ? <a href={item.href} onClick={onOpen ? (e) => { e.preventDefault(); onOpen(item); } : undefined}>{title}</a> : title}
           </span>
-          {status === 'live' && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+          {status === 'live' && <Badge status="live" />}
           {cd && <span className="gt-sched-item__countdown">{cd}</span>}
           {att && <Badge tone={att[0]}>{att[1]}</Badge>}
           {status === 'cancelled' && <Badge tone="neutral">Cancelled</Badge>}

@@ -6,8 +6,9 @@ import { CountBadge } from '../display/CountBadge.jsx';
  * scrum board's Board / Backlog / Burnup, TA meeting tabs, the member manager). WAI-ARIA Tabs:
  * roving tabindex, ← → / Home / End; `activation="automatic"` selects on focus (panels that
  * render at once), `"manual"` waits for Enter / Space (panels that load). Pair each tab with a
- * `<TabPanel>` that shares `idBase`. `collapseOnPhone` shows icon-only tabs under 768px while the
- * label stays in the accessible name.
+ * `<TabPanel>` that shares `idBase`; `aria-controls` is set only when `idBase` is given, so a tab
+ * never points at a panel id that does not exist. `collapseOnPhone` shows icon-only tabs under
+ * 768px while the label stays in the accessible name.
  */
 export function Tabs({
   tabs = [], value, onChange, ariaLabel, idBase, activation = 'automatic', size = 'md', collapseOnPhone = false, className = '',
@@ -45,7 +46,7 @@ export function Tabs({
             type="button"
             role="tab"
             id={`${base}-tab-${tab.value}`}
-            aria-controls={`${base}-panel-${tab.value}`}
+            aria-controls={idBase ? `${base}-panel-${tab.value}` : undefined}
             aria-selected={active}
             tabIndex={active || (!hasSelection && tab === enabled[0]) ? 0 : -1}
             className={['gt-tabs__tab', active ? 'gt-tabs__tab--active' : '', tab.icon ? 'gt-tabs__tab--has-icon' : ''].filter(Boolean).join(' ')}

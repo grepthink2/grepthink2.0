@@ -59,8 +59,8 @@ export interface ModalProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
  * 0.15s fade on close (none under reduced motion). The × is IconButton md, "Close", disabled with
  * `closeDisabled`.
  *
- * Native props and `ref` reach the sheet. Codebase-side: `ariaLabel` names a dialog with no title
- * (as Drawer's does), and a caller's `aria-describedby` follows the subtitle in the description.
+ * A caller's `aria-describedby` follows the subtitle in the description. Native props and `ref` reach
+ * the sheet. Codebase-side: `ariaLabel` names a dialog with no title (as Drawer's does).
  */
 export function Modal({
   open = false, onClose, title, subtitle, children, footer, tabs, size = 'md', width, variant = 'form',

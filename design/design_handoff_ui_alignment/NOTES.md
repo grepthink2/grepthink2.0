@@ -50,7 +50,7 @@ outline mark them as labels, and they never borrow a status colour.
 - **Modal defaults to the form header**; message dialogs pass `variant="message"`.
 - **Unread is always red** — agreed. UnreadBadge is solid `--gt-error` (#DC2626, 4.8:1 behind white); the sidebar's `#FF3B30` (3.5:1, failing for 11px text) retires with it.
 - **StatCard** keeps a `compact` density so analytics' tile rows keep their rhythm; one component, two densities.
-- **Live** maps to blue under the rule (it is "in progress"); the analytics LivePill and the schedule's live pill should render `status="live"` when ported.
+- **Live** maps to blue under the rule (it is "in progress"); the analytics LivePill and the schedule's live pill should render `status="live"` when ported. **Done 2026-10-22:** ScheduleItem and the team-meetings row render `<Badge status="live" />`; the schedule's green pill, its dot and keyframes are deleted (`schedule.css`), as the codebase did in PR #269. The analytics LivePill follows when the analytics area is redone.
 - **"Copied" and similar soft-green buttons**: toggles become `pressed`; "Invited" becomes `<Badge status="request.pending">Invited</Badge>` beside an outline Resend; "Copied" is the outline button's label swapping to "Copied" with a check for 2s (announced politely); "Edit submission" is an outline button; "Clear filters" is a ghost button shown only while filters apply.
 
 ## 4. Where the brief and the checkout disagreed

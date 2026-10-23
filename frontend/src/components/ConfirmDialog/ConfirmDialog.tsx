@@ -163,11 +163,11 @@ export interface InlineConfirmProps extends Omit<HTMLAttributes<HTMLDivElement>,
  * design/components/feedback/ConfirmDialog.jsx (team meetings' confirm row is its model): a muted
  * strip with a red alert disc, the sentence, outline Cancel and danger Delete, as a `role="group"`
  * named by the sentence. Cancel takes focus when it mounts; Esc cancels without closing the dialog
- * around it. While `busy`, Delete shows `busyLabel` and keeps focus, and Cancel waits.
+ * around it. While `busy`, Delete shows `busyLabel` and keeps focus, Cancel waits, and Esc is still
+ * stopped, so it never reaches the dialog around the row in the middle of a delete.
  *
  * Native props and `ref` reach the group; a caller's `onKeyDown` runs first, and an Esc it prevents is
- * left alone. Codebase-side: Esc is stopped while busy too, so it never reaches the dialog around the
- * row in the middle of a delete.
+ * left alone.
  */
 export function InlineConfirm({
   message, confirmLabel = 'Delete', busyLabel = 'Deleting…', cancelLabel = 'Cancel', busy = false, autoFocus = true,

@@ -1,3 +1,4 @@
+// Intentional addition: DatePickerField — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 /**
@@ -12,7 +13,7 @@ export interface DatePickerFieldProps {
    */
   value: string;
   onChange: (value: string) => void;
-  /** Adds a labelled time input (15-minute steps) and Cancel / Done to the calendar. @default false */
+  /** Adds a labelled time input (15-minute steps, 08:00 until a time is chosen) and Cancel / Done to the calendar. @default false */
   showTime?: boolean;
   /** Days before this date are disabled. */
   disabledBefore?: Date;

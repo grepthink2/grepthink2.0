@@ -1,6 +1,10 @@
 import React from 'react';
 import { Avatar } from '../display/Avatar.jsx';
 
+/* Scrum metadata chips — one file, as the codebase's features/scrum/components/Chips.tsx (renamed from
+   PointsChip.jsx in the 2026-10-22 fold-back). `Chips` at the end is the bundle's namespace for the
+   file (it needs a same-named export), not a component. */
+
 /** Story-point chip — rounded square, mono numeral. */
 export function PointsChip({ points, size = 'md', title = 'Story points', className = '' }) {
   return (
@@ -59,3 +63,6 @@ export function UserPair({ reporter, assignee, size = 'xs', className = '' }) {
     </span>
   );
 }
+
+/** The file's four chips under one name, for the bundle (design-only, like ModKey). */
+export const Chips = { PointsChip, EstimateChip, PRLinkChip, UserPair };

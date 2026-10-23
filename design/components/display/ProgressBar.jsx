@@ -4,18 +4,21 @@ import React from 'react';
  * Progress / meter bar. Green fill by default; `showLabel` adds a % readout.
  * `inline`: the 4px bar for table cells, story cards and the sprint picker — mark it
  * `decorative` when the number is printed beside it. `meter` for a measurement
- * (contribution share) rather than progress toward done.
+ * (contribution share) rather than progress toward done. `aria-valuenow` is the value clamped
+ * to 0…max without rounding; a value that isn't a number counts as 0.
  */
 export function ProgressBar({
   value = 0, max = 100, tone = 'primary', size = 'md', showLabel = false, label, valueText,
   inline = false, decorative = false, meter = false, className = '',
 }) {
-  const pct = Math.max(0, Math.min(100, (value / (max || 1)) * 100));
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  const now = Math.max(0, Math.min(max, n));
+  const pct = Math.max(0, Math.min(100, (n / (max || 1)) * 100));
   const track = (
     <div
       className="gt-progress__track"
       role={decorative ? undefined : meter ? 'meter' : 'progressbar'}
-      aria-valuenow={decorative ? undefined : Math.round(value)}
+      aria-valuenow={decorative ? undefined : now}
       aria-valuemin={decorative ? undefined : 0}
       aria-valuemax={decorative ? undefined : max}
       aria-valuetext={decorative ? undefined : valueText}

@@ -32,9 +32,9 @@ export interface FilterChipProps
  * replaces its icon while selected, so the state is not colour alone; inside a single-choice group it
  * is a radio (`aria-checked`). `type` defaults to `"button"`.
  *
- * Codebase-side: a space before the count keeps it apart from the label in the accessible name
- * ("TA meetings 3", as the palette's scope chips read); on screen the flex gap does that, and a flex
- * row drops the space. Native props and `ref` reach the button.
+ * A space before the count keeps it apart from the label in the accessible name ("TA meetings 3", as
+ * the palette's scope chips read); on screen the flex gap does that, and a flex row drops the space.
+ * Native props and `ref` reach the button.
  */
 export function FilterChip({
   children, selected = false, count, icon, size = 'md', kind = 'toggle', type = 'button', className = '', ref, ...rest

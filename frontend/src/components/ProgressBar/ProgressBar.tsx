@@ -43,9 +43,9 @@ export interface ProgressBarProps extends Omit<HTMLAttributes<HTMLDivElement>, '
  * `aria-valuenow` against `max` and `valueText` as its reading; `decorative` hides it, for a bar with
  * its number printed beside it. The fill's width is clamped to 0–100%.
  *
- * Codebase-side: the value the bar reports is clamped between 0 and `max` as well, as ARIA asks, and
- * not rounded (ARIA takes decimals); a value that is not a finite number (a 0/0 rate) draws and reads
- * as 0. Native props and `ref` reach the root.
+ * The value the bar reports is clamped between 0 and `max` as well, as ARIA asks, and not rounded
+ * (ARIA takes decimals); a value that is not a finite number (a 0/0 rate) draws and reads as 0. Native
+ * props and `ref` reach the root.
  */
 export function ProgressBar({
   value, max = 100, tone = 'primary', size = 'md', showLabel = false, label, valueText, inline = false,

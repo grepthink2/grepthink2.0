@@ -480,8 +480,8 @@ describe('DatePickerField', () => {
     const [phone] = cssRules('.dpf__trigger', 'max-width: 767px');
     expect(phone.getPropertyValue('min-height')).toBe('44px');
     const [nav] = cssRules('.dpf__cal-nav', 'max-width: 767px');
-    expect(nav.getPropertyValue('min-width')).toBe('44px');
-    expect(nav.getPropertyValue('min-height')).toBe('44px');
+    expect(nav.getPropertyValue('width')).toBe('44px');
+    expect(nav.getPropertyValue('height')).toBe('44px');
     const [reduced] = cssRules('.dpf__popover', 'prefers-reduced-motion');
     expect(reduced.getPropertyValue('animation')).toContain('gt-fade-in');
   });
@@ -492,6 +492,9 @@ describe('DatePickerField', () => {
     const declared = (selector: string, prop: string) =>
       cssRules(selector).map((rule) => rule.getPropertyValue(prop)).filter(Boolean).pop();
     expect(declared('.dpf__cal-nav', 'padding')).toMatch(/^0(px)?$/);
+    expect(declared('.dpf__cal-nav', 'font-weight')).toBe('var(--gt-weight-regular)');
+    expect(declared('.dpf__cal-nav', 'transition')).toBe('background-color var(--gt-transition-fast), color var(--gt-transition-fast)');
+    expect(cssRules('.dpf__cal-nav', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
     expect(declared('.dpf__cal-day', 'padding')).toMatch(/^0(px)?$/);
     expect(declared('.dpf__cal-day', 'font-weight')).toBe('var(--gt-weight-regular)');
     expect(declared('.dpf__trigger', 'font-weight')).toBe('var(--gt-weight-regular)');

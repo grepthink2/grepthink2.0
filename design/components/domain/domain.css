@@ -100,7 +100,7 @@
 .gt-project-card__view:hover { text-decoration: underline; }
 .gt-project-card__view:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
 
-/* ── TeamMemberCard + RoleSelect ────────────────────────── */
+/* ── TeamMemberCard (RoleSelect left 2026-10-22: the Team tab picks a member per role with the kit Select) ── */
 .gt-member-card {
   display: flex;
   flex-direction: column;
@@ -118,26 +118,6 @@
 .gt-member-card__email { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
 .gt-member-card__skills { display: flex; flex-wrap: wrap; gap: 6px; }
 .gt-member-card__actions { display: flex; align-items: center; gap: var(--gt-space-sm); }
-
-.gt-role-select { position: relative; display: inline-flex; align-items: center; }
-.gt-role-select__control {
-  appearance: none;
-  padding: 6px 30px 6px 12px;
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-size: 0.8125rem;
-  font-weight: var(--gt-weight-medium);
-  color: var(--gt-text-primary);
-  cursor: pointer;
-  outline: none;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-role-select__control:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-role-select__control:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
-.gt-role-select__control:disabled { background: var(--gt-gray-100); cursor: not-allowed; opacity: 0.6; }
-.gt-role-select__chevron { position: absolute; right: 10px; color: var(--gt-text-tertiary); pointer-events: none; }
 
 /* ── JoinRequestCard ────────────────────────────────────── */
 .gt-join-request {

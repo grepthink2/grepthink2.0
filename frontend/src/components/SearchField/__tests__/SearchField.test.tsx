@@ -87,10 +87,12 @@ describe('SearchField', () => {
     expect(screen.getByRole('search')).toHaveClass('gt-search-field', 'gt-search-field--compact', 'gt-search-field--full', 'x');
   });
 
-  it('gives its clear button no padding, against the app\'s scaffold button rule', () => {
+  it('gives its clear button its own padding and font, against the app\'s scaffold button rule', () => {
     render(<SearchField value="ana" onChange={() => {}} />);
     const padding = cssRules('.gt-search-field__clear').map((rule) => rule.getPropertyValue('padding')).filter(Boolean).pop();
     expect(padding).toMatch(/^0(px)?$/);
+    expect(cssRules('.gt-search-field__clear')[0].getPropertyValue('font')).toBe('inherit');
+    expect(cssRules('.gt-search-field__clear', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
   });
 
   it('is at least 44px tall on phones, with a 36px clear button', () => {

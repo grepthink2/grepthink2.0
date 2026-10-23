@@ -1,3 +1,4 @@
+// Intentional addition: SegmentedControl — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface SegmentedOption {
@@ -15,6 +16,7 @@ export interface SegmentedOption {
 export interface SegmentedControlProps {
   options: SegmentedOption[];
   value: string;
+  /** Called with the newly checked value only: pressing the checked option, or arrowing back onto it, reports nothing. */
   onChange?: (value: string) => void;
   /** Names the radio group ("View", "Unit"). */
   ariaLabel: string;

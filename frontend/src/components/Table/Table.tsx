@@ -85,13 +85,13 @@ const byIdOrIndex = (row: object, index: number) => (row as { id?: string | numb
  * (its `max-height` is the feature's). The wrapper scrolls sideways on phones, and while the table
  * overflows it is a focusable region named by the caption, so a keyboard can scroll it.
  *
- * Codebase-side: `caption` is required, since every table needs a name, and the region is labelled by
- * it (`aria-labelledby`), so a caption that is not a string names it too; `rowTo` renders the first
- * cell as a react-router `Link`, so an in-app row opens without reloading the app (`rowHref` is for
- * another site); overflow counts in both directions, as a feature's `max-height` scrolls the table
- * down; a column can be its rows' headers (`rowHeader`) and carry a class (`className`), and a row a
- * class (`rowClassName`); a sortable column needs `onSort` to be a button; and `onRowClick` gets the
- * row alone. Native props and `ref` reach the wrapper.
+ * A sortable column needs `onSort` to be a button, `onRowClick` gets the row alone, and `rowTo` is an
+ * in-app route where `rowHref` is another site. Codebase-side: `caption` is required, since every
+ * table needs a name, and the region is labelled by it (`aria-labelledby`), so a caption that is not a
+ * string names it too; `rowTo` renders the first cell as a react-router `Link`, so an in-app row opens
+ * without reloading the app; overflow counts in both directions, as a feature's `max-height` scrolls
+ * the table down; and a column can be its rows' headers (`rowHeader`) and carry a class (`className`),
+ * and a row a class (`rowClassName`). Native props and `ref` reach the wrapper.
  */
 export function Table<Row extends object = Record<string, unknown>>({
   columns, rows, caption, sort, onSort, loading = false, skeletonRows = 4, emptyState, emptyText = 'Nothing here yet.',

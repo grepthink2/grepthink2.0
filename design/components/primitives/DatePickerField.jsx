@@ -29,7 +29,8 @@ const CalendarGlyph = () => (
  * Calendar: a modal dialog portaled to <body> (z 1100, above modals), placed below the trigger or
  * flipped above when it does not fit. Arrow keys move by day / week, Home / End to the week's ends,
  * PageUp / PageDown by month (Shift: year), Enter picks, Esc closes and returns focus to the trigger.
- * `showTime` adds a labelled time input and Cancel / Done.
+ * The chosen day's name ends ", selected". `showTime` adds a labelled time input (08:00 until a time
+ * is chosen) and Cancel / Done.
  */
 export function DatePickerField({
   id, label, value = '', onChange, showTime = false, disabledBefore, disabledAfter,
@@ -40,7 +41,7 @@ export function DatePickerField({
   const [open, setOpen] = React.useState(false);
   const [focusDay, setFocusDay] = React.useState(parsed ? parsed.date : today);
   const [draftDate, setDraftDate] = React.useState(null);
-  const [draftTime, setDraftTime] = React.useState('09:00');
+  const [draftTime, setDraftTime] = React.useState('08:00');
   const [pos, setPos] = React.useState({ top: 0, left: 0, up: false });
   const triggerRef = React.useRef(null);
   const popRef = React.useRef(null);
@@ -52,7 +53,7 @@ export function DatePickerField({
     if (disabled) return;
     setFocusDay(parsed ? parsed.date : today);
     setDraftDate(parsed ? parsed.date : null);
-    setDraftTime(parsed && parsed.time ? parsed.time : '09:00');
+    setDraftTime(parsed && parsed.time ? parsed.time : '08:00');
     toGrid.current = true;
     setOpen(true);
   };
@@ -123,7 +124,7 @@ export function DatePickerField({
   };
   const done = () => {
     if (!draftDate) return;
-    if (onChange) onChange(`${toKey(draftDate)} ${draftTime || '09:00'}`);
+    if (onChange) onChange(`${toKey(draftDate)} ${draftTime || '08:00'}`);
     close();
   };
   const shiftMonth = (n) => { toGrid.current = false; setFocusDay((f) => new Date(f.getFullYear(), f.getMonth() + n, 1)); };
@@ -183,7 +184,7 @@ export function DatePickerField({
                             className={['dpf__cal-day', same(d, chosen) ? 'dpf__cal-day--selected' : '', same(d, today) && !same(d, chosen) ? 'dpf__cal-day--today' : ''].filter(Boolean).join(' ')}
                             tabIndex={same(d, focusDay) ? 0 : -1}
                             data-focus={same(d, focusDay) ? 'true' : undefined}
-                            aria-label={`${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`}
+                            aria-label={`${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}${same(d, chosen) ? ', selected' : ''}`}
                             aria-current={same(d, today) ? 'date' : undefined}
                             aria-disabled={off(d) || undefined}
                             onKeyDown={onDayKey}

@@ -1,3 +1,4 @@
+// Intentional addition: PostSlotsDrawer — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { ApiReviewSlot, PostingDraft } from './FinalReviewsModel';
 export interface PostSlotsDrawerProps {

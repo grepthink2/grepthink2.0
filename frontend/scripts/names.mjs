@@ -54,7 +54,7 @@ import { splitCodeAndComments } from './ownership.mjs';
  *   `keeps` is the codebase identifier or module (file name without extension) that stands for
  *   the design export; a 'same name' or 'different name' entry names it.
  * @typedef {{ path: string; reason: string }} PathEntry
- *   A folder (`src/components/ErrorBoundary`) or a file (`src/components/Table/SortableHeader.tsx`)
+ *   A folder (`src/components/ErrorBoundary`) or a file (`src/components/Skeleton/TableSkeleton.tsx`)
  *   that the folder and file rules leave alone.
  * @typedef {DesignEntry | PathEntry} NamesAllowlistEntry
  * @typedef {{ rule: string; subject: string; message: string }} Finding
@@ -110,6 +110,13 @@ export const NAMES_ALLOWLIST = [
     reason: 'No screen pages through numbered pages; search has its own pager, SearchPagination.',
   },
   {
+    design: 'Markdown',
+    status: 'design-only',
+    reason:
+      "The bundle's namespace for display/Markdown.jsx, since each design file needs an export of its " +
+      'own name. The renderer is MarkdownText, in src/components/Markdown/.',
+  },
+  {
     design: ['SidebarNavItem', 'SidebarSectionTitle'],
     status: 'different name',
     keeps: 'Sidebar',
@@ -122,22 +129,10 @@ export const NAMES_ALLOWLIST = [
     reason: 'The error boundary App.tsx puts around the routes has no design counterpart.',
   },
   {
-    path: 'src/components/Markdown',
-    reason:
-      "Holds MarkdownText, which the design keeps in scrum/CommentThread.jsx. Scrum's comments and " +
-      "story modal, the project page and the landing page's issue card render Markdown through it.",
-  },
-  {
     path: 'src/components/Skeleton/TableSkeleton.tsx',
     reason:
       "The loading state of the app's own *-list tables (RosterList, ProjectList, Modules, " +
       "Assignments). The kit's Table draws its Skeleton rows itself.",
-  },
-  {
-    path: 'src/components/Table/SortableHeader.tsx',
-    reason:
-      "The header cell of the design's Table, split out so that a table of its own can sort " +
-      'with useTableSort. The design keeps it inside display/Table.jsx.',
   },
 
   // ── analytics ─────────────────────────────────────────────────────────────────────────────────
@@ -162,47 +157,12 @@ export const NAMES_ALLOWLIST = [
     reason: 'StackedBars keeps the board statuses as ORDER and STATUS_LABEL, private to the file.',
   },
   {
-    design: 'ChartCardTool',
-    status: 'different name',
-    keeps: 'Button',
-    reason:
-      'Analytics builds its tool buttons itself (.gt-analytics__toggle and .gt-analytics__refresh ' +
-      'in AnalyticsPage, .gt-table__export in BreakdownTable); they become Button (pressed, outline) ' +
-      'when analytics moves onto the kit.',
-  },
-  {
-    design: 'ChartCardCheck',
-    status: 'different name',
-    keeps: 'Checkbox',
-    reason:
-      'AnalyticsPage builds the Compare check itself (.gt-analytics__check); it becomes Checkbox ' +
-      'when analytics moves onto the kit.',
-  },
-  {
-    design: 'ChartEmptyState',
-    status: 'different name',
-    keeps: 'EmptyState',
-    reason: 'ChartCard renders the kit\'s EmptyState (variant="card").',
-  },
-  {
     design: 'ChartFormat',
     status: 'different name',
     keeps: 'analyticsFormat',
     reason:
       'The format helpers live in utils/analyticsFormat.ts (percent, weekLabel, dateLabel, ' +
       'rangeLabel) and the scale in utils/chartGeometry.ts.',
-  },
-  {
-    design: 'DefinitionPopover',
-    status: 'different name',
-    keeps: 'InfoPopover',
-    reason: 'Promoted into the kit as InfoPopover, which ChartCard renders.',
-  },
-  {
-    design: 'StatTile',
-    status: 'different name',
-    keeps: 'StatCard',
-    reason: 'The analytics tiles render the kit\'s StatCard with `compact`.',
   },
   {
     design: ['TimelinessBars', 'TIMELINESS_BUCKETS', 'TIMELINESS_COLUMNS', 'OnTimeMeter'],
@@ -293,15 +253,6 @@ export const NAMES_ALLOWLIST = [
       "broader name, and the codebase card takes it when Edit Project's Team tab moves onto the kit.",
   },
   {
-    design: 'RoleSelect',
-    status: 'different name',
-    keeps: 'TeamTab',
-    reason:
-      "Edit Project assigns roles the other way round: TeamTab's selects (.edit-project__select) " +
-      'pick the member who is Product Owner or Scrum Master, and AdminMemberCard toggles admin. ' +
-      "No screen changes one member's role from a dropdown.",
-  },
-  {
     design: 'TypingIndicator',
     status: 'different name',
     keeps: 'MessagingSpotlight',
@@ -381,10 +332,11 @@ export const NAMES_ALLOWLIST = [
 
   // ── scrum ─────────────────────────────────────────────────────────────────────────────────────
   {
-    design: ['PointsChip', 'EstimateChip', 'PRLinkChip', 'UserPair'],
-    status: 'same name',
-    keeps: 'Chips',
-    reason: 'The four chips share features/scrum/components/Chips.tsx; the design groups them in scrum/PointsChip.jsx.',
+    design: 'Chips',
+    status: 'design-only',
+    reason:
+      "The bundle's namespace for scrum/Chips.jsx, since each design file needs an export of its own " +
+      'name. The four chips share features/scrum/components/Chips.tsx.',
   },
   {
     design: 'AIDraftButton',

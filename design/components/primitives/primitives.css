@@ -160,7 +160,7 @@
 .gt-search-field__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .gt-search-field__clear {
   position: absolute; right: 6px; display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent; color: var(--gt-text-tertiary); cursor: pointer;
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 5px; background: transparent; font: inherit; color: var(--gt-text-tertiary); cursor: pointer;
   transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
 }
 .gt-search-field__clear:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
@@ -336,7 +336,7 @@
   display: flex; align-items: center; justify-content: space-between; gap: var(--gt-space-sm);
   width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 13px;
   border: 1px solid var(--gt-border-control); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
-  font-family: var(--gt-font-sans); font-size: var(--gt-text-body); color: var(--gt-text-tertiary); text-align: left; cursor: pointer;
+  font-family: var(--gt-font-sans); font-size: var(--gt-text-body); font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); text-align: left; cursor: pointer;
   transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
 }
 .dpf__trigger:hover:not(:disabled) { border-color: var(--gt-border-control-hover); }
@@ -359,15 +359,15 @@
 @keyframes dpfPopoverInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .dpf__cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gt-space-sm); padding-bottom: var(--gt-space-sm); }
 .dpf__cal-title { font-size: 0.9rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
-.dpf__cal-nav { width: 32px; height: 32px; border: none; border-radius: var(--gt-radius-sm); background: transparent; color: var(--gt-text-secondary); font-size: 16px; cursor: pointer; }
+.dpf__cal-nav { width: 32px; height: 32px; padding: 0; border: none; border-radius: var(--gt-radius-sm); background: transparent; color: var(--gt-text-secondary); font-family: var(--gt-font-sans); font-size: 16px; font-weight: var(--gt-weight-regular); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
 .dpf__cal-nav:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
 .dpf__cal-nav:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .dpf__cal-grid { border-collapse: separate; border-spacing: 2px; margin: -2px; }
 .dpf__cal-grid th, .dpf__cal-grid td { padding: 0; }
-.dpf__cal-weekday { display: inline-flex; align-items: center; justify-content: center; height: 2rem; font-size: 0.75rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
+.dpf__cal-weekday { display: table-cell; text-align: center; vertical-align: middle; height: 2rem; font-size: 0.75rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
 .dpf__cal-day {
-  width: 2.25rem; height: 2.25rem; border: none; border-radius: var(--gt-radius-sm); background: transparent;
-  font-family: var(--gt-font-sans); font-size: 0.85rem; color: var(--gt-text-primary); cursor: pointer;
+  width: 2.25rem; height: 2.25rem; padding: 0; border: none; border-radius: var(--gt-radius-sm); background: transparent;
+  font-family: var(--gt-font-sans); font-size: 0.85rem; font-weight: var(--gt-weight-regular); color: var(--gt-text-primary); cursor: pointer;
   transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
 }
 .dpf__cal-day:hover:not([aria-disabled="true"]) { background: var(--gt-primary-soft); color: var(--gt-primary-hover); }
@@ -387,6 +387,8 @@
 .gt-slider__fill { position: absolute; top: 0; bottom: 0; left: 0; width: calc(var(--gt-slider-frac, 0) * (100% - 20px) + 10px); background: var(--gt-slider-accent, var(--gt-primary)); }
 .gt-slider__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
 .gt-slider__input:focus { outline: none; }
+/* the ring is the thumb's alone: the range's own box drops the global ring, which would outline the whole control */
+.gt-slider__input:focus-visible { box-shadow: none; }
 .gt-slider__input::-webkit-slider-runnable-track { height: 24px; background: transparent; border: none; }
 .gt-slider__input::-moz-range-track { height: 24px; background: transparent; border: none; }
 .gt-slider__input::-webkit-slider-thumb {
@@ -425,6 +427,7 @@
   .gt-combobox__option, .gt-combobox__status { min-height: 44px; }
   .gt-code { gap: 6px; }
   .dpf__cal-day { width: 2.75rem; height: 2.75rem; }
+  .dpf__cal-nav { width: 44px; height: 44px; }
   .gt-upload-image { align-items: flex-start; }
   .gt-slider__control { height: 44px; }
   .gt-slider__input::-webkit-slider-runnable-track { height: 44px; }
@@ -435,7 +438,7 @@
 /* ── Reduced motion ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .gt-combobox__popup, .dpf__popover { animation: gt-fade-in 0.15s ease-out; }
-  .gt-button, .gt-icon-button, .gt-input, .gt-textarea, .gt-select__control, .gt-input-group, .gt-check__box, .gt-radio__dot, .gt-toggle__track, .gt-toggle__thumb { transition: none; }
+  .gt-button, .gt-icon-button, .gt-input, .gt-textarea, .gt-select__control, .gt-input-group, .gt-check__box, .gt-radio__dot, .gt-toggle__track, .gt-toggle__thumb, .gt-search-field__clear, .dpf__cal-nav, .dpf__cal-day { transition: none; }
   .gt-slider__input::-webkit-slider-thumb { transition: none; }
   .gt-slider__input::-moz-range-thumb { transition: none; }
 }

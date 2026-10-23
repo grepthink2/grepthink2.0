@@ -116,8 +116,7 @@ describe('InfoPopover', () => {
 
   it('sets its own text styles, so an uppercase, tracked or bold label around it does not reach Learn more', () => {
     render(<InfoPopover title="About" body="Text" learnMoreHref="/help" />);
-    // The design's rule, then the codebase's reset after it.
-    const [, panel] = cssRules('.gt-infopop__panel');
+    const [panel] = cssRules('.gt-infopop__panel');
     expect(panel.getPropertyValue('text-transform')).toBe('none');
     expect(panel.getPropertyValue('letter-spacing')).toBe('normal');
     expect(panel.getPropertyValue('font-weight')).toBe('var(--gt-weight-regular)');

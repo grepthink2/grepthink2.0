@@ -1,9 +1,10 @@
-<!-- @dsCard group="Components" viewport="700x2050" name="Analytics — charts, tiles & filters" subtitle="ChartCard (ready · loading · refetching · empty · error), StatTile (delta · 12-pt / 3-pt sparkline · null · failed), filter row + custom-range reasons, page failure strip, WeeklyLine, SplitBar, StackedBars, Timeliness, BarsBySprint (+stacked), TrendLines (3 empties), BreakdownTable, primitives" --> / no sparkline · null · loading), FilterRow, WeeklyLine (two series · one series), SplitBar, StackedBars (4 and 9 sprints), TimelinessBars (folded · not-due), OnTimeMeter, BarsBySprint, TrendLines, BreakdownTable (5 and 24 rows), legend / tooltip / popover / empty primitives" -->
+<!-- @dsCard group="Components" viewport="700x2050" name="Analytics — charts, tiles & filters" subtitle="ChartCard (ready · loading · refetching · empty · error), StatCard compact (delta · 12-pt / 3-pt sparkline · null · failed), filter row + custom-range reasons, page failure strip, WeeklyLine, SplitBar, StackedBars, Timeliness, BarsBySprint (+stacked), TrendLines (3 empties), BreakdownTable, primitives" --> / no sparkline · null · loading), FilterRow, WeeklyLine (two series · one series), SplitBar, StackedBars (4 and 9 sprints), TimelinessBars (folded · not-due), OnTimeMeter, BarsBySprint, TrendLines, BreakdownTable (5 and 24 rows), legend / tooltip / popover / empty primitives" -->
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
@@ -24,8 +25,8 @@
 <script>window.loadAnalyticsSources('../..').then(window.runDeferredBabel);</script>
 <script type="text/babel-deferred">
 const NS = window.GrepThinkDesignSystem_36e7e3;
-const { AnalyticsFilterRow, StatTile, ChartCard, ChartCardTool, ChartCardCheck, UnitToggle, LivePill, ChartLegend, AnalyticsIcon,
-        DefinitionPopover, ChartEmptyState, ChartTooltip, WeeklyLine, SplitBar, StackedBars, TimelinessBars, OnTimeMeter,
+const { AnalyticsFilterRow, StatCard, ChartCard, Button, Checkbox, UnitToggle, LivePill, ChartLegend, AnalyticsIcon,
+        InfoPopover, EmptyState, ChartTooltip, WeeklyLine, SplitBar, StackedBars, TimelinessBars, OnTimeMeter,
         BarsBySprint, TrendLines, BreakdownTable, BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS } = NS;
 
 const weekly = [
@@ -72,17 +73,17 @@ function Demo() {
         <AnalyticsFilterRow classes={[{ id: 'c1', label: 'CSE 115A · Fall 2026' }]} classId="" range={{ preset: '30d' }} onChange={() => {}} disabled />
       </div>
 
-      <p className="lbl">StatTile — 12-point sparkline · 3-point · no sparkline · null (Signed in) · loading · bad delta · failed source</p>
+      <p className="lbl">StatCard compact — 12-point sparkline · 3-point · no sparkline · null (Signed in) · loading · bad delta · failed source</p>
       <div className="tiles">
-        <StatTile label="Messages" value={1284} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.18, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[12,18,25,31,44,52,61,58,73,88,95,102]} />
-        <StatTile label="Messages" value={212} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.05, vsLabel: 'vs previous Sep 24 – Oct 7' }} trend={[180, 196, 212]} />
-        <StatTile label="Messages" value={48} icon={<AnalyticsIcon name="message-square" />} hint="Trend appears after the first nightly rollup" />
-        <StatTile label="Signed in (7d)" value={null} accent="amber" icon={<AnalyticsIcon name="activity" />} hint="Appears once sign-ins are recorded" />
-        <StatTile label="Teams" value={23} accent="blue" loading icon={<AnalyticsIcon name="users" />} />
-        <StatTile label="Missing" value={26} accent="purple" icon={<AnalyticsIcon name="x-circle" />} delta={{ value: 0.12, vsLabel: 'vs previous Sep 8 – Oct 7', goodWhenUp: false }} />
-        <StatTile label="Teams" value={null} accent="blue" failed icon={<AnalyticsIcon name="users" />} />
-        <StatTile label="Classes" value={4} icon={<AnalyticsIcon name="graduation-cap" />} hint="All classes on record" />
-        <StatTile label="Team messages" value={228} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.11, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[8, 14, 21, 30, 41, 52]} hint="Direct messages are school-wide: 712" />
+        <StatCard compact format="compact" label="Messages" value={1284} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.18, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[12,18,25,31,44,52,61,58,73,88,95,102]} />
+        <StatCard compact format="compact" label="Messages" value={212} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.05, vsLabel: 'vs previous Sep 24 – Oct 7' }} trend={[180, 196, 212]} />
+        <StatCard compact format="compact" label="Messages" value={48} icon={<AnalyticsIcon name="message-square" />} hint="Trend appears after the first nightly rollup" />
+        <StatCard compact format="compact" label="Signed in (7d)" value={null} accent="amber" icon={<AnalyticsIcon name="activity" />} hint="Appears once sign-ins are recorded" />
+        <StatCard compact format="compact" label="Teams" value={23} accent="blue" loading icon={<AnalyticsIcon name="users" />} />
+        <StatCard compact format="compact" label="Missing" value={26} accent="purple" icon={<AnalyticsIcon name="x-circle" />} delta={{ value: 0.12, vsLabel: 'vs previous Sep 8 – Oct 7', goodWhenUp: false }} />
+        <StatCard compact format="compact" label="Teams" value={null} accent="blue" failed icon={<AnalyticsIcon name="users" />} />
+        <StatCard compact format="compact" label="Classes" value={4} icon={<AnalyticsIcon name="graduation-cap" />} hint="All classes on record" />
+        <StatCard compact format="compact" label="Team messages" value={228} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.11, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[8, 14, 21, 30, 41, 52]} hint="Direct messages are school-wide: 712" />
       </div>
 
       <p className="lbl">Page failure strip (.gt-analytics__error, the page's one alert) — HTTP n · refused (4xx) · unreachable</p>
@@ -119,7 +120,7 @@ function Demo() {
       <p className="lbl">WeeklyLine — two series (legend) · one series (no legend) · table twin</p>
       <ChartCard title="Conversations" subtitle="Team channels and direct messages." definition="Messages sent in team-member channels of the teams in view, plus direct messages between two people of the school, in the selected range."
         hero="1,284" heroMeta="messages in range" footnote="1,284 messages · Sep 8 – Oct 7 · direct messages are school-wide" wide
-        actions={<ChartCardTool icon="table" label="Table" pressed={table} onClick={() => setTable(t => !t)} />}>
+        actions={<Button size="sm" variant="outline" pressed={table} iconLeft={<AnalyticsIcon name="table" size={13} />} onClick={() => setTable(t => !t)}>Table</Button>}>
         <WeeklyLine height={190} view={table ? 'table' : 'chart'} series={[
           { key: 'team', label: 'Team channels', points: weekly.map(w => ({ weekStart: w.week_start, value: w.team_members })) },
           { key: 'dm', label: 'Direct', points: weekly.map(w => ({ weekStart: w.week_start, value: w.dm })) }]} />
@@ -163,7 +164,7 @@ function Demo() {
             { key: 'task', title: 'Tasks', overall: { median: 29, n: 418 }, columns: [{ label: 'Sprint 1', median: 24, n: 135 }, { label: 'Sprint 2', median: 31, n: 129 }, { label: 'Sprint 3', median: 36, n: 60 }] },
             { key: 'story', title: 'Stories', overall: { median: 96, n: 112 }, columns: [{ label: 'Sprint 1', median: 78, n: 41 }, { label: 'Sprint 2', median: 102, n: 44 }, { label: 'Sprint 3', median: 131, n: 27 }] }]} />
         </ChartCard>
-        <ChartCard title="Trends" subtitle="Week by week, against the previous range." actions={<ChartCardCheck label="Compare with previous range" checked={compare} onChange={setCompare} />}>
+        <ChartCard title="Trends" subtitle="Week by week, against the previous range." actions={<Checkbox label="Compare with previous range" checked={compare} onChange={(e) => setCompare(e.target.checked)} />}>
           <TrendLines panels={trendPanels} compare={compare} asOf="2026-10-06" height={84} />
         </ChartCard>
       </div>
@@ -185,11 +186,11 @@ function Demo() {
       </div>
 
       <p className="lbl">BreakdownTable — per class (5 rows) · per team with 24 rows (dense, sticky header, Show all)</p>
-      <ChartCard title="By class" actions={<ChartCardTool icon="download" label="Export CSV" className="gt-table__export" />} wide>
+      <ChartCard title="By class" actions={<Button size="sm" variant="outline" iconLeft={<AnalyticsIcon name="download" size={13} />}>Export CSV</Button>} wide>
         <BreakdownTable rows={breakdownRows} columns={[...BREAKDOWN_COLUMNS, ...TIMELINESS_COLUMNS]} sort={sort} onSort={setSort} getRowHref={r => r.href} />
       </ChartCard>
       <div style={{ marginTop: 10 }}>
-        <ChartCard title="By team · CSE 115A · Fall 2026" actions={<ChartCardTool icon="download" label="Export CSV" className="gt-table__export" />} wide>
+        <ChartCard title="By team · CSE 115A · Fall 2026" actions={<Button size="sm" variant="outline" iconLeft={<AnalyticsIcon name="download" size={13} />}>Export CSV</Button>} wide>
           <BreakdownTable rows={manyTeams} columns={TEAM_BREAKDOWN_COLUMNS} sort={sort} onSort={setSort} getRowHref={r => r.href} />
         </ChartCard>
       </div>
@@ -199,11 +200,11 @@ function Demo() {
         <LivePill />
         <ChartLegend items={[{ key: 'a', label: 'Team channels', swatch: 'line', seriesClass: 'gt-series--1' }, { key: 'b', label: 'Direct', swatch: 'line', seriesClass: 'gt-series--2' }, { key: 'c', label: 'Previous range', swatch: 'line', seriesClass: 'gt-series--gray' }]} />
         <ChartLegend items={[{ key: 'e', label: 'Early', seriesClass: 'gt-status--early', icon: 'check-circle' }, { key: 'o', label: 'On time', seriesClass: 'gt-status--on_time', icon: 'check-circle-2' }, { key: 'l', label: 'Late', seriesClass: 'gt-status--late', icon: 'clock' }, { key: 'm', label: 'Missing', seriesClass: 'gt-status--missing', icon: 'x-circle' }]} />
-        <DefinitionPopover body="People of the school who signed in explicitly in the last 7 days (staying signed in does not count)." />
-        <ChartCardTool icon="table" label="Table" pressed />
-        <ChartCardTool icon="download" label="Export CSV" />
+        <InfoPopover title="How this is counted" body="People of the school who signed in explicitly in the last 7 days (staying signed in does not count)." />
+        <Button size="sm" variant="outline" pressed iconLeft={<AnalyticsIcon name="table" size={13} />}>Table</Button>
+        <Button size="sm" variant="outline" iconLeft={<AnalyticsIcon name="download" size={13} />}>Export CSV</Button>
         <div className="gt-plot" style={{ width: 200, height: 70 }}><ChartTooltip x={100} y={66} title="Week of Sep 28" rows={[{ label: 'Team channels', value: '188', seriesClass: 'gt-series--1' }, { label: 'Direct', value: '214', seriesClass: 'gt-series--2' }]} /></div>
-        <div style={{ width: 240 }}><ChartEmptyState icon="table" title="Nothing to list" hint="Rows appear once the school has classes and teams." /></div>
+        <div style={{ width: 240 }}><EmptyState variant="card" titleAs="p" icon={<AnalyticsIcon name="table" size={18} />} title="Nothing to list" description="Rows appear once the school has classes and teams." /></div>
       </div>
     </div>
   );

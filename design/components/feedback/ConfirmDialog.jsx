@@ -14,6 +14,7 @@ export function ConfirmDialog({
   open = false, title, message, confirmLabel = 'Confirm', busyLabel, cancelLabel = 'Cancel', destructive = false,
   onConfirm, onCancel, busy: busyProp, error: errorProp, errorText = 'That didn’t work. Try again.', portal = true,
 }) {
+  const messageId = React.useId();
   const [busyState, setBusy] = React.useState(false);
   const [errState, setErr] = React.useState('');
   const busy = busyProp ?? busyState;
@@ -32,14 +33,14 @@ export function ConfirmDialog({
     }
   };
   return (
-    <Modal open={open} onClose={onCancel} title={title} size="sm" role="alertdialog" closeDisabled={busy} portal={portal}
+    <Modal open={open} onClose={onCancel} title={title} size="sm" role="alertdialog" closeDisabled={busy} portal={portal} aria-describedby={messageId}
       footer={(
         <>
           <Button variant="outline" onClick={onCancel} disabled={busy} data-autofocus>{cancelLabel}</Button>
           <Button variant={destructive ? 'danger' : 'primary'} onClick={confirm} loading={busy} loadingLabel={busyLabel}>{confirmLabel}</Button>
         </>
       )}>
-      <p className="gt-confirm__message">{message}</p>
+      <p className="gt-confirm__message" id={messageId}>{message}</p>
       {error && <Alert tone="error" className="gt-confirm__error">{error}</Alert>}
     </Modal>
   );
@@ -50,7 +51,8 @@ const AlertGlyph = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="n
 /**
  * Inline confirm row — the row-level delete inside a dialog (never a dialog over a dialog).
  * `role="group"` labelled by its sentence; Cancel takes focus; Esc cancels without closing the
- * enclosing dialog; Delete shows its busy state.
+ * enclosing dialog, and is stopped even while busy (so it never reaches the dialog around the row
+ * in the middle of a delete); Delete shows its busy state.
  */
 export function InlineConfirm({ message, confirmLabel = 'Delete', busyLabel = 'Deleting…', cancelLabel = 'Cancel', busy = false, autoFocus = true, onConfirm, onCancel, className = '' }) {
   const id = React.useId();
@@ -62,7 +64,7 @@ export function InlineConfirm({ message, confirmLabel = 'Delete', busyLabel = 'D
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div ref={rootRef} className={['gt-inline-confirm', className].filter(Boolean).join(' ')} role="group" aria-labelledby={`${id}-msg`}
-      onKeyDown={(e) => { if (e.key === 'Escape' && !busy) { e.stopPropagation(); e.preventDefault(); if (onCancel) onCancel(); } }}>
+      onKeyDown={(e) => { if (e.key !== 'Escape' || e.defaultPrevented) return; e.stopPropagation(); e.preventDefault(); if (!busy && onCancel) onCancel(); }}>
       <span className="gt-inline-confirm__icon"><AlertGlyph /></span>
       <p className="gt-inline-confirm__text" id={`${id}-msg`}>{message}</p>
       <span className="gt-inline-confirm__actions">

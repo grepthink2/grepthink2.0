@@ -70,9 +70,9 @@ function announcement(bucket: Bucket, remaining: number): string {
  * the save. A polite live region speaks only when the remaining count crosses 20, at the limit and
  * when over, not on every keystroke.
  *
- * Codebase-side: a space before "(optional)", so the control's name reads "Pronouns (optional)"; the
- * design's 4px margin alone gives the name "Pronouns(optional)". `showCount={false}` keeps a limit with
- * its counter hidden, so the live region is in place before the counter appears. `ref` reaches the
+ * A space comes before "(optional)", so the control's name reads "Pronouns (optional)"; the 4px margin
+ * alone would give the name "Pronouns(optional)". Codebase-side: `showCount={false}` keeps a limit with
+ * its counter hidden, so the live region is in place before the counter appears, and `ref` reaches the
  * root.
  */
 export function FieldShell({

@@ -1,10 +1,11 @@
+// Intentional addition: FilterChip, FilterChipGroup — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface FilterChipProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-pressed' | 'aria-checked'> {
   children: React.ReactNode;
   /** Rendered as `aria-pressed` (toggle) or `aria-checked` (radio). @default false */
   selected?: boolean;
-  /** Tertiary count after the label (white when selected). */
+  /** Tertiary count after the label (white when selected), after a space: the name reads "TA meetings 3". */
   count?: number;
   /** Leading 14px icon (replaced by a check while a toggle chip is selected). */
   icon?: React.ReactNode;
@@ -26,7 +27,7 @@ export interface FilterChipOption {
 }
 
 export interface FilterChipGroupProps {
-  /** 'single' = radio group (one tab stop, arrows select) · 'multi' = pressed toggles. @default 'multi' */
+  /** 'single' = radio group (one tab stop, arrows select; re-pressing the checked chip reports no change) · 'multi' = pressed toggles. @default 'multi' */
   type?: 'single' | 'multi';
   /** Names the group ("Date range", "Filter by type"). */
   ariaLabel: string;

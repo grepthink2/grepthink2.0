@@ -3,7 +3,8 @@ import React from 'react';
 /**
  * Segmented control — switches the view or unit of the same content (Table / Cards,
  * Tasks / Points, Week / Month). WAI-ARIA radio group: roving tabindex, arrow keys (and Home /
- * End) move and select. Sizes to its options; full width on phones or with `fullWidth`.
+ * End) move and select; pressing the checked option, or arrowing back onto it, reports no change,
+ * as with native radios. Sizes to its options; full width on phones or with `fullWidth`.
  */
 export function SegmentedControl({ options = [], value, onChange, ariaLabel, size = 'md', fullWidth = false, className = '' }) {
   const refs = React.useRef({});
@@ -19,7 +20,7 @@ export function SegmentedControl({ options = [], value, onChange, ariaLabel, siz
     if (!next) return;
     e.preventDefault();
     if (refs.current[next.value]) refs.current[next.value].focus();
-    if (onChange) onChange(next.value);
+    if (onChange && next.value !== value) onChange(next.value);
   };
   return (
     <div
@@ -39,7 +40,7 @@ export function SegmentedControl({ options = [], value, onChange, ariaLabel, siz
             aria-label={opt.ariaLabel}
             tabIndex={active || (!hasSelection && opt === enabled[0]) ? 0 : -1}
             className={['gt-segmented__option', active ? 'gt-segmented__option--active' : ''].filter(Boolean).join(' ')}
-            onClick={() => onChange && onChange(opt.value)}
+            onClick={() => { if (!active && onChange) onChange(opt.value); }}
             onKeyDown={(e) => onKeyDown(e, opt)}
             disabled={opt.disabled}
           >

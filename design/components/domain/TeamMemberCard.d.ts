@@ -1,3 +1,4 @@
+// Intentional addition: TeamMemberCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface TeamMemberCardProps {
@@ -7,19 +8,9 @@ export interface TeamMemberCardProps {
   role?: 'owner' | 'product_owner' | 'scrum_master' | 'admin' | 'member';
   /** Skill tags. */
   skills?: string[];
-  /** Action row (RoleSelect, remove button…). */
+  /** Action row (a quiet Remove, an admin Toggle…). */
   actions?: React.ReactNode;
   className?: string;
 }
 
-export interface RoleSelectProps {
-  /** @default 'member' */
-  value?: 'owner' | 'product_owner' | 'scrum_master' | 'admin' | 'member';
-  onChange?: (role: string) => void;
-  disabled?: boolean;
-  className?: string;
-}
-
 export function TeamMemberCard(props: TeamMemberCardProps): React.JSX.Element;
-/** Compact role dropdown for member management. */
-export function RoleSelect(props: RoleSelectProps): React.JSX.Element;

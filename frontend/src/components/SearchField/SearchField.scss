@@ -1,6 +1,7 @@
 // SearchField — ported from design/components/primitives/primitives.css so the two stay diffable: the
-// SearchField block, then its lines from the file's phone block (the reduced-motion block has none).
-// The hidden label is the global .gt-visually-hidden utility (index.css).
+// SearchField block, then its lines from the file's phone and reduced-motion blocks. The clear
+// button's own padding, border, radius, background, font and transition beat index.css's global
+// button rule. The hidden label is the global .gt-visually-hidden utility (index.css).
 
 /* ── SearchField (promoted from search/) ─────────────────── */
 .gt-search-field { position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 320px; }
@@ -19,12 +20,9 @@
 .gt-search-field__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .gt-search-field__clear {
   position: absolute; right: 6px; display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent; color: var(--gt-text-tertiary); cursor: pointer;
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 5px; background: transparent; font: inherit; color: var(--gt-text-tertiary); cursor: pointer;
   transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
 }
-// Codebase-side reset: index.css's scaffold `button` rule (padding 0.6em 1.2em, weight 500) reaches
-// this raw button, which the design gives no padding of its own.
-.gt-search-field__clear { padding: 0; }
 .gt-search-field__clear:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
 .gt-search-field__clear:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 .gt-search-field--compact .gt-search-field__input { height: 32px; font-size: 12.5px; }
@@ -33,4 +31,9 @@
 @media (max-width: 767px) {
   .gt-search-field__input { min-height: 44px; }
   .gt-search-field__clear { width: 36px; height: 36px; right: 4px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-search-field__clear { transition: none; }
 }

@@ -90,11 +90,11 @@ function Sparkline({ points }: { points: number[] }) {
  * marks the card `aria-busy`. With `onClick` the card is a stretched button under its content, named
  * "{label}: {value}", and the ⓘ stays its own control above it.
  *
- * Codebase-side, from the metric card and StatTile it replaces: the delta reads with a true minus
- * ("−20%") and is coloured by the figure shown, so "0%" is flat whatever the ratio behind it; the
- * sparkline is decorative, as the value and delta carry its figures; the stretched button is described
- * by the delta and hint, names only the label while loading (the figure is not known yet), and calls
- * `onClick` with no arguments; and a NaN value reads "—" too.
+ * The delta is coloured by the figure shown, so "0%" is flat whatever the ratio behind it, and the
+ * sparkline is decorative, as the value and delta carry its figures. Codebase-side, from the metric
+ * card and the analytics tile it replaces: the delta reads with a true minus ("−20%"); the stretched
+ * button is described by the delta and hint, names only the label while loading (the figure is not
+ * known yet), and calls `onClick` with no arguments; and a NaN value reads "—" too.
  *
  * Native props and `ref` reach the card's root.
  */

@@ -54,15 +54,15 @@
 }
 .gt-toast__dismiss:hover { color: var(--gt-text-primary); }
 .gt-toast__dismiss:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-// The design names this keyframe gt-rise-in, which collides with the motion layer's 4px rise
-// (styles/keyframes.css, used by messages): the last stylesheet loaded would win for both.
+// Not gt-rise-in: that name is the motion layer's 4px rise (styles/keyframes.css, used by messages),
+// and with two definitions the last stylesheet loaded would win for both.
 @keyframes gt-toast-rise-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+// The toast's leaving fade. gt-fade-in is a shared keyframe (styles/keyframes.css, which main.tsx
+// loads once): the date picker's calendar and the scrum mention box fade with it.
 @keyframes gt-fade-out { to { opacity: 0; } }
-// The design's gt-fade-in, beside it here, lives in styles/keyframes.css, which main.tsx loads once:
-// the date picker's calendar and the scrum mention box fade with it too, wherever a toast never shows.
 .gt-toast-stack {
   position: fixed;
   bottom: var(--gt-space-lg);

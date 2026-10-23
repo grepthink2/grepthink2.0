@@ -1,3 +1,4 @@
+// Intentional addition: Tabs, TabPanel — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface TabItem {
@@ -18,7 +19,7 @@ export interface TabsProps {
   onChange?: (value: string) => void;
   /** Names the tablist when no visible heading does ("Edit project sections"). */
   ariaLabel?: string;
-  /** Shared with each TabPanel to link `aria-controls` / `aria-labelledby`. Auto-generated if omitted (then panels can't link). */
+  /** Shared with each TabPanel to link `aria-controls` / `aria-labelledby`. Auto-generated if omitted — then panels can't link, and the tabs set no `aria-controls`. */
   idBase?: string;
   /** 'automatic': arrow keys select (panels that render at once). 'manual': Enter / Space select (panels that fetch). @default 'automatic' */
   activation?: 'automatic' | 'manual';

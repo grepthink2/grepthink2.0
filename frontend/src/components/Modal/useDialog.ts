@@ -141,10 +141,10 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
  * - After `open` turns false the sheet stays mounted `exitMs` with `closing` set, for the fade, and
  *   unmounts at once under reduced motion.
  *
- * Codebase-side: an Esc or Tab whose default was prevented is left alone; the trap counts stops as
- * the browser does (drawn, in the tab order, a radio group once); a field inside that takes focus as
- * it mounts (`autoFocus`) keeps it, unless `initialFocusRef` names another; and focus moved on
- * purpose as the dialog closes stays where it went.
+ * An Esc or Tab whose default was prevented is left alone; the trap counts stops as the browser does
+ * (drawn, in the tab order, a radio group once); a field inside that takes focus as it mounts
+ * (`autoFocus`) keeps it, unless `initialFocusRef` names another; and focus moved on purpose as the
+ * dialog closes stays where it went.
  */
 export function useDialog({
   open, onClose, closeDisabled = false, initialFocusRef, sheetRef, exitMs = 150, inPlace = false,
