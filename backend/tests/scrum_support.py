@@ -4,7 +4,8 @@ FakeSupabase that does what Postgres does for the scrum tables.
 The world: project ``PID`` in class ``CLASS``. ``UID`` is on the team. ``INSTR`` teaches the
 class, ``TA`` is one of its TAs and ``MEETING_TA`` runs the team's weekly meeting, so all
 three are staff. ``STUDENT`` is enrolled but on another team, and ``OUTSIDER`` is in no
-class at all. ``OTHER_PID`` is a second project in the same class.
+class at all. ``OTHER_PID`` is a second project in the same class. The class has no sprint
+schedule (its three schedule columns are NULL); a test that needs one replaces ``classes``.
 """
 
 from __future__ import annotations
@@ -87,7 +88,15 @@ class ScrumFake(FakeSupabase):
 def scrum_db(monkeypatch, **tables) -> ScrumFake:
     """Install a ScrumFake seeded with the world above; ``tables`` replace or add tables."""
     seed = {
-        "classes": [{"id": CLASS, "created_by": INSTR}],
+        "classes": [
+            {
+                "id": CLASS,
+                "created_by": INSTR,
+                "sprint_count": None,
+                "sprint_frequency": None,
+                "sprints_start_on": None,
+            }
+        ],
         "projects": [
             {
                 "id": PID,

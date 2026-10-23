@@ -38,7 +38,7 @@ from app.scrum.burnup import (
 )
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
-from app.scrum.schedule import sprint_status
+from app.scrum.schedule import SPRINT_NAME, Schedule, sprint_status, sprint_windows
 from app.utils.mentions import extract_mention_ids
 from app.utils.profiles import profile_display_name
 
@@ -66,6 +66,12 @@ TITLE_REQUIRED = "title cannot be null"
 UNIT_UNAVAILABLE = "Burnup unit not available for this sprint"
 #: 409: a story leaves through the backlog, so a sprint's scope never drops by deletion.
 STORY_IN_SPRINT = "Move the story to the backlog before deleting it"
+#: 409: a class's new sprint schedule would delete a team's Sprint ``k`` while a story is in it
+#: (spec D20). ``team`` is the project's name.
+SPRINTS_IN_USE = (
+    "{team} already uses Sprint {k}; lower the count after they move their stories or delete "
+    "that plan"
+)
 #: 409, code ``task_blocked``: a task in To do waits until every task it depends on is done.
 TASK_BLOCKED = "Finish the tasks this one depends on first"
 #: Task dependencies (spec 2026-10-16): the edges refused (409, 422) and a missing one (404).
@@ -245,6 +251,78 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update sprint")
     return _with_status(res.data[0], _today_la())
+
+
+# ----------------------------------------------------------- class schedule ----
+
+
+def ensure_project_sprints(
+    client, *, project_id: str, project_name: str, schedule: Schedule
+) -> dict[str, int]:
+    """Make a team's sprints follow its class's sprint schedule (spec D20).
+
+    Sprint k of ``schedule`` is the team's sprint whose ``sequence`` is k, named "Sprint k"
+    (:data:`~app.scrum.schedule.SPRINT_NAME`) and dated by the k-th window of
+    :func:`~app.scrum.schedule.sprint_windows`. The missing ones are inserted in one insert
+    (``status`` keeps its column default: the API derives it from the dates); each one whose name
+    or dates differ is updated in place, so its stories stay in it; the ones beyond
+    ``schedule.count`` are deleted in one delete. A sprint without a ``sequence`` (made through
+    :func:`create_sprint`) is never read or written. No burnup snapshot: a deleted sprint holds
+    no story, and a moved one keeps its tasks.
+
+    Who can call: the callers authorize (a team's creation, its class instructor's schedule
+    change); nothing here checks a user. Returns ``{"created", "updated", "deleted"}`` counts.
+    Raises 409 :data:`SPRINTS_IN_USE`, naming ``project_name`` and the lowest such k, when a story
+    is in a sprint beyond the count; nothing is written then. Round trips: one read of the
+    sprints; one of their stories when sprints beyond the count exist; then one insert, one update
+    per changed sprint and one delete, each only when there is something to write.
+    """
+    rows = (
+        client.table("sprints")
+        .select("id, name, starts_at, ends_at, sequence")
+        .eq("project_id", str(project_id))
+        .not_.is_("sequence", "null")
+        .execute()
+    ).data or []
+    by_sequence = {row["sequence"]: row for row in rows}
+    extras = {k: row for k, row in by_sequence.items() if k > schedule.count}
+    if extras:
+        stories = (
+            client.table("user_stories")
+            .select("sprint_id")
+            .in_("sprint_id", [row["id"] for row in extras.values()])
+            .execute()
+        ).data or []
+        held = {str(story["sprint_id"]) for story in stories}
+        in_use = [k for k, row in extras.items() if str(row["id"]) in held]
+        if in_use:
+            detail = SPRINTS_IN_USE.format(team=project_name, k=min(in_use))
+            raise HTTPException(status_code=409, detail=detail)
+
+    missing: list[dict] = []
+    changed: list[tuple[str, dict]] = []
+    windows = sprint_windows(schedule.start_on, schedule.count, schedule.frequency)
+    for k, (starts_at, ends_at) in enumerate(windows, start=1):
+        fields = {
+            "name": SPRINT_NAME.format(k=k),
+            "starts_at": starts_at.isoformat(),
+            "ends_at": ends_at.isoformat(),
+        }
+        row = by_sequence.get(k)
+        if row is None:
+            missing.append({"project_id": str(project_id), "sequence": k, **fields})
+        elif row["name"] != fields["name"] or _sprint_days(row) != (starts_at, ends_at):
+            changed.append((row["id"], fields))
+
+    # The delete runs first, nearest the story check: a story moved into one of these sprints in
+    # between would go to the backlog (``user_stories.sprint_id`` is ON DELETE SET NULL).
+    if extras:
+        client.table("sprints").delete().in_("id", [row["id"] for row in extras.values()]).execute()
+    if missing:
+        client.table("sprints").insert(missing).execute()
+    for sprint_id, fields in changed:
+        client.table("sprints").update(fields).eq("id", str(sprint_id)).execute()
+    return {"created": len(missing), "updated": len(changed), "deleted": len(extras)}
 
 
 # ------------------------------------------------------------ stories, tasks ----
