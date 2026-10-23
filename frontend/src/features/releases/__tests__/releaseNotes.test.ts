@@ -49,7 +49,7 @@ it.each([
   ['0.91.0.md', '---\ndate: 2026-10-23\ntitle: x\n---\n## New\n- a', '0.91.0.md:3: unknown key "title"'],
   ['0.91.0.md', '---\ndate: 2026-10-23\ndate: 2026-10-24\n---\n## New\n- a', '0.91.0.md:3: "date" given twice'],
   ['0.91.0.md', '---\ndate: 2026-10-23\nhello\n---\n## New\n- a', '0.91.0.md:3: front matter lines must be "key: value"'],
-  ['0.91.0.md', '---\n---\n## New\n- a', '0.91.0.md:1: missing "date"'],
+  ['0.91.0.md', '---\n---\n## New\n- a', '0.91.0.md:2: missing "date"'],
   ['0.91.0.md', '---\ndate: 2026-02-30\n---\n## New\n- a', '0.91.0.md:2: "2026-02-30" is not a calendar date'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n## New\n- a', '0.91.0.md:1: front matter is not closed'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\nHello\n## New\n- a', '0.91.0.md:4: only sections after the front matter'],
@@ -77,7 +77,8 @@ it.each([
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- see ![x](y.png)', '0.91.0.md:5: no images'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- <b>a</b>', '0.91.0.md:5: no HTML'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- `<b>` and <https://x.com>, then <i>x</i>', '0.91.0.md:5: no HTML'],
-  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n', '0.91.0.md:1: no sections'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n', '0.91.0.md:3: no sections'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---', '0.91.0.md:3: no sections'],
 ])('refuses %s: %j', (name, text, message) => expect(thrownMessage(() => parseRelease(name, text))).toBe(message));
 
 it('sorts newest first', () =>
@@ -87,13 +88,15 @@ it('sorts newest first', () =>
       './notes/0.92.0.md': '---\ndate: 2026-11-05\n---\n## New\n- b',
     }).map((r) => r.version),
   ).toEqual(['0.92.0', '0.91.0']));
-it('refuses a higher version with an earlier date', () =>
-  expect(() =>
-    collectReleases({
-      './notes/0.91.0.md': '---\ndate: 2026-10-23\n---\n## New\n- a',
-      './notes/0.92.0.md': '---\ndate: 2026-10-01\n---\n## New\n- b',
-    }),
-  ).toThrow(/0\.92\.0\.md.*0\.91\.0\.md|0\.91\.0\.md.*0\.92\.0\.md/));
+it('refuses a higher version with an earlier date, at its date line', () =>
+  expect(
+    thrownMessage(() =>
+      collectReleases({
+        './notes/0.91.0.md': '---\ndate: 2026-10-23\n---\n## New\n- a',
+        './notes/0.92.0.md': '---\ndate: 2026-10-01\n---\n## New\n- b',
+      }),
+    ),
+  ).toBe("0.92.0.md:2: date 2026-10-01 is earlier than 0.91.0.md's 2026-10-23; a higher version needs the same date or a later one"));
 it('refuses one version from two files', () =>
   expect(() =>
     collectReleases({

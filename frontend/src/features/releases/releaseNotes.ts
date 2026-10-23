@@ -99,19 +99,33 @@ interface OpenSection {
   lines: string[];
 }
 
+interface ParsedFile {
+  release: Release;
+  /** The `date:` line, where an error about the release's date points. */
+  dateLine: number;
+}
+
 /** Parses one notes file. `fileName` is its base name (0.91.0.md); the first problem found throws. */
 export function parseRelease(fileName: string, text: string): Release {
+  return parseFile(fileName, text).release;
+}
+
+function parseFile(fileName: string, text: string): ParsedFile {
   const version = fileName.endsWith('.md') ? fileName.slice(0, -'.md'.length) : '';
   if (!parseVersion(version)) throw new ReleaseNotesError(fileName, 1, 'file name must be MAJOR.MINOR.PATCH.md');
 
-  // A trailing newline leaves an empty last line, which counts as a blank line.
-  const lines = text.replaceAll('\r\n', '\n').split('\n');
+  const normalized = text.replaceAll('\r\n', '\n');
+  // A trailing newline leaves an empty last element, which the section loop reads as a blank line. It ends the
+  // file's last line rather than starting another, so it does not count for `lastLine`.
+  const lines = normalized.split('\n');
+  const lastLine = normalized.endsWith('\n') ? lines.length - 1 : lines.length;
 
   if (lines[0] !== '---') throw new ReleaseNotesError(fileName, 1, 'the file must start with "---"');
   const closing = lines.indexOf('---', 1);
   if (closing === -1) throw new ReleaseNotesError(fileName, 1, 'front matter is not closed');
 
   let date: string | null = null;
+  let dateLine = 0;
   for (let index = 1; index < closing; index++) {
     const lineNumber = index + 1;
     const entry = FRONT_MATTER_ENTRY.exec(lines[index]);
@@ -121,8 +135,9 @@ export function parseRelease(fileName: string, text: string): Release {
     if (date !== null) throw new ReleaseNotesError(fileName, lineNumber, '"date" given twice');
     if (!isCalendarDate(value)) throw new ReleaseNotesError(fileName, lineNumber, `"${value}" is not a calendar date`);
     date = value;
+    dateLine = lineNumber;
   }
-  if (date === null) throw new ReleaseNotesError(fileName, 1, 'missing "date"');
+  if (date === null) throw new ReleaseNotesError(fileName, closing + 1, 'missing "date"');
 
   const sections: ReleaseSection[] = [];
   const finish = (section: OpenSection) => {
@@ -174,9 +189,9 @@ export function parseRelease(fileName: string, text: string): Release {
     open.lines.push(line);
   }
   if (open) finish(open);
-  if (sections.length === 0) throw new ReleaseNotesError(fileName, 1, 'no sections');
+  if (sections.length === 0) throw new ReleaseNotesError(fileName, lastLine, 'no sections');
 
-  return { version, date, sections };
+  return { release: { version, date, sections }, dateLine };
 }
 
 /**
@@ -184,17 +199,17 @@ export function parseRelease(fileName: string, text: string): Release {
  * Throws when two files hold one version, or when a higher version has an earlier date than a lower one.
  */
 export function collectReleases(files: Record<string, string>): Release[] {
-  const parsed: { fileName: string; release: Release }[] = [];
+  const parsed: (ParsedFile & { fileName: string })[] = [];
   const pathByVersion = new Map<string, string>();
   for (const [path, text] of Object.entries(files)) {
     const fileName = path.slice(path.lastIndexOf('/') + 1);
-    const release = parseRelease(fileName, text);
+    const { release, dateLine } = parseFile(fileName, text);
     const other = pathByVersion.get(release.version);
     if (other !== undefined) {
       throw new ReleaseNotesError(path, 1, `version ${release.version} is also in ${other}`);
     }
     pathByVersion.set(release.version, path);
-    parsed.push({ fileName, release });
+    parsed.push({ fileName, release, dateLine });
   }
 
   parsed.sort((a, b) => compareVersions(b.release.version, a.release.version));
@@ -204,7 +219,7 @@ export function collectReleases(files: Record<string, string>): Release[] {
     if (newer.release.date < older.release.date) {
       throw new ReleaseNotesError(
         newer.fileName,
-        1,
+        newer.dateLine,
         `date ${newer.release.date} is earlier than ${older.fileName}'s ${older.release.date}; ` +
           'a higher version needs the same date or a later one',
       );
