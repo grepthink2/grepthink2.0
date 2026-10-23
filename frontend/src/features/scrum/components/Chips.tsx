@@ -4,8 +4,25 @@ import { Tooltip, type TooltipProps } from '@components/Tooltip/Tooltip';
 import { avatarName, type BoardPerson } from '../scrumTypes';
 import { prLabel, prState } from '../utils/prLabel';
 
-/** Story-point chip — rounded square, mono numeral. */
-export function PointsChip({ points, size = 'md' }: { points: number | string; size?: 'sm' | 'md' }) {
+/**
+ * Story-point chip — rounded square, mono numeral. `missing` draws a task that has no points as a faint
+ * dashed "– pts" (spec D21: the burnup counts in points only once every task has them). That text alone
+ * reads as punctuation, so the chip carries a name; a plain span can't (aria-label is not allowed on
+ * the generic role), hence the img role, as for any symbol that needs a text alternative. No `title`:
+ * Chromium would expose it as a description repeating the name.
+ */
+export function PointsChip({ points, size = 'md', missing = false }: {
+  points?: number | string;
+  size?: 'sm' | 'md';
+  missing?: boolean;
+}) {
+  if (missing) {
+    return (
+      <span className={`gt-points gt-points--${size} gt-points--missing`} role="img" aria-label="No points yet">
+        – pts
+      </span>
+    );
+  }
   return (
     <span className={`gt-points gt-points--${size}`} title="Story points">
       {points}

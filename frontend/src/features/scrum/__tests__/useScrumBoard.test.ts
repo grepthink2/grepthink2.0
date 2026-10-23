@@ -57,12 +57,23 @@ const dependencyBoard = (blocker: ApiBoardStatus = 'in_progress') => makeBoard({
   })],
 });
 
-/** One sprint story whose tasks carry 3 and 2 hours. */
-const hoursBoard = () => makeBoard({
+/** One sprint story whose tasks carry `first` (3 unless given) and 2 hours. */
+const hoursBoard = (first = 3) => makeBoard({
   stories: [makeStory({
     points: 8,
-    tasks: [makeTask({ id: 't1', estimate_hours: 3 }), makeTask({ id: 't2', estimate_hours: 2 })],
+    tasks: [makeTask({ id: 't1', estimate_hours: first }), makeTask({ id: 't2', estimate_hours: 2 })],
   })],
+});
+
+/** What the task editor sends on Save: every field, the unchanged ones included. */
+const editorBody = (task: ApiScrumTask) => ({
+  title: task.title,
+  description_md: task.description_md,
+  tags: task.tags,
+  points: task.points ?? undefined,
+  estimate_hours: task.estimate_hours,
+  assignee_id: task.assignee_id,
+  pr_url: task.pr_url,
 });
 
 describe('useScrumBoard', () => {
@@ -160,8 +171,9 @@ describe('useScrumBoard', () => {
     expect(result.current.board!.stories[0].points).toBe(5);
   });
 
-  it('a task save that changes its hours changes the story sum at once, without a reload', async () => {
-    vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
+  it('a task save that changes its hours changes the story sum at once, before the board reloads', async () => {
+    // The reload behind the save answers the server's sum.
+    vi.mocked(api.getScrumBoard).mockResolvedValueOnce(hoursBoard()).mockResolvedValue(hoursBoard(8));
     let resolveSave: (v: { message: string; task: ApiScrumTask }) => void = () => {};
     vi.mocked(api.updateScrumTask).mockReturnValue(
       new Promise((res) => { resolveSave = res; }) as ReturnType<typeof api.updateScrumTask>,
@@ -173,10 +185,56 @@ describe('useScrumBoard', () => {
 
     act(() => { void result.current.updateTask('t1', { estimate_hours: 8 }); });
     expect(storyHours(result.current.board!.stories[0])).toBe(10);   // optimistic
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);               // nothing waits for a reload
 
     await act(async () => { resolveSave({ message: 'ok', task: makeTask({ id: 't1', estimate_hours: 8 }) }); });
     expect(storyHours(result.current.board!.stories[0])).toBe(10);
-    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);   // the first load only
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);   // then one quiet reload, for the burnup
+  });
+
+  it('reloads the board quietly once after a task save that changes its points, for the burnup', async () => {
+    const before = makeTask();   // makeBoard()'s task: no points, no hours
+    vi.mocked(api.updateScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ points: 3 }) });
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();   // count the reload only
+
+    await act(async () => { await result.current.updateTask('a', { ...editorBody(before), points: 3 }); });
+
+    // The burnup, its unit and the points nudge come from the board load alone.
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp1', undefined);
+    expect(result.current.loading).toBe(false);   // no skeleton
+  });
+
+  it('reloads nothing after a task save that leaves its points and hours as they were', async () => {
+    // One task with both estimates, one with neither: the editor sends no points for that one.
+    const estimated = makeTask({ id: 'a', points: 3, estimate_hours: 4 });
+    const bare = makeTask({ id: 'b', key: 'T-2' });
+    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({ stories: [makeStory({ tasks: [estimated, bare] })] }));
+    vi.mocked(api.updateScrumTask).mockImplementation(async (id, body) => ({
+      message: 'ok', task: { ...(id === 'a' ? estimated : bare), title: body.title! },
+    }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();
+
+    await act(async () => { await result.current.updateTask('a', { ...editorBody(estimated), title: 'Renamed' }); });
+    await act(async () => { await result.current.updateTask('b', { ...editorBody(bare), title: 'Also renamed' }); });
+    expect(findTask(result.current.board!.stories, 'a')!.title).toBe('Renamed');
+    expect(findTask(result.current.board!.stories, 'b')!.title).toBe('Also renamed');
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
+  });
+
+  it('reloads nothing after a failed save that would have changed the points', async () => {
+    vi.mocked(api.updateScrumTask).mockRejectedValue(new Error('network down'));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();
+
+    await act(async () => { await result.current.updateTask('a', { points: 3 }); });
+    expect(findTask(result.current.board!.stories, 'a')!.points).toBeNull();   // rolled back
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
   });
 
   it('a story points change keeps the story sum', async () => {
@@ -312,6 +370,57 @@ describe('useScrumBoard', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBeNull();
     expect(result.current.notice).toBeNull();
+  });
+});
+
+describe('useScrumBoard burnup unit', () => {
+  const loaded = async () => {
+    const hook = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    return hook.result;
+  };
+
+  it('reloads the shown sprint in hours, with the skeleton, and keeps hours for background reloads', async () => {
+    const result = await loaded();
+
+    act(() => { void result.current.setBurnupUnit('hours'); });
+    expect(result.current.loading).toBe(true);
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp1', 'hours');
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.refresh(); });
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp1', 'hours');
+  });
+
+  it('asks for points as the server default, which it is whenever the sprint can draw it', async () => {
+    const result = await loaded();
+    await act(async () => { await result.current.setBurnupUnit('hours'); });
+
+    await act(async () => { await result.current.setBurnupUnit('points'); });
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp1', undefined);
+  });
+
+  it('opens another sprint in its own default unit, without the unit chosen for the last one', async () => {
+    const result = await loaded();
+    await act(async () => { await result.current.setBurnupUnit('hours'); });
+
+    await act(async () => { await result.current.selectSprint('sp2'); });
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2', undefined);
+  });
+
+  it('keeps a slow unit reload from overwriting the sprint switched to after it', async () => {
+    const result = await loaded();
+    let finishUnit: (board: ApiScrumBoard) => void = () => {};
+    vi.mocked(api.getScrumBoard)
+      .mockReturnValueOnce(new Promise((res) => { finishUnit = res; }))   // Sprint 1 in hours: slow
+      .mockResolvedValueOnce(makeBoard({ sprint_id: 'sp2' }));            // the switch: fast
+
+    act(() => { void result.current.setBurnupUnit('hours'); });
+    await act(async () => { await result.current.selectSprint('sp2'); });
+    await act(async () => { finishUnit(makeBoard({ sprint_id: 'sp1' })); });
+
+    expect(result.current.board?.sprint_id).toBe('sp2');
+    expect(result.current.loading).toBe(false);
   });
 });
 

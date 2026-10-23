@@ -4,7 +4,7 @@ import {
 import { Check, ChevronDown } from 'lucide-react';
 import { Menu, MenuItem } from '@/components/Menu/Menu';
 import { Popover } from '@/components/Popover/Popover';
-import type { ApiScrumBoardSprint, ApiSprintProgress } from '@/lib/api';
+import type { ApiScrumBoardSprint, ApiScrumBurnupUnit, ApiSprintProgress } from '@/lib/api';
 import { percentDone, sprintDates } from '../utils/sprints';
 import SprintStatusPill from './SprintStatusPill';
 import './SprintPicker.scss';
@@ -15,11 +15,17 @@ import './SprintPicker.scss';
  */
 const GUTTER = 24;
 
-/** The story card's vocabulary ("1/2 tasks · 3/8 pts"): points only when the sprint has any. */
-function progressSummary(p: ApiSprintProgress): string {
+/**
+ * The story card's vocabulary ("1/2 tasks · 3/8 pts"), with the estimates in the board's unit ("· 12/20 h"
+ * when its burnup counts hours): those only when the sprint has some.
+ */
+function progressSummary(p: ApiSprintProgress, unit: ApiScrumBurnupUnit): string {
   if (p.tasks_total === 0) return 'No tasks yet';
-  const points = p.points_total > 0 ? ` · ${p.points_done}/${p.points_total} pts` : '';
-  return `${p.tasks_done}/${p.tasks_total} tasks${points}`;
+  const [done, total, name] = unit === 'hours'
+    ? [p.hours_done ?? 0, p.hours_total ?? 0, 'h']
+    : [p.points_done, p.points_total, 'pts'];
+  const estimates = total > 0 ? ` · ${done}/${total} ${name}` : '';
+  return `${p.tasks_done}/${p.tasks_total} tasks${estimates}`;
 }
 
 interface SprintPickerProps {
@@ -28,6 +34,8 @@ interface SprintPickerProps {
   selectedId: string | null;
   /** Called for a sprint other than the selected one. */
   onSelect: (sprintId: string) => void;
+  /** The board's burnup unit, which every row's progress counts in (the selected sprint decides it). */
+  unit: ApiScrumBurnupUnit;
   /** The trigger button. React 19.2 passes `ref` as an ordinary prop — the first function component in
    *  this codebase to take one, so no precedent to copy; no `forwardRef`. */
   ref?: Ref<HTMLButtonElement>;
@@ -35,12 +43,13 @@ interface SprintPickerProps {
 
 /**
  * The scrum board's sprint switcher: a menu button whose rows show each sprint's dates, status and
- * live progress (tasks done, and points when the sprint has any). It opens on a click, Enter, Space,
+ * live progress (tasks done, and points or hours, as the board's burnup counts, when the sprint has
+ * any). It opens on a click, Enter, Space,
  * ArrowDown or ArrowUp, on the selected sprint; Esc, a pick or the selected row close it with focus
  * back on the trigger, and Tab out of the menu closes it.
  * Spec: docs/superpowers/specs/2026-10-16-scrum-sprint-picker-design.md.
  */
-export default function SprintPicker({ sprints, selectedId, onSelect, ref }: SprintPickerProps) {
+export default function SprintPicker({ sprints, selectedId, onSelect, unit, ref }: SprintPickerProps) {
   const [open, setOpen] = useState(false);
   const [shift, setShift] = useState(0);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -158,7 +167,7 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
                   <span className="sprint-picker__name">{s.name}</span>
                   <SprintStatusPill status={s.status} />
                 </span>
-                <span className="sprint-picker__meta">{sprintDates(s)}{p && ` · ${progressSummary(p)}`}</span>
+                <span className="sprint-picker__meta">{sprintDates(s)}{p && ` · ${progressSummary(p, unit)}`}</span>
                 {/* Spans only: the row is a <button>. The bar is decorative, as on the story card. */}
                 {p && (
                   <span className="sprint-picker__progress">

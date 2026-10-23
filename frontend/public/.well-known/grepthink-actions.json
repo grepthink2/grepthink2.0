@@ -377,8 +377,8 @@
     {
       "id": "update_sprint", "title": "Update a sprint (rename, dates)", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/scrum/sprints/{sprint_id}",
-      "params": {"name": "string", "starts_at": "date", "ends_at": "date"}, "uiRoute": "/app/projects/{projectId}/board",
-      "note": "A sprint's status follows its dates (planned, active from starts_at through ends_at, completed after), so the body takes none; a status sent anyway is ignored. A sprint from the class's schedule gets its name and dates back the next time the instructor saves the schedule."
+      "params": {"name": "string", "starts_at": "date", "ends_at": "date"},
+      "note": "A sprint's status follows its dates (planned, active from starts_at through ends_at, completed after), so the body takes none; a status sent anyway is ignored. A sprint from the class's schedule gets its name and dates back the next time the instructor saves the schedule. This route is for API callers; the web client doesn't offer it."
     },
     {
       "id": "create_story", "title": "Create a user story", "role": "project-member",

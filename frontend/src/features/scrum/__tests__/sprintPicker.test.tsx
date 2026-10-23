@@ -20,12 +20,12 @@ const SPRINTS = [
   }),
 ];
 
-/** The picker on Sprint 2, with one more control after it to Tab to. */
+/** The picker on Sprint 2 of a board counting points, with one more control after it to Tab to. */
 function renderPicker() {
   const onSelect = vi.fn();
   render(
     <>
-      <SprintPicker sprints={SPRINTS} selectedId="sp2" onSelect={onSelect} />
+      <SprintPicker sprints={SPRINTS} selectedId="sp2" onSelect={onSelect} unit="points" />
       <button type="button">After</button>
     </>,
   );
@@ -88,8 +88,27 @@ describe('SprintPicker', () => {
     expect(within(third).getByText('100%')).toBeInTheDocument();
   });
 
+  it("counts hours in every row when the board's burnup is in hours, and only for a sprint that has some", async () => {
+    const sprints = [
+      makeSprint({
+        id: 'sp1', name: 'Sprint 1',
+        progress: { tasks_done: 3, tasks_total: 5, points_done: 0, points_total: 4, hours_done: 12, hours_total: 20 },
+      }),
+      makeSprint({
+        id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06',
+        progress: { tasks_done: 0, tasks_total: 2, points_done: 0, points_total: 5, hours_done: 0, hours_total: 0 },
+      }),
+    ];
+    render(<SprintPicker sprints={sprints} selectedId="sp1" onSelect={vi.fn()} unit="hours" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Sprint: Sprint 1' }));
+
+    const meta = (name: string) => row(name).querySelector('.sprint-picker__meta');
+    expect(meta('Sprint 1')).toHaveTextContent(/^Aug 10 – Aug 23 · 3\/5 tasks · 12\/20 h$/);
+    expect(meta('Sprint 2')).toHaveTextContent(/^Aug 24 – Sep 6 · 0\/2 tasks$/);
+  });
+
   it('lists a sprint by its dates alone when the board has no progress for it (an older backend)', async () => {
-    render(<SprintPicker sprints={[makeSprint({ progress: undefined })]} selectedId="sp1" onSelect={vi.fn()} />);
+    render(<SprintPicker sprints={[makeSprint({ progress: undefined })]} selectedId="sp1" onSelect={vi.fn()} unit="points" />);
     await userEvent.click(screen.getByRole('button', { name: 'Sprint: Sprint 1' }));
 
     const only = row('Sprint 1');
