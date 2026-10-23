@@ -519,6 +519,20 @@ describe('ClassSettingsModal — sprints', () => {
     expect(save()).toBeEnabled();
   });
 
+  it('writes the line about the last sprint as a hint, in the error colour while it would end too late', async () => {
+    const user = userEvent.setup();
+    renderSettings(course(FIVE_BIWEEKLY));
+    expect(preview()).toHaveClass('class-settings-modal__hint');
+    expect(preview()).not.toHaveClass('class-settings-modal__sprint-preview--past-end');
+    await setCount(user, '6');
+    expect(preview()).toHaveClass('class-settings-modal__hint', 'class-settings-modal__sprint-preview--past-end');
+    // The hint's look, so the two can't drift apart: the modifier changes the colour and nothing else.
+    expect(cssRules('.class-settings-modal__sprint-preview')).toEqual([]);
+    const [pastEnd] = cssRules('.class-settings-modal__sprint-preview--past-end');
+    expect(Array.from(pastEnd)).toEqual(['color']);
+    expect(getComputedStyle(preview()).color).toBe('var(--gt-error-text)'); // over the hint's colour
+  });
+
   it('counts from the last day of classes saved, as the API does, not from one picked and not saved yet', async () => {
     const user = userEvent.setup();
     renderSettings(course(FIVE_BIWEEKLY));

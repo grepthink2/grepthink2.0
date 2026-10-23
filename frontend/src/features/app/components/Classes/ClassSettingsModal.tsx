@@ -509,7 +509,7 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   </div>
                   {/* Always on the page, so a screen reader announces the line as it changes */}
                   <p
-                    className={`class-settings-modal__sprint-preview${
+                    className={`class-settings-modal__hint${
                       sprintsPastLastDay ? ' class-settings-modal__sprint-preview--past-end' : ''
                     }`}
                     role="status"

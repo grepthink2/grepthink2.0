@@ -159,15 +159,10 @@
     }
   }
 
-  // The hint's look; in the error colour while the last sprint would end after the last day of
-  // classes, which holds Save.
+  // The line under the sprint fields is a __hint. This turns it the error colour while the last
+  // sprint would end after the last day of classes, which holds Save. It comes after __hint, whose
+  // colour it replaces.
   &__sprint-preview {
-    margin: 0;
-    font-size: 0.8125rem;
-    color: $text-secondary;
-    line-height: 1.45;
-    font-family: $primary-font;
-
     &--past-end {
       color: var(--gt-error-text);
     }
