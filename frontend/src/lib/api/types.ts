@@ -17,6 +17,9 @@ export interface ApiInstitution extends ApiInstitutionSummary {
   timezone?: string;
 }
 
+/** How often a class's sprints start: every week, every two weeks, or on the same day each month. */
+export type ApiSprintFrequency = 'weekly' | 'biweekly' | 'monthly';
+
 export interface ApiClass {
   id: string;
   name: string;
@@ -41,6 +44,17 @@ export interface ApiClass {
   institution_id?: string | null;
   /** The class's task board elsewhere, its sidebar's "Tasks - External" item; null hides it. */
   external_tasks_url?: string | null;
+  /**
+   * The class's sprint schedule, which gives every team its "Sprint 1" … "Sprint N": how many
+   * sprints (1–20). This and the next two are null until the instructor sets a schedule, and are
+   * missing from a class the caller is enrolled in (only its instructor's rows carry them) and from
+   * older backends.
+   */
+  sprint_count?: number | null;
+  /** How often the sprints start; null or missing as `sprint_count`. */
+  sprint_frequency?: ApiSprintFrequency | null;
+  /** The first sprint's first day (YYYY-MM-DD); null or missing as `sprint_count`. */
+  sprints_start_on?: string | null;
 }
 
 /**
@@ -838,15 +852,22 @@ export interface ApiScrumSprint {
   /** ISO date "YYYY-MM-DD". */
   starts_at: string;
   ends_at: string;
+  /** Follows the dates: completed after `ends_at`, active from `starts_at` through it, else planned. */
   status: 'planned' | 'active' | 'completed';
 }
 
 export interface ApiSprintProgress {
   tasks_done: number;
   tasks_total: number;
-  /** Points of done tasks over story points: the burnup's units. */
+  /** The points of the sprint's done tasks over the points of all its tasks. */
   points_done: number;
   points_total: number;
+  /**
+   * The same in the tasks' whole hours; the board shows the pair in its burnup's unit. Missing
+   * only from a backend older than this client (the two deploy separately).
+   */
+  hours_done?: number;
+  hours_total?: number;
 }
 
 /** A sprint as the board lists it: with its live progress. */
@@ -928,6 +949,29 @@ export interface ApiBurnupSeries {
   subtitle: string | null;
 }
 
+/** What a burnup counts: the points of the sprint's tasks, or their whole-hour estimates. */
+export type ApiScrumBurnupUnit = 'points' | 'hours';
+
+/**
+ * The board's burnups, in `unit`. Scope is the sum of the sprint's task estimates in that unit,
+ * completed the same over its done tasks.
+ */
+export interface ApiScrumBurnup {
+  /**
+   * Points when every task in the sprint has points, else hours, unless the board was asked for
+   * another unit the sprint can draw. Missing only from a backend older than this client (the two
+   * deploy separately), as are `units_available` and `tasks_without_points`.
+   */
+  unit?: ApiScrumBurnupUnit;
+  /** The units the sprint can draw: points only when it has tasks and every one has points; hours always. */
+  units_available?: ApiScrumBurnupUnit[];
+  /** The sprint's tasks that have no points, which keep it from a points burnup. */
+  tasks_without_points?: number;
+  /** The selected sprint's burnup; null when there is none. */
+  sprint: ApiBurnupSeries | null;
+  cumulative: ApiBurnupSeries;
+}
+
 export interface ApiScrumBoard {
   project: { id: string; name: string; estimate_scale: ApiEstimateScale };
   ai_enabled: boolean;
@@ -936,7 +980,7 @@ export interface ApiScrumBoard {
   sprint_id: string | null;
   stories: ApiScrumStory[];
   backlog: ApiScrumStory[];
-  burnup: { sprint: ApiBurnupSeries | null; cumulative: ApiBurnupSeries };
+  burnup: ApiScrumBurnup;
   members: ApiScrumMember[];
   /** 'member' = full read/write; 'staff' = read + comments. */
   access: 'member' | 'staff';
@@ -984,9 +1028,8 @@ export interface ApiScrumRepo {
   has_token: boolean;   // tokens are write-only; the API never returns them
 }
 
-export type ApiUpdateSprintBody = Partial<
-  Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>
->;
+/** A sprint's new name or dates. There is no status to send: it follows the dates. */
+export type ApiUpdateSprintBody = Partial<Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at'>>;
 
 export interface ApiCreateStoryBody {
   title: string;

@@ -7,6 +7,7 @@ import type {
   ApiCreateTaskBody,
   ApiEstimateScale,
   ApiScrumBoard,
+  ApiScrumBurnupUnit,
   ApiScrumComment,
   ApiScrumRepo,
   ApiScrumSprint,
@@ -23,9 +24,17 @@ export const scrumApi = {
 
   // ----- Scrum board (app/scrum backend) ----------------------------------
 
-  getScrumBoard: async (projectId: string, sprintId?: string) => {
-    const query = sprintId ? `?sprint_id=${sprintId}` : '';
-    return apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${query}`);
+  /**
+   * The board on `sprintId`, else on today's sprint (else the latest one that has started, else the
+   * first), with its burnup in `unit`, else in points when every task in the sprint has them and in
+   * hours otherwise. A unit the sprint can't draw is refused with a 422.
+   */
+  getScrumBoard: async (projectId: string, sprintId?: string, unit?: ApiScrumBurnupUnit) => {
+    const params = new URLSearchParams();
+    if (sprintId) params.set('sprint_id', sprintId);
+    if (unit) params.set('unit', unit);
+    const query = params.toString();
+    return apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${query ? `?${query}` : ''}`);
   },
 
   /** The sprint card's counts. Unlike the board, it records no board view. */

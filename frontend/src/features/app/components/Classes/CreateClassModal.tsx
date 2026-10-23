@@ -165,6 +165,10 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         tsr_count: tsrCount,
         institution_id: institutionId || undefined,
         external_tasks_url: parsedTasksUrl.url ?? undefined,
+        // The form has no sprint fields: every class gets five sprints, two weeks each, from its
+        // first week of term (the first day the API takes when none is sent).
+        sprint_count: 5,
+        sprint_frequency: 'biweekly',
       });
 
       const createdId = created?.id;

@@ -3,6 +3,7 @@ import type {
   ApiAssignmentTsrEntry,
   ApiClass,
   ApiProject,
+  ApiScrumBoard,
   ApiScrumComment,
   ApiScrumSprint,
   ApiScrumTask,
@@ -68,6 +69,31 @@ const CLASS: ApiClass = {
   year: 2026,
   image_url: 'https://cdn.example/class-banner.svg',
   status: 'active',
+  sprint_count: 5,
+  sprint_frequency: 'biweekly',
+  sprints_start_on: '2026-09-21',
+};
+/** Sprint 1's board, its burnup in hours: one of its two tasks has no points. */
+const BOARD: ApiScrumBoard = {
+  project: { id: 'p1', name: 'Trailhead', estimate_scale: 'fibonacci' },
+  ai_enabled: false,
+  sprints: [{
+    ...SPRINT,
+    progress: { tasks_done: 1, tasks_total: 2, points_done: 3, points_total: 3, hours_done: 4, hours_total: 9 },
+  }],
+  sprint_id: 'sp1',
+  stories: [],
+  backlog: [],
+  burnup: {
+    unit: 'hours',
+    units_available: ['hours'],
+    tasks_without_points: 1,
+    sprint: { labels: ['Oct 19', 'Oct 20'], scope: [9, 9], completed: [0, 4], subtitle: null },
+    cumulative: { labels: ['Sprint 1'], scope: [9], completed: [4], subtitle: null },
+  },
+  members: [],
+  access: 'member',
+  task_index: [],
 };
 const PROJECT: ApiProject = {
   id: 'p1',
@@ -149,13 +175,28 @@ describe('updateSprint', () => {
   });
 });
 
+describe('getScrumBoard', () => {
+  it('answers the board as the backend sends it, its burnup in the unit asked for', async () => {
+    apiRequest.mockResolvedValue(BOARD);
+    await expect(scrumApi.getScrumBoard('p1', 'sp1', 'hours')).resolves.toEqual(BOARD);
+    expect(apiRequest).toHaveBeenCalledWith('/api/projects/p1/scrum/board?sprint_id=sp1&unit=hours');
+  });
+});
+
 describe('createClass', () => {
   it.each([
     ['the class itself', CLASS],
     ['{ message, class }', { message: 'Class created successfully', class: CLASS }],
   ])('answers the class when the backend sends %s', async (_shape, body) => {
     apiRequest.mockResolvedValue(body);
-    const fields = { name: 'CSE 115A', term: 'Fall', start_date: '2026-09-21', end_date: '2026-12-04' };
+    const fields: Parameters<typeof classesApi.createClass>[0] = {
+      name: 'CSE 115A',
+      term: 'Fall',
+      start_date: '2026-09-21',
+      end_date: '2026-12-04',
+      sprint_count: 5,
+      sprint_frequency: 'biweekly',
+    };
     await expect(classesApi.createClass(fields)).resolves.toEqual(CLASS);
     const [path, init] = apiRequest.mock.calls[0];
     expect(path).toBe('/api/classes');

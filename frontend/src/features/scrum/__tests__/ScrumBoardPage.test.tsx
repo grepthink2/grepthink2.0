@@ -523,7 +523,7 @@ describe('ScrumBoardPage dependencies', () => {
   });
 
   it('gives staff the lists without the controls', async () => {
-    vi.mocked(api.getScrumBoard).mockImplementation(async (...args) => ({ ...await answer(...args), access: 'staff' }));
+    vi.mocked(api.getScrumBoard).mockImplementation(async (projectId, sprintId) => ({ ...await answer(projectId, sprintId), access: 'staff' }));
     renderAt('/app/projects/p1/board?task=a');
     const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
     expect(within(editor).getByRole('button', { name: 'T-8' })).toBeInTheDocument();

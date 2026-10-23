@@ -263,6 +263,22 @@ describe('CreateClassModal — last day of classes', () => {
   });
 });
 
+describe('CreateClassModal — sprint schedule', () => {
+  beforeEach(() => {
+    state.institutions = []; // no school to pick
+  });
+
+  it('creates the class with five sprints, two weeks each', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'SE 301', sprint_count: 5, sprint_frequency: 'biweekly' }),
+    );
+  });
+});
+
 describe('CreateClassModal — Tasks - External link', () => {
   const linkBox = () => screen.getByLabelText(/Tasks - External link/i);
 
