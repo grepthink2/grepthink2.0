@@ -1,31 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import {
-  BookOpen,
-  CalendarDays,
-  ChevronRight,
-  Clock,
-  FolderOpen,
-  Loader2,
-  MessageCircle,
-  X,
-} from 'lucide-react';
-import {
-  differenceInCalendarDays,
-  parseISO,
-  startOfDay,
-} from 'date-fns';
-import {
-  assignmentClosesAt,
-  assignmentDeadline,
-  assignmentOpensAt,
-  formatDeadline,
-  formatInstant,
-} from '@/lib/dateUtils';
+import { CalendarDays, Clock, Loader2, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
-import { useSchoolTimezone } from '@/lib/institutions';
 import { useUser } from '@/lib/auth';
-import { emptyMySubmissions, api, type ApiAssignment } from '@/lib/api';
+import { api } from '@/lib/api';
 import {
   avatarBgFromEmail,
   displayNameFromEmail,
@@ -38,40 +16,14 @@ import {
   type OutgoingRequestRow,
 } from '@/features/app/utils/joinRequests';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
-import { resolveAssignmentState } from '@/features/app/utils/assignmentState';
-import type { StudentAssignmentAction } from '@/features/app/components/Assignments/StudentAssignmentsTable';
 import {
   // MOCK_SCHEDULE,
-  // buildFallbackDeadlineRows,
 } from './mockData';
 import RequestsModal from './RequestsModal';
+import { Alert } from '@/components/Alert/Alert';
+import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './StudentHomeDashboard.scss';
-
-type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress' | 'completed';
-
-interface DeadlineRow {
-  id: string;
-  name: string;
-  courseLabel: string;
-  dueLabel: string;
-  status: DeadlineDisplayStatus;
-  projectId?: string;
-  projectName?: string;
-  highlight: boolean;
-  assignmentType?: string;
-  /** The deadline instant (`due_at`) for the TSR form's late note; null from older backends. */
-  dueAt?: string | null;
-  /** The open date and the late window's end, for the form's window check. */
-  openDate?: string;
-  acceptUntil?: string | null;
-  /** What the student may do now (`resolveAssignmentState`): only start and edit open the form. */
-  action: StudentAssignmentAction;
-  /** When the assignment opens, for display, while it has not. */
-  opensAt?: string;
-  /** End of the late window for display, while submissions are accepted past the deadline. */
-  lateUntil?: string;
-}
 
 interface TeamMemberRow {
   userId: string;
@@ -81,47 +33,6 @@ interface TeamMemberRow {
   presence: 'green' | 'orange' | 'gray' | 'none';
   avatarClassIndex: number;
   avatarUrl?: string;
-}
-
-function courseLabelFromClass(selected: {
-  name: string;
-  description?: string;
-  term?: string;
-  year?: number;
-}): string {
-  const parts = [selected.year ? String(selected.year) : '', selected.term, selected.name].filter(
-    Boolean,
-  );
-  return parts.join(' ').trim() || selected.name;
-}
-
-/** YYYY-MM-DD from API datetime (avoids UTC day-shift when formatting). */
-function assignmentDatePart(iso: string): string {
-  return iso.trim().split('T')[0];
-}
-
-/** Local calendar date for assignment open/close (matches the due date shown). */
-function parseLocalAssignmentDate(iso: string): Date {
-  const datePart = assignmentDatePart(iso);
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
-  if (match) {
-    const y = Number(match[1]);
-    const m = Number(match[2]) - 1;
-    const d = Number(match[3]);
-    return new Date(y, m, d);
-  }
-  return parseISO(iso);
-}
-
-/** Display string for the assignment's deadline, in the viewer's local time. */
-function formatDueLabel(a: ApiAssignment): string {
-  return formatDeadline(a);
-}
-
-/** True once submissions are no longer accepted: the late window's end, else the deadline. */
-function hasClosed(a: ApiAssignment, now: Date): boolean {
-  const closes = assignmentClosesAt(a);
-  return closes !== null && now >= closes;
 }
 
 function initialsFromName(
@@ -158,160 +69,6 @@ function displayNameFromParts(
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 }
-
-/**
- * A row's window as `resolveAssignmentState` decides it in the school's `zone` — what the student
- * may do now, with the opening or late-window time to show — and the bounds the form checks.
- */
-function windowFields(
-  a: ApiAssignment,
-  now: Date,
-  isSubmitted: boolean,
-  zone: string,
-): Pick<DeadlineRow, 'action' | 'opensAt' | 'lateUntil' | 'openDate' | 'acceptUntil'> {
-  const { action, lateUntil } = resolveAssignmentState(a, now, isSubmitted, true, zone);
-  const opens = action === 'opens_later' ? assignmentOpensAt(a, zone) : null;
-  return {
-    action,
-    opensAt: opens ? formatInstant(opens) : undefined,
-    lateUntil: lateUntil ? formatInstant(lateUntil) : undefined,
-    openDate: a.open_date,
-    acceptUntil: a.accept_until ?? null,
-  };
-}
-
-/**
- * Open and closed are decided on instants, as the server decides them: open from midnight of the
- * open day in the school's `zone`, closed from the late window's end, else the deadline. "Due
- * soon" still counts calendar days to the close date.
- */
-function computeDeadlineStatus(params: {
-  assignment: ApiAssignment;
-  allPairsSubmitted: boolean;
-  anySubmitted: boolean;
-  now: Date;
-  zone: string;
-}): DeadlineDisplayStatus | null {
-  const { assignment, now } = params;
-  const closed = hasClosed(assignment, now);
-
-  if (params.allPairsSubmitted) {
-    if (!closed) return 'completed';
-    return null;
-  }
-
-  const today = startOfDay(now);
-  const closeDay = startOfDay(parseLocalAssignmentDate(assignment.close_date));
-  const daysToClose = differenceInCalendarDays(closeDay, today);
-
-  if (closed) {
-    return 'due_soon';
-  }
-  if (daysToClose <= 7) {
-    return 'due_soon';
-  }
-  if (params.anySubmitted && !params.allPairsSubmitted) {
-    return 'in_progress';
-  }
-  const opens = assignmentOpensAt(assignment, params.zone);
-  if (opens === null || now >= opens) {
-    return 'in_progress';
-  }
-  return 'not_started';
-}
-
-function buildDeadlineRows(
-  assignments: ApiAssignment[],
-  myClassProjects: { id: string; name: string }[],
-  tsrsByProject: Record<string, string[]>,
-  courseLabel: string,
-  now: Date,
-  zone: string,
-): DeadlineRow[] {
-  type Internal = DeadlineRow & { closeMs: number };
-  const rows: Internal[] = [];
-
-  for (const a of assignments) {
-    if (myClassProjects.length === 0) {
-      const allPairsSubmitted = false;
-      const anySubmitted = false;
-      const st = computeDeadlineStatus({
-        assignment: a,
-        allPairsSubmitted,
-        anySubmitted,
-        now,
-        zone,
-      });
-      if (st === null) continue;
-      if (hasClosed(a, now)) continue;
-      rows.push({
-        id: a.id,
-        name: a.Title,
-        courseLabel,
-        dueLabel: formatDueLabel(a),
-        status: st,
-        highlight: false,
-        assignmentType: a.assignment_type,
-        dueAt: a.due_at ?? null,
-        ...windowFields(a, now, false, zone),
-        closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
-      });
-      continue;
-    }
-
-    const submittedFlags = myClassProjects.map((p) =>
-      (tsrsByProject[p.id] ?? []).includes(a.id),
-    );
-    const allPairsSubmitted = submittedFlags.every(Boolean);
-    const anySubmitted = submittedFlags.some(Boolean);
-    const st = computeDeadlineStatus({ assignment: a, allPairsSubmitted, anySubmitted, now, zone });
-    if (st === null) continue;
-
-    const pickProjectIdx = submittedFlags.findIndex((s) => !s);
-    const projIdx = pickProjectIdx >= 0 ? pickProjectIdx : 0;
-    const proj = myClassProjects[projIdx];
-
-    if (hasClosed(a, now) && allPairsSubmitted) continue;
-
-    rows.push({
-      id: a.id,
-      name: a.Title,
-      courseLabel,
-      dueLabel: formatDueLabel(a),
-      status: st,
-      projectId: proj.id,
-      projectName: proj.name,
-      highlight: false,
-      assignmentType: a.assignment_type,
-      dueAt: a.due_at ?? null,
-      ...windowFields(a, now, allPairsSubmitted, zone),
-      closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
-    });
-  }
-
-  rows.sort((x, y) => x.closeMs - y.closeMs);
-
-  const firstInProgress = rows.findIndex((r) => r.status === 'in_progress');
-  if (firstInProgress >= 0) {
-    rows[firstInProgress] = { ...rows[firstInProgress], highlight: true };
-  }
-
-  return rows.slice(0, 12).map(({ closeMs, ...row }) => row);
-}
-
-const statusLabel: Record<DeadlineDisplayStatus, string> = {
-  due_soon: 'Due Soon',
-  not_started: 'Not Started',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-};
-
-const statusPillClass: Record<DeadlineDisplayStatus, string> = {
-  due_soon: 'student-home__pill--due-soon',
-  not_started: 'student-home__pill--not-started',
-  in_progress: 'student-home__pill--in-progress',
-  completed: 'student-home__pill--submitted',
-};
 
 /** The caller's teams in a class: all of my projects intersected with the class's projects. */
 async function fetchMyClassProjects(classId: string): Promise<{ id: string; name: string }[]> {
@@ -351,53 +108,25 @@ interface ClassTeams {
   projects: { id: string; name: string }[];
 }
 
-const NO_DEADLINES: DeadlineRow[] = [];
 const NO_TEAM_PROJECTS: ClassTeams['projects'] = [];
 const NO_TEAM_MEMBERS: TeamMemberRow[] = [];
-
-/** What the deadline rows are built from, tagged with the teams it was loaded for. */
-interface DeadlineSources {
-  teams: ClassTeams;
-  /** When the data was read: decides which assignments are open. */
-  now: Date;
-  assignments: ApiAssignment[];
-  tsrsByProject: Record<string, string[]>;
-}
-
-/** The deadline rows in the school's `zone`; none when an assignment cannot be read. */
-function deadlineRowsFrom(sources: DeadlineSources, courseLabel: string, zone: string): DeadlineRow[] {
-  try {
-    return buildDeadlineRows(
-      sources.assignments,
-      sources.teams.projects,
-      sources.tsrsByProject,
-      courseLabel,
-      sources.now,
-      zone,
-    );
-  } catch {
-    return NO_DEADLINES;
-  }
-}
 
 const StudentHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openJoinClassModal } = useOutletContext<AppOutletContext>();
-  const { selectedClass } = useClass();
-  const zone = useSchoolTimezone(selectedClass?.institution?.id);
+  // `classes` is every class the account is in: none at all is when Home offers to join one.
+  const { selectedClass, classes } = useClass();
   const { user } = useUser();
 
   const classId = selectedClass?.id;
-  const courseLabel = selectedClass ? courseLabelFromClass(selectedClass) : '';
 
   // The caller's teams, tagged with the class they were loaded for so the
-  // deadlines never pair one class's teams with another class.
+  // team card never shows one class's teams under another class.
   const [myClassProjects, setMyClassProjects] = useState<ClassTeams | null>(null);
   const [selectedTeamProjectId, setSelectedTeamProjectId] = useState<string | null>(null);
-  // Loaded results, tagged with the inputs they were loaded for: a load is in
-  // flight while its tag doesn't match the current inputs.
-  const [loadedDeadlines, setLoadedDeadlines] = useState<DeadlineSources | null>(null);
+  // Loaded members, tagged with the project they were loaded for: a load is in
+  // flight while the tag doesn't match the selected project.
   const [loadedMembers, setLoadedMembers] = useState<{
     projectId: string;
     rows: TeamMemberRow[];
@@ -461,23 +190,6 @@ const StudentHomeDashboard: React.FC = () => {
     (classId !== undefined && teamsForClass === null) ||
     (teamProjectId !== null && loadedMembers?.projectId !== teamProjectId);
 
-  const deadlineSources =
-    loadedDeadlines !== null && loadedDeadlines.teams === teamsForClass ? loadedDeadlines : null;
-  // Built while rendering, so a school zone that arrives after the load (Pacific until then)
-  // rebuilds the rows without loading them again.
-  const deadlineRows = useMemo(
-    () => (deadlineSources ? deadlineRowsFrom(deadlineSources, courseLabel, zone) : NO_DEADLINES),
-    [deadlineSources, courseLabel, zone],
-  );
-  const deadlinesLoading = classId !== undefined && deadlineSources === null;
-
-  const displayDeadlines = useMemo(
-    () => deadlineRows.map((d) => ({ ...d, isMock: false as const })),
-    [deadlineRows],
-  );
-
-  const showEmptyDeadlines = !deadlinesLoading && deadlineRows.length === 0;
-
   const refreshIncomingRequests = useCallback(async () => {
     if (!classId) {
       setIncomingRequests([]);
@@ -503,43 +215,6 @@ const StudentHomeDashboard: React.FC = () => {
   const refreshAllRequests = useCallback(async () => {
     await Promise.all([refreshIncomingRequests(), refreshOutgoingRequests()]);
   }, [refreshIncomingRequests, refreshOutgoingRequests]);
-
-  // Deadlines pair assignments with this class's teams, so they wait for those.
-  useEffect(() => {
-    if (!classId || !teamsForClass) return;
-    const teams = teamsForClass;
-
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const [{ assignments }, mySubmissions] = await Promise.all([
-          api.getAssignments(classId),
-          api.getMySubmissions(classId).catch(emptyMySubmissions),
-        ]);
-
-        // Only the caller's own submissions count: a scrum master's project TSR
-        // list also contains teammates' rows, which marked deadlines done early.
-        const tsrsByProject: Record<string, string[]> = {};
-        for (const p of teams.projects) tsrsByProject[p.id] = [];
-        for (const t of mySubmissions.tsrs) {
-          if (t.project_id && tsrsByProject[t.project_id]) tsrsByProject[t.project_id].push(t.assignment_id);
-        }
-
-        if (cancelled) return;
-        setLoadedDeadlines({ teams, now: new Date(), assignments, tsrsByProject });
-      } catch {
-        if (!cancelled) {
-          setLoadedDeadlines({ teams, now: new Date(), assignments: [], tsrsByProject: {} });
-        }
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [classId, teamsForClass]);
 
   useEffect(() => {
     if (!classId) return;
@@ -577,7 +252,7 @@ const StudentHomeDashboard: React.FC = () => {
         });
       } catch {
         if (!cancelled) {
-          // Deadlines still load (without team rows) if the teams read fails.
+          // A failed teams read shows no team instead of loading forever.
           setMyClassProjects({ classId, projects: [] });
           setSelectedTeamProjectId(null);
         }
@@ -629,30 +304,6 @@ const StudentHomeDashboard: React.FC = () => {
       cancelled = true;
     };
   }, [teamProjectId]);
-
-  const handleDeadlineNavigate = useCallback(
-    (row: (typeof displayDeadlines)[number]) => {
-      if ('isMock' in row && row.isMock) return;
-      const r = row as DeadlineRow & { isMock?: boolean };
-      navigate(`/app/assignments/${r.id}`, {
-        state: {
-          assignmentName: r.name,
-          assignmentType: r.assignmentType === 'feedback'
-            ? 'feedback'
-            : r.assignmentType === 'interest_form'
-            ? 'interest_form'
-            : 'tsrs',
-          dueDate: r.dueLabel,
-          projectName: r.projectName ?? '—',
-          projectId: r.projectId,
-          dueAt: r.dueAt,
-          openDate: r.openDate,
-          acceptUntil: r.acceptUntil,
-        },
-      });
-    },
-    [navigate],
-  );
 
   const handleAcceptIncoming = useCallback(
     async (row: IncomingRequestRow) => {
@@ -714,118 +365,138 @@ const StudentHomeDashboard: React.FC = () => {
 
   return (
     <div className="student-home">
+      {classes.length === 0 && (
+        <Alert
+          className="student-home__join-banner"
+          actions={
+            <Button size="sm" onClick={() => openJoinClassModal()}>
+              Join Class
+            </Button>
+          }
+        >
+          Looks like you&apos;re not in any class yet. Join one with the class code your instructor
+          gave you.
+        </Alert>
+      )}
       <div className="student-home__grid">
         <div className="student-home__column student-home__column--main">
-          <section
-            className="student-home__card student-home__card--deadlines"
-            aria-labelledby="deadlines-heading"
-          >
+          <section className="student-home__card" aria-labelledby="schedule-heading">
             <div className="student-home__card-header">
-              <h2 id="deadlines-heading" className="student-home__card-title">
-                Upcoming Deadlines
+              <h2 id="schedule-heading" className="student-home__card-title">
+                Today&apos;s Schedule
               </h2>
             </div>
-            {deadlinesLoading && selectedClass ? (
-              <div className="student-home__deadlines-scroll" aria-busy="true">
-                <table className="student-home__deadlines-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Deadline</th>
-                      <th>Status</th>
-                      <th className="student-home__chevron" aria-hidden />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <tr key={i}>
-                        <td><Skeleton width="70%" height={13} /></td>
-                        <td><Skeleton width="60%" height={13} /></td>
-                        <td><Skeleton width={64} height={20} radius={20} /></td>
-                        <td className="student-home__chevron"><Skeleton width={16} height={16} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* TODO: wire real schedule data once calendar integration exists.
+            <ul className="student-home__schedule-list">
+              {MOCK_SCHEDULE.map((item) => (
+                <li key={item.id} className="student-home__schedule-item">
+                  <span className="student-home__schedule-time">{item.timeLabel}</span>
+                  <div className="student-home__schedule-body">
+                    <span
+                      className={`student-home__schedule-dot student-home__schedule-dot--${item.accent}`}
+                    />
+                    <div>
+                      <p className="student-home__schedule-title">{item.title}</p>
+                      <p className="student-home__schedule-sub">{item.subtitle}</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            */}
+            <div className="student-home__schedule-empty">
+              <div className="student-home__schedule-empty-icon" aria-hidden>
+                <CalendarDays size={22} strokeWidth={1.5} />
               </div>
+              <p className="student-home__schedule-empty-title">
+                Class events and deadlines will appear here.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <div className="student-home__column student-home__column--aside">
+          <section className="student-home__card" aria-labelledby="team-heading">
+            <div className="student-home__card-header">
+              <h2 id="team-heading" className="student-home__card-title">
+                Your team
+              </h2>
+              {teamProjectsInClass.length === 1 && (
+                <span className="student-home__team-project">{teamProjectsInClass[0].name}</span>
+              )}
+              {teamProjectsInClass.length >= 2 && teamProjectId ? (
+                <select
+                  id="team-project-select"
+                  className="student-home__team-project-select"
+                  aria-label="Select project to view team"
+                  value={teamProjectId}
+                  onChange={(e) => setSelectedTeamProjectId(e.target.value || null)}
+                >
+                  {teamProjectsInClass.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+            {teamLoading ? (
+              <ul className="student-home__team-list" aria-busy="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="student-home__team-item">
+                    <div className="student-home__team-avatar-wrap">
+                      <Skeleton circle height={40} />
+                    </div>
+                    <div className="student-home__team-text">
+                      <Skeleton width="60%" height={13} />
+                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : teamMembers.length === 0 ? (
+              <p className="student-home__empty">
+                {selectedClass
+                  ? 'Join a project in this class to see your teammates here.'
+                  : 'Select a class and join a project to see your team.'}
+              </p>
             ) : (
-              <div className="student-home__deadlines-scroll">
-                <table className="student-home__deadlines-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Deadline</th>
-                      <th>Status</th>
-                      <th className="student-home__chevron" aria-hidden />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {showEmptyDeadlines ? (
-                      <tr>
-                        <td colSpan={4} className="student-home__deadlines-empty">
-                          {!selectedClass ? 'Select a class to see your deadlines.' : 'No upcoming deadlines.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      displayDeadlines.map((row) => {
-                        const isMock = 'isMock' in row && row.isMock;
-                        // Only an open assignment opens its form: before it opens, or once it has
-                        // closed, the server would refuse the submission.
-                        const canOpen =
-                          !isMock && (row.action === 'start' || row.action === 'edit_submission');
-                        const status = row.status;
-                        return (
-                          <tr
-                            key={row.id}
-                            className={`student-home__deadline-row${row.highlight ? ' student-home__deadline-row--highlight' : ''}${canOpen ? '' : ' student-home__deadline-row--inert'}`}
-                            tabIndex={canOpen ? 0 : undefined}
-                            role={canOpen ? 'button' : undefined}
-                            onClick={canOpen ? () => handleDeadlineNavigate(row) : undefined}
-                            onKeyDown={
-                              canOpen
-                                ? (e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      handleDeadlineNavigate(row);
-                                    }
-                                  }
-                                : undefined
-                            }
+              <ul className="student-home__team-list">
+                {teamMembers.map((m) => {
+                  const isYou = user?.id === m.userId;
+                  return (
+                    <li key={m.userId} className="student-home__team-item">
+                      <div className="student-home__team-avatar-wrap">
+                        {m.avatarUrl ? (
+                          <img
+                            src={m.avatarUrl}
+                            alt={m.displayName}
+                            className="student-home__team-avatar student-home__team-avatar--photo"
+                          />
+                        ) : (
+                          <div
+                            className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
                           >
-                            <td>
-                              <span className="student-home__deadline-name">{row.name}</span>
-                              <span className="student-home__deadline-course">{row.courseLabel}</span>
-                            </td>
-                            <td className="student-home__deadline-date">
-                              {row.dueLabel}
-                              {row.opensAt && (
-                                <span className="student-home__deadline-opens">Opens {row.opensAt}</span>
-                              )}
-                              {row.lateUntil && (
-                                <span className="student-home__deadline-late">
-                                  Late submissions until {row.lateUntil}
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {row.action === 'closed' ? (
-                                <span className="student-home__pill student-home__pill--closed">Closed</span>
-                              ) : (
-                                <span className={`student-home__pill ${statusPillClass[status]}`}>
-                                  {statusLabel[status]}
-                                </span>
-                              )}
-                            </td>
-                            <td className="student-home__chevron">
-                              {canOpen && <ChevronRight size={18} aria-hidden />}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                            {m.initials}
+                          </div>
+                        )}
+                        {m.presence !== 'none' && (
+                          <span
+                            className={`student-home__status-dot student-home__status-dot--${m.presence}`}
+                          />
+                        )}
+                      </div>
+                      <div className="student-home__team-text">
+                        <span className="student-home__team-name">
+                          {m.displayName}
+                          {isYou && <span className="student-home__you">(You)</span>}
+                        </span>
+                        <span className="student-home__team-role">{m.roleLabel}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </section>
 
@@ -1039,156 +710,6 @@ const StudentHomeDashboard: React.FC = () => {
                   <p className="student-home__empty">No pending requests.</p>
                 )}
             </div>
-          </section>
-        </div>
-
-        <div className="student-home__column student-home__column--aside">
-          <div className="student-home__toolbar" role="toolbar" aria-label="Quick actions">
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--join"
-              aria-label="Join a class with course code"
-              onClick={() => openJoinClassModal()}
-            >
-              <BookOpen size={16} aria-hidden />
-              Join Class
-            </button>
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--messages"
-              aria-label="Open messages"
-              onClick={() => navigate('/app/messages')}
-            >
-              <MessageCircle size={16} aria-hidden />
-              Messages
-            </button>
-            <button
-              type="button"
-              className="student-home__toolbar-btn student-home__toolbar-btn--browse"
-              aria-label="Browse class projects"
-              onClick={() => navigate('/app/browse-projects')}
-            >
-              <FolderOpen size={16} aria-hidden />
-              Browse
-            </button>
-          </div>
-
-          <section className="student-home__card" aria-labelledby="schedule-heading">
-            <div className="student-home__card-header">
-              <h2 id="schedule-heading" className="student-home__card-title">
-                Today&apos;s Schedule
-              </h2>
-            </div>
-            {/* TODO: wire real schedule data once calendar integration exists.
-            <ul className="student-home__schedule-list">
-              {MOCK_SCHEDULE.map((item) => (
-                <li key={item.id} className="student-home__schedule-item">
-                  <span className="student-home__schedule-time">{item.timeLabel}</span>
-                  <div className="student-home__schedule-body">
-                    <span
-                      className={`student-home__schedule-dot student-home__schedule-dot--${item.accent}`}
-                    />
-                    <div>
-                      <p className="student-home__schedule-title">{item.title}</p>
-                      <p className="student-home__schedule-sub">{item.subtitle}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            */}
-            <div className="student-home__schedule-empty">
-              <div className="student-home__schedule-empty-icon" aria-hidden>
-                <CalendarDays size={22} strokeWidth={1.5} />
-              </div>
-              <p className="student-home__schedule-empty-title">
-                Class events and deadlines will appear here.
-              </p>
-            </div>
-          </section>
-
-          <section className="student-home__card" aria-labelledby="team-heading">
-            <div className="student-home__card-header">
-              <h2 id="team-heading" className="student-home__card-title">
-                Your team
-              </h2>
-              {teamProjectsInClass.length === 1 && (
-                <span className="student-home__team-project">{teamProjectsInClass[0].name}</span>
-              )}
-              {teamProjectsInClass.length >= 2 && teamProjectId ? (
-                <select
-                  id="team-project-select"
-                  className="student-home__team-project-select"
-                  aria-label="Select project to view team"
-                  value={teamProjectId}
-                  onChange={(e) => setSelectedTeamProjectId(e.target.value || null)}
-                >
-                  {teamProjectsInClass.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-            </div>
-            {teamLoading ? (
-              <ul className="student-home__team-list" aria-busy="true">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <li key={i} className="student-home__team-item">
-                    <div className="student-home__team-avatar-wrap">
-                      <Skeleton circle height={40} />
-                    </div>
-                    <div className="student-home__team-text">
-                      <Skeleton width="60%" height={13} />
-                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : teamMembers.length === 0 ? (
-              <p className="student-home__empty">
-                {selectedClass
-                  ? 'Join a project in this class to see your teammates here.'
-                  : 'Select a class and join a project to see your team.'}
-              </p>
-            ) : (
-              <ul className="student-home__team-list">
-                {teamMembers.map((m) => {
-                  const isYou = user?.id === m.userId;
-                  return (
-                    <li key={m.userId} className="student-home__team-item">
-                      <div className="student-home__team-avatar-wrap">
-                        {m.avatarUrl ? (
-                          <img
-                            src={m.avatarUrl}
-                            alt={m.displayName}
-                            className="student-home__team-avatar student-home__team-avatar--photo"
-                          />
-                        ) : (
-                          <div
-                            className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
-                          >
-                            {m.initials}
-                          </div>
-                        )}
-                        {m.presence !== 'none' && (
-                          <span
-                            className={`student-home__status-dot student-home__status-dot--${m.presence}`}
-                          />
-                        )}
-                      </div>
-                      <div className="student-home__team-text">
-                        <span className="student-home__team-name">
-                          {m.displayName}
-                          {isYou && <span className="student-home__you">(You)</span>}
-                        </span>
-                        <span className="student-home__team-role">{m.roleLabel}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
           </section>
         </div>
       </div>
