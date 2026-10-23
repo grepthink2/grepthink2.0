@@ -9,8 +9,11 @@ import AddStudentModal, { type AddStudentPayload } from '@features/app/component
 import RosterTimelineModal from '@features/app/components/Roster/RosterTimelineModal';
 import {
   applyFilter,
+  applySearch,
+  countableStudents,
   isBulkInviteCandidate,
   mapApiRosterStudent,
+  rosterTas,
   type FilterOption,
   type UiStudent,
 } from '@features/app/components/Roster/rosterTypes';
@@ -134,14 +137,18 @@ const Roster: React.FC = () => {
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    const byFilter = applyFilter(students, filter);
-    if (!search.trim()) return byFilter;
-    const q = search.toLowerCase();
-    return byFilter.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
-    );
-  }, [students, filter, search]);
+  // TAs have their own list, without a course status. The filters narrow the student list, so the
+  // TA list shows under All Students only; the search narrows both.
+  const filteredStudents = useMemo(
+    () => applySearch(applyFilter(countableStudents(students), filter), search),
+    [students, filter, search],
+  );
+  const filteredTas = useMemo(
+    () => (filter === 'all' ? applySearch(rosterTas(students), search) : []),
+    [students, filter, search],
+  );
+  // While another class loads, `students` still holds the last class's rows.
+  const showTaList = !loading && filteredTas.length > 0;
 
   const notRegisteredCount = useMemo(
     () => students.filter(isBulkInviteCandidate).length,
@@ -301,7 +308,19 @@ const Roster: React.FC = () => {
           filter={filter}
           onFilterChange={setFilter}
         />
-        <RosterList key={selectedClass?.id} students={filtered} loading={loading} error={error} showActions={false} />
+        <div className="roster__lists">
+          <RosterList key={selectedClass.id} students={filteredStudents} loading={loading} error={error} showActions={false} />
+          {showTaList && (
+            <RosterList
+              key={`${selectedClass.id}-tas`}
+              group="tas"
+              students={filteredTas}
+              loading={false}
+              error={null}
+              showActions={false}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -348,10 +367,10 @@ const Roster: React.FC = () => {
         </div>
       )}
       <div className="roster__layout">
-        <div className="roster__main">
+        <div className="roster__main roster__lists">
           <RosterList
-            key={selectedClass?.id}
-            students={filtered}
+            key={selectedClass.id}
+            students={filteredStudents}
             loading={loading}
             error={error}
             showActions
@@ -363,6 +382,19 @@ const Roster: React.FC = () => {
               setAddStudentModalOpen(true);
             }}
           />
+          {showTaList && (
+            <RosterList
+              key={`${selectedClass.id}-tas`}
+              group="tas"
+              students={filteredTas}
+              loading={false}
+              error={null}
+              showActions
+              onInvite={handleInvite}
+              onRemove={handleRemove}
+              onDeleteManual={handleDeleteManual}
+            />
+          )}
         </div>
         <div className="roster__sidebar">
           <PieCharts students={students} />

@@ -156,7 +156,8 @@ $gt-not-reg-text:     #6b7280;
       padding-right: 6px;
     }
 
-    th:nth-child(6), td:nth-child(6) {
+    // The TA list has no Course Status column, so its last column is the fifth.
+    th:last-child, td:last-child {
       padding-right: $spacing-md;
     }
 
@@ -209,19 +210,6 @@ $gt-not-reg-text:     #6b7280;
   &__td-name {
     font-weight: $font-weight-semibold;
     white-space: nowrap;
-  }
-
-  &__ta-badge {
-    display: inline-block;
-    margin-left: $spacing-sm;
-    padding: 1px 7px;
-    border-radius: $border-radius-lg;
-    background: var(--gt-primary-soft);
-    color: $primary-color;
-    font-size: 10px;
-    font-weight: $font-weight-semibold;
-    letter-spacing: 0.04em;
-    vertical-align: middle;
   }
 
   &__td-email {
