@@ -6,7 +6,7 @@ import { useClass } from '@/lib/classContext';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useInstitutionsWithRetry } from '@/lib/institutions';
 import { isPastLatestLastDay } from '@/lib/lastDayOfClasses';
-import DatePickerField from '@/features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import './CreateClassModal.scss';
 
 type Term = 'Fall' | 'Winter' | 'Spring' | 'Summer';
@@ -304,7 +304,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
             label="First Week of Term"
             value={termStartDate}
             onChange={setTermStartDate}
-            labelClassName="create-class-modal__label"
           />
 
           {/* Term End Date */}
@@ -313,7 +312,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               label="Last Day of Classes"
               value={termEndDate}
               onChange={setTermEndDate}
-              labelClassName="create-class-modal__label"
             />
             <p className="create-class-modal__description">Before finals week</p>
           </div>

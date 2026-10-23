@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
-import { AVATAR_COLORS } from '@/lib/avatarColors';
-import { getInitials } from '@features/app/utils/memberUtils';
+import { Avatar } from '@/components/Avatar/Avatar';
+import { Badge } from '@/components/Badge/Badge';
+import type { BadgeStatus } from '@/components/Badge/badgeStatus';
 import {
   SCHOOL_ZONE,
   countdown,
@@ -13,7 +14,6 @@ import {
   kindMeta,
   statusOf,
   zoneLabel,
-  type AttendanceStatus,
   type ScheduleItemData,
   type ScheduleLens,
   type SchedulePerson,
@@ -21,51 +21,11 @@ import {
 import { ScheduleIcon } from './ScheduleIcon';
 import '../schedule.scss';
 
-type BadgeTone = 'neutral' | 'success' | 'warning' | 'error';
-
-const ATTENDANCE: Record<AttendanceStatus, { tone: BadgeTone; label: string }> = {
-  present: { tone: 'success', label: 'Present' },
-  late: { tone: 'warning', label: 'Late' },
-  absent: { tone: 'error', label: 'Absent' },
-  unmarked: { tone: 'neutral', label: 'Not marked' },
-};
-
 /** A context-line token: the team or "Whole class" first (`primary`), places with their glyph. */
 interface MetaPart {
   text: string;
   primary?: boolean;
   place?: 'map-pin' | 'video';
-}
-
-/** The design system's pill; the codebase has no Badge component yet, so this is the plain element with its classes. */
-function Badge({ tone, title, children }: { tone: BadgeTone; title?: string; children: ReactNode }) {
-  return <span className={`gt-badge gt-badge--${tone}`} title={title}>{children}</span>;
-}
-
-/** The design system's Avatar picks its colour from the name (design/components/display/Avatar.jsx). */
-function avatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-/** A 20 px avatar: the photo when the person has one, initials on a name-based colour otherwise. */
-function Face({ person, title }: { person: SchedulePerson; title: string }) {
-  if (person.avatarUrl) {
-    return <img className="gt-avatar gt-avatar--xs" src={person.avatarUrl} alt={person.name} title={title} />;
-  }
-  return (
-    <span
-      className="gt-avatar gt-avatar--xs"
-      style={{ backgroundColor: avatarColor(person.name) }}
-      role="img"
-      aria-label={person.name || 'avatar'}
-      title={title}
-    >
-      {/* getInitials throws on a name of spaces; the design's initialsOf draws "?" for it. */}
-      {person.name.trim() ? getInitials(person.name, '') : '?'}
-    </span>
-  );
 }
 
 export interface ScheduleItemProps {
@@ -95,12 +55,15 @@ export interface ScheduleItemProps {
  * Join Zoom under the context line inside the join window. Seat it in an `<ol class="gt-sched__items">`
  * inside `.gt-sched.gt-sched--compact`, which sets the row's grid. Port of design/components/schedule/
  * ScheduleItem.jsx, the compact variant only: the agenda row (actions column, people list, note,
- * expand toggle) and its MeetingCard panel wait for the schedule endpoint.
+ * expand toggle) and its MeetingCard panel wait for the schedule endpoint. A live row shows the kit's
+ * `<Badge status="live" />` (blue: in progress) where the design draws a green pulsing pill.
  */
 export function ScheduleItem({
   item, lens = 'student', now, zone = SCHOOL_ZONE, schoolZone = SCHOOL_ZONE, showSchoolTime = false,
   overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const nowD = now ?? new Date();
   const meta = kindMeta(item.kind);
   const status = statusOf(item, nowD, zone);
@@ -146,7 +109,9 @@ export function ScheduleItem({
   (item.reviewers ?? []).forEach((r) => people.push({ ...r, role: r.slot === 'home' ? 'Home TA' : 'Review TA' }));
   const personName = (p: SchedulePerson): string => (p.you ? 'You' : p.name);
 
-  const att = item.kind === 'ta_meeting' && status === 'past' && typeof item.attendance === 'string' ? ATTENDANCE[item.attendance] : null;
+  const att: BadgeStatus | null = item.kind === 'ta_meeting' && status === 'past' && typeof item.attendance === 'string'
+    ? `attendance.${item.attendance}`
+    : null;
 
   // actions (under the context line)
   const actions: ReactNode[] = [];
@@ -210,9 +175,9 @@ export function ScheduleItem({
               <a href={item.href} onClick={onOpen ? (e) => { e.preventDefault(); onOpen(item); } : undefined}>{title}</a>
             ) : title}
           </span>
-          {status === 'live' && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+          {status === 'live' && <Badge status="live" />}
           {cd && <span className="gt-sched-item__countdown">{cd}</span>}
-          {att && <Badge tone={att.tone}>{att.label}</Badge>}
+          {att && <Badge status={att} />}
           {status === 'cancelled' && <Badge tone="neutral">Cancelled</Badge>}
           {overlaps.length > 0 && (
             <Badge tone="warning" title={`Overlaps with ${overlapNames}`}>
@@ -233,7 +198,7 @@ export function ScheduleItem({
           {people.length > 0 && (
             <span className="gt-sched-item__faces">
               {people.map((p, i) => (
-                <Face key={i} person={p} title={`${personName(p)}${p.role ? ` · ${p.role}` : ''}`} />
+                <Avatar key={i} size="xs" name={p.name} src={p.avatarUrl} title={`${personName(p)}${p.role ? ` · ${p.role}` : ''}`} />
               ))}
             </span>
           )}

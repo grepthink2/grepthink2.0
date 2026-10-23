@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { cssRules } from '@/test/cssRules';
 import { Toast, ToastStack } from '../Toast';
 import { useToasts } from '../useToasts';
 
@@ -28,6 +29,15 @@ describe('Toast', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     await new Promise((r) => setTimeout(r, 200));   // exit animation
     expect(onDismiss).toHaveBeenCalled();
+  });
+
+  it('gives Dismiss a 44px target on phones', () => {
+    render(<Toast message="Saved" onDismiss={() => {}} />);
+    const [phone] = cssRules('.gt-toast__dismiss', 'max-width: 767px');
+    expect(phone.getPropertyValue('min-width')).toBe('44px');
+    expect(phone.getPropertyValue('min-height')).toBe('44px');
+    expect(phone.getPropertyValue('justify-content')).toBe('center');
+    expect(phone.getPropertyValue('align-items')).toBe('center');
   });
 
   it('auto-dismisses a success but leaves an actionable error standing', () => {

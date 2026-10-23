@@ -33,28 +33,6 @@
 .gt-search-trigger--icon { width: 40px; height: 40px; padding: 0; justify-content: center; }
 .gt-search-trigger--icon .gt-search-trigger__label, .gt-search-trigger--icon .gt-search-trigger__keys { display: none; }
 
-/* ── SearchField (the one local filter input) ──────────────── */
-.gt-search-field { position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 320px; }
-.gt-search-field__icon { position: absolute; left: 10px; display: inline-flex; color: var(--gt-text-tertiary); pointer-events: none; }
-.gt-search-field__input {
-  width: 100%; height: 36px; padding: 0 32px 0 32px; box-sizing: border-box;
-  border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
-  font-family: var(--gt-font-sans); font-size: 13px; color: var(--gt-text-primary); outline: none;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-search-field__input::placeholder { color: var(--gt-text-tertiary); }
-.gt-search-field__input:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-search-field__input:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
-.gt-search-field__input:disabled { background: var(--gt-gray-100); cursor: not-allowed; opacity: 0.6; }
-.gt-search-field__input::-webkit-search-cancel-button { -webkit-appearance: none; }
-.gt-search-field__clear {
-  position: absolute; right: 6px; display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border: none; border-radius: 5px; background: transparent; color: var(--gt-text-tertiary); cursor: pointer;
-  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
-}
-.gt-search-field__clear:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
-.gt-search-field__clear:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-.gt-search-field--sm .gt-search-field__input { height: 32px; font-size: 12.5px; }
 .gt-search-field--full { max-width: none; }
 
 /* ── EntityIcon (28px type disc) ───────────────────────────── */
@@ -113,17 +91,8 @@
 /* scope chips */
 .gt-palette__scopes { display: flex; align-items: center; gap: 6px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--gt-border-subtle); flex-shrink: 0; }
 .gt-palette__scopes::-webkit-scrollbar { display: none; }
-.gt-scope {
-  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; flex-shrink: 0;
-  border: 1px solid var(--gt-border-subtle); border-radius: var(--gt-radius-pill); background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans); font-size: 11.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer;
-  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast);
-}
-.gt-scope:hover { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
-.gt-scope:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-.gt-scope--active, .gt-scope--active:hover { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
-.gt-scope__count { font-size: 10.5px; font-weight: var(--gt-weight-semibold); opacity: 0.75; font-variant-numeric: tabular-nums; }
-.gt-scope:disabled { opacity: 0.45; cursor: not-allowed; }
+/* scope chips are the shared FilterChipGroup (single, sm) — navigation.css; one scrolling row here */
+.gt-palette__scopes .gt-filter-chips { flex-wrap: nowrap; }
 
 /* results */
 .gt-palette__body { flex: 1; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; padding: 4px 0; }
@@ -199,5 +168,5 @@
 @media (prefers-reduced-motion: reduce) {
   .gt-palette-backdrop, .gt-palette, .gt-palette-backdrop--closing, .gt-palette-backdrop--closing .gt-palette { animation-duration: 0.01ms; }
   .gt-palette__skeleton-icon, .gt-palette__skeleton-line, .gt-palette__spinner { animation: none; }
-  .gt-result, .gt-scope, .gt-search-trigger, .gt-search-field__input { transition: none; }
+  .gt-result, .gt-search-trigger { transition: none; }
 }

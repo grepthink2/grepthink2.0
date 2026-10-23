@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
@@ -6,7 +6,7 @@ import Header from '@features/app/components/Layout/Header';
 import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import ClassRouteGuard from '@features/app/components/Layout/ClassRouteGuard';
 import { lazyModal } from '@/lib/lazyModal';
-import Settings from '@features/app/pages/Settings';
+import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
 import PageFallback from '@features/app/components/PageFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { ClassProvider } from '@/lib/classContext';
@@ -18,7 +18,8 @@ import { useSearchIndex } from '@features/search/hooks/useSearchIndex';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
 
-// Both modals load on first open; the create-class form pulls in the date picker.
+// The modals load on first open; the create-class form pulls in the date picker, and
+// Settings is a whole page of account forms.
 const CreateClassModal = lazyModal(
   () => import('@/features/app/components/Classes/CreateClassModal'),
   (p) => p.isOpen,
@@ -27,6 +28,10 @@ const JoinClassModal = lazyModal(
   () => import('@/features/app/components/Classes/JoinClassModal'),
   (p) => p.isOpen,
 );
+const Settings = lazyModal(() => import('@features/app/pages/Settings'), (p) => p.isOpen);
+
+/** Phones get the sidebar as an off-canvas drawer (Sidebar's own breakpoint). */
+const PHONE_QUERY = '(max-width: 768px)';
 
 const AppView: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -38,6 +43,16 @@ const AppView: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchIndex = useSearchIndex(user?.id ?? null);
   const location = useLocation();
+
+  // A page with no class asks for the class selector: on a phone it sits in the nav drawer, so open
+  // that (the sidebar opens the class menu itself).
+  useEffect(() => {
+    const openDrawer = () => {
+      if (typeof window.matchMedia === 'function' && window.matchMedia(PHONE_QUERY).matches) setMobileNavOpen(true);
+    };
+    window.addEventListener(OPEN_CLASS_SELECTOR_EVENT, openDrawer);
+    return () => window.removeEventListener(OPEN_CLASS_SELECTOR_EVENT, openDrawer);
+  }, []);
 
   const handleOpenCreateClassModal = () => {
     setIsCreateClassModalOpen(true);

@@ -1,7 +1,8 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
+import { cssRules } from '@/test/cssRules';
 
 const ctx = vi.hoisted(() => ({
   getClassStatus: vi.fn(() => 'active' as const),
@@ -15,8 +16,8 @@ const picks = vi.hoisted(() => ({ day: '' }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => ctx }));
 vi.mock('@/lib/api', () => ({ api: { getClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that shows its day and picks another is enough here.
-vi.mock('@features/app/components/Fields/DatePickerField', () => ({
-  default: ({
+vi.mock('@/components/DatePickerField/DatePickerField', () => ({
+  DatePickerField: ({
     label,
     value,
     onChange,
@@ -67,6 +68,15 @@ beforeEach(() => {
   ctx.setClassExternalTasksUrl.mockResolvedValue(undefined);
   ctx.setClassEndDate.mockResolvedValue(undefined);
   picks.day = '2026-12-04';
+});
+
+describe('ClassSettingsModal — date labels', () => {
+  it('gives the last day\'s label the look of the section labels beside it', () => {
+    const [label] = cssRules('.class-settings-modal .gt-field__label');
+    expect(label.getPropertyValue('font-size')).toBe('0.875rem');
+    expect(label.getPropertyValue('font-weight')).toBe('600');
+    expect(label.getPropertyValue('color')).toBe('rgb(48, 48, 48)');
+  });
 });
 
 describe('ClassSettingsModal — Tasks - External link', () => {
@@ -348,5 +358,31 @@ describe('ClassSettingsModal — last day of classes', () => {
     rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={cls('cse-115a', null)} />);
     expect(endDateField()).toHaveTextContent('Last Day of Classes: not set');
     expect(endDateSave()).toBeDisabled();
+  });
+});
+
+describe('ClassSettingsModal — Delete class', () => {
+  it('asks first: Esc closes only the question, and Remove from my view hides the class', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<ClassSettingsModal isOpen onClose={onClose} classItem={job} />);
+    const del = screen.getByRole('button', { name: 'Delete class' });
+    await user.click(del);
+    const question = screen.getByRole('alertdialog', { name: 'Delete class?' });
+    expect(question).toHaveAccessibleDescription(/only hides it for you/);
+    expect(within(question).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    expect(within(question).getByRole('button', { name: 'Remove from my view' })).toHaveClass('gt-button--danger');
+
+    await user.keyboard('{Escape}');
+    expect(del).toHaveFocus();
+    // The settings dialog closes 200ms after its own Esc; this one was the question's alone.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(ctx.hideClassFromUI).not.toHaveBeenCalled();
+
+    await user.click(del);
+    await user.click(screen.getByRole('button', { name: 'Remove from my view' }));
+    expect(ctx.hideClassFromUI).toHaveBeenCalledWith('job-191');
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

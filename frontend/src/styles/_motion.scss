@@ -25,24 +25,11 @@
   }
 }
 
+// @keyframes gt-pop-in, gt-rise-in and gt-spin live in keyframes.css, which main.tsx loads once.
+
 /// Popover/dropdown entrance: 6px slide + fade, 0.15s.
 @mixin gt-popover-enter {
   animation: gt-pop-in 0.15s ease both;
-}
-
-@keyframes gt-pop-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/// Message/list-item entrance: 4px rise + fade.
-@keyframes gt-rise-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes gt-spin {
-  to { transform: rotate(360deg); }
 }
 
 /// A lucide icon spinning inside a busy button (design primitives `.gt-button__spinner`).

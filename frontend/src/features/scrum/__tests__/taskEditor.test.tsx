@@ -299,7 +299,7 @@ describe('TaskEditorModal', () => {
       id: 'c1', author_id: 'u1', author_name: 'Tony Wu', body_md: 'Looks good',
       created_at: new Date().toISOString(),
     };
-    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment });
+    vi.mocked(api.createScrumComment).mockResolvedValue(comment);
     const p = props();
     const own = makeTask({ id: 'a', key: 'T-1', title: 'Build form' });
     const onCommentPosted = vi.fn();
@@ -328,7 +328,7 @@ describe('TaskEditorModal', () => {
       id: 'c1', author_id: 'u1', author_name: 'Tony Wu', body_md: 'First',
       created_at: new Date().toISOString(),
     };
-    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment });
+    vi.mocked(api.createScrumComment).mockResolvedValue(comment);
     const p = props();
     const own = makeTask({ id: 'a', key: 'T-1' });
     const { rerender } = render(<TaskEditorModal {...p} task={own} onSave={vi.fn()} />);

@@ -1,15 +1,16 @@
 import { render } from '@testing-library/react';
+import { cssRules } from '@/test/cssRules';
 import { Skeleton } from '../Skeleton';
 
 const skeleton = (ui: React.ReactElement) =>
-  render(ui).container.querySelector('.skeleton') as HTMLElement;
+  render(ui).container.querySelector('.gt-skeleton') as HTMLElement;
 
 describe('Skeleton', () => {
   it('is a decorative block, hidden from screen readers, that keeps a caller\'s class', () => {
     const el = skeleton(<Skeleton className="avatar" />);
 
     expect(el).toHaveAttribute('aria-hidden', 'true');
-    expect(el).toHaveClass('skeleton', 'avatar');
+    expect(el).toHaveClass('gt-skeleton', 'avatar');
   });
 
   it('takes the size it is given, and is a square with round corners only when circle is set', () => {
@@ -19,5 +20,11 @@ describe('Skeleton', () => {
     // circle uses `height` for the width too, so the box is square.
     const avatar = skeleton(<Skeleton circle height="40px" />);
     expect([avatar.style.width, avatar.style.borderRadius]).toEqual(['40px', '50%']);
+  });
+
+  it('sweeps the shimmer highlight in the skeleton-shine token, not a literal colour', () => {
+    skeleton(<Skeleton />);
+    const [block] = cssRules('.gt-skeleton');
+    expect(block.getPropertyValue('background-image')).toContain('var(--gt-skeleton-shine) 37%');
   });
 });

@@ -1,5 +1,9 @@
-import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
-import { ChevronDown, CircleX } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { Alert } from '@/components/Alert/Alert';
+import { Button } from '@/components/Button/Button';
+import { Input } from '@/components/Input/Input';
+import { Select } from '@/components/Select/Select';
+import { Textarea } from '@/components/Textarea/Textarea';
 import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { SCHOOL_ZONE, dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
 import {
@@ -53,7 +57,7 @@ export interface TeamMeetingFormProps {
   zone?: string;
   /** When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. @default 'America/Los_Angeles' */
   schoolZone?: string;
-  /** Disables the fields and spins the submit button. @default false */
+  /** Disables the fields and Cancel, and puts the submit button in its busy state. @default false */
   saving?: boolean;
   /** Inline save error, shown above the buttons; the draft is kept. */
   error?: string | null;
@@ -68,8 +72,11 @@ export interface TeamMeetingFormProps {
 
 /**
  * Add or edit one team meeting, inline in the Edit Project Meetings tab: above the list for a new
- * meeting, in place of the row it edits. Port of design/components/domain/TeamMeetingForm.jsx; the
- * Button, Select, Textarea and Alert it uses are plain elements with their design classes.
+ * meeting, in place of the row it edits. Port of design/components/domain/TeamMeetingForm.jsx; its
+ * fields are the shared Input, Select and Textarea and its buttons the shared Button, and the save
+ * error is a plain element with the design's Alert classes. Date and time stay the native pickers.
+ * Required fields carry no mark; Room, Zoom link and Note say "(optional)". The limits are soft: a
+ * field past its limit keeps the text and is flagged, and the submit refuses it.
  * Times are typed on the viewer's clock, with the campus time under the time field when the zones
  * differ. Validates on submit (the handoff's rules plus the API's limits) and focuses the first
  * problem. Escape cancels without closing the Edit Project modal around it.
@@ -84,18 +91,24 @@ export function TeamMeetingForm({
   const [draft, setDraft] = useState<TeamMeetingDraft>(opened);
   const [errors, setErrors] = useState<FieldErrors>({});
   const uid = useId();
-  const formRef = useRef<HTMLFormElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const zoomUrlRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
 
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const nowD = now ?? new Date();
   const creating = mode === 'create';
   const differs = zoneDiffers(vz, schoolZone, nowD);
   const campus = differs ? campusTimeOf(draft.date, draft.time, vz, schoolZone) : null;
   const timeHelp = campus ? `${campus} on campus` : null;
-  const id = (key: string): string => `${uid}-${key}`;
+  const headingId = `${uid}-h`;
 
   const edit = (next: TeamMeetingDraft) => {
     setDraft(next);
@@ -121,7 +134,8 @@ export function TeamMeetingForm({
     setErrors(found);
     const first = ORDER.find((key) => found[key]);
     if (first) {
-      formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+      const fields = { title: titleRef, date: dateRef, time: timeRef, location: locationRef, zoomUrl: zoomUrlRef, note: noteRef };
+      fields[first].current?.focus();
       return;
     }
     if (result.value) onSubmit?.(result.value, draft);
@@ -135,154 +149,120 @@ export function TeamMeetingForm({
     if (!saving) onCancel?.();
   };
 
-  const fieldClass = (key: FieldKey): string =>
-    ['gt-field', errors[key] ? 'gt-field--error' : '', saving ? 'gt-field--disabled' : ''].filter(Boolean).join(' ');
-  const describedBy = (key: FieldKey, help?: string | null): string | undefined =>
-    errors[key] ? id(`${key}-err`) : help ? id(`${key}-help`) : undefined;
-  const control = (key: Exclude<FieldKey, 'note'>, help?: string | null) => ({
-    id: id(key),
-    name: key,
-    className: 'gt-input',
-    value: draft[key],
-    onChange: change(key),
-    disabled: saving,
-    'aria-invalid': errors[key] ? true : undefined,
-    'aria-describedby': describedBy(key, help),
-  });
-  const label = (key: FieldKey, text: string, required = false) => (
-    <label className="gt-field__label" htmlFor={id(key)}>
-      {text}
-      {required && <span className="gt-field__required" aria-hidden="true"> *</span>}
-    </label>
-  );
-  const errorText = (key: FieldKey) => <p className="gt-field__error" id={id(`${key}-err`)}>{errors[key]}</p>;
-  const field = (
-    key: Exclude<FieldKey, 'title' | 'note'>,
-    text: string,
-    input: ReactNode,
-    { required = false, help = null }: { required?: boolean; help?: string | null } = {},
-  ) => (
-    <div className={fieldClass(key)}>
-      {label(key, text, required)}
-      {input}
-      {errors[key] ? errorText(key) : help ? <p className="gt-field__help gt-tmform__campus" id={id(`${key}-help`)}>{help}</p> : null}
-    </div>
-  );
-
   return (
     <form
-      ref={formRef}
       className={['gt-tmform', className].filter(Boolean).join(' ')}
       onSubmit={submit}
       onKeyDown={onKeyDown}
-      aria-labelledby={id('h')}
+      aria-labelledby={headingId}
       noValidate
     >
-      <h4 id={id('h')} className="gt-tmform__title">{creating ? 'New meeting' : 'Edit meeting'}</h4>
+      <h4 id={headingId} className="gt-tmform__title">{creating ? 'New meeting' : 'Edit meeting'}</h4>
 
-      <div className={fieldClass('title')}>
-        {label('title', 'Title', true)}
-        <input
-          ref={titleRef}
-          {...control('title')}
-          aria-required="true"
-          type="text"
-          maxLength={TEAM_MEETING_TITLE_MAX}
-          placeholder="Sprint 3 planning"
-          autoComplete="off"
-        />
-        <div className="gt-field__footer">
-          {errors.title ? errorText('title') : <span />}
-          <span className="gt-field__count">{draft.title.length}/{TEAM_MEETING_TITLE_MAX}</span>
-        </div>
-      </div>
+      <Input
+        ref={titleRef}
+        name="title"
+        label="Title"
+        aria-required="true"
+        value={draft.title}
+        onChange={change('title')}
+        maxLength={TEAM_MEETING_TITLE_MAX}
+        showCount
+        placeholder="Sprint 3 planning"
+        autoComplete="off"
+        error={errors.title}
+        disabled={saving}
+      />
 
       <div className="gt-tmform__grid gt-tmform__grid--when">
-        {field('date', 'Date', <input {...control('date')} aria-required="true" type="date" min={creating ? dayKey(nowD, vz) : undefined} />, {
-          required: true,
-        })}
-        {field('time', 'Start time', <input {...control('time', timeHelp)} aria-required="true" type="time" step={900} />, {
-          required: true,
-          help: timeHelp,
-        })}
-        <div className={['gt-field', saving ? 'gt-field--disabled' : ''].filter(Boolean).join(' ')}>
-          <label className="gt-field__label" htmlFor={id('durationMinutes')}>Duration</label>
-          <div className="gt-select">
-            <select
-              id={id('durationMinutes')}
-              name="durationMinutes"
-              className="gt-select__control"
-              value={String(draft.durationMinutes)}
-              onChange={(e) => edit({ ...draft, durationMinutes: Number(e.target.value) })}
-              disabled={saving}
-            >
-              {TEAM_MEETING_DURATIONS.map((minutes) => (
-                <option key={minutes} value={String(minutes)}>{fmtMinutes(minutes)}</option>
-              ))}
-            </select>
-            <ChevronDown className="gt-select__chevron" size={16} aria-hidden="true" />
-          </div>
-        </div>
+        <Input
+          ref={dateRef}
+          name="date"
+          label="Date"
+          type="date"
+          aria-required="true"
+          min={creating ? dayKey(nowD, vz) : undefined}
+          value={draft.date}
+          onChange={change('date')}
+          error={errors.date}
+          disabled={saving}
+        />
+        <Input
+          ref={timeRef}
+          name="time"
+          label="Start time"
+          type="time"
+          step={900}
+          aria-required="true"
+          value={draft.time}
+          onChange={change('time')}
+          error={errors.time}
+          helperText={timeHelp ? <span className="gt-tmform__campus">{timeHelp}</span> : undefined}
+          disabled={saving}
+        />
+        <Select
+          name="durationMinutes"
+          label="Duration"
+          value={String(draft.durationMinutes)}
+          onChange={(e) => edit({ ...draft, durationMinutes: Number(e.target.value) })}
+          options={TEAM_MEETING_DURATIONS.map((minutes) => ({ value: String(minutes), label: fmtMinutes(minutes) }))}
+          disabled={saving}
+        />
       </div>
 
       <div className="gt-tmform__grid gt-tmform__grid--place">
-        {field('location', 'Room', <input {...control('location')} type="text" maxLength={LOCATION_MAX} placeholder="E2 room 180" autoComplete="off" />)}
-        {field(
-          'zoomUrl',
-          'Zoom link',
-          <input
-            {...control('zoomUrl')}
-            type="url"
-            inputMode="url"
-            maxLength={ZOOM_URL_MAX}
-            placeholder="https://ucsc.zoom.us/j/…"
-            autoComplete="off"
-            spellCheck={false}
-          />,
-        )}
-      </div>
-
-      <div className={fieldClass('note')}>
-        {label('note', 'Note')}
-        <textarea
-          id={id('note')}
-          name="note"
-          className="gt-textarea"
-          rows={2}
-          value={draft.note}
-          onChange={change('note')}
-          maxLength={TEAM_MEETING_NOTE_MAX}
-          placeholder="Anything the team should bring or read first"
+        <Input
+          ref={locationRef}
+          name="location"
+          label="Room"
+          optional
+          value={draft.location}
+          onChange={change('location')}
+          maxLength={LOCATION_MAX}
+          placeholder="E2 room 180"
+          autoComplete="off"
+          error={errors.location}
           disabled={saving}
-          aria-invalid={errors.note ? true : undefined}
-          aria-describedby={describedBy('note')}
         />
-        <div className="gt-field__footer">
-          {errors.note ? errorText('note') : <span />}
-          <span className="gt-field__count">{draft.note.length}/{TEAM_MEETING_NOTE_MAX}</span>
-        </div>
+        <Input
+          ref={zoomUrlRef}
+          name="zoomUrl"
+          label="Zoom link"
+          optional
+          type="url"
+          inputMode="url"
+          value={draft.zoomUrl}
+          onChange={change('zoomUrl')}
+          maxLength={ZOOM_URL_MAX}
+          placeholder="https://ucsc.zoom.us/j/…"
+          autoComplete="off"
+          spellCheck={false}
+          error={errors.zoomUrl}
+          disabled={saving}
+        />
       </div>
 
-      {error && (
-        <div className="gt-alert gt-alert--error" role="alert">
-          <span className="gt-alert__icon"><CircleX size={16} aria-hidden="true" /></span>
-          <div className="gt-alert__content"><p className="gt-alert__text">{error}</p></div>
-        </div>
-      )}
+      <Textarea
+        ref={noteRef}
+        name="note"
+        label="Note"
+        optional
+        rows={2}
+        value={draft.note}
+        onChange={change('note')}
+        maxLength={TEAM_MEETING_NOTE_MAX}
+        placeholder="Anything the team should bring or read first"
+        error={errors.note}
+        disabled={saving}
+      />
+
+      {error && <Alert tone="error">{error}</Alert>}
 
       <div className="gt-tmform__foot">
-        <button type="button" className="gt-button gt-button--secondary gt-button--sm" onClick={onCancel} disabled={saving}>
-          <span className="gt-button__label">Cancel</span>
-        </button>
-        <button
-          type="submit"
-          className={['gt-button', 'gt-button--primary', 'gt-button--sm', saving ? 'gt-button--loading' : ''].filter(Boolean).join(' ')}
-          disabled={saving}
-          aria-busy={saving || undefined}
-        >
-          {saving && <span className="gt-button__spinner" aria-hidden="true" />}
-          <span className="gt-button__label">{creating ? 'Add meeting' : 'Save changes'}</span>
-        </button>
+        <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button type="submit" size="sm" loading={saving} loadingLabel={creating ? 'Adding…' : 'Saving…'}>
+          {creating ? 'Add meeting' : 'Save changes'}
+        </Button>
       </div>
     </form>
   );

@@ -307,3 +307,146 @@ def test_embed_syntax_tolerates_whitespace_like_postgrest():
         .data
     )
     assert rows[0]["projects"] == {"id": "p1", "name": "Alpha"}
+
+
+# ------------------------------------------------------------ select on a write
+
+
+def _write_db() -> FakeSupabase:
+    """Messages whose sender is a profile, embedded over a named foreign key."""
+    return FakeSupabase(
+        profiles=[{"id": "u1", "first_name": "Ada"}, {"id": "u2", "first_name": "Bo"}],
+        messages=[{"id": "m1", "sender_id": "u2", "body": "old"}],
+        relations={("messages", "profiles!m_sender_fkey"): ("sender_id", "id", False)},
+    )
+
+
+def test_select_after_insert_projects_columns_and_embeds():
+    db = _write_db()
+    res = (
+        db.table("messages")
+        .insert({"id": "m2", "sender_id": "u1", "body": "hi"})
+        .select("id, body, sender:profiles!m_sender_fkey(first_name)")
+        .execute()
+    )
+    assert res.data == [{"id": "m2", "body": "hi", "sender": {"first_name": "Ada"}}]
+    # Only the answer is shaped: the stored row keeps every column.
+    assert db.rows("messages")[-1] == {"id": "m2", "sender_id": "u1", "body": "hi"}
+
+
+def test_select_after_update_and_delete_shape_the_written_rows():
+    db = _write_db()
+    updated = (
+        db.table("messages")
+        .update({"body": "edited"})
+        .eq("id", "m1")
+        .select("id, body, sender:profiles!m_sender_fkey(first_name)")
+        .execute()
+    )
+    assert updated.data == [{"id": "m1", "body": "edited", "sender": {"first_name": "Bo"}}]
+    removed = (
+        db.table("messages")
+        .delete()
+        .eq("id", "m1")
+        .select("id, sender:profiles!m_sender_fkey(first_name)")
+        .execute()
+    )
+    assert removed.data == [{"id": "m1", "sender": {"first_name": "Bo"}}]
+    assert db.rows("messages") == []
+
+
+def test_embeds_on_a_write_see_the_store_before_the_write():
+    # PostgREST sends a write and its select as one statement, on one snapshot: a BEFORE
+    # trigger's change to another table is in that table afterwards, but not in the embed.
+    calls = []
+
+    def apply_move(db, row):
+        calls.append(row["task_id"])
+        task = next(t for t in db.rows("tasks") if t["id"] == row["task_id"])
+        row["from_status"] = task["status"]
+        task["status"] = row["to_status"]
+
+    db = FakeSupabase(
+        tasks=[{"id": "t1", "status": "todo"}, {"id": "t2", "status": "in_progress"}],
+        relations={("moves", "tasks"): ("task_id", "id", False)},
+        triggers={("moves", "insert"): apply_move},
+    )
+    res = (
+        db.table("moves")
+        .insert([{"task_id": "t1", "to_status": "done"}, {"task_id": "t2", "to_status": "done"}])
+        .select("task_id, from_status, tasks(status)")
+        .execute()
+    )
+    assert res.data == [
+        {"task_id": "t1", "from_status": "todo", "tasks": {"status": "todo"}},
+        {"task_id": "t2", "from_status": "in_progress", "tasks": {"status": "in_progress"}},
+    ]
+    assert calls == ["t1", "t2"]  # once per row
+    assert [t["status"] for t in db.rows("tasks")] == ["done", "done"]
+    # An insert with no select runs its trigger too.
+    db.table("moves").insert({"task_id": "t1", "to_status": "todo"}).execute()
+    assert (calls[-1], db.rows("tasks")[0]["status"]) == ("t1", "todo")
+
+
+def test_select_after_a_write_keeps_count_and_overrides_minimal():
+    db = _write_db()
+    res = (
+        db.table("messages")
+        .update({"body": "x"}, count="exact", returning="minimal")
+        .eq("id", "m1")
+        .select("id")
+        .execute()
+    )
+    assert (res.data, res.count) == ([{"id": "m1"}], 1)
+
+
+def test_select_after_a_write_refuses_count_and_head():
+    # postgrest-py's write builder takes select(*columns) only: a count belongs to the write.
+    db = _write_db()
+    with pytest.raises(TypeError):
+        db.table("messages").insert({"body": "x"}).select("id", count="exact")
+    with pytest.raises(TypeError):
+        db.table("messages").update({"body": "x"}).eq("id", "m1").select("id", head=True)
+
+
+def test_single_and_maybe_single_after_a_write():
+    db = _write_db()
+    missed = db.table("messages").update({"body": "x"}).eq("id", "nope").select("id")
+    with pytest.raises(RuntimeError):
+        missed.single().execute()
+    missed = db.table("messages").update({"body": "x"}).eq("id", "nope").select("id")
+    assert missed.maybe_single().execute() is None
+    one = db.table("messages").update({"body": "x"}).eq("id", "m1").select("id, body")
+    assert one.single().execute().data == {"id": "m1", "body": "x"}
+    several = db.table("messages").insert([{"body": "a"}, {"body": "b"}]).select("body")
+    with pytest.raises(RuntimeError):
+        several.maybe_single().execute()
+
+
+def test_unregistered_embed_on_a_write_raises():
+    # PostgREST refuses the whole write (PGRST200), not just its answer.
+    db = _write_db()
+    with pytest.raises(KeyError):
+        db.table("messages").insert({"sender_id": "u1"}).select(
+            "id, profiles(first_name)"
+        ).execute()
+    with pytest.raises(KeyError):  # a nested embed is checked too
+        db.table("messages").update({"body": "x"}).eq("id", "m1").select(
+            "id, sender:profiles!m_sender_fkey(id, classes(name))"
+        ).execute()
+    assert db.rows("messages") == [{"id": "m1", "sender_id": "u2", "body": "old"}]
+
+
+def test_writes_without_select_are_unchanged():
+    db = _write_db()
+    inserted = db.table("messages").insert({"id": "m2", "sender_id": "u1", "body": "hi"}).execute()
+    assert inserted.data == [{"id": "m2", "sender_id": "u1", "body": "hi"}]
+    minimal = (
+        db.table("messages").update({"body": "x"}, returning="minimal").eq("id", "m1").execute()
+    )
+    assert minimal.data == []
+
+
+def test_only_insert_triggers_are_supported():
+    with pytest.raises(NotImplementedError):
+        FakeSupabase(triggers={("tasks", "update"): lambda db, row: None})

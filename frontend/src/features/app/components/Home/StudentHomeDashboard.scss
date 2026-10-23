@@ -1,17 +1,11 @@
 @use '@styles/index.scss' as *;
 
-// This file predates the --gt-* design-token system: the quick-action accent
-// colors below and the various status/priority accents scattered through the
-// rest of the file (reds, ambers, blues, greens, grays used for banners,
-// badges, and cards) are raw hex left over from before the token sweep, not
-// a reviewed bespoke choice. Left as-is (not part of this token sweep's
-// touched scope) rather than churned as a side effect of wiring the
+// This file predates the --gt-* design-token system: the status/priority
+// accents scattered through it (reds, ambers, blues, greens, grays used for
+// banners, badges, and cards) are raw hex left over from before the token
+// sweep, not a reviewed bespoke choice. Left as-is (not part of this token
+// sweep's touched scope) rather than churned as a side effect of wiring the
 // adherence lint — a real value sweep is follow-up work.
-
-// Quick actions: solid fills (same pattern as .add-assignment-btn)
-$quick-accent-hover: #1f5cd6;
-$quick-purple: #7d3c98;
-$quick-purple-hover: #6a3382;
 
 .student-home {
   min-height: calc(100vh - 64px);
@@ -21,74 +15,8 @@ $quick-purple-hover: #6a3382;
   position: relative;
 }
 
-.student-home__toolbar {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: $spacing-sm;
-  margin: 0;
-  width: 100%;
-
-  @media (max-width: 380px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.student-home__toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: 12.5px $spacing-sm;
-  border: none;
-  border-radius: $border-radius-sm;
-  font-family: $primary-font;
-  font-size: $font-size-base;
-  font-weight: $font-weight-semibold;
-  line-height: 1.2;
-  white-space: nowrap;
-  color: $white;
-  cursor: pointer;
-  transition: background-color $transition-fast;
-
-  svg {
-    flex-shrink: 0;
-    color: inherit;
-  }
-
-  &:hover {
-    filter: none;
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  // Dead: the global :focus-visible rule (index.css) already forces a ring;
-  // no resting box-shadow here to layer with.
-
-  &--join {
-    background-color: $accent-color;
-
-    &:hover {
-      background-color: $quick-accent-hover;
-    }
-  }
-
-  &--messages {
-    background-color: $quick-purple;
-
-    &:hover {
-      background-color: $quick-purple-hover;
-    }
-  }
-
-  &--browse {
-    background-color: $primary-color;
-
-    &:hover {
-      background-color: $primary-hover;
-    }
-  }
+.student-home__join-banner {
+  margin-bottom: $spacing-lg;
 }
 
 .student-home__grid {
@@ -115,21 +43,6 @@ $quick-purple-hover: #6a3382;
   border-radius: $border-radius-md;
   box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
   padding: $spacing-lg;
-}
-
-.student-home__card--deadlines {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.student-home__deadlines-scroll {
-  max-height: min(34vh, 240px);
-  overflow-y: auto;
-  overflow-x: auto;
-  margin: 0 (-$spacing-lg);
-  padding: 0 $spacing-lg;
-  -webkit-overflow-scrolling: touch;
 }
 
 .student-home__card-header {
@@ -196,158 +109,6 @@ $quick-purple-hover: #6a3382;
 
 }
 
-// —— Deadlines table ——
-// `border-collapse: separate` + `border-spacing: 0` so `position: sticky` on `thead th` works
-// (sticky headers are unreliable with `border-collapse: collapse`).
-.student-home__deadlines-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: $font-size-base;
-}
-
-.student-home__deadlines-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background-color: $white;
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 0 $border-color;
-}
-
-.student-home__deadlines-table th {
-  text-align: left;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  color: $text-tertiary;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: $spacing-sm $spacing-md $spacing-md;
-  border-bottom: 1px solid $border-color;
-  vertical-align: bottom;
-}
-
-.student-home__deadlines-table td {
-  padding: $spacing-md $spacing-md $spacing-md 0;
-  vertical-align: middle;
-  border-bottom: 1px solid rgba($border-color, 0.6);
-}
-
-.student-home__deadlines-empty {
-  padding: $spacing-lg $spacing-md;
-  text-align: center;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-  color: $text-secondary;
-  border-bottom: none;
-}
-
-.student-home__deadline-row {
-  cursor: pointer;
-  transition: background-color $transition-fast;
-
-  &:hover {
-    background-color: rgba($text-tertiary, 0.06);
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: inset var(--gt-focus-ring-tight);
-  }
-
-  &--highlight {
-    background-color: rgba(39, 113, 255, 0.06);
-  }
-}
-
-.student-home__deadline-name {
-  font-weight: $font-weight-semibold;
-  color: $text-primary;
-}
-
-.student-home__deadline-course {
-  display: block;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-normal;
-  color: $text-tertiary;
-  margin-top: 2px;
-}
-
-.student-home__deadline-date {
-  color: $text-secondary;
-  font-weight: $font-weight-medium;
-}
-
-// Under the deadline: when a not-yet-open assignment opens.
-.student-home__deadline-opens {
-  display: block;
-  color: var(--gt-text-tertiary);
-  font-size: var(--gt-text-caption);
-  font-weight: $font-weight-normal;
-}
-
-// Under the deadline while the late window is open: the Assignments table's label and tokens.
-.student-home__deadline-late {
-  display: block;
-  white-space: normal;
-  color: var(--gt-warning-text);
-  font-size: var(--gt-text-caption);
-}
-
-// A row that does not open (not open yet, or closed): no pointer, no hover fill.
-.student-home__deadline-row--inert {
-  cursor: default;
-
-  &:hover {
-    background-color: transparent;
-  }
-}
-
-.student-home__chevron {
-  color: $text-tertiary;
-  text-align: right;
-  width: 28px;
-}
-
-// Status pills
-.student-home__pill {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-
-  &--due-soon {
-    background: rgba(255, 59, 48, 0.12);
-    color: #c62828;
-  }
-
-  &--not-started {
-    background: rgba(245, 166, 35, 0.18);
-    color: #b26a00;
-  }
-
-  &--in-progress {
-    background: rgba(39, 113, 255, 0.12);
-    color: #1e5bb8;
-  }
-
-  &--submitted {
-    background: rgba(1, 129, 86, 0.14);
-    color: $primary-hover;
-  }
-
-  &--closed {
-    background: var(--gt-surface-sunken);
-    color: var(--gt-text-tertiary);
-  }
-}
-
-// —— Schedule ——
 .student-home__schedule-list {
   list-style: none;
   margin: 0;
@@ -763,38 +524,6 @@ $quick-purple-hover: #6a3382;
 
   .student-home__card {
     padding: $spacing-md;
-  }
-
-  // Keep the edge-to-edge scroll shadow aligned with the tighter card padding.
-  .student-home__deadlines-scroll {
-    margin: 0 (-$spacing-md);
-    padding: 0 $spacing-md;
-  }
-
-  // Compact the deadlines table so it fits the viewport without a sideways
-  // scroll: drop the decorative chevron column and tighten cell spacing.
-  .student-home__chevron {
-    display: none;
-  }
-
-  .student-home__deadlines-table {
-    font-size: $font-size-sm;
-  }
-
-  .student-home__deadlines-table th,
-  .student-home__deadlines-table td {
-    padding-left: 0;
-    padding-right: $spacing-sm;
-  }
-
-  .student-home__deadlines-table td:last-child,
-  .student-home__deadlines-table th:last-child {
-    padding-right: 0;
-  }
-
-  .student-home__pill {
-    padding: 4px 10px;
-    white-space: nowrap;
   }
 }
 

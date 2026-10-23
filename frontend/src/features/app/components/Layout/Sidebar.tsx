@@ -6,6 +6,7 @@ import { CLASS_ROLE_LABELS, pathAfterClassSwitch } from '../../config/routePermi
 import { useAuth } from '@/lib/auth';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { externalTasksHref } from '@/lib/externalTasksUrl';
+import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
 import { usePreview } from '@/lib/previewContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import wordmark from '@assets/grepthink-wordmark-text.svg?url';
@@ -39,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectorRef = useRef<HTMLButtonElement>(null);
   const openTimer = useRef<number | undefined>(undefined);
   const closeTimer = useRef<number | undefined>(undefined);
   // A pointer pressed on the sidebar: the focus it gives is the pointer's doing, not the keyboard's.
@@ -165,6 +167,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
     });
   };
 
+  // A page with no class asks for the selector (NoClassSelected's "Choose a class"): open the class
+  // menu, which holds the rail open, and focus its button. On a phone, AppView opens the drawer.
+  useEffect(() => {
+    const openSelector = () => {
+      setShowClassDropdown(true);
+      selectorRef.current?.focus();
+    };
+    window.addEventListener(OPEN_CLASS_SELECTOR_EVENT, openSelector);
+    return () => window.removeEventListener(OPEN_CLASS_SELECTOR_EVENT, openSelector);
+  }, []);
+
   // A press outside the menu closes it; one outside the sidebar lets go of the focus hold too.
   useEffect(() => {
     const handlePressOutside = (event: MouseEvent) => {
@@ -208,6 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
       {/* Class Selector: an icon tile in the rail, the class's name and its menu once open */}
       <div className="class-selector" ref={dropdownRef}>
         <button
+          ref={selectorRef}
           className="class-selector-header"
           onClick={() => setShowClassDropdown(!showClassDropdown)}
           aria-expanded={showClassDropdown}

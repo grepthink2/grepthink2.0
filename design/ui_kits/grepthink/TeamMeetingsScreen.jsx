@@ -1,7 +1,8 @@
 /* GrepThink team meetings — UI-kit screen composition.
    Composes components/domain/TeamMeetings*; reads window.GT_TEAM_MEETINGS_SAMPLE. The clock is pinned to Tue Oct 20, 2026 3:12 PM PT. */
 const NS = window.GrepThinkDesignSystem_36e7e3;
-const { TeamMeetingsList, TeamMeetingForm, TeamMeetingsModel, SidebarNavItem, SidebarSectionTitle, Avatar, AvatarGroup, Button, ProgressBar, Kbd, ModKey } = NS;
+const { TeamMeetingsList, TeamMeetingForm, TeamMeetingsModel, SidebarNavItem, SidebarSectionTitle, Avatar, AvatarGroup, Button, ProgressBar, Kbd, ModKey,
+  Modal, Tabs, TabPanel, Input, Textarea, Select, FileUpload } = NS;
 const { showTeamMeetingsCard } = TeamMeetingsModel;
 const modKey = ModKey || (() => '⌘');
 const S = window.GT_TEAM_MEETINGS_SAMPLE;
@@ -117,47 +118,51 @@ function ProjectPage({ role, meetings, status, zone, onEdit, log }) {
   );
 }
 
-/* Edit Project modal (mirrors EditProjectModal.tsx): Details · Team, plus Meetings for the Product Owner only. */
+/* Edit Project modal (mirrors EditProjectModal.tsx): Details · Team, plus Meetings for the Product Owner only.
+   Built from the shared Modal, Tabs, fields and Buttons; `inline` renders it in place for the state frames. */
 function EditProjectModal({ role, tab, onTab, onClose, inline, children }) {
   const po = role === 'po';
-  const tabs = [['details', I.gear16, 'Details'], ['team', I.users, 'Team'], ...(po ? [['meetings', I.calDays, 'Meetings']] : [])];
-  const sheet = (
-    <div className={['tm-ep', inline ? 'tm-ep--inline' : ''].filter(Boolean).join(' ')} role="dialog" aria-modal={inline ? undefined : 'true'} aria-labelledby="ep-title">
-      <button type="button" className="tm-ep__close" aria-label="Close" onClick={onClose}>{I.x}</button>
-      <header className="tm-ep__header"><h2 id="ep-title" className="tm-ep__title">Edit Project</h2><p className="tm-ep__subtitle">Manage your project configuration and team roles</p></header>
-      <div className="tm-ep__tabs" role="tablist">
-        {tabs.map(([id, icon, label]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className={`tm-ep__tab ${tab === id ? 'tm-ep__tab--active' : ''}`} onClick={() => onTab(id)}>{icon}<span>{label}</span></button>)}
-      </div>
-      <div className="tm-ep__body">
+  const idBase = React.useId();
+  const tabs = [
+    { value: 'details', label: 'Details', icon: I.gear16 },
+    { value: 'team', label: 'Team', icon: I.users },
+    ...(po ? [{ value: 'meetings', label: 'Meetings', icon: I.calDays }] : []),
+  ];
+  const people = Object.values(S.people).map((p) => ({ value: p.id, label: p.name }));
+  return (
+    <Modal open portal={!inline} onClose={onClose} size="lg" title="Edit Project" subtitle="Manage your project configuration and team roles"
+      tabs={<Tabs idBase={idBase} ariaLabel="Edit project sections" value={tab} onChange={onTab} tabs={tabs} collapseOnPhone />}
+      footer={(
+        <>
+          <span className="tm-ep__footer-start"><Button variant="danger-ghost" size="sm" iconLeft={I.trash}>Delete Project</Button></span>
+          {tab === 'meetings'
+            ? <Button onClick={onClose}>Done</Button>
+            : <><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={onClose}>Save Changes</Button></>}
+        </>
+      )}>
+      <TabPanel idBase={idBase} value={tab} active>
         {tab === 'details' && (
-          <>
-            <section className="tm-ep__section"><h3 className="tm-ep__section-title">Project Logo</h3><p className="tm-ep__section-hint">Shown on Browse Projects when set. Leave empty to use the default icon.</p>
-              <div className="tm-ep__logo-row"><div className="tm-ep__logo">{I.folderKanban}</div><button type="button" className="tm-ep__logo-change">{I.camera}Upload logo</button></div></section>
-            <section className="tm-ep__section"><h3 className="tm-ep__section-title">Project Name</h3><input className="tm-ep__input" defaultValue={S.projectName} aria-label="Project name" /></section>
-            <section className="tm-ep__section"><h3 className="tm-ep__section-title">Description</h3><textarea className="tm-ep__textarea" rows={4} aria-label="Project description" defaultValue="GrepThink 2.0 is the team and project platform CSE 115 runs on." /></section>
-            <section className="tm-ep__section"><h3 className="tm-ep__section-title">Max Team Size</h3><p className="tm-ep__section-hint">Maximum number of members allowed on this project.</p><input className="tm-ep__input tm-ep__input--short" type="number" defaultValue={5} aria-label="Max team size" /></section>
-          </>
+          <div className="tm-ep__form">
+            <FileUpload variant="image" shape="square" label="Project logo" optional chooseLabel="Upload logo" accept="image/png,image/jpeg"
+              helperText="Shown on Browse Projects when set. Leave empty to use the default icon." onSelect={() => {}} />
+            <Input label="Project name" defaultValue={S.projectName} />
+            <Textarea label="Description" rows={4} defaultValue="GrepThink 2.0 is the team and project platform CSE 115 runs on." />
+            <Input label="Max team size" type="number" min={1} defaultValue={5} helperText="Maximum number of members allowed on this project." className="tm-ep__short" />
+          </div>
         )}
         {tab === 'team' && (
-          <section className="tm-ep__section"><h3 className="tm-ep__section-title">Team roles</h3><p className="tm-ep__section-hint">Assign the Scrum roles for this project.</p>
-            <div className="tm-ep__role-row"><span className="tm-ep__role-name">Product Owner</span><select className="tm-ep__select" defaultValue="u-ashton" aria-label="Product Owner">{Object.values(S.people).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-            <div className="tm-ep__role-row"><span className="tm-ep__role-name">Scrum Master</span><select className="tm-ep__select" defaultValue="u-tony" aria-label="Scrum Master">{Object.values(S.people).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-          </section>
+          <div className="tm-ep__form">
+            <p className="tm-ep__hint">Assign the Scrum roles for this project.</p>
+            <div className="tm-ep__roles">
+              <Select label="Product Owner" defaultValue="u-ashton" options={people} />
+              <Select label="Scrum Master" defaultValue="u-tony" options={people} />
+            </div>
+          </div>
         )}
         {tab === 'meetings' && children}
-      </div>
-      <footer className="tm-ep__footer">
-        <button type="button" className="tm-ep__btn tm-ep__btn--delete">{I.trash}Delete Project</button>
-        <div className="tm-ep__footer-right">
-          {tab === 'meetings'
-            ? <button type="button" className="tm-ep__btn tm-ep__btn--save" onClick={onClose}>Done</button>
-            : <><button type="button" className="tm-ep__btn tm-ep__btn--secondary" onClick={onClose}>Cancel</button><button type="button" className="tm-ep__btn tm-ep__btn--save" onClick={onClose}>Save Changes</button></>}
-        </div>
-      </footer>
-    </div>
+      </TabPanel>
+    </Modal>
   );
-  if (inline) return sheet;
-  return <div className="tm-ep-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>{sheet}</div>;
 }
 
 function StatesView({ zone, log }) {
@@ -239,7 +244,7 @@ function TeamMeetingsApp() {
     );
   }
 
-  const Opt = ({ on, onClick, children }) => <button type="button" className="tm-demo__opt" aria-pressed={on} onClick={onClick}>{children}</button>;
+  const Opt = ({ on, onClick, children }) => <Button variant="outline" size="sm" pressed={on} onClick={onClick}>{children}</Button>;
   return (
     <>
       {stage}

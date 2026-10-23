@@ -303,9 +303,9 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     res = client.table("user_stories").update(payload).eq("id", str(story_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update story")
-    # Only scope-bearing edits move the burnup line. A snapshot costs three
-    # more sequential round-trips (two to recompute totals, one to upsert), so
-    # a title or description edit would pay ~half the request for nothing —
+    # Only scope-bearing edits move the burnup line. A snapshot costs two
+    # more sequential round-trips (one to recompute totals, one to upsert), so
+    # a title or description edit would pay two of its five for nothing —
     # `completed` comes from task status, which a story write never touches.
     if {"points", "sprint_id"} & payload.keys():
         for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
@@ -663,24 +663,16 @@ def _sprint_progress(stories: list[dict]) -> dict:
 
 
 def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
-    """Totals straight from the database, for writes that have no board loaded."""
+    """Totals straight from the database, for writes that have no board loaded: the sprint's
+    live stories with their tasks embedded, in one read."""
     stories = (
         client.table("user_stories")
-        .select("id, points")
+        .select("id, points, tasks(points, status)")
         .eq("sprint_id", str(sprint_id))
         .is_("archived_at", "null")
         .execute()
     ).data or []
-    ids = [s["id"] for s in stories]
-    done = []
-    if ids:
-        done = (
-            client.table("tasks")
-            .select("points")
-            .in_("story_id", ids)
-            .eq("status", "done")
-            .execute()
-        ).data or []
+    done = [t for s in stories for t in s.get("tasks") or [] if t.get("status") == "done"]
     return _totals(stories, done)
 
 
@@ -758,14 +750,24 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
             "task": {**task, "moved_by_name": _name_for(client, task.get("moved_by"))},
             "move": None,
         }
+    # The insert answers with the mover's profile and the task's story. Its embeds see the
+    # database as it was before the insert (one statement, one snapshot), so the embedded task
+    # still has its old status: only its story's sprint is read, which a move never changes.
     res = (
         client.table("task_moves")
         .insert({"task_id": str(task_id), "to_status": to_status, "moved_by": str(user_id)})
+        .select(
+            "*, mover:profiles!task_moves_moved_by_fkey(first_name, last_name, email), "
+            "task:tasks!task_moves_task_id_fkey("
+            "story:user_stories!tasks_story_id_fkey(sprint_id))"
+        )
         .execute()
     )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to move task")
     move = res.data[0]
+    mover = move.pop("mover", None)
+    sprint_id = ((move.pop("task", None) or {}).get("story") or {}).get("sprint_id")
     # The board list resolves moved_by_name from its bulk profile fetch; this
     # single-row response has to resolve its own, or the client reconciles the
     # optimistic audit line down to "Unknown".
@@ -774,11 +776,10 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
         "status": to_status,
         "moved_by": str(user_id),
         "moved_at": move["moved_at"],
-        "moved_by_name": _name_for(client, user_id),
+        "moved_by_name": _display_name(mover),
     }
-    story = _get_story_or_404(client, task["story_id"])
-    if story.get("sprint_id"):
-        _snapshot_burnup_safe(client, story["sprint_id"])
+    if sprint_id:
+        _snapshot_burnup_safe(client, sprint_id)
     return {"task": task, "move": move}
 
 
@@ -1191,10 +1192,12 @@ def _fanout_mentions(
     parent_id: str,
     parent_key: str,
     author_id: str,
+    author_name: str,
     body_md: str,
 ) -> None:
     """Notify the people a comment @-mentions (issue #191): the mentioned ids on the
     team or among the project's staff (as in :func:`_board_access`), minus the author.
+    ``author_name`` came with the comment's insert.
 
     Best-effort: the comment is already stored, so a failure here is logged and never
     raised. A body without mention tokens returns before any query.
@@ -1225,7 +1228,7 @@ def _fanout_mentions(
             return
         notify_mention(
             recipient_ids=sorted(recipients),
-            author_name=_name_for(client, author_id) or "Someone",
+            author_name=author_name,
             label=parent_key,
             project_name=reads["project"].get("name") or "",
             body_md=body_md,
@@ -1253,9 +1256,17 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
         "body_md": body_md,
         ("story_id" if parent_kind == "story" else "task_id"): str(parent_id),
     }
-    res = client.table("scrum_comments").insert(row).execute()
+    # The insert answers with its author's profile, for the answer and the mentions.
+    res = (
+        client.table("scrum_comments")
+        .insert(row)
+        .select("*, author:profiles!scrum_comments_author_id_fkey(first_name, last_name, email)")
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create comment")
+    comment = res.data[0]
+    author_name = _display_name(comment.pop("author", None))
     _fanout_mentions(
         client,
         project_id=parent["project_id"],
@@ -1263,9 +1274,10 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
         parent_id=parent_id,
         parent_key=parent.get("key", ""),
         author_id=user_id,
+        author_name=author_name,
         body_md=body_md,
     )
-    return {**res.data[0], "author_name": _name_for(client, user_id)}
+    return {**comment, "author_name": author_name}
 
 
 def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dict]:

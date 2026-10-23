@@ -130,6 +130,19 @@ def test_an_uppercase_mention_still_reaches_the_teammate(monkeypatch):
     assert [r["user_id"] for r in db.rows("notifications")] == [ANA]
 
 
+def test_a_mention_reads_no_profile(monkeypatch):
+    """The author's name comes embedded in the comment's insert, for the answer and the
+    notification alike."""
+    db = _world(monkeypatch)
+    _comment("task", _mention(ANA))
+    [row] = db.rows("notifications")
+    assert row["title"] == "Tony Wu mentioned you on GT-12"
+    assert not [q for q in db.queries if q["table"] == "profiles"]
+    # The parent, the membership check, the insert, the project and its mentioned members
+    # (one wave), and the notification's insert.
+    assert db.executes == 6
+
+
 def test_a_comment_without_mentions_costs_no_extra_round_trips(monkeypatch):
     db = _world(monkeypatch)
     _comment("task", "plain text")

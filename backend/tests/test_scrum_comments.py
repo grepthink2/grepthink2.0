@@ -36,6 +36,25 @@ def test_a_task_comment_goes_on_the_task_and_reaches_the_mention_seam(monkeypatc
     assert (call["parent_kind"], call["parent_key"]) == ("task", "GT-12")
 
 
+def test_a_members_comment_costs_three_round_trips(monkeypatch):
+    db = _board(monkeypatch)
+    out = controller.create_comment(
+        parent_kind="task", parent_id="t1", user_id=UID, body_md="hello"
+    )
+    assert out["author_name"] == "Tony Wu" and "author" not in out
+    # The parent, the membership check, and the insert with its author's profile embedded.
+    assert db.executes == 3
+
+
+def test_a_comment_by_an_author_without_a_profile_is_unknown(monkeypatch):
+    db = _board(monkeypatch)
+    db.store["profiles"] = [p for p in db.rows("profiles") if p["id"] != UID]
+    out = controller.create_comment(
+        parent_kind="story", parent_id="st1", user_id=UID, body_md="hello"
+    )
+    assert out["author_name"] == "Unknown"
+
+
 def test_outsiders_cannot_comment(monkeypatch):
     db = _board(monkeypatch)
     with pytest.raises(HTTPException) as e:

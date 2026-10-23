@@ -114,21 +114,6 @@
   }
 }
 
-/* ---------- Initials avatar ---------- */
-
-.messages-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--gt-canvas);
-  color: var(--gt-text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-  user-select: none;
-}
-
 /* ---------- Inbox list ---------- */
 
 .messages-list {

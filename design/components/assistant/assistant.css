@@ -3,7 +3,7 @@
    Assistant-authored surfaces are told apart from people's without a
    new hue: the spark mark in a green-50 tile where an avatar would be,
    a "Project assistant" label in green-700, and — in-app — a dashed
-   green hairline instead of the solid #DADADA border (a proposal, not
+   green hairline instead of the solid --gt-border border (a proposal, not
    a fact). Two surfaces: --app (flat, 10px, whisper shadow) and
    --landing (floating 20px shell, marketing only).
    ============================================================ */
@@ -37,7 +37,7 @@
 .gt-asst--landing {
   border-radius: var(--gt-mkt-card-radius, 20px);
   border: none;
-  box-shadow: var(--gt-mkt-shadow-card, 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18));
+  box-shadow: var(--gt-mkt-shadow-card);
   padding: var(--gt-mkt-card-pad, 16px);
 }
 .gt-asst__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
@@ -81,7 +81,7 @@
   margin: 8px 0 12px;
   padding: 7px 9px;
   border-radius: var(--gt-radius-md);
-  background: var(--gt-mkt-well, #f7f8f9);
+  background: var(--gt-mkt-well);
   font-size: 11.5px; font-weight: var(--gt-weight-semibold);
   color: var(--gt-text-primary);
 }
@@ -112,7 +112,7 @@
   letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--gt-warning-text);
 }
-.gt-asst-stalled__label i { width: 7px; height: 7px; border-radius: 50%; background: var(--gt-amber-500, #E6A817); }
+.gt-asst-stalled__label i { width: 7px; height: 7px; border-radius: 50%; background: var(--gt-amber-500); }
 .gt-asst-stalled__title { margin: 8px 0 3px; font-size: 12.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
 .gt-asst-stalled__title code { font-family: var(--gt-font-mono); font-size: 10px; font-weight: 500; color: var(--gt-text-tertiary); margin-right: 5px; }
 .gt-asst-stalled__detail { margin: 0 0 8px; font-size: 11px; color: var(--gt-text-tertiary); }
@@ -136,7 +136,7 @@
   border-radius: var(--gt-radius-pill);
   transition: background-color var(--gt-transition-fast);
 }
-.gt-asst-report__review:hover { background: #fde9a8; }
+.gt-asst-report__review:hover { background: var(--gt-warning-soft-hover); }
 .gt-asst-report__review:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 
 /* ── Unlinked PR chip ───────────────────────────────────── */
@@ -149,25 +149,25 @@
   font-size: 11.5px; font-weight: var(--gt-weight-medium);
   color: var(--gt-text-secondary);
 }
-.gt-asst-unlinked svg { color: var(--gt-mkt-pr-merged, #7D3C98); }
-.gt-asst-unlinked b { color: var(--gt-mkt-pr-merged, #7D3C98); font-weight: var(--gt-weight-semibold); }
+.gt-asst-unlinked svg { color: var(--gt-mkt-pr-merged); }
+.gt-asst-unlinked b { color: var(--gt-mkt-pr-merged); font-weight: var(--gt-weight-semibold); }
 .gt-asst-unlinked--app { border: 1px dashed rgba(1, 129, 86, 0.35); box-shadow: var(--gt-shadow-hairline); }
-.gt-asst-unlinked--landing { box-shadow: var(--gt-mkt-shadow-card, 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18)); }
+.gt-asst-unlinked--landing { box-shadow: var(--gt-mkt-shadow-card); }
 .gt-asst-unlinked--bare { padding: 0; background: transparent; }
 
 /* ── Preview / coming-soon stage treatment ──────────────── */
 .gt-asst-preview {
   position: relative;
-  background: var(--gt-mkt-preview-bg, #fbfbfc);
-  box-shadow: inset 0 0 0 1.5px var(--gt-mkt-preview-outline, #d3d8dd);
+  background: var(--gt-mkt-preview-bg);
+  box-shadow: inset 0 0 0 1.5px var(--gt-mkt-preview-outline);
   border-radius: var(--gt-mkt-stage-radius, 28px);
 }
 .gt-asst-preview__tag {
   position: absolute; left: 18px; top: 16px;
   font-family: var(--gt-font-sans);
   font-size: 10px; font-weight: var(--gt-weight-bold); letter-spacing: 0.08em;
-  color: var(--gt-mkt-preview-tag, #616161);
-  border: 1.5px dashed var(--gt-mkt-preview-tag-border, #c3c9cf);
+  color: var(--gt-mkt-preview-tag);
+  border: 1.5px dashed var(--gt-mkt-preview-tag-border);
   border-radius: var(--gt-radius-pill);
   padding: 3px 9px;
 }

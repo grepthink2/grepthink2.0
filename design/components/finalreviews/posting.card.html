@@ -1,0 +1,94 @@
+<!-- @dsCard group="Components" viewport="1000x2700" name="Final reviews — posting, slot actions, confirmations" subtitle="PostSlotsDrawer (already posted · overlap refused · past · India · empty), SlotActionDialog (place a team · place on a slot · move · Review TA, started and passed cases), every ConfirmDialog of the round" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../schedule/scheduleSrcLoader.js"></script>
+<script src="../domain/teamMeetingsSrcLoader.js"></script>
+<script src="./finalReviewsData.js"></script>
+<script src="./finalReviewsSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  a { color: var(--gt-text-link); } a:hover { color: var(--gt-info-text); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 22px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .stage { position: relative; overflow: hidden; border-radius: var(--gt-radius-md); }
+  .cap { margin: 0 0 6px; font-size: 11.5px; color: var(--gt-text-tertiary); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { PostSlotsDrawer, SlotActionDialog, ConfirmDialog, FinalReviewsModel } = NS;
+const { indexTeams, unbookedTeams, confirmCopy, whenText } = FinalReviewsModel;
+const S = window.GT_FINAL_REVIEWS_SAMPLE, F = window.GT_FR;
+const WEEK = new Date(F.CLOCKS.booking_week), DAY = new Date(F.CLOCKS.review_day);
+const world = F.worldFrom(S);
+const p = F.payloadFor(world, 'instructor');
+const byId = indexTeams(p.reviewSlots, p.schedule);
+const unbooked = unbookedTeams(p.reviewSlots, byId);
+const slots = p.reviewSlots.slots;
+const slot = (id) => slots.find((s) => s.id === id);
+const team = (id) => ({ ...byId[id], project_id: id });
+const tas = S.class_tas.tas;
+const counts = { 'u-maya-chen': 1, 'u-luis-ortega': 1, 'u-priya-nair': 1, 'u-sam-okafor': 1 };
+const monday = ['09:00', '10:00', '10:30', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'].map((time) => ({ date: '2026-12-07', time }));
+const extra = [{ date: '2026-11-30', time: '08:00' }, { date: '2026-12-09', time: '09:00' }, { date: '2026-12-09', time: '10:00' }, { date: '2026-12-09', time: '11:00' }];
+const noop = () => new Promise((r) => setTimeout(r, 600));
+const W = (iso) => whenText(iso, {});
+const Confirm = (k, x) => { const c = confirmCopy(k, x); return <ConfirmDialog open portal={false} title={c.title} message={c.message} confirmLabel={c.confirmLabel} busyLabel={c.busyLabel} destructive={c.destructive} onCancel={() => {}} onConfirm={() => {}} />; };
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">PostSlotsDrawer — campus clock; Monday's 9:00 / 10:00 / 1:00 / 3:00 already exist (skipped), 10:30 overlaps (refused — Change or ×; nothing posts until fixed), a time this morning has passed (allowed)</p>
+      <div className="cols">
+        <div className="stage" style={{ height: 980 }}><PostSlotsDrawer open portal={false} width="100%" existing={slots} now={WEEK} defaultDay="2026-12-09" defaultEntries={[...monday, ...extra]} onPost={noop} onClose={() => {}} /></div>
+        <div>
+          <p className="cap">Viewer in India — each time with its "for you" equivalent</p>
+          <div className="stage" style={{ height: 560 }}><PostSlotsDrawer open portal={false} width="100%" existing={slots} now={WEEK} zone={F.IST} defaultDay="2026-12-10" defaultEntries={extra.slice(1)} onPost={noop} onClose={() => {}} /></div>
+          <p className="cap" style={{ marginTop: 14 }}>Empty</p>
+          <div className="stage" style={{ height: 400 }}><PostSlotsDrawer open portal={false} width="100%" existing={slots} now={WEEK} onPost={noop} onClose={() => {}} /></div>
+        </div>
+      </div>
+
+      <p className="lbl">SlotActionDialog — the instructor's choose-and-confirm</p>
+      <div className="cols">
+        <div><p className="cap">Place a team on a free slot — without a slot first</p><div className="stage" style={{ height: 380 }}><SlotActionDialog open portal={false} kind="place_team" slot={slot('s-1207-1100')} slots={slots} unbooked={unbooked} teamsById={byId} now={WEEK} defaultValue="p-wharf-rats" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">…choosing a booked team moves it and drops its Review TA</p><div className="stage" style={{ height: 380 }}><SlotActionDialog open portal={false} kind="place_team" slot={slot('s-1207-1100')} slots={slots} unbooked={unbooked} teamsById={byId} now={WEEK} defaultValue="p-trailhead" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Move a team (with a Review TA to drop)</p><div className="stage" style={{ height: 400 }}><SlotActionDialog open portal={false} kind="move_team" team={team('p-trailhead')} slots={slots} now={WEEK} defaultValue="s-1208-1000" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Move a team without a Review TA</p><div className="stage" style={{ height: 380 }}><SlotActionDialog open portal={false} kind="move_team" team={team('p-redwood-labs')} slots={slots} now={WEEK} defaultValue="s-1208-1300" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Review day: move a team whose time has passed (scores stay)</p><div className="stage" style={{ height: 440 }}><SlotActionDialog open portal={false} kind="move_team" team={team('p-trailhead')} slots={slots} now={new Date('2026-12-07T19:30:00Z')} defaultValue="s-1208-1500" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Place a team without a slot on a started slot — records a review held outside the app</p><div className="stage" style={{ height: 400 }}><SlotActionDialog open portal={false} kind="place_on_slot" team={team('p-arboretum')} slots={slots} now={DAY} defaultValue="s-1207-1100" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Review TA — appoint (Home TA not listed, load shown)</p><div className="stage" style={{ height: 380 }}><SlotActionDialog open portal={false} kind="review_ta" team={team('p-fog-city')} tas={tas} reviewCounts={counts} now={WEEK} defaultValue="u-sam-okafor" onConfirm={noop} onCancel={() => {}} /></div></div>
+        <div><p className="cap">Review TA — before the team books (the booking keeps it)</p><div className="stage" style={{ height: 400 }}><SlotActionDialog open portal={false} kind="review_ta" team={team('p-slug-scheduler')} tas={tas} reviewCounts={counts} now={WEEK} defaultValue="u-luis-ortega" onConfirm={noop} onCancel={() => {}} /></div></div>
+      </div>
+
+      <p className="lbl">Confirmations — ConfirmDialog with the model's copy</p>
+      <div className="cols">
+        <div className="stage" style={{ height: 230 }}>{Confirm('move_here', { team: 'Trailhead', when: 'Tue, Dec 8 · 10:00 AM', from: 'Mon, Dec 7 · 9:00 AM', reviewTa: 'Luis Ortega' })}</div>
+        <div className="stage" style={{ height: 230 }}>{Confirm('move_here', { team: 'Slug Scheduler', when: 'Tue, Dec 8 · 10:00 AM', from: 'Mon, Dec 7 · 11:00 AM' })}</div>
+        <div className="stage" style={{ height: 230 }}>{Confirm('release_own', { team: 'Trailhead', when: 'Mon, Dec 7 · 9:00 AM', reviewTa: 'Luis Ortega' })}</div>
+        <div className="stage" style={{ height: 230 }}>{Confirm('release_team', { team: 'Redwood Labs', when: 'Mon, Dec 7 · 1:00 PM' })}</div>
+        <div className="stage" style={{ height: 280 }}>{Confirm('release_team', { team: 'Trailhead', when: 'Mon, Dec 7 · 9:00 AM', reviewTa: 'Luis Ortega', passed: true })}</div>
+        <div className="stage" style={{ height: 250 }}>{Confirm('close_signups', {})}</div>
+        <div className="stage" style={{ height: 230 }}>{Confirm('step_down', { team: 'Night Owls', when: W('2026-12-07T18:00:00Z') })}</div>
+        <div className="stage" style={{ height: 230 }}>{Confirm('delete_day', { count: 2, held: 4, day: 'Monday, Dec 7' })}</div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+<script>loadFinalReviewSources('../..').then(runDeferredBabel);</script>
+</body>
+</html>

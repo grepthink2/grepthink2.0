@@ -67,8 +67,32 @@ def test_move_route_runs_the_move(monkeypatch, client):
         json={"to_status": "done"},
     )
     assert res.status_code == 200
-    assert res.json()["task"]["status"] == "done"
+    # The moved task itself, not wrapped in {message, task}.
+    assert (res.json()["status"], res.json()["moved_by_name"]) == ("done", "Tony Wu")
+    assert "message" not in res.json()
     assert db.rows("tasks")[0]["status"] == "done"
+
+
+@pytest.mark.parametrize(("parent", "parent_id"), [("stories", "st1"), ("tasks", "t1")])
+def test_posting_a_comment_answers_the_comment(monkeypatch, client, parent, parent_id):
+    db = scrum_db(
+        monkeypatch,
+        user_stories=[dict(STORY)],
+        tasks=[{"id": "t1", "story_id": "st1", "project_id": PID, "key": "GT-1"}],
+    )
+    # Postgres fills scrum_comments.created_at (DEFAULT now()); a comment response needs it.
+    db.triggers[("scrum_comments", "insert")] = lambda _db, row: row.setdefault(
+        "created_at", "2026-10-21T00:00:00+00:00"
+    )
+    res = client.post(
+        f"/api/scrum/{parent}/{parent_id}/comments",
+        headers=header_for("tony@ucsc.edu", sub=UID),
+        json={"body_md": "Looks good"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert (body["body_md"], body["author_name"]) == ("Looks good", "Tony Wu")
+    assert not {"message", "comment"} & set(body)
 
 
 def test_a_blocked_move_answers_409_with_its_code(monkeypatch, client):

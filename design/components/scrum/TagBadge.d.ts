@@ -1,3 +1,4 @@
+// Intentional addition: TASK_TAGS, TagBadge — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export type TaskTag = 'backend' | 'frontend' | 'ui/ux' | 'infra' | 'design' | 'research' | 'bug' | 'chore' | 'optimization' | 'docs';

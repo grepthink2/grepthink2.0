@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useEffectEvent } from 'react';
 import { format, parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
-import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
 import { pickerTextToIso } from '@/lib/dateUtils';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
@@ -86,8 +87,11 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   // A published assignment's deadline is fixed once it passes (the backend refuses a moved due date
   // or an unpublish), so a late-submission window takes the due date's place. A draft can always be
   // rescheduled, so it is never frozen.
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
+  const now = new Date();
   const deadlinePassed =
-    assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= new Date();
+    assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= now;
 
   const isDirty =
     name.trim() !== origName.trim() ||
@@ -162,7 +166,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     }
   };
 
-  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
+  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, now) : undefined;
 
   if (!isOpen && !isClosing) return null;
 
@@ -209,7 +213,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               value={openDate}
               onChange={setOpenDate}
               showTime
-              labelClassName="aem__sublabel"
             />
 
             <DatePickerField
@@ -219,7 +222,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               showTime
               disabled={deadlinePassed}
               disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
-              labelClassName="aem__sublabel"
             />
 
             {deadlinePassed && (
@@ -234,7 +236,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
                   onChange={setAcceptUntil}
                   showTime
                   disabledBefore={assignment?.dueAt ? new Date(assignment.dueAt) : undefined}
-                  labelClassName="aem__sublabel"
                 />
                 {acceptUntil && (
                   <button

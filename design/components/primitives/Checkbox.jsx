@@ -1,28 +1,17 @@
 import React from 'react';
 
 /**
- * Checkbox with label. Custom-drawn box, green when checked,
- * accent-blue focus ring, indeterminate support.
+ * Checkbox with label. Custom-drawn box (green when checked), accent focus ring, indeterminate.
+ * The native input covers the whole row, so clicks, taps and the screen-reader cursor all land
+ * on it. The description is linked with `aria-describedby`, not folded into the name.
  */
 export function Checkbox({
-  id,
-  label,
-  checked = false,
-  onChange,
-  disabled = false,
-  indeterminate = false,
-  description,
-  className = '',
-  ...rest
+  id, label, checked = false, onChange, disabled = false, indeterminate = false, description, className = '', ...rest
 }) {
   const reactId = React.useId();
   const inputId = id || reactId;
   const ref = React.useRef(null);
-
-  React.useEffect(() => {
-    if (ref.current) ref.current.indeterminate = indeterminate;
-  }, [indeterminate]);
-
+  React.useEffect(() => { if (ref.current) ref.current.indeterminate = indeterminate; }, [indeterminate]);
   return (
     <label className={['gt-check', disabled ? 'gt-check--disabled' : '', className].filter(Boolean).join(' ')} htmlFor={inputId}>
       <input
@@ -33,6 +22,8 @@ export function Checkbox({
         checked={checked}
         onChange={onChange}
         disabled={disabled}
+        aria-labelledby={label ? `${inputId}-label` : undefined}
+        aria-describedby={description ? `${inputId}-desc` : undefined}
         {...rest}
       />
       <span className="gt-check__box" aria-hidden="true">
@@ -43,8 +34,8 @@ export function Checkbox({
       </span>
       {(label || description) && (
         <span className="gt-check__text">
-          {label && <span className="gt-check__label">{label}</span>}
-          {description && <span className="gt-check__desc">{description}</span>}
+          {label && <span className="gt-check__label" id={`${inputId}-label`}>{label}</span>}
+          {description && <span className="gt-check__desc" id={`${inputId}-desc`}>{description}</span>}
         </span>
       )}
     </label>

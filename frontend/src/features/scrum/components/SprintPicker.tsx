@@ -48,7 +48,7 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
   // align="end" hangs the menu from the trigger's right side, but the gear and New Story follow the trigger, so on a
   // phone the menu would run off the left of the screen. Once open it moves right just enough to stay GUTTER px inside
   // the viewport (with less than 2 × GUTTER to spare it is centred), measured before the browser paints — as
-  // DefinitionPopover does on the analytics page.
+  // the shared InfoPopover (components/InfoPopover) does.
   useLayoutEffect(() => {
     const trigger = triggerRef.current;
     const surface = trigger?.nextElementSibling; // the Popover's surface, rendered after its anchor

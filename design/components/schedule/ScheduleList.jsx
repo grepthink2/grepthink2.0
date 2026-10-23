@@ -187,7 +187,7 @@ export function ScheduleList({
         )}
         {SCHEDULE_KINDS.filter((k) => k.filterLabel).map((k) => {
           const on = activeKinds.includes(k.kind);
-          return <button key={k.kind} type="button" className="gt-sched__chip" aria-pressed={on} onClick={() => setKinds(on ? activeKinds.filter((x) => x !== k.kind) : [...activeKinds, k.kind])}>{k.filterLabel}</button>;
+          return <button key={k.kind} type="button" className="gt-filter-chip gt-filter-chip--sm" aria-pressed={on} onClick={() => setKinds(on ? activeKinds.filter((x) => x !== k.kind) : [...activeKinds, k.kind])}>{k.filterLabel}</button>;
         })}
       </div>
     </div>

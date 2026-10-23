@@ -1,0 +1,45 @@
+// Alert — ported from design/components/feedback/feedback.css so the two stay diffable: the Alert
+// block, then its line from the file's phone block. The dismiss button's own padding, border,
+// background and radius already beat index.css's global button rule; its font is unused (an icon).
+
+/* ── Alert (inline) ──────────────────────────────────────── */
+.gt-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--gt-radius-sm);
+  font-family: var(--gt-font-sans);
+  font-size: var(--gt-text-body);
+}
+.gt-alert__icon { display: inline-flex; margin-top: 1px; flex-shrink: 0; }
+.gt-alert__content { flex: 1; min-width: 0; }
+.gt-alert__title { margin: 0; font-weight: var(--gt-weight-semibold); font-size: var(--gt-text-body); }
+.gt-alert__text { margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-normal); }
+.gt-alert__text p { margin: 0; }
+.gt-alert__text p + p { margin-top: 4px; }
+.gt-alert__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.gt-alert__title + .gt-alert__text { margin-top: 2px; }
+.gt-alert__dismiss {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: inline-flex;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.gt-alert__dismiss:hover { opacity: 1; }
+.gt-alert__dismiss:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+
+.gt-alert--success { background-color: var(--gt-success-soft); color: var(--gt-success-text); }
+.gt-alert--warning { background-color: var(--gt-warning-soft); color: var(--gt-warning-text); }
+.gt-alert--error   { background-color: var(--gt-error-soft);   color: var(--gt-error-text); }
+.gt-alert--info    { background-color: var(--gt-info-soft);    color: var(--gt-info-text); }
+
+/* ── Phones ───────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-alert__dismiss { min-width: 44px; min-height: 44px; justify-content: center; align-items: center; }
+}

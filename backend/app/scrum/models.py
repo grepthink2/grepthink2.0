@@ -285,11 +285,6 @@ class CommentsListResponse(BaseModel):
     comments: list[CommentOut]
 
 
-class CommentResponse(BaseModel):
-    message: str
-    comment: CommentOut
-
-
 class PrRefreshResponse(BaseModel):
     updated: dict[str, str]  # task_id -> new pr_state
 

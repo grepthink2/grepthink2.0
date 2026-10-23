@@ -209,7 +209,7 @@ describe('Header — opening a join-request notification', () => {
 });
 
 describe('Header — a message notification', () => {
-  it('quotes the message without its formatting marks', () => {
+  it('quotes the message without its formatting marks', async () => {
     state.notifications = [
       {
         id: 'n-message',
@@ -225,7 +225,8 @@ describe('Header — a message notification', () => {
     renderAt('/app/dashboard');
     fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
     const item = screen.getByText('New message from Sam Lee').closest('button');
-    expect(item).toHaveTextContent('Standup moved to 3pm');
+    // The parser loads with the first preview; the item shows the raw text until it has.
+    await waitFor(() => expect(item).toHaveTextContent('Standup moved to 3pm'));
     expect(item?.querySelector('strong, code')).toBeNull();
   });
 });

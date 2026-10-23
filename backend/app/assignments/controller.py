@@ -617,10 +617,9 @@ def update_tsr_entry(
     same shape as _fetch_tsr_entries (including its project_id), and records a
     ``tsr_updated`` event.
 
-    Round trips: the TSR with its project and class embedded, the assignment's
-    window (the evaluator only), the update (whose returned row is used
-    directly), one profile read and the event — 5 for the evaluator, 4 for the
-    instructor.
+    Round trips: the TSR with its project, class and assignment window embedded,
+    the update (which returns the row with both people's profiles embedded) and
+    the event — 3 for the evaluator and the instructor alike.
     """
     try:
         client = get_client()
@@ -629,7 +628,8 @@ def update_tsr_entry(
             client.table("TSRs")
             .select(
                 "id, evaluator_id, evaluatee_id, project_id, assignment_id, "
-                "projects(class_id, classes(created_by))"
+                "projects(class_id, classes(created_by)), "
+                f"assignment:assignments(id, class_id, {WINDOW_COLUMNS}, classes(institution_id))"
             )
             .eq("id", str(tsr_id))
             .limit(1)
@@ -674,22 +674,28 @@ def update_tsr_entry(
 
         # The evaluator edits only inside the submission window; the instructor always may.
         if is_evaluator and not is_instructor:
-            window = (
-                client.table("assignments")
-                .select(f"id, class_id, {WINDOW_COLUMNS}, classes(institution_id)")
-                .eq("id", str(assignment_id))
-                .limit(1)
-                .execute()
-            ).data
-            if not window:  # deleted since the TSR read: fail closed rather than skip the check
+            window = tsr.get("assignment")
+            if not window:  # no assignment to check against: fail closed rather than skip it
                 raise HTTPException(status_code=404, detail="Assignment not found")
-            _require_window_open(window[0], (window[0].get("classes") or {}).get("institution_id"))
+            _require_window_open(window, (window.get("classes") or {}).get("institution_id"))
 
-        result = client.table("TSRs").update(updates).eq("id", str(tsr_id)).execute()
+        # The update answers with the row and both people; a self-review names one person twice.
+        result = (
+            client.table("TSRs")
+            .update(updates)
+            .eq("id", str(tsr_id))
+            .select(
+                f"{_TSR_COLUMNS}, "
+                f"evaluator:profiles!TSRs_evaluator_id_fkey({PROFILE_SELECT}), "
+                f"evaluatee:profiles!TSRs_evaluatee_id_fkey({PROFILE_SELECT})"
+            )
+            .execute()
+        )
         if not result.data:
             raise HTTPException(status_code=404, detail="TSR not found")
         row = result.data[0]
-        profile_map = _profiles_by_id(client, {row["evaluator_id"], row["evaluatee_id"]})
+        people = (row.pop("evaluator", None), row.pop("evaluatee", None))
+        profile_map = {p["id"]: p for p in people if p}
         entry = _serialize_tsr_entry(row, profile_map)
         events.record(
             "tsr_updated",

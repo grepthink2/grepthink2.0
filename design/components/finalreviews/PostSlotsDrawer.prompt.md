@@ -1,0 +1,11 @@
+Posting slots (instructor) — a right Drawer (480), so the board stays in view behind it and a long list gets the full height.
+
+```jsx
+<PostSlotsDrawer open={posting} onClose={close} existing={data.slots} now={now} zone={zone} schoolZone={campus}
+  onPost={async (payload, draft) => { const { created } = await api.postReviewSlots(classId, payload); toast(postedMessage(created, draft.count)); close(); }} />
+```
+- Subtitle "Times are on the campus clock (PT). Each slot lasts 1 hour." **Add times**: Day (`type="date"`) · First start (`type="time"`, help "Campus time (PT)", plus "· 10:30 PM GMT+5:30 for you" when the zones differ) · Last start (optional, "Every hour from the first start") → **Add times** fills every hour; no last start adds one time. Native date / time inputs, as team meetings chose (they work in a scrolling sheet).
+- **To post**: grouped by campus day ("Monday, Dec 7 · 8 times", **Remove day**), one row per time — campus time · the viewer's equivalent · flags (`Already posted` grey, `In the past` grey) · × (`Remove 9:00 AM on Monday, Dec 7`).
+- **Overlaps are refused** (brief call 15, confirmed 2026-10-20: slots never overlap). A start less than an hour from another slot — already posted or in the list — turns its row error-soft with `Overlaps 9:00 AM` (error Badge, naming the slot) and a **Change** button that puts the time back into the Add fields; an error Alert above says "Slots never overlap… Nothing posts until then.", and **Post** answers "Nothing is posted yet: remove or change the 2 overlapping times first." with focus on the first Change. Hourly fills never overlap themselves; a single added time, or a fill next to posted slots, can. Past times stay allowed (info Alert — teams can't book them; the instructor can place a team).
+- Footer: **Cancel** · **Post 8 slots** ("Posting…"). Empty list → "Add at least one time."; over 200 → "You can post up to 200 times at once. Remove 12."; a 422 (or the server's overlap refusal, once C2 adds it) → error Alert inside, the list kept. After posting the page toasts "Posted 8 slots." or "Posted 6 slots. 2 times already had one."
+- Duplicates within the list are dropped on add (the API rejects repeats); times are sent as "2026-12-07T09:00-08:00".

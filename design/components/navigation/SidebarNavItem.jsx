@@ -1,26 +1,23 @@
 import React from 'react';
+import { UnreadBadge } from '../display/UnreadBadge.jsx';
 
 /**
- * Sidebar navigation item — white text on the green sidebar; active
- * state is the light chip with the left half-pill indicator.
- * Must be rendered inside a green (.gt-sidebar-demo or app sidebar) container.
+ * Sidebar navigation item — white text on the green sidebar; active state is the light chip with
+ * the left half-pill indicator. The unread count is the shared UnreadBadge (red, "3 unread").
+ * Rendered inside the app sidebar (layout code), its one consumer.
  */
 export function SidebarNavItem({ icon = null, label, active = false, badge, collapsed = false, onClick, className = '' }) {
   return (
     <button
       type="button"
-      className={[
-        'gt-sidebar-item',
-        active ? 'gt-sidebar-item--active' : '',
-        collapsed ? 'gt-sidebar-item--collapsed' : '',
-        className,
-      ].filter(Boolean).join(' ')}
+      className={['gt-sidebar-item', active ? 'gt-sidebar-item--active' : '', collapsed ? 'gt-sidebar-item--collapsed' : '', className].filter(Boolean).join(' ')}
       aria-current={active ? 'page' : undefined}
+      aria-label={collapsed ? label : undefined}
       onClick={onClick}
     >
-      {icon && <span className="gt-sidebar-item__icon">{icon}</span>}
+      {icon && <span className="gt-sidebar-item__icon" aria-hidden="true">{icon}</span>}
       {!collapsed && <span className="gt-sidebar-item__label">{label}</span>}
-      {!collapsed && badge != null && badge !== 0 && <span className="gt-sidebar-item__badge">{badge}</span>}
+      {!collapsed && badge != null && badge !== 0 && <UnreadBadge count={badge} className="gt-sidebar-item__badge" />}
     </button>
   );
 }

@@ -1,3 +1,4 @@
+// Intentional addition: CommentThread — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ScrumComment {
@@ -6,14 +7,6 @@ export interface ScrumComment {
   time?: string;
   /** Markdown body (bold, italic, code, links, - lists, @mentions). */
   body: string;
-}
-
-export interface MarkdownTextProps {
-  /** Markdown source. */
-  children: string;
-  /** Team member names — @mentions matching one render as mention chips. */
-  members?: string[];
-  className?: string;
 }
 
 export interface CommentThreadProps {
@@ -29,7 +22,5 @@ export interface CommentThreadProps {
   className?: string;
 }
 
-/** Demo-fidelity markdown renderer (production uses the codebase's md + mention semantics). */
-export function MarkdownText(props: MarkdownTextProps): React.JSX.Element;
 /** Story/task comment thread with markdown + @mentions. */
 export function CommentThread(props: CommentThreadProps): React.JSX.Element;

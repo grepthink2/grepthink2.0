@@ -1,0 +1,17 @@
+// SortableHeader — the sort button's lines of the Table block in design/components/display/display.css,
+// then the button's line from the file's reduced-motion block, ported so the two stay diffable (the
+// rest of the block is Table.scss). A table of its own can use the header without the Table component,
+// so its lines travel with it. The button's own padding, border, radius, background, font and
+// transition beat index.css's global button rule.
+
+.gt-table__sort { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: none; border-radius: 4px; background: none; font: inherit; color: inherit; cursor: pointer; user-select: none; transition: color var(--gt-transition-fast); }
+.gt-table__sort:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-table__sort-icon { flex-shrink: 0; opacity: 0.35; transition: opacity var(--gt-transition-fast); }
+.gt-table__sort:hover .gt-table__sort-icon { opacity: 0.9; }
+.gt-table__sort--active { color: var(--gt-text-primary); }
+.gt-table__sort--active .gt-table__sort-icon { opacity: 1; }
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-table__sort { transition: none; }
+}

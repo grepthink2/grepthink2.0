@@ -1,0 +1,109 @@
+<!-- @dsCard group="Components" viewport="760x980" name="Primitives — Slider" subtitle="Labelled range: value + unit, paired number input, legend colour, help, disabled, error, the TSR contributions step, phone 44px" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  .sl-page { display: flex; flex-direction: column; gap: 6px; max-width: 720px; }
+  .sl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+  .sl-panel { display: flex; flex-direction: column; gap: 16px; padding: 16px; background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md); }
+  .sl-head { margin: 0; font-size: 14px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+  .sl-sub { margin: -10px 0 0; font-size: 12.5px; color: var(--gt-text-tertiary); }
+  .sl-total { margin: 0; font-size: 13px; font-weight: var(--gt-weight-medium); font-variant-numeric: tabular-nums; color: var(--gt-success-text); }
+  .sl-total--open { color: var(--gt-warning-text); }
+  .sl-phone { width: 360px; max-width: 100%; }
+  /* the app applies this under 768px; the gallery forces it on the frame */
+  .sl-phone .gt-slider__control { height: 44px; }
+  .sl-phone .gt-slider__input::-webkit-slider-runnable-track { height: 44px; }
+  .sl-phone .gt-slider__input::-moz-range-track { height: 44px; }
+  .sl-phone .gt-slider__input::-webkit-slider-thumb { margin-top: 12px; }
+  .sl-phone .gt-slider__number-input { min-height: 44px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+let Slider = NS.Slider;
+
+// Dev fallback: until the next compile the bundle predates Slider, so read the source.
+function useSliderReady() {
+  const [ready, setReady] = React.useState(!!Slider);
+  React.useEffect(() => {
+    if (ready) return;
+    fetch('./Slider.jsx').then((r) => r.text()).then((src) => {
+      const body = src.replace(/^import .*$/mg, '').replace(/^export function /mg, 'function ');
+      const code = Babel.transform(`(function () {\n${body}\nreturn Slider;\n})()`, { presets: ['react'] }).code;
+      Slider = new Function('React', 'FieldShell', `return ${code}`)(React, NS.FieldShell);
+      setReady(true);
+    });
+  }, []);
+  return ready;
+}
+
+const TEAM = [
+  ['a', 'Ashton Liu (you)', 'var(--gt-avatar-1)'],
+  ['t', 'Tony Wu', 'var(--gt-avatar-2)'],
+  ['l', 'Landon Ngo', 'var(--gt-avatar-4)'],
+  ['j', 'Joshua Cruz', 'var(--gt-avatar-6)'],
+];
+
+function Contributions() {
+  const [shares, setShares] = React.useState({ a: 30, t: 25, l: 25, j: 10 });
+  const total = Object.values(shares).reduce((s, n) => s + n, 0);
+  const left = 100 - total;
+  return (
+    <div className="sl-panel">
+      <p className="sl-head">How much did each teammate contribute?</p>
+      <p className="sl-sub">Sprint 3 · shares add up to 100%</p>
+      {TEAM.map(([k, name, color]) => (
+        <Slider key={k} label={name} unit="%" withInput color={color} value={shares[k]} onChange={(n) => setShares((s) => ({ ...s, [k]: n }))} />
+      ))}
+      <p className={left === 0 ? 'sl-total' : 'sl-total sl-total--open'} role="status">
+        {left === 0 ? 'Total 100%' : left > 0 ? `Total ${total}% · ${left}% left to assign` : `Total ${total}% · ${-left}% over`}
+      </p>
+    </div>
+  );
+}
+
+function App() {
+  const ready = useSliderReady();
+  if (!ready) return <p className="lbl">Loading Slider…</p>;
+  return (
+    <div className="sl-page">
+      <p className="lbl">Value beside the track · paired number input with a legend colour</p>
+      <div className="sl-grid">
+        <Slider label="Your share" unit="%" defaultValue={25} />
+        <Slider label="Tony Wu" unit="%" withInput color="var(--gt-avatar-2)" defaultValue={40} />
+      </div>
+      <p className="lbl">Help line, step 5 (PageUp / PageDown move 10) · optional · disabled</p>
+      <div className="sl-grid">
+        <Slider label="Share" helperText="Steps of 5" step={5} unit="%" defaultValue={60} />
+        <Slider label="Ashton Liu (you)" unit="%" defaultValue={30} disabled helperText="Submitted Oct 17 · read only" />
+      </div>
+      <p className="lbl">Error — the field's own problem (a wrong group total is one line under the group)</p>
+      <div className="sl-grid">
+        <Slider label="Joshua Cruz" unit="%" withInput defaultValue={0} error="Enter a share between 0% and 100%." />
+        <Slider label="Landon Ngo" unit="%" defaultValue={45} optional />
+      </div>
+      <p className="lbl">The TSR contributions step — four teammates, the total under the group</p>
+      <Contributions />
+      <p className="lbl">Phone (&lt; 768px) — the control and the number input are 44px tall</p>
+      <div className="sl-panel sl-phone">
+        <Slider label="Ashton Liu (you)" unit="%" withInput color="var(--gt-avatar-1)" defaultValue={30} />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

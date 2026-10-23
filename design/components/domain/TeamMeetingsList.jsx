@@ -1,5 +1,8 @@
 import React from 'react';
 import { Button } from '../primitives/Button.jsx';
+import { Badge } from '../display/Badge.jsx';
+import { Alert } from '../feedback/Alert.jsx';
+import { InlineConfirm } from '../feedback/ConfirmDialog.jsx';
 import { Skeleton } from '../feedback/EmptyState.jsx';
 import { ScheduleItem, ScheduleIcon } from '../schedule/ScheduleItem.jsx';
 import { ScheduleDayHeader } from '../schedule/ScheduleDayHeader.jsx';
@@ -119,7 +122,7 @@ export function TeamMeetingsList({
         <div className="gt-tm-row__main">
           <div className="gt-tm-row__head">
             <span className="gt-tm-row__title">{m.title}</span>
-            {live && <span className="gt-sched-item__live"><span className="gt-sched-item__live-dot" aria-hidden="true" />Live</span>}
+            {live && <Badge status="live" />}
           </div>
           <div className="gt-tm-row__when" title={campusRange(m)}>
             <time className="gt-tm-row__day" dateTime={m.startsAt}>{when.day}</time>
@@ -133,8 +136,8 @@ export function TeamMeetingsList({
         </div>
         {canManage && (
           <div className="gt-tm-row__actions">
-            <button type="button" className="gt-tm__btn" onClick={() => startEdit(m.id)} disabled={!!editing} aria-label={`Edit ${m.title}`}>Edit</button>
-            <button type="button" className="gt-tm__btn gt-tm__btn--danger" onClick={() => { setConfirmId(m.id); }} disabled={!!editing} aria-label={`Delete ${m.title}`}>Delete</button>
+            <Button variant="ghost" size="sm" onClick={() => startEdit(m.id)} disabled={!!editing} aria-label={`Edit ${m.title}`}>Edit</Button>
+            <Button variant="danger-ghost" size="sm" onClick={() => setConfirmId(m.id)} disabled={!!editing} aria-label={`Delete ${m.title}`}>Delete</Button>
           </div>
         )}
       </li>
@@ -145,7 +148,7 @@ export function TeamMeetingsList({
   if (status === 'loading') {
     body = <div role="status" aria-busy="true" aria-label="Loading team meetings">{[0, 1, 2].map((i) => <div key={i} className="gt-tm__skeleton"><Skeleton width={28} height={28} radius={7} /><div className="gt-tm__skeleton-lines"><Skeleton width="42%" height={12} /><Skeleton width="68%" height={10} /></div></div>)}</div>;
   } else if (status === 'error') {
-    body = <p className="gt-tm__state gt-tm__state--error">Couldn’t load team meetings.<button type="button" className="gt-tm__link" onClick={onRetry}><ScheduleIcon name="refresh-cw" size={13} />Try again</button></p>;
+    body = <Alert tone="error" title="Couldn’t load team meetings." actions={<Button variant="outline" size="sm" iconLeft={<ScheduleIcon name="refresh-cw" size={13} />} onClick={onRetry}>Try again</Button>} />;
   } else if (!meetings.length && editing !== 'new') {
     body = (
       <div className="gt-tm__empty">
@@ -195,21 +198,11 @@ export function TeamMeetingsList({
 }
 
 function ConfirmRow({ meeting, busy, error, onConfirm, onCancel }) {
-  const ref = React.useRef(null);
-  const uid = React.useId();
-  React.useEffect(() => { const el = ref.current && ref.current.querySelector('[data-cancel]'); if (el) el.focus(); }, []);
-  const onKeyDown = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (!busy) onCancel(); } };
+  // the shared InlineConfirm: focus lands on Cancel, Esc cancels inside the dialog, Delete shows "Deleting…"
   return (
-    <li ref={ref} className="gt-tm-row gt-tm-row--confirm" role="group" aria-labelledby={`${uid}-q`} onKeyDown={onKeyDown}>
-      <span className="gt-tm-row__tile gt-tm-row__tile--alert"><ScheduleIcon name="circle-alert" size={16} /></span>
-      <div className="gt-tm-row__main">
-        <p id={`${uid}-q`} className="gt-tm-row__confirm-text">Delete '{meeting.title}'? It disappears from your team's calendars.</p>
-        {error && <p className="gt-tm-row__error" role="alert">{error}</p>}
-      </div>
-      <div className="gt-tm-row__actions">
-        <Button size="sm" variant="danger" loading={busy} onClick={onConfirm}>Delete</Button>
-        <Button size="sm" variant="secondary" onClick={onCancel} disabled={busy} data-cancel="true">Cancel</Button>
-      </div>
+    <li className="gt-tm__confirm">
+      <InlineConfirm message={`Delete '${meeting.title}'? It disappears from your team's calendars.`} busy={busy} onConfirm={onConfirm} onCancel={onCancel} />
+      {error && <Alert tone="error">{error}</Alert>}
     </li>
   );
 }

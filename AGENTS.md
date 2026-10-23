@@ -40,6 +40,16 @@ review shape below, not the skill's own.
   request into `beta` or `main`.
 - A frontend test that times out on a busy machine proves nothing. Rerun the failing files alone,
   and let CI decide.
+- Vitest runs in its `vmThreads` pool (`vite.config.ts`): one jsdom per worker, a fresh `window`
+  per file. Objects that come from Node APIs or jsdom internals live in another realm there, so
+  `toStrictEqual` on a `Response.json()` result or `structuredClone` output, or `instanceof Error`
+  on an error a Node built-in threw, can fail where `toEqual` passes; compare with `toEqual` or
+  check the shape. `isolate` has no effect in that pool, and a worker is recycled past
+  `vmMemoryLimit` rather than garbage-collected.
+- Vitest keeps compiled modules on disk (`frontend/node_modules/.vitest-cache`), and that cache misses
+  a change to a Sass partial: a stylesheet that `@use`s the partial keeps its old CSS. After changing a
+  partial, run `npx vitest --clearCache` in `frontend/` before trusting a test that reads styles. CI
+  starts from a clean install.
 - Tests that depend on the clock or a time zone:
   - pin the clock (`app.assignments.deadlines.now_utc` in the backend, fake timers in the frontend);
   - use fixed-offset zones (`Etc/GMT+8`), never a real zone whose daylight-time rules can change.
@@ -75,7 +85,7 @@ review shape below, not the skill's own.
 
 | Layer     | Technology                                  |
 | --------- | ------------------------------------------- |
-| Frontend  | React 19, TypeScript 5.9, Vite 8 (rolldown) |
+| Frontend  | React 19, TypeScript 7, Vite 8 (rolldown)   |
 | Styling   | SCSS + design tokens (`src/styles/`), lucide-react icons |
 | Routing   | React Router DOM v7                         |
 | State     | React Context (auth, class, preview, conversations, notifications) |
@@ -83,7 +93,7 @@ review shape below, not the skill's own.
 | Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
-| Lint      | ruff check + format (backend), ESLint 10 + `lint:design` (frontend) |
+| Lint      | ruff check + format (backend), oxlint 1.89 + `lint:design` (frontend) |
 | Coverage  | pytest-cov (`backend/.coveragerc`: branch, `fail_under`), @vitest/coverage-v8 (`vite.config.ts` thresholds), Codecov |
 | Tooling   | Node 24 in CI (`engines` >= 22.12), `backend/requirements-dev.txt` |
 
@@ -119,7 +129,13 @@ frontend/src/
   lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
-  components/         # shared UI (Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
+  lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
+  components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
+                      # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
+                      # (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip
+                      # (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs (+TabPanel),
+                      # SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton, ErrorBoundary,
+                      # Popover, Menu, Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -195,12 +211,12 @@ cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/l
 .venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
 .venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env
 .venv/bin/python -m pytest --cov            # same, plus coverage (.coveragerc: branch, fail_under)
-.venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env)
+.venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env; its reloader, watchfiles, comes with requirements-dev.txt)
 
 # Frontend (Node 24)
 cd frontend && npm ci
 npm run dev                                 # Vite dev server on :5173 (proxies /api)
-npm run lint                                # ESLint: any finding fails (react-hooks rules are errors)
+npm run lint                                # oxlint: any finding fails (the react-hooks and React Compiler rules are errors)
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
 npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
@@ -345,6 +361,56 @@ The full agent-facing action catalog (method, params, role) lives at
   created). A missing or failing function is a card in `failures[]`, never a 500. The nightly
   `analytics_daily` rollup runs under pg_cron (`prod/2026-10/2026-10-07_analytics_cron.sql`); its
   `class_id` has no foreign key on purpose, so deleted classes keep their history.
+- **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
+  tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
+  the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
+  SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
+  dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
+  InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip with FilterChipGroup, Avatar with
+  AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
+  SortableHeader and `useTableSort`, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. Tabs switch
+  panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
+  a list. A table row that opens something carries a link or button in its first cell (Table's
+  `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
+  (`<Badge status="attendance.late" />`), never a colour: `components/Badge/badgeStatus.ts` maps it. Avatars
+  take their colour from the one palette and hash in `components/Avatar/avatarHelpers.ts`
+  (`lib/avatarColors.ts` is the landing page's hex copy). A field's `maxLength` is a soft
+  limit: the text past it is kept and flagged, so the form's own validation must refuse it. The dialogs
+  share `useDialog` (`components/Modal/`): Esc and the scrim close only the topmost, so a layer inside a
+  dialog that handles Esc itself (a popover, a calendar, an inline form) must take it first: in the
+  capture phase, or with `stopPropagation()` in its own handler. A
+  feature stylesheet never re-declares a shared component's classes, and feature markup never renders
+  them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
+  feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
+  build it with your feature's own class names; never copy a design component's CSS block. A kit
+  component takes the name `design/_ds_manifest.json` gives it, at `src/components/<Name>/<Name>.tsx`
+  (an export the design ships inside another component's file may sit in that component's folder);
+  `lint:design` fails otherwise, and a deliberate difference goes in `NAMES_ALLOWLIST`
+  (`frontend/scripts/names.mjs`) with its reason.
+- **The frontend lints with oxlint and type-checks with TypeScript 7.** `frontend/.oxlintrc.json`
+  lists the rules it runs, each as an error; nothing is enabled by category (its `off` entries are
+  typescript-eslint's overlay, which turns core rules off on TypeScript files). The rule names are
+  `typescript/*` and `react/*` (`react/only-export-components` is the old `react-refresh` rule, and
+  the output prints the classic hooks rules as `react-hooks(...)`). The React rules are native ports
+  of `eslint-plugin-react-hooks`, the React Compiler rules included; they run on every TypeScript
+  file, tests too, and find more than the ESLint plugin did (a clock read during render, a ref
+  written during render). A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
+  hides one finding; a reason that wraps needs a block comment, because the directive covers the
+  line after the comment ends. Never suppress `react/exhaustive-deps` or `react/rules-of-hooks`
+  inside a component: in oxlint 1.89 such a directive also hides every React Compiler finding in
+  that component. Restructure the effect instead: a value that must not re-run it is read from a
+  ref that an earlier effect keeps current. `npm run lint` also fails on a suppression that hides
+  nothing.
+  oxlint is pinned to an exact version: its minor releases add rules and make existing ones
+  stricter, so an upgrade is a change of its own. TypeScript 7 has no stable JavaScript API
+  (`require("typescript")` returns only its version; the rest is under `typescript/unstable/*`), so
+  a tool that loads the compiler API, such as typescript-eslint, cannot be added without
+  TypeScript 6 beside it (Microsoft's `@typescript/typescript6` package, under an `npm:` alias).
+- **The entry chunk stays lean.** Every `/app` page except Home is a `lazy()` route in
+  `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
+  shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
+  they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
+  the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

@@ -13,8 +13,8 @@ import { api } from '@/lib/api';
 import type { ApiAssignment, ApiProject, ApiRosterStudent } from '@/lib/api';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import ProjectHealth from '@features/app/components/Stats/ProjectHealth';
-import DashboardMetricCard from '@features/app/components/Dashboard/DashboardMetricCard';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { StatCard } from '@/components/StatCard/StatCard';
 import {
   buildProjectHealth,
   recentAssignments,
@@ -128,36 +128,40 @@ const Dashboard: React.FC = () => {
       {error && <div className="dashboard__inline-error">{error}</div>}
 
       <section className="dashboard__metrics" aria-label="Class metrics">
-        <DashboardMetricCard
+        <StatCard
           label="Registered Students"
           value={studentsRegistered}
-          icon={Users}
+          icon={<Users size={16} aria-hidden="true" />}
           accent="primary"
-          tooltip="Students registered in GrepThink"
+          info={{ body: 'Students registered in GrepThink' }}
           loading={loading}
           onClick={() => navigate('/app/roster')}
         />
-        <DashboardMetricCard
+        <StatCard
           label="Active Projects"
           value={activeProjects}
-          icon={FolderKanban}
+          icon={<FolderKanban size={16} aria-hidden="true" />}
           accent="blue"
           loading={loading}
           onClick={() => navigate('/app/projects')}
         />
-        <DashboardMetricCard
+        <StatCard
           label="Turn-In Rate"
           value={`${turnInRate.rate}%`}
-          icon={FileCheck2}
+          icon={<FileCheck2 size={16} aria-hidden="true" />}
           accent="primary"
           onClick={() => navigate('/app/modules')}
         />
-        <DashboardMetricCard
+        <StatCard
           label="Not On Roster"
           value={rosterSummary.notOnRoster}
-          icon={UserX}
+          icon={<UserX size={16} aria-hidden="true" />}
           accent="amber"
-          hint={rosterSummary.notOnRoster > 0 ? 'Registered but unmatched' : 'All matched'}
+          // The hint comes from the roster that is still loading: a bar holds its line until it arrives.
+          hint={
+            loading ? <Skeleton width="70%" height={11} />
+            : rosterSummary.notOnRoster > 0 ? 'Registered but unmatched' : 'All matched'
+          }
           loading={loading}
           onClick={() => navigate('/app/roster')}
         />

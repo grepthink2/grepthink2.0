@@ -1,0 +1,36 @@
+// Table — ported from design/components/display/display.css so the two stay diffable: the Table block
+// down to the open-row link (its sort button's lines are SortableHeader.scss), then the open-row
+// link's line from the file's reduced-motion block. The loading rows are Skeleton and the empty row
+// EmptyState (components/), which bring their own styles. The open-row button's own padding, border,
+// radius, background, font and transition beat index.css's global button rule. One addition, marked
+// below: a row's own header cell reads as a body cell.
+
+/* ── Table ──────────────────────────────────────────────── */
+.gt-table-wrapper { max-width: 100%; overflow-x: auto; }
+.gt-table-wrapper:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-table { width: 100%; border-collapse: collapse; font-family: var(--gt-font-sans); font-size: 0.875rem; }
+.gt-table th { padding: 10px var(--gt-space-md); background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); font-size: 0.8125rem; font-weight: var(--gt-weight-medium); text-align: left; white-space: nowrap; }
+.gt-table td { padding: var(--gt-space-md); border-bottom: 1px solid var(--gt-border); background: var(--gt-surface); color: var(--gt-text-primary); font-weight: var(--gt-weight-medium); vertical-align: middle; }
+.gt-table tbody tr:last-child td { border-bottom: none; }
+.gt-table tbody tr:hover td { background: var(--gt-gray-50); }
+.gt-table--dense th { padding: 6px 12px; }
+.gt-table--dense td { padding: 8px 12px; font-size: 0.8125rem; }
+.gt-table--sticky thead th { position: sticky; top: 0; z-index: 1; }
+.gt-table td.gt-table__empty-cell { padding: 0; }
+.gt-table tbody tr:hover td.gt-table__empty-cell { background: var(--gt-surface); }
+.gt-table__open { padding: 0; border: none; border-radius: 4px; background: none; font: inherit; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); text-align: left; text-decoration: none; cursor: pointer; transition: color var(--gt-transition-fast); }
+.gt-table__open:hover { color: var(--gt-text-link); text-decoration: underline; text-underline-offset: 2px; }
+.gt-table__open:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+
+// Codebase addition: a column with `rowHeader` renders its body cells as `<th scope="row">`, so a
+// screen reader names each row by them. They read as body cells: only the column headers take the
+// header look. Each rule is the body-cell rule above it, for `tbody th`.
+.gt-table tbody th { padding: var(--gt-space-md); border-bottom: 1px solid var(--gt-border); background: var(--gt-surface); color: var(--gt-text-primary); font-size: inherit; font-weight: var(--gt-weight-medium); text-align: left; white-space: normal; vertical-align: middle; }
+.gt-table tbody tr:last-child th { border-bottom: none; }
+.gt-table tbody tr:hover th { background: var(--gt-gray-50); }
+.gt-table--dense tbody th { padding: 8px 12px; font-size: 0.8125rem; }
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-table__open { transition: none; }
+}

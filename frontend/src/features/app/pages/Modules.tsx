@@ -11,6 +11,7 @@ import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurn
 // import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import { lazyModal } from '@/lib/lazyModal';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
+import '@features/app/components/Stats/ProjectHealth.scss';
 import './Modules.scss';
 
 // Both load on first open; the assignment forms pull in the date picker.

@@ -1,3 +1,4 @@
+// Intentional addition: SEARCH_ENTITIES, SearchModel — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import type { SearchEntityType } from './EntityIcon';
 
 export type { SearchEntityType };

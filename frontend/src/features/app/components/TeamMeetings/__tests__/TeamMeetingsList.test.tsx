@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import { cssRules } from '@/test/cssRules';
 
 // Edit Project's Save Changes calls the API; nothing else here does.
 const updateProject = vi.hoisted(() => vi.fn());
@@ -105,11 +106,11 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByRole('heading', { name: 'New meeting' })).toBeInTheDocument();
     expect(titleBox()).toHaveFocus();
     await user.type(titleBox(), 'Design review');
-    expect(screen.getByText('13/80')).toBeInTheDocument();
+    expect(screen.getByText('13 / 80')).toBeInTheDocument();
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
     expect(screen.getByRole('combobox', { name: 'Duration' })).toHaveValue('60');
-    await user.type(screen.getByRole('textbox', { name: 'Room' }), 'E2 room 180');
+    await user.type(screen.getByRole('textbox', { name: 'Room (optional)' }), 'E2 room 180');
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
     expect(onCreate).toHaveBeenCalledTimes(1);
@@ -134,8 +135,8 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     fireEvent.change(dateInput(), { target: { value: '2026-10-23' } });
     fireEvent.change(timeInput(), { target: { value: '09:30' } });
     await user.selectOptions(screen.getByRole('combobox', { name: 'Duration' }), '45');
-    await user.type(screen.getByRole('textbox', { name: 'Zoom link' }), ' https://ucsc.zoom.us/j/42 ');
-    await user.type(screen.getByRole('textbox', { name: 'Note' }), 'Bring the demo');
+    await user.type(screen.getByRole('textbox', { name: 'Zoom link (optional)' }), ' https://ucsc.zoom.us/j/42 ');
+    await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Bring the demo');
     await user.type(titleBox(), 'Retro{Enter}');
 
     expect(onCreate).toHaveBeenCalledWith({
@@ -162,7 +163,8 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByText('Pick a start time.')).toBeInTheDocument();
     expect(titleBox()).toHaveFocus();
     expect(titleBox()).toHaveAttribute('aria-invalid', 'true');
-    expect(titleBox()).toHaveAccessibleDescription('Give the meeting a title.');
+    // The title's counter is part of its description, after the error.
+    expect(titleBox()).toHaveAccessibleDescription('Give the meeting a title. 0 of 80 characters');
 
     // Typing in a field clears its error.
     await user.type(titleBox(), 'Retro');
@@ -195,7 +197,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     await user.type(titleBox(), 'Design review');
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
-    const zoom = screen.getByRole('textbox', { name: 'Zoom link' });
+    const zoom = screen.getByRole('textbox', { name: 'Zoom link (optional)' });
     // A space in the path: new URL() takes it, the API answers 422.
     await user.type(zoom, 'https://ucsc.zoom.us/j/1 2');
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
@@ -211,23 +213,35 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByText(LINK_ERROR)).toBeInTheDocument();
   });
 
-  it('holds each field to the server’s length limits', async () => {
+  it('holds each field to the server’s length limits, keeping what was typed past one', async () => {
     const user = userEvent.setup();
     const onCreate = vi.fn();
     renderManage({ onCreate });
 
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
-    expect(titleBox()).toHaveAttribute('maxLength', '80');
-    const room = screen.getByRole('textbox', { name: 'Room' });
-    expect(room).toHaveAttribute('maxLength', '120');
-    expect(screen.getByRole('textbox', { name: 'Zoom link' })).toHaveAttribute('maxLength', '500');
-    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveAttribute('maxLength', '500');
+    // The limits are soft, as the shared fields keep them: nothing is cut, the field past its limit
+    // is flagged, and the save waits for it.
+    const room = screen.getByRole('textbox', { name: 'Room (optional)' });
+    for (const field of [titleBox(), room, screen.getByRole('textbox', { name: 'Zoom link (optional)' }), screen.getByRole('textbox', { name: 'Note (optional)' })]) {
+      expect(field).not.toHaveAttribute('maxLength');
+    }
 
-    // A value past maxLength (pasted by script, or an old row) still gets a field error.
-    await user.type(titleBox(), 'Design review');
+    fireEvent.change(titleBox(), { target: { value: 'x'.repeat(81) } });
+    expect(titleBox()).toHaveValue('x'.repeat(81));
+    expect(titleBox()).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('81 / 80')).toBeInTheDocument();
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    expect(onCreate).not.toHaveBeenCalled();
+    expect(screen.getByText('Keep it under 80 characters.')).toBeInTheDocument();
+    expect(titleBox()).toHaveFocus();
+
+    await user.clear(titleBox());
+    await user.type(titleBox(), 'Design review');
     fireEvent.change(room, { target: { value: 'x'.repeat(121) } });
+    expect(room).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('121 / 120')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
     expect(onCreate).not.toHaveBeenCalled();
@@ -235,7 +249,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(room).toHaveFocus();
 
     fireEvent.change(room, { target: { value: 'x'.repeat(120) } });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Zoom link' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Zoom link (optional)' }), {
       target: { value: `https://ucsc.zoom.us/j/${'1'.repeat(478)}` }, // 501 characters
     });
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
@@ -265,7 +279,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('disables the form and spins the button while saving', async () => {
+  it('disables the form and keeps the busy button focused while saving', async () => {
     const user = userEvent.setup();
     let finish: () => void = () => {};
     const onCreate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
@@ -277,12 +291,18 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
-    const submit = screen.getByRole('button', { name: 'Add meeting' });
-    expect(submit).toBeDisabled();
+    // The submit says it is busy instead of turning disabled, so focus stays on it.
+    const submit = screen.getByRole('button', { name: 'Adding…' });
+    expect(submit).toHaveFocus();
+    expect(submit).not.toBeDisabled();
+    expect(submit).toHaveAttribute('aria-disabled', 'true');
     expect(submit).toHaveAttribute('aria-busy', 'true');
-    expect(submit.querySelector('.gt-button__spinner')).not.toBeNull();
     expect(titleBox()).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    // A second click while it saves sends nothing more.
+    await user.click(submit);
+    expect(onCreate).toHaveBeenCalledTimes(1);
 
     finish();
     expect(await screen.findByText('Meeting added.')).toBeInTheDocument();
@@ -404,6 +424,27 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(await screen.findByText('Meeting deleted.')).toBeInTheDocument();
   });
 
+  it('keeps Delete focused and busy while it deletes', async () => {
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    const onDelete = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    renderManage({ meetings: [meeting()], onDelete });
+
+    await user.click(screen.getByRole('button', { name: 'Delete Sprint 3 planning' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    const remove = screen.getByRole('button', { name: 'Deleting…' });
+    expect(remove).toHaveFocus();
+    expect(remove).toHaveAttribute('aria-disabled', 'true');
+    expect(remove).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await user.click(remove);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+
+    finish();
+    expect(await screen.findByText('Meeting deleted.')).toBeInTheDocument();
+  });
+
   it('says so in the strip when deleting fails, and Cancel puts the row back', async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn().mockRejectedValue(new Error('500'));
@@ -445,6 +486,16 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const pastList = document.getElementById(toggle.getAttribute('aria-controls')!)!;
     expect(within(pastList).getByText('Kickoff').closest('li')).toHaveClass('gt-tm-row--past');
+  });
+
+  it('marks the live meeting with the blue Live badge, at the schedule row’s pill size', () => {
+    renderManage({ meetings: [live] });
+    const badge = within(screen.getByRole('listitem')).getByText('Live');
+    expect(badge).toHaveClass('gt-badge', 'gt-badge--info');
+    expect(badge.parentElement).toHaveClass('gt-tm-row__head');
+    const [pill] = cssRules('.gt-tm-row__head .gt-badge');
+    expect(pill.getPropertyValue('padding')).toBe('1px 7px');
+    expect(pill.getPropertyValue('font-size')).toBe('10.5px');
   });
 
   it('says No upcoming meetings when only past ones exist', () => {
@@ -603,6 +654,7 @@ describe('TeamMeetingsList — the project-page card', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('Standup');
     expect(rows[0]).toHaveAttribute('aria-current', 'true');
+    expect(within(rows[0] as HTMLElement).getByText('Live')).toHaveClass('gt-badge', 'gt-badge--info');
     expect(within(rows[0] as HTMLElement).getByRole('link', { name: 'Join Zoom' })).toHaveAttribute('href', 'https://ucsc.zoom.us/j/1');
     expect(rows[1]).toHaveTextContent('Sprint 3 planning');
     expect(rows[1]).toHaveTextContent('Alpha');
@@ -696,13 +748,13 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { unmount } = render(
       <EditProjectModal isOpen onClose={() => {}} project={project} projectMembers={[]} viewerIsProductOwner={false} />,
     );
-    expect(screen.getByRole('button', { name: 'Details' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Team' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Meetings' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Details' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Team' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Meetings' })).not.toBeInTheDocument();
     unmount();
 
     renderModal();
-    expect(screen.getByRole('button', { name: 'Meetings' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Meetings' })).toBeInTheDocument();
   });
 
   it('swaps Cancel and Save Changes for a single Done on the Meetings tab', async () => {
@@ -710,7 +762,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { onClose } = renderModal();
 
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.getByRole('region', { name: 'Team meetings' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
@@ -729,7 +781,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const name = screen.getByRole('textbox', { name: 'Project name' });
     await user.clear(name);
     await user.type(name, 'Beta');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
@@ -748,9 +800,9 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     ] as ApiProjectMember[];
     renderModal({ projectMembers: members });
 
-    await user.click(screen.getByRole('button', { name: 'Team' }));
+    await user.click(screen.getByRole('tab', { name: 'Team' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Select Scrum Master' }), 'u-ben');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
 
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
@@ -761,7 +813,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const { onClose } = renderModal();
 
     await user.type(screen.getByRole('textbox', { name: 'Project name' }), ' 2');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -774,12 +826,12 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
 
     const name = screen.getByRole('textbox', { name: 'Project name' });
     await user.type(name, '!');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Details' }));
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
     await user.type(screen.getByRole('textbox', { name: 'Project name' }), '{Backspace}');
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
   });
 
@@ -799,7 +851,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const user = userEvent.setup();
     const { onClose } = renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
     expect(titleBox()).toHaveFocus();
     await user.keyboard('{Escape}');
@@ -816,7 +868,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     const user = userEvent.setup();
     const { onClose } = renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('tab', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Delete Sprint 3 planning' }));
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
     await user.keyboard('{Escape}');
@@ -834,7 +886,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       const { onClose } = renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
 
@@ -852,14 +904,14 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
-      await user.click(screen.getByRole('button', { name: 'Details' }));
+      await user.click(screen.getByRole('tab', { name: 'Details' }));
 
       expect(screen.getByRole('textbox', { name: 'Project name' })).toBeInTheDocument();
       expect(screen.getByRole('region', { name: 'Team meetings', hidden: true })).not.toBeVisible();
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       expect(screen.getByRole('heading', { name: 'New meeting' })).toBeVisible();
       expect(titleBox()).toHaveValue('Retro');
     });
@@ -870,11 +922,12 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const onUpdate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
       renderModal({ meetingsList: { meetings: [meeting()], now: NOW, zone: LA, schoolZone: LA, onUpdate } });
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Edit Sprint 3 planning' }));
       // Saved as it was: nothing is unsaved, only the request in flight holds Done, so no hint.
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
       expect(onUpdate).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Saving…' })).toHaveAttribute('aria-busy', 'true');
       expect(done()).toBeDisabled();
       expect(screen.queryByText(HINT)).not.toBeInTheDocument();
 
@@ -886,10 +939,10 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       await user.type(titleBox(), 'Retro');
-      await user.click(screen.getByRole('button', { name: 'Details' }));
+      await user.click(screen.getByRole('tab', { name: 'Details' }));
 
       const save = screen.getByRole('button', { name: 'Save Changes' });
       expect(save).toBeDisabled();
@@ -902,7 +955,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       renderModal();
 
-      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Add meeting' }));
       expect(done()).toBeEnabled();
       expect(screen.queryByText(HINT)).not.toBeInTheDocument();

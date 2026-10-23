@@ -5,8 +5,8 @@ import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
-import DatePickerField from '@features/app/components/Fields/DatePickerField';
-import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import {
   buildClassExportCsv,
   buildExportFilename,
@@ -304,7 +304,6 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   setEndDateSaveError(null);
                   setEndDateNotice(null);
                 }}
-                labelClassName="class-settings-modal__label"
                 // A day picked while the save is in flight would be written over by the day being saved.
                 disabled={isSavingEndDate}
               />
@@ -439,14 +438,14 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
         </div>
       </div>
 
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDeleteConfirm}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        destructive
         title="Delete class?"
         message={`Remove "${classItem.name}" from your classes list? This only hides it for you and does not delete the class from the database.`}
-        confirmText="Remove from my view"
-        cancelText="Cancel"
+        confirmLabel="Remove from my view"
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

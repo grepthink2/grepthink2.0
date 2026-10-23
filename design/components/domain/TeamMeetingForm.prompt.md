@@ -5,3 +5,5 @@ Inline add / edit form for one team meeting: Title (≤ 80, counter), Date · St
   onSubmit={(value) => api.createTeamMeeting(projectId, value)} onCancel={close} />
 <TeamMeetingForm mode="edit" meeting={meeting} onSubmit={(value) => api.updateTeamMeeting(meeting.id, value)} onCancel={close} />
 ```
+
+Built from the shared Input, Select, Textarea, Alert and Button (as the codebase does): required fields carry no mark; Room, Zoom link and Note say "(optional)"; title and note use the shared "n / max" counter (soft limit, the model's "Keep it under 80 characters." blocks the save). Cancel is outline; the submit button shows "Adding…" / "Saving…" while busy.

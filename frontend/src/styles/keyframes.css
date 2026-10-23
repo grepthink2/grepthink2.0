@@ -1,0 +1,34 @@
+/* The app's shared keyframes, loaded once by main.tsx. The mixins in _motion.scss and
+   _skeleton.scss animate with them by name, so a stylesheet that @uses those partials emits
+   no copy of its own. */
+
+/* Popover/dropdown entrance: 6px slide + fade (the gt-popover-enter mixin). */
+@keyframes gt-pop-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Message/list-item entrance: 4px rise + fade. */
+@keyframes gt-rise-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* A plain fade: the reduced-motion entrance of the date picker's calendar and the scrum mention
+   box, which would otherwise slide. */
+@keyframes gt-fade-in { from { opacity: 0; } }
+
+/* The busy spinner's turn (the gt-spinner mixin). */
+@keyframes gt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The skeleton loader's sweep (the skeleton-block mixin). */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

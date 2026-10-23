@@ -46,13 +46,31 @@ describe('CommentThread', () => {
     expect(screen.getByText('it').tagName).toBe('STRONG');   // markdown rendered, not escaped
   });
 
+  it('draws each author’s avatar hidden beside the printed name', async () => {
+    vi.mocked(api.getScrumComments).mockResolvedValue({ comments: [comment()] });
+    renderThread();
+    const author = await screen.findByText('Tony Wu');
+    const avatar = author.closest('.gt-comments__item')?.querySelector('.gt-avatar');
+    expect(avatar).toHaveTextContent('TW');
+    expect(avatar).toHaveAttribute('aria-hidden', 'true');
+    expect(avatar).toHaveClass('gt-avatar--sm');
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('draws "?" for an author the API could not name', async () => {
+    vi.mocked(api.getScrumComments).mockResolvedValue({ comments: [comment({ author_id: 'gone', author_name: 'Unknown' })] });
+    renderThread();
+    const author = await screen.findByText('Unknown');
+    expect(author.closest('.gt-comments__item')?.querySelector('.gt-avatar')).toHaveTextContent(/^\?$/);
+  });
+
   it('says so when a task has no comments', async () => {
     renderThread();
     expect(await screen.findByText('No comments yet.')).toBeInTheDocument();
   });
 
   it('posts a comment, appends it, and clears the composer', async () => {
-    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment: comment({ body_md: 'Nice work' }) });
+    vi.mocked(api.createScrumComment).mockResolvedValue(comment({ body_md: 'Nice work' }));
     renderThread();
     await screen.findByText('No comments yet.');
 
@@ -66,7 +84,7 @@ describe('CommentThread', () => {
   });
 
   it('posts to a story when the parent is a story', async () => {
-    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment: comment({ body_md: 'Story note' }) });
+    vi.mocked(api.createScrumComment).mockResolvedValue(comment({ body_md: 'Story note' }));
     render(
       <CommentThread
         parent={{ kind: 'stories', id: 's1', key: 'US-1' }}
@@ -85,7 +103,7 @@ describe('CommentThread', () => {
   });
 
   it('submits on Cmd/Ctrl+Enter', async () => {
-    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment: comment() });
+    vi.mocked(api.createScrumComment).mockResolvedValue(comment());
     renderThread();
     await screen.findByText('No comments yet.');
 

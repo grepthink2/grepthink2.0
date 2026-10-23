@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { AVATAR_COLORS } from '@/lib/avatarColors';
+import { hashColor } from '@/components/Avatar/avatarHelpers';
+import { cssRules } from '@/test/cssRules';
 import { ScheduleDayHeader } from '../components/ScheduleDayHeader';
 import { ScheduleIcon } from '../components/ScheduleIcon';
 import { ScheduleItem } from '../components/ScheduleItem';
@@ -56,12 +57,6 @@ function clickLink(link: Element): { handled: boolean } {
   return { handled };
 }
 
-/** jsdom reports a hex background as `rgb(r, g, b)`. */
-function rgbToHex(rgb: string): string {
-  const [r, g, b] = rgb.match(/\d+/g)!.map(Number);
-  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
-}
-
 describe('ScheduleItem (compact row)', () => {
   it('shows a team meeting as a time block, a kind tile, the title, its context and the organizer', () => {
     renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} />);
@@ -102,14 +97,20 @@ describe('ScheduleItem (compact row)', () => {
     expect(screen.getByText('Whole class')).toHaveClass('gt-sched-item__meta-primary');
   });
 
-  it('marks a meeting in progress Live and offers Join Zoom', () => {
+  it('marks a meeting in progress with the blue Live badge and offers Join Zoom', () => {
     const onJoin = vi.fn();
     const item = meeting();
     renderRow(<ScheduleItem item={item} now={new Date('2026-10-20T22:10:00Z')} zone={LA} onJoin={onJoin} />);
 
     expect(row()).toHaveAttribute('aria-current', 'true');
     expect(row()).toHaveClass('gt-sched-item--live');
-    expect(screen.getByText('Live')).toHaveClass('gt-sched-item__live');
+    // The kit's Badge, blue for "in progress", in the head, where the row's pills take their 10.5px size.
+    const live = screen.getByText('Live');
+    expect(live).toHaveClass('gt-badge', 'gt-badge--info');
+    expect(live.parentElement).toHaveClass('gt-sched-item__head');
+    const [pill] = cssRules('.gt-sched-item__head .gt-badge');
+    expect(pill.getPropertyValue('padding')).toBe('1px 7px');
+    expect(pill.getPropertyValue('font-size')).toBe('10.5px');
 
     const join = screen.getByRole('link', { name: 'Join Zoom' });
     expect(join).toHaveClass('gt-sched-item__action--primary');
@@ -340,7 +341,7 @@ describe('ScheduleItem (compact row)', () => {
     const initials = screen.getByRole('img', { name: 'Pat Lee' });
     expect(initials.tagName).toBe('SPAN');
     expect(initials).toHaveClass('gt-avatar', 'gt-avatar--xs');
-    expect(AVATAR_COLORS.map((c) => c.toLowerCase())).toContain(rgbToHex(initials.style.backgroundColor));
+    expect(initials.style.backgroundColor).toBe(hashColor('Pat Lee'));
   });
 
   it('draws "?" for a person whose name is blank', () => {

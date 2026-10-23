@@ -1,0 +1,32 @@
+/* Gallery chrome for the component cards (*.card.html). Not part of the port.
+   .st forces hover / focus looks so every state shows side by side. */
+body { margin: 0; padding: 20px; background: var(--gt-surface); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+.lbl { margin: 0 0 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gt-text-tertiary); }
+.sec { margin: 0 0 22px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.matrix { display: grid; grid-template-columns: 96px repeat(6, max-content); gap: 10px 12px; align-items: center; }
+.matrix .h { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gt-text-tertiary); }
+.panel { padding: 14px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md); background: var(--gt-surface); }
+.canvas { padding: 14px; border-radius: var(--gt-radius-md); background: var(--gt-canvas); }
+.note { margin: 6px 0 0; font-size: 11px; color: var(--gt-text-tertiary); }
+.phone { display: block; width: 390px; border: 1px solid var(--gt-border); border-radius: 16px; background: var(--gt-surface); }
+.stage { position: relative; height: 360px; overflow: hidden; border-radius: var(--gt-radius-md); background: var(--gt-canvas); }
+body.is-phone { padding: 16px; }
+.st .gt-button--primary.is-hover { background: var(--gt-primary-hover); }
+.st .gt-button--secondary.is-hover { background: var(--gt-border); }
+.st .gt-button--outline.is-hover { background: var(--gt-surface-muted); border-color: var(--gt-border-strong); }
+.st .gt-button--ghost.is-hover { background: var(--gt-primary-soft); color: var(--gt-primary-hover); }
+.st .gt-button--danger.is-hover { background: var(--gt-error-text); }
+.st .gt-button--danger-ghost.is-hover { background: var(--gt-error-soft); }
+.st .gt-icon-button--ghost.is-hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+.st .gt-icon-button--solid.is-hover { background: var(--gt-border); color: var(--gt-text-primary); }
+.st .gt-icon-button--danger.is-hover { background: var(--gt-error-soft); color: var(--gt-error-text); }
+.st .is-focus { box-shadow: var(--gt-focus-ring) !important; }
+.st .is-focus-field .gt-input, .st .is-focus-field .gt-select__control, .st .is-focus-field .dpf__trigger, .st .is-focus-field .gt-search-field__input { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.st .is-hover-field .gt-input, .st .is-hover-field .gt-select__control { border-color: var(--gt-border-control-hover); }
+.st .gt-filter-chip.is-hover { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
+.st .gt-tabs__tab.is-hover, .st .gt-segmented__option.is-hover { color: var(--gt-text-primary); }
+.st .gt-card--interactive.is-hover { box-shadow: var(--gt-shadow-hover); }

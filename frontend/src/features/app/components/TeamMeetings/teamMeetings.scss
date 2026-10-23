@@ -1,145 +1,12 @@
 /* GrepThink · team meetings (the Edit Project Meetings tab and the project-page card). Port of the
    design's TeamMeetingsList / TeamMeetingForm styles (design/design_handoff_team_meetings/), BEM `.gt-*`
    classes and `--gt-*` tokens only (lint:design). Every rule below is copied unchanged from the design
-   CSS; only these comments are new.
+   CSS except one addition, marked where it stands; only these comments are new.
    Copied:
-     design/components/primitives/primitives.css — Button 7-23, 25, 30-31, 33-34, 39-40, 42-51
-       (sm size; primary, secondary and danger; icon slot; spinner), the field shell 76-83 and 97-101,
-       Input / Textarea 103-128 and 130-136, Select 138-162.
-     design/components/feedback/feedback.css — Alert 65-76, 78 and 96 (the error tone, no title or
-       dismiss).
      design/components/domain/domain.css — Team meetings 516-614, whole.
-   The codebase has no Button / Select / Textarea / Alert component yet, so the components render plain
-   elements with these classes. When those components land, drop the primitives and Alert blocks.
-   Left out: the md / lg / full and ghost buttons, the field's icon and suffix slots, the other Alert
-   tones, its title and dismiss button. The schedule rows the card reuses are styled by
-   features/schedule/schedule.scss. */
-
-/* ── Primitives (design/components/primitives/primitives.css) ─────────────────────────────── */
-/* ── Button ─────────────────────────────────────────────── */
-.gt-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: none;
-  border-radius: var(--gt-radius-sm);
-  font-family: var(--gt-font-sans);
-  font-weight: var(--gt-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast), opacity var(--gt-transition-fast);
-}
-.gt-button:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-.gt-button:disabled { opacity: 0.45; cursor: not-allowed; }
-.gt-button:active:not(:disabled) { transform: translateY(0.5px); }
-.gt-button--sm { padding: 6px 14px;  font-size: 13px; }
-.gt-button--primary { background-color: var(--gt-primary); color: var(--gt-gray-0); }
-.gt-button--primary:hover:not(:disabled) { background-color: var(--gt-primary-hover); }
-.gt-button--secondary { background-color: var(--gt-gray-100); color: var(--gt-text-secondary); }
-.gt-button--secondary:hover:not(:disabled) { background-color: var(--gt-border); }
-.gt-button--danger { background-color: var(--gt-error); color: var(--gt-gray-0); }
-.gt-button--danger:hover:not(:disabled) { background-color: var(--gt-error-text); }
-.gt-button__icon { display: inline-flex; align-items: center; }
-.gt-button__spinner {
-  width: 14px; height: 14px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: gt-spin 0.7s linear infinite;
-}
-@keyframes gt-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .gt-button__spinner { animation-duration: 1.6s; } }
-
-/* ── Field shell (Input / Textarea / Select share this) ─── */
-.gt-field { display: flex; flex-direction: column; gap: var(--gt-space-xs); font-family: var(--gt-font-sans); }
-.gt-field__label {
-  font-size: var(--gt-text-body);
-  font-weight: var(--gt-weight-medium);
-  color: var(--gt-text-secondary);
-}
-.gt-field__required { color: var(--gt-error); }
-.gt-field__help  { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
-.gt-field__error { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-error); font-weight: var(--gt-weight-medium); }
-.gt-field__footer { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gt-space-sm); }
-.gt-field__count { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
-.gt-field--disabled .gt-field__label { color: var(--gt-text-tertiary); }
-
-/* ── Input / Textarea ───────────────────────────────────── */
-.gt-input, .gt-textarea {
-  width: 100%;
-  padding: 9px 13px;
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-  color: var(--gt-text-primary);
-  line-height: 1.5;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-input::placeholder, .gt-textarea::placeholder { color: var(--gt-text-tertiary); }
-.gt-input:hover:not(:disabled), .gt-textarea:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-input:focus, .gt-textarea:focus {
-  border-color: var(--gt-accent);
-  box-shadow: var(--gt-focus-ring-tight);
-}
-.gt-input:disabled, .gt-textarea:disabled {
-  background-color: var(--gt-gray-100);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.gt-textarea { resize: vertical; min-height: 90px; }
-.gt-field--error .gt-input, .gt-field--error .gt-textarea {
-  border-color: var(--gt-error);
-}
-.gt-field--error .gt-input:focus, .gt-field--error .gt-textarea:focus {
-  box-shadow: 0 0 0 2px var(--gt-error);
-}
-
-/* ── Select ─────────────────────────────────────────────── */
-.gt-select { position: relative; display: flex; align-items: center; }
-.gt-select__control {
-  width: 100%;
-  padding: 9px 36px 9px 13px;
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-  color: var(--gt-text-primary);
-  appearance: none;
-  outline: none;
-  cursor: pointer;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-select__control:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-select__control:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
-.gt-select__control:disabled { background-color: var(--gt-gray-100); cursor: not-allowed; opacity: 0.6; }
-.gt-select__chevron {
-  position: absolute; right: 12px;
-  color: var(--gt-text-tertiary);
-  pointer-events: none;
-}
-.gt-field--error .gt-select__control { border-color: var(--gt-error); }
-
-/* ── Alert (design/components/feedback/feedback.css) ─────────────────────────────────────── */
-/* ── Alert (inline) ──────────────────────────────────────── */
-.gt-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 0.75rem 1rem;
-  border-radius: var(--gt-radius-sm);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-}
-.gt-alert__icon { display: inline-flex; margin-top: 1px; flex-shrink: 0; }
-.gt-alert__content { flex: 1; min-width: 0; }
-.gt-alert__text { margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-normal); }
-.gt-alert--error   { background-color: var(--gt-error-soft);   color: var(--gt-error-text); }
+   The buttons, fields and the form's error alert are the shared Button, Input, Select, Textarea and
+   Alert (components/); the rules below that name their classes only place them in this layout.
+   The schedule rows the card reuses are styled by features/schedule/schedule.scss. */
 
 /* ── Team meetings (TeamMeetingsList · TeamMeetingForm) ─────
    .gt-tm = the list (--manage: Edit Project → Meetings tab · --card: project-page card body, which
@@ -164,6 +31,9 @@
 .gt-tm-row__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 2px; }
 .gt-tm-row__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .gt-tm-row__title { font-size: 14px; font-weight: var(--gt-weight-semibold); line-height: 1.35; min-width: 0; overflow-wrap: anywhere; text-wrap: pretty; }
+/* Addition: a live row shows the kit's Live badge where the design reuses the schedule's green pill, and
+   the badge takes the size the schedule row gives the pills in its head. */
+.gt-tm-row__head .gt-badge { padding: 1px 7px; font-size: 10.5px; }
 .gt-tm-row__when { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; line-height: 1.4; color: var(--gt-text-secondary); font-variant-numeric: tabular-nums; }
 .gt-tm-row__day { font-weight: var(--gt-weight-medium); white-space: nowrap; }
 .gt-tm-row__range { white-space: nowrap; }

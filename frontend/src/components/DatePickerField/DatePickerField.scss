@@ -1,0 +1,69 @@
+// DatePickerField — ported from design/components/primitives/primitives.css so the two stay diffable:
+// the DatePickerField block (`.dpf`, the codebase's own class names, which the design adopted), then
+// its lines from the file's phone and reduced-motion blocks. The trigger's, the month buttons' and the
+// days' own padding, border, radius, background, font and transition beat index.css's global button
+// rule. The field around it is FieldShell's, the time input an Input and the footer Buttons, each with
+// its own stylesheet. gt-fade-in is in styles/keyframes.css.
+
+/* ── DatePickerField (.dpf — the codebase's class names) ─── */
+.dpf { position: relative; display: flex; flex-direction: column; gap: var(--gt-space-xs); font-family: var(--gt-font-sans); }
+.dpf__label { font-size: var(--gt-text-body); font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.dpf__trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--gt-space-sm);
+  width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 13px;
+  border: 1px solid var(--gt-border-control); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
+  font-family: var(--gt-font-sans); font-size: var(--gt-text-body); font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); text-align: left; cursor: pointer;
+  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.dpf__trigger:hover:not(:disabled) { border-color: var(--gt-border-control-hover); }
+.dpf__trigger:focus-visible { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.dpf__trigger--open { border-color: var(--gt-accent); }
+.dpf__trigger--filled { color: var(--gt-text-primary); }
+.dpf__trigger:disabled { background: var(--gt-surface-sunken); border-color: var(--gt-border); color: var(--gt-text-tertiary); cursor: not-allowed; }
+.dpf--error .dpf__trigger { border-color: var(--gt-error); }
+.dpf__trigger-text { flex: 1; }
+.dpf__trigger-icon { flex-shrink: 0; color: var(--gt-text-tertiary); }
+.dpf__popover {
+  position: fixed; z-index: var(--gt-z-picker); width: max-content; box-sizing: border-box; padding: 12px;
+  background: var(--gt-surface); border-radius: var(--gt-radius-md); color: var(--gt-text-primary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: dpfPopoverInDown 0.15s ease-out;
+}
+.dpf__popover--up { animation-name: dpfPopoverInUp; }
+.dpf__popover--inline { position: absolute; top: calc(100% + 6px); left: 0; z-index: var(--gt-z-dropdown); }
+@keyframes dpfPopoverInDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes dpfPopoverInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.dpf__cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--gt-space-sm); padding-bottom: var(--gt-space-sm); }
+.dpf__cal-title { font-size: 0.9rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.dpf__cal-nav { width: 32px; height: 32px; padding: 0; border: none; border-radius: var(--gt-radius-sm); background: transparent; color: var(--gt-text-secondary); font-family: var(--gt-font-sans); font-size: 16px; font-weight: var(--gt-weight-regular); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
+.dpf__cal-nav:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+.dpf__cal-nav:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.dpf__cal-grid { border-collapse: separate; border-spacing: 2px; margin: -2px; }
+.dpf__cal-grid th, .dpf__cal-grid td { padding: 0; }
+.dpf__cal-weekday { display: table-cell; text-align: center; vertical-align: middle; height: 2rem; font-size: 0.75rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
+.dpf__cal-day {
+  width: 2.25rem; height: 2.25rem; padding: 0; border: none; border-radius: var(--gt-radius-sm); background: transparent;
+  font-family: var(--gt-font-sans); font-size: 0.85rem; font-weight: var(--gt-weight-regular); color: var(--gt-text-primary); cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.dpf__cal-day:hover:not([aria-disabled="true"]) { background: var(--gt-primary-soft); color: var(--gt-primary-hover); }
+.dpf__cal-day:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.dpf__cal-day[aria-disabled="true"] { color: var(--gt-gray-400); cursor: not-allowed; }
+.dpf__cal-day--selected, .dpf__cal-day--selected:hover:not([aria-disabled="true"]) { background: var(--gt-primary); color: var(--gt-text-inverse); }
+.dpf__cal-day--today { box-shadow: inset 0 0 0 1.5px var(--gt-primary); color: var(--gt-primary-hover); font-weight: var(--gt-weight-semibold); }
+.dpf__time { display: flex; align-items: flex-end; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--gt-border-subtle); }
+.dpf__time .gt-field { flex: 1; }
+.dpf__footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .dpf__trigger { min-height: 44px; }
+  .dpf__cal-day { width: 2.75rem; height: 2.75rem; }
+  .dpf__cal-nav { width: 44px; height: 44px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dpf__popover { animation: gt-fade-in 0.15s ease-out; }
+  .dpf__cal-nav, .dpf__cal-day { transition: none; }
+}

@@ -12,26 +12,26 @@ import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import AuthCallback from '@features/auth/pages/AuthCallback';
-import Modules from '@features/app/pages/Modules';
-import TAManagement from '@features/app/pages/TAManagement';
 import { RequireReviewAccess } from '@features/app/components/RequireReviewAccess';
-import TAMeetings from '@features/app/pages/TAMeetings';
-import Dashboard from '@features/app/pages/Dashboard';
-import MyClasses from '@features/app/pages/MyClasses';
-import Assignments from '@features/app/pages/Assignments';
-import BrowseProjects from '@features/app/pages/BrowseProjects';
-import MyProject from '@features/app/pages/MyProject';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 import { PreviewProvider } from '@/lib/previewContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 
-// Heavy leaf routes — code-split with React.lazy so recharts, the big
-// review/roster/assignment forms, and long tables aren't part of the
-// initial bundle. They render under the single shared <Suspense> boundary
-// in AppView (wrapping its route Outlet), so the shell keeps rendering
-// while a chunk loads. Do NOT lazy the RequireReviewAccess guard itself —
-// only the two routes it wraps.
+// Every /app page except Home is code-split with React.lazy, so the entry
+// chunk every visitor downloads holds the shell, the landing page and the
+// first screen after sign-in, nothing more. The pages render under the
+// single shared <Suspense> boundary in AppView (wrapping its route Outlet),
+// so the shell keeps rendering while a chunk loads. Do NOT lazy the
+// RequireReviewAccess guard itself — only the two routes it wraps.
+const MyClasses = lazy(() => import('@features/app/pages/MyClasses'));
+const Dashboard = lazy(() => import('@features/app/pages/Dashboard'));
+const Modules = lazy(() => import('@features/app/pages/Modules'));
+const TAManagement = lazy(() => import('@features/app/pages/TAManagement'));
+const TAMeetings = lazy(() => import('@features/app/pages/TAMeetings'));
+const BrowseProjects = lazy(() => import('@features/app/pages/BrowseProjects'));
+const MyProject = lazy(() => import('@features/app/pages/MyProject'));
+const Assignments = lazy(() => import('@features/app/pages/Assignments'));
 const Messages = lazy(() => import('@features/messages/pages/Messages'));
 const Projects = lazy(() => import('@features/app/pages/Projects'));
 const Roster = lazy(() => import('@features/app/pages/Roster'));

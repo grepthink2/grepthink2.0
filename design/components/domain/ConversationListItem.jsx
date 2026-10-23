@@ -81,8 +81,4 @@ export function MessageComposer({ value = '', onChange, onSend, placeholder = 'T
   );
 }
 
-/** Standalone red unread-count pill (sidebar, tabs). */
-export function UnreadBadge({ count = 0, max = 99, className = '' }) {
-  if (!count) return null;
-  return <span className={['gt-unread', className].filter(Boolean).join(' ')}>{count > max ? `${max}+` : count}</span>;
-}
+/* UnreadBadge moved to components/display/UnreadBadge.jsx (alignment round, 2026-10-19). */

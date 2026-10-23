@@ -1,0 +1,34 @@
+// Checkbox — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Checkbox block, then its lines from the file's phone and reduced-motion blocks.
+
+/* ── Checkbox ───────────────────────────────────────────── */
+.gt-check { position: relative; display: inline-flex; align-items: flex-start; gap: 10px; cursor: pointer; font-family: var(--gt-font-sans); }
+.gt-check--disabled { cursor: not-allowed; opacity: var(--gt-opacity-disabled); }
+.gt-check__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.gt-check__box {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 18px; height: 18px; margin-top: 1px; box-sizing: border-box;
+  border: 1.5px solid var(--gt-border-control); border-radius: 4px; background: var(--gt-surface); color: var(--gt-text-inverse);
+  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast);
+}
+.gt-check:hover:not(.gt-check--disabled) .gt-check__box { border-color: var(--gt-border-control-hover); }
+.gt-check__mark, .gt-check__dash { opacity: 0; }
+.gt-check__dash { position: absolute; width: 8px; height: 2px; border-radius: 1px; background: currentColor; }
+.gt-check__input:checked + .gt-check__box, .gt-check__input:indeterminate + .gt-check__box { background: var(--gt-primary); border-color: var(--gt-primary); }
+.gt-check__input:checked + .gt-check__box .gt-check__mark { opacity: 1; }
+.gt-check__input:indeterminate + .gt-check__box .gt-check__dash { opacity: 1; }
+.gt-check__input:focus-visible + .gt-check__box { box-shadow: var(--gt-focus-ring); }
+.gt-check__text { display: flex; flex-direction: column; gap: 2px; }
+.gt-check__label { font-size: var(--gt-text-body); color: var(--gt-text-primary); }
+.gt-check__desc { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-check { min-height: 44px; align-items: center; }
+  .gt-check__box { margin-top: 0; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-check__box { transition: none; }
+}

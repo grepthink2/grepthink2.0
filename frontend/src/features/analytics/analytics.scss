@@ -70,13 +70,6 @@
   &__label { color: var(--gt-text-tertiary); flex: 1; }
   &__value { color: var(--gt-text-primary); font-weight: 600; font-variant-numeric: tabular-nums; } }
 
-.gt-empty { display: grid; place-items: center; gap: 4px; padding: 32px 16px; text-align: center; color: var(--gt-text-tertiary);
-  &__icon { color: var(--gt-gray-400); } &__title { margin: 0; font-size: 13px; font-weight: 600; color: var(--gt-text-secondary); } &__hint { margin: 0; font-size: 12px; } }
-
-.gt-definition { width: min(320px, calc(100vw - 48px)); font-size: 12.5px; color: var(--gt-text-secondary);
-  &__trigger { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; background: transparent; color: var(--gt-text-tertiary); padding: 0; cursor: pointer; border-radius: 4px; }
-  &__title { margin: 0 0 6px; font-weight: 600; color: var(--gt-text-primary); } &__body { margin: 0; line-height: 1.45; } }
-
 .gt-line { position: relative; width: 100%;
   &__svg { width: 100%; height: auto; display: block; } // focus: the house ring (index.css `[tabindex]:focus-visible`, 2px accent)
   &__grid { stroke: var(--gt-gray-200); stroke-width: 1; }
@@ -148,30 +141,44 @@
     &:hover:not(:disabled) { background: var(--gt-primary-hover); }
     &:disabled { opacity: 0.5; cursor: not-allowed; } } }
 
-.gt-table {
-  &__bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-  &__export { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--gt-radius-sm); border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer;
+// The breakdown table's look, ported from design/components/analytics/analytics.css (its BreakdownTable block) onto the
+// shared Table (components/Table), as the design composes it on its own generic Table. Every rule starts from
+// `.gt-table--breakdown`, the class on the box around each analytics table: the breakdown and the cards' table twins.
+// Mapped onto the shared Table's markup: the design's `__scroll` is the Table's wrapper, its `__table` the table, its `th`
+// the column headers (`thead th`); the name is each row's own header here (a `tbody th`), so the body-cell rules and the
+// design's `__name` rules land on it. Left out, as this table has no such parts: the design's caption (the Table has its
+// own), its dense rows and "Show all" past 12 rows, and its percentage row that puts the meter beside the figure.
+.gt-table--breakdown { display: flex; flex-direction: column; gap: 8px; font-family: var(--gt-font-sans); min-width: 0; width: 100%;
+  // Codebase change: this bar holds Export CSV alone, which stays on the right (the design's bar is its "Show all" row).
+  .gt-table__bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+  .gt-table__export { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--gt-radius-sm); border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer;
     &:hover { background: var(--gt-primary-soft); } }
-  // A bounded scroll region: the sticky header has a box to stick in (horizontal overflow makes this the sticky container).
-  &__scroll { overflow-x: auto; max-height: min(70vh, 640px); }
-  &__table { width: 100%; border-collapse: collapse; font-size: 12.5px;
-    // One line per cell: on a phone the table scrolls inside the card instead of squeezing names onto several lines.
-    // The header's rule is an inset shadow: a collapsed border belongs to the table grid and scrolls away from a stuck header.
-    thead th { position: sticky; top: 0; background: var(--gt-surface-sunken); text-align: left; padding: 8px 10px; font-weight: 600; color: var(--gt-text-secondary); box-shadow: inset 0 -1px 0 var(--gt-border); white-space: nowrap;
-      &.gt-table__num { text-align: right; } }
-    // A row's own header (a twin table's first cell) reads as a body cell: only the column headers stick.
-    td, tbody th { padding: 8px 10px; border-bottom: 1px solid var(--gt-border); color: var(--gt-text-primary); white-space: nowrap; }
-    tbody th { text-align: left; font-weight: 400;
-      &.gt-table__num { text-align: right; } } }
-  &__caption { @include gt-visually-hidden; }
-  &__num { text-align: right; font-variant-numeric: tabular-nums; }
-  // `all: unset` also drops index.css's focus ring (as on .gt-stack__button), so the ring comes back here.
-  &__sort { all: unset; cursor: pointer; font: inherit; &:focus-visible { box-shadow: var(--gt-focus-ring); } }
-  &__sort-icon { margin-left: 4px; vertical-align: -2px; }
-  // Under the table's own cell rules (`tbody th` outranks a bare class), so the folded row's name is italic and muted too.
-  &__table &__row--folded td, &__table &__row--folded th { font-style: italic; color: var(--gt-text-secondary); }
-  &__info { vertical-align: middle; margin-left: 6px; color: var(--gt-text-tertiary); }
-  &__meter { display: block; height: 3px; margin-top: 3px; background: var(--gt-gray-200); border-radius: 2px; }
-  &__meter-fill { display: block; height: 3px; background: var(--gt-primary); border-radius: 2px; } }
+  .gt-table-wrapper { overflow: auto; max-height: 520px; border-radius: var(--gt-radius-sm); }
+  .gt-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; color: var(--gt-text-primary); min-width: 600px; }
+  .gt-table th, .gt-table td { box-sizing: content-box; } /* the row heights below are content-box heights */
+  .gt-table thead th { position: sticky; top: 0; z-index: 1; background: var(--gt-surface-sunken); color: var(--gt-text-secondary); font-size: 11px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: var(--gt-tracking-wide); text-align: left; padding: 0 10px; height: 34px; border-bottom: 1px solid var(--gt-border); white-space: nowrap; }
+  .gt-table td, .gt-table tbody th { padding: 0 10px; height: 36px; border-bottom: 1px solid var(--gt-border-subtle); white-space: nowrap; color: var(--gt-text-primary); font-size: 12.5px; }
+  .gt-table tbody tr:hover td, .gt-table tbody tr:hover th { background: var(--gt-surface-muted); }
+  .gt-table tbody tr:last-child td, .gt-table tbody tr:last-child th { border-bottom: none; }
+  .gt-table__num { text-align: right; font-variant-numeric: tabular-nums; }
+  .gt-table thead th.gt-table__num { text-align: right; } /* outranks the thead th rule above */
+  .gt-table__sort { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; text-transform: inherit; letter-spacing: inherit; border-radius: 3px; }
+  .gt-table__sort:hover { color: var(--gt-text-primary); }
+  .gt-table__sort:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+  .gt-table__sort-icon { opacity: 0.35; }
+  .gt-table__sort--active .gt-table__sort-icon { opacity: 1; color: var(--gt-primary); }
+  .gt-table tbody th { font-weight: var(--gt-weight-medium); }
+  .gt-table__meter { width: 56px; height: 3px; border-radius: 2px; background: var(--gt-surface-sunken); overflow: hidden; flex-shrink: 0; }
+  // Codebase change: the meter stays under its figure, at the cell's right edge.
+  .gt-table__meter { display: block; margin: 3px 0 0 auto; }
+  .gt-table__meter-fill { display: block; height: 100%; background: var(--gt-primary); border-radius: 2px; }
+  .gt-table__null { color: var(--gt-text-tertiary); }
+  .gt-table__link { color: var(--gt-text-link); text-decoration: none; font-weight: var(--gt-weight-medium); font-size: 12px; background: transparent; border: none; padding: 0; font-family: inherit; cursor: pointer; }
+  .gt-table__link:hover { text-decoration: underline; }
+  .gt-table__link:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
+  .gt-table .gt-table__row--folded td, .gt-table .gt-table__row--folded th { font-style: italic; color: var(--gt-text-tertiary); border-top: 1px dashed var(--gt-border); }
+  .gt-table .gt-table__row--folded th { font-weight: var(--gt-weight-regular); }
+  .gt-table__info { display: inline-flex; margin-left: 5px; vertical-align: middle; color: var(--gt-text-tertiary); }
+}
 
 @media (prefers-reduced-motion: reduce) { .gt-analytics *, .gt-chart-card * { transition: none !important; } }

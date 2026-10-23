@@ -83,7 +83,7 @@ From `../tokens/` (source of truth: `frontend/src/styles/` in the repo): brand g
 - `../assets/grepthink-logo.svg` (white via `filter: brightness(0) invert(1)` on green). Icons are inline 2px-stroke SVGs in the references — use **lucide-react** equivalents in production (clock, git-pull-request, message-square, sparkles, rotate-ccw, arrow-right).
 
 ## Files
-- `scrum-board.reference.html` — the full screen (interactive DnD, modal, comments). Paths assume this folder sits at the design-system root; the always-working original is `../ui_kits/grepthink/scrum-board.html`.
+- `scrum-board.reference.html` — the full screen (interactive DnD, modal, comments). Paths assume this folder sits at the design-system root; the always-working original is `../templates/scrum-board/scrum-board.html`.
 - `scrum.css` — exact CSS for every scrum class (copy of `../components/scrum/scrum.css`).
 - Component references (JSX + typed props + usage notes): `../components/scrum/` — TagBadge, PointsChip (+EstimateChip/PRLinkChip/UserPair), StoryCard, TaskCard, ScrumBoard, BurnupChart, ScalePicker (+PointPicker/ESTIMATE_SCALES), CommentThread (+MarkdownText), AIDraftButton, BacklogRow — each `<Name>.jsx` + `<Name>.d.ts` + `<Name>.prompt.md`.
 - Component gallery: `../components/scrum/scrum.card.html`.

@@ -1,3 +1,4 @@
+// Intentional addition: CommandPalette — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import type { SearchItem, SearchEntityType } from './SearchModel';
 
@@ -26,6 +27,8 @@ export interface CommandPaletteProps {
   /** Scope chips to offer; defaults to every entity type. */
   scopes?: SearchEntityType[];
   initialQuery?: string;
+  /** Render in place without joining the dialog stack (galleries): no focus move, trap or scroll lock. @default false */
+  inline?: boolean;
   className?: string;
 }
 

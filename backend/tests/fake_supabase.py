@@ -20,6 +20,7 @@ Supported:
         # a NULL in a conflict column never conflicts (SQL NULLs are distinct)
     table(t).update(dict, count="exact", returning="minimal" | "representation").<filters>.execute()
     table(t).delete().<filters>.execute()
+    table(t).<write>.select(cols).single() / .maybe_single()   # see "A select on a write"
     rpc(name, params).execute()          # FakeSupabase(rpc={"name": callable})
 
 Embedded selects (`select("id, project_members(user_id, role)")`,
@@ -39,6 +40,25 @@ are not supported and raise for the same reason.
 
 `.maybe_single().execute()` returns ``None`` when no row matches — the real
 supabase-py 2.x behaviour the controllers guard against.
+
+A select on a write (`insert(row).select("id, sender:profiles!m_sender_fkey(name)")`)
+shapes the rows the write returns, as PostgREST does. It keeps the write's
+``count``, answers rows even after ``returning="minimal"``, and takes no
+``count`` or ``head`` of its own (a ``TypeError``, like postgrest-py). PostgREST
+runs a write and its select as one statement on one snapshot, so embedded rows
+show the store as it was before the write, while the written rows' own columns
+are the new ones. An unregistered embed refuses the write before anything is
+stored. Without a select, a write answers its full rows, and ``single()`` and
+``maybe_single()`` change nothing.
+
+Triggers stand in for what the database does on an insert:
+
+    FakeSupabase(..., triggers={("task_moves", "insert"): fn})
+
+``fn(db, row)`` runs once per inserted row, before the row is stored (like a
+BEFORE ROW trigger), and may change the row and other tables. Only insert
+triggers exist, and an upsert runs none (Postgres would run them for the rows it
+inserts; nothing upserts into a table that has one).
 """
 
 from __future__ import annotations
@@ -196,11 +216,17 @@ class _Query:
         self._limit: int | None = None
         self._range: tuple[int, int] | None = None
         self._single: str | None = None  # None | "single" | "maybe"
+        self._shaped = False  # a select chained on a write
 
     # -- builders --------------------------------------------------------
     def select(self, columns: str = "*", count: str | None = None, head: bool = False):
-        if self._op == "select":  # select() after insert/update/upsert keeps the write op
-            self._op = "select"
+        if self._op != "select":
+            # On a write, select() shapes the rows the write returns. postgrest-py's
+            # select(*columns) there takes no count or head: a count belongs to the write.
+            if count is not None or head:
+                raise TypeError("select() after a write takes no count or head")
+            self._select, self._returning, self._shaped = columns, "representation", True
+            return self
         self._select = columns
         self._count = count
         self._head = head
@@ -328,29 +354,64 @@ class _Query:
             rows = sorted(rows, key=key, reverse=desc)
         return rows
 
-    def _embed(self, table: str, row: dict, select: str) -> dict:
+    def _relation(self, table: str, target: str, hint: str | None) -> tuple[str, str, bool]:
+        """The registered ``(local_col, remote_col, many)`` of an embed; raises without one."""
+        rel_key = (table, f"{target}!{hint}" if hint else target)
+        if rel_key not in self._db.relations:
+            raise KeyError(
+                f"FakeSupabase: no relation registered for {rel_key}; pass "
+                f"relations={{{rel_key!r}: (local_col, remote_col, many)}}"
+            )
+        return self._db.relations[rel_key]
+
+    def _check_embeds(self, table: str, select: str) -> None:
+        """Raise for an unregistered embed anywhere in ``select``, nested ones included."""
+        for _alias, target, hint, inner in _parse_select(select)[1]:
+            self._relation(table, target, hint)
+            self._check_embeds(target, inner)
+
+    def _embed(self, table: str, row: dict, select: str, store: dict | None = None) -> dict:
         """Project ``row`` onto the selected columns and attach embedded rows.
 
-        Like PostgREST, only the selected columns come back (``*`` = all).
+        Like PostgREST, only the selected columns come back (``*`` = all). Embedded
+        rows, and theirs, come from ``store`` (the live store by default).
         """
+        store = self._db.store if store is None else store
         columns, embeds = _parse_select(select)
         out = dict(row) if columns is None else {key: row.get(src) for key, src in columns}
         for alias, target, hint, inner in embeds:
-            rel_key = (table, f"{target}!{hint}" if hint else target)
-            if rel_key not in self._db.relations:
-                raise KeyError(
-                    f"FakeSupabase: no relation registered for {rel_key}; pass "
-                    f"relations={{{rel_key!r}: (local_col, remote_col, many)}}"
-                )
-            local_col, remote_col, many = self._db.relations[rel_key]
+            local_col, remote_col, many = self._relation(table, target, hint)
             matches = [
-                self._embed(target, r, inner)
-                for r in self._db.store.get(target, [])
+                self._embed(target, r, inner, store)
+                for r in store.get(target, [])
                 if _compare(r.get(remote_col), "eq", row.get(local_col))
                 and row.get(local_col) is not None
             ]
             out[alias] = matches if many else (matches[0] if matches else None)
         return out
+
+    def _answer(self, data: list[dict], count: int | None):
+        """``data`` as ``.single()``, ``.maybe_single()`` or a plain list returns it."""
+        if self._single == "single":
+            if len(data) != 1:
+                raise RuntimeError(f"single(): expected exactly one row, got {len(data)}")
+            return _Result(data[0])
+        if self._single == "maybe":
+            if not data:
+                return None
+            if len(data) > 1:
+                raise RuntimeError(f"maybe_single(): expected at most one row, got {len(data)}")
+            return _Result(data[0])
+        return _Result(data, count=count)
+
+    def _written(self, rows: list[dict], before: dict | None, count: int | None = None):
+        """The answer to a write: its rows, shaped by a chained select whose embeds read
+        ``before``, the store as it was before the write."""
+        if not self._shaped:
+            return _Result(rows, count=count)
+        return self._answer(
+            [self._embed(self._table, r, self._select, before) for r in rows], count
+        )
 
     def _record(self):
         self._db.executes += 1
@@ -372,27 +433,25 @@ class _Query:
             data = (
                 [] if self._head else [self._embed(self._table, r, self._select) for r in matched]
             )
-            if self._single == "single":
-                if len(data) != 1:
-                    raise RuntimeError(f"single(): expected exactly one row, got {len(data)}")
-                return _Result(data[0])
-            if self._single == "maybe":
-                if not data:
-                    return None
-                if len(data) > 1:
-                    raise RuntimeError(f"maybe_single(): expected at most one row, got {len(data)}")
-                return _Result(data[0])
-            return _Result(data, count=total if self._count else None)
+            return self._answer(data, total if self._count else None)
+
+        before = None
+        if self._shaped:
+            self._check_embeds(self._table, self._select)
+            before = {name: [dict(r) for r in stored] for name, stored in self._db.store.items()}
 
         if self._op == "insert":
             items = self._payload if isinstance(self._payload, list) else [self._payload]
+            trigger = self._db.triggers.get((self._table, "insert"))
             inserted = []
             for item in items:
                 row = dict(item)
                 row.setdefault("id", str(uuid.uuid4()))
+                if trigger is not None:
+                    trigger(self._db, row)
                 rows.append(row)
                 inserted.append(dict(row))
-            return _Result(inserted)
+            return self._written(inserted, before)
 
         if self._op == "upsert":
             items = self._payload if isinstance(self._payload, list) else [self._payload]
@@ -423,7 +482,7 @@ class _Query:
                     row.setdefault("id", str(uuid.uuid4()))
                     rows.append(row)
                     written.append(dict(row))
-            return _Result(written)
+            return self._written(written, before)
 
         if self._op == "update":
             updated = []
@@ -432,8 +491,9 @@ class _Query:
                     r.update(self._payload)
                     updated.append(dict(r))
             # "Prefer: return=minimal" gets no rows back; "count=exact" says how many changed.
-            return _Result(
+            return self._written(
                 [] if self._returning == "minimal" else updated,
+                before,
                 count=len(updated) if self._count else None,
             )
 
@@ -442,7 +502,7 @@ class _Query:
             for r in rows:
                 (removed if self._match(r) else kept).append(r)
             self._db.store[self._table] = kept
-            return _Result([dict(r) for r in removed])
+            return self._written([dict(r) for r in removed], before)
 
         raise NotImplementedError(self._op)
 
@@ -467,12 +527,19 @@ class FakeSupabase:
         self,
         relations: dict[tuple[str, str], tuple[str, str, bool]] | None = None,
         rpc: dict[str, Callable[[dict], Any]] | None = None,
+        triggers: dict[tuple[str, str], Callable[[FakeSupabase, dict], None]] | None = None,
         **tables: list[dict],
     ):
         # tables: name -> list[dict]
         self.store: dict[str, list[dict]] = {k: [dict(r) for r in v] for k, v in tables.items()}
         self.relations = dict(relations or {})
         self.rpcs = dict(rpc or {})
+        self.triggers = dict(triggers or {})
+        unsupported = [key for key in self.triggers if key[1] != "insert"]
+        if unsupported:
+            raise NotImplementedError(
+                f"FakeSupabase: only insert triggers exist, not {unsupported}"
+            )
         self.executes = 0
         self.queries: list[dict] = []
 

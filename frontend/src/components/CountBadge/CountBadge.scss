@@ -1,0 +1,14 @@
+// CountBadge — ported from design/components/display/display.css so the two stay diffable: the
+// CountBadge · UnreadBadge block, which the design writes as one. UnreadBadge imports this
+// stylesheet for its half of the shared block.
+
+/* ── CountBadge (neutral: tab counts, list totals) · UnreadBadge (red: unread only) ── */
+.gt-count, .gt-unread {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box;
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  font-family: var(--gt-font-sans); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums;
+  text-transform: none; letter-spacing: normal; font-style: normal;
+}
+.gt-count { background: var(--gt-gray-100); color: var(--gt-text-secondary); font-weight: var(--gt-weight-semibold); }
+.gt-unread { padding: 0 6px; background: var(--gt-error); color: var(--gt-text-inverse); font-weight: var(--gt-weight-bold); }
+.gt-unread--dot { width: 8px; min-width: 8px; height: 8px; padding: 0; }
