@@ -353,7 +353,7 @@ def test_a_snapshot_from_before_the_hours_columns_is_no_snapshot_in_hours():
     assert (out["scope"], out["completed"]) == ([0, 8, 8, 8], [0, 3, 3, 3])
 
 
-def test_the_day_before_carries_forward_through_a_snapshot_missing_the_unit():
+def test_the_day_before_carries_forward_through_a_snapshot_without_hours():
     """Read as 0 hours, the row would drop both lines to zero for a day. Skipped, it lets the
     day before carry forward, or the task_moves audit fill the completed line."""
     before = {
@@ -368,15 +368,28 @@ def test_the_day_before_carries_forward_through_a_snapshot_missing_the_unit():
     out = _series([before, PRE_MIGRATION], "hours", (10, 4), completed_by_day={"2026-10-20": 4})
     assert out["completed"] == [0, 4, 4, 4]
 
-    # The same rule the other way round: no points that day, while hours were taken.
-    hours_only = {**PRE_MIGRATION, "scope_points": 0, "completed_points": 0, "scope_hours": 10}
-    out = _series([before, hours_only], "points", (8, 3))
-    assert out["scope"] == [8, 8, 8, 8]
-
     # A day whose four values are all 0 is a real zero, not a missing snapshot.
     zero = {**PRE_MIGRATION, "scope_points": 0, "completed_points": 0}
     out = _series([before, zero], "hours", (10, 4))
     assert out["scope"] == [10, 0, 0, 10]
+
+
+def test_in_points_a_snapshot_with_hours_and_no_points_is_a_real_zero():
+    """Only hours can be missing from a snapshot: the points columns are as old as the table. A
+    row with 0/0 points beside hours says the sprint's tasks had no points yet that day. Skipped,
+    it would let the audit draw completed points over a zero scope ([0, 3, 3, 3] over
+    [0, 0, 0, 8])."""
+    hours_only = {
+        "day": "2026-10-20",
+        "scope_points": 0,
+        "completed_points": 0,
+        "scope_hours": 10,
+        "completed_hours": 4,
+    }
+    assert burnup.holds_unit(hours_only, "points")
+    assert not burnup.holds_unit(PRE_MIGRATION, "hours")
+    out = _series([hours_only], "points", (8, 3), completed_by_day={"2026-10-20": 3})
+    assert (out["scope"], out["completed"]) == ([0, 0, 0, 8], [0, 0, 0, 3])
 
 
 def test_the_cumulative_series_reads_the_unit():

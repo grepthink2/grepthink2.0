@@ -8,8 +8,8 @@ hours always are, a task without hours counting zero.
 Past days come from sprint_burnup_days snapshots, which keep both units; days without a snapshot
 take exact completed values reconstructed from the task_moves audit (`completed_by_day`) when
 provided, else carry forward; scope always carries forward between snapshots. A snapshot written
-before the hours columns existed reads 0 hours, so one with both values 0 in the unit while the
-other unit's are not counts as no snapshot in that unit (`holds_unit`). Today is always the live
+before the hours columns existed reads 0 hours: in hours, one with 0 hours beside nonzero points
+counts as no snapshot (`holds_unit`); in points every snapshot counts. Today is always the live
 recomputation. Labels cover the whole sprint; value arrays stop at today (the chart draws the
 remainder as empty).
 """
@@ -54,16 +54,17 @@ def default_unit(t: Totals) -> str:
 
 
 def holds_unit(snapshot: dict, unit: str) -> bool:
-    """Whether ``snapshot`` was taken in ``unit``.
+    """Whether ``snapshot`` holds values in ``unit``.
 
-    One written before the hours columns existed reads 0 hours: both of its values 0 in ``unit``
-    while the other unit's are not means it holds nothing in ``unit``. All four 0 is a real zero.
+    Every snapshot holds points: their columns are as old as the table, so 0/0 points is what the
+    day held. One written before the hours columns existed reads 0 hours, which shows only as 0
+    hours beside nonzero points: such a row holds no hours. All four 0 is a real zero.
     """
-
-    def has(u: str) -> bool:
-        return bool(snapshot.get(f"scope_{u}") or snapshot.get(f"completed_{u}"))
-
-    return has(unit) or not has("hours" if unit == "points" else "points")
+    if unit != "hours":
+        return True
+    hours = snapshot.get("scope_hours") or snapshot.get("completed_hours")
+    points = snapshot.get("scope_points") or snapshot.get("completed_points")
+    return bool(hours) or not points
 
 
 def _label(d: date) -> str:

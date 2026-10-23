@@ -281,12 +281,19 @@ def _in_backlog(story: dict) -> bool:
     return story.get("sprint_id") is None or bool(story.get("archived_at"))
 
 
-def _get_task_or_404(client, task_id: str) -> dict:
-    res = client.table("tasks").select("*").eq("id", str(task_id)).maybe_single().execute()
+def _get_task_or_404(client, task_id: str, columns: str = "*") -> dict:
+    res = client.table("tasks").select(columns).eq("id", str(task_id)).maybe_single().execute()
     row = res.data if res else None
     if not row:
         raise HTTPException(status_code=404, detail=TASK_NOT_FOUND)
     return row
+
+
+def _get_task_and_story_or_404(client, task_id: str) -> tuple[dict, dict]:
+    """The task row, and its story's ``sprint_id`` and ``archived_at`` embedded in the same
+    read: enough to tell whether a write to the task moves a sprint's burnup."""
+    task = _get_task_or_404(client, task_id, columns="*, user_stories(sprint_id, archived_at)")
+    return task, task.pop("user_stories", None) or {}
 
 
 def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
@@ -381,7 +388,7 @@ def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
 
 def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     client = get_client()
-    task = _get_task_or_404(client, task_id)
+    task, story = _get_task_and_story_or_404(client, task_id)
     _require_writer(client, project_id=task["project_id"], user_id=user_id)
     if "title" in fields and fields["title"] is None:
         raise HTTPException(status_code=422, detail=TITLE_REQUIRED)
@@ -401,14 +408,25 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     res = client.table("tasks").update(payload).eq("id", str(task_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update task")
+    # A task's points and hours are its sprint's scope (spec D21), and the web client applies an
+    # edit without reloading the board, so a changed estimate snapshots the sprint here. The
+    # client sends every field on each save: an edit that keeps both estimates pays nothing.
+    # Status never changes here (a move takes its own snapshot): one write, one snapshot at most.
+    changed = any(k in payload and payload[k] != task.get(k) for k in _UNIT_COLUMN.values())
+    if changed and not _in_backlog(story):
+        _snapshot_burnup_safe(client, story["sprint_id"])
     return res.data[0]
 
 
 def delete_task(*, task_id: str, user_id: str) -> None:
     client = get_client()
-    task = _get_task_or_404(client, task_id)
+    task, story = _get_task_and_story_or_404(client, task_id)
     _require_writer(client, project_id=task["project_id"], user_id=user_id)
     client.table("tasks").delete().eq("id", str(task_id)).execute()
+    # Its points and hours leave the sprint's scope (spec D21); a task with neither moves nothing.
+    estimated = any(task.get(k) is not None for k in _UNIT_COLUMN.values())
+    if estimated and not _in_backlog(story):
+        _snapshot_burnup_safe(client, story["sprint_id"])
 
 
 # ------------------------------------------------------------- dependencies ----

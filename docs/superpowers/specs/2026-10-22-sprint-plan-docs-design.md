@@ -152,8 +152,9 @@ later); `utils/sprints.ts` and `SprintStatusPill` are unchanged, they already re
 
 Migration `2026-10-22_burnup_hours.sql`: `sprint_burnup_days` gains `scope_hours integer NOT NULL
 DEFAULT 0` and `completed_hours integer NOT NULL DEFAULT 0`. Snapshot rows from before the migration
-have zeros for hours; `build_sprint_series` treats a snapshot whose unit values are both zero while the
-other unit's are not as "no snapshot for this unit" and carries forward.
+have zeros for hours; in hours, `build_sprint_series` treats a snapshot whose hours are both zero while
+its points are not as "no snapshot in hours" and carries forward. In points every snapshot counts: the
+points columns are as old as the table, so a 0/0 points row is a real zero.
 
 - `_totals` returns `{scope_points, completed_points, scope_hours, completed_hours, tasks_total,
   tasks_with_points}`: scope = the sum over the sprint's tasks of `points` (or `estimate_hours`),

@@ -17,9 +17,9 @@
 --
 --   * scope_hours, completed_hours: integer, NOT NULL DEFAULT 0. A constant default adds the columns
 --     without rewriting the table.
---   * Snapshots from before this file read 0 hours. The board takes a snapshot whose two values in the
---     chosen unit are both 0 while the other unit's are not as a day without a snapshot for that unit
---     (app/scrum/burnup.py).
+--   * Snapshots from before this file read 0 hours. In hours, the board takes a snapshot with 0 hours
+--     beside nonzero points as a day without a snapshot; in points every snapshot counts
+--     (app/scrum/burnup.py holds_unit).
 
 BEGIN;
 
