@@ -122,6 +122,7 @@ backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_su
 
 frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
+  features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
