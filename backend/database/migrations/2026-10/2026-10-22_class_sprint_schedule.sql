@@ -7,13 +7,15 @@
 -- Their dates are arithmetic on the three values (app/scrum/schedule.py), and sprints.sequence ties
 -- each such sprint to its place in the schedule.
 --
--- EXPAND, idempotent, one transaction. ⚠️  Apply on a database BEFORE the code that reads or writes the
--- new columns runs against it: on PROD, before beta is merged into main. Among the requests that name
--- them: creating a class (POST /api/classes); creating a team (POST /api/projects reads its class's
--- schedule, so without the columns no team can be created); the class's sprint and last-day settings
--- (PATCH /api/classes/{class_id}/sprints and /end-date). The code before it never names them (a sprint
--- made through POST /api/projects/{project_id}/scrum/sprints leaves sequence NULL), so applying this
--- early is safe. Independent of 2026-10-22_burnup_hours.sql: either may run first.
+-- EXPAND, idempotent, one transaction: a re-run skips the columns and the index, and drops both CHECKs
+-- and adds them again by name, so it leaves exactly one of each. ⚠️  Apply on a database BEFORE the
+-- code that reads or writes the new columns runs against it: on PROD, before beta is merged into main.
+-- Among the requests that name them: creating a class (POST /api/classes); creating a team
+-- (POST /api/projects reads its class's schedule, so without the columns no team can be created); the
+-- class's sprint and last-day settings (PATCH /api/classes/{class_id}/sprints and /end-date). The code
+-- before it never names them (a sprint made through POST /api/projects/{project_id}/scrum/sprints
+-- leaves sequence NULL), so applying this early is safe. Independent of 2026-10-22_burnup_hours.sql:
+-- either may run first.
 --
 -- Applied: DEV — pending   PROD — pending
 --
@@ -25,9 +27,8 @@
 --   * Fitting the dates to the class is the API's rule, not the CHECK's: it refuses a first sprint that
 --     starts before start_date or a last one that ends after end_date (422), and a last day of classes
 --     before the last sprint ends (409).
---   * sprints.sequence: k for the sprint the schedule made as "Sprint k", 1 or more (the column's CHECK,
---     which Postgres names sprints_sequence_check); NULL for a sprint made any other way, which the
---     schedule never touches.
+--   * sprints.sequence: k for the sprint the schedule made as "Sprint k", 1 or more
+--     (sprints_sequence_check); NULL for a sprint made any other way, which the schedule never touches.
 --   * sprints_project_sequence_uq: one sprint per team and k. Partial: NULL-sequence sprints stay
 --     outside it, any number per team.
 --
@@ -56,7 +57,9 @@ ALTER TABLE public.classes ADD CONSTRAINT classes_sprint_schedule_valid CHECK (
       AND sprint_frequency IN ('weekly', 'biweekly', 'monthly')
       AND sprints_start_on IS NOT NULL)
 );
-ALTER TABLE public.sprints ADD COLUMN IF NOT EXISTS sequence smallint CHECK (sequence IS NULL OR sequence >= 1);
+ALTER TABLE public.sprints ADD COLUMN IF NOT EXISTS sequence smallint;
+ALTER TABLE public.sprints DROP CONSTRAINT IF EXISTS sprints_sequence_check;
+ALTER TABLE public.sprints ADD CONSTRAINT sprints_sequence_check CHECK (sequence IS NULL OR sequence >= 1);
 CREATE UNIQUE INDEX IF NOT EXISTS sprints_project_sequence_uq ON public.sprints (project_id, sequence)
   WHERE sequence IS NOT NULL;
 

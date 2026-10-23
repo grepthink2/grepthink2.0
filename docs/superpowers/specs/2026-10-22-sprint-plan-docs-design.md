@@ -97,7 +97,9 @@ ALTER TABLE public.classes ADD CONSTRAINT classes_sprint_schedule_valid CHECK (
       AND sprint_frequency IN ('weekly', 'biweekly', 'monthly')
       AND sprints_start_on IS NOT NULL)
 );
-ALTER TABLE public.sprints ADD COLUMN IF NOT EXISTS sequence smallint CHECK (sequence IS NULL OR sequence >= 1);
+ALTER TABLE public.sprints ADD COLUMN IF NOT EXISTS sequence smallint;
+ALTER TABLE public.sprints DROP CONSTRAINT IF EXISTS sprints_sequence_check;
+ALTER TABLE public.sprints ADD CONSTRAINT sprints_sequence_check CHECK (sequence IS NULL OR sequence >= 1);
 CREATE UNIQUE INDEX IF NOT EXISTS sprints_project_sequence_uq ON public.sprints (project_id, sequence)
   WHERE sequence IS NOT NULL;
 ```
