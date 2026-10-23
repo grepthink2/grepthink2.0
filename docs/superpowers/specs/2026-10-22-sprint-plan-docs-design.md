@@ -3,7 +3,8 @@
 **Date:** 2026-10-22
 **Base:** `origin/beta` at `50f65d16` (code references below are to that head). New work branches from it.
 **Status:** draft for the maintainer's approval. Decisions marked ⚑ are mine; the others are the
-maintainer's (2026-10-21/22, two rounds). Nothing is built.
+maintainer's (2026-10-21/22, two rounds). Part 0 is built (PR 0, `feat/class-sprint-schedule`); the
+rest is not.
 
 ## The ask
 
@@ -76,7 +77,7 @@ own. Student text in anyone's logs. A plan that is slower than the Google Doc it
 | D18 | **No streaming.** The slug idles over the field while the request runs and sweeps once the whole response is in. ⚑ | The Vercel Python runtime has no safe streaming path; a sweep after the fact reads the same. |
 | D19 | **Link fields are server-owned.** A save copies `story_id` / `task_id` and the linked item's snapshot fields per item from the head revision; values in the request are ignored for linked items. ⚑ | A client must not be able to point a plan item at an arbitrary board row, or edit a linked item around the board. |
 | D20 | **Sprints come from the class.** A class carries `sprint_count` (1–20), `sprint_frequency` (weekly, biweekly, monthly) and `sprints_start_on`; creating a class requires the first two, and the schedule must end by the class's last day. Every team gets "Sprint 1 … N" created when the team is created, empty; an instructor who sets or changes the schedule later regenerates them for every team. No "New sprint" control anywhere in the web client. | maintainer, round 2 |
-| D21 | **The burnup draws in points or hours, and counts tasks on both lines.** Scope is the sum of the sprint's task estimates in the unit, completed the same sum over done tasks. Points are available only when every task in the sprint has points; hours are the fallback and may be partial. Points when available, else hours; with both, the chart offers a toggle. In hours it says so and nudges: "Add points to tasks for a points burnup", and the board shows tasks without points with a faint dashed points chip. ⚑ (task-based scope, the completeness rule, the toggle) | maintainer, round 2. Today scope is story points and completed is task points (`_totals`), so a sprint whose tasks carry points but whose stories don't draws completed above scope; counting tasks on both lines removes that. PROD has no sprint data yet (no screen has ever created a sprint), so the snapshot columns can change meaning. |
+| D21 | **The burnup draws in points or hours, and counts tasks on both lines.** Scope is the sum of the sprint's task estimates in the unit, completed the same sum over done tasks. Points are available only when every task in the sprint has points; hours are the fallback and may be partial. Points when available, else hours; with both, the chart offers a toggle. When it can't draw points it says so and nudges: "Add points to tasks for a points burnup", and the board shows tasks without points with a faint dashed points chip. ⚑ (task-based scope, the completeness rule, the toggle) | maintainer, round 2. Today scope is story points and completed is task points (`_totals`), so a sprint whose tasks carry points but whose stories don't draws completed above scope; counting tasks on both lines removes that. PROD has no sprint data yet (no screen has ever created a sprint), so the snapshot columns can change meaning. |
 | D22 | **Sprint status is derived from dates**: `completed` after `ends_at`, `active` from `starts_at` through `ends_at`, else `planned`; the stored column is no longer read and the update route stops accepting a status. The board opens on today's sprint. ⚑ | Auto-created sprints have nobody to flip them; the pills and the "latest active" default would lie. |
 
 ## Part 0 — Board groundwork (PR 0)
@@ -108,9 +109,12 @@ Existing classes keep NULLs (no schedule) until their instructor sets one; a spr
 the API before this change has `sequence NULL` and is left alone. The date arithmetic
 (`app/scrum/schedule.py`, pure): sprint *k* starts on `sprints_start_on + (k−1)·7 days` (weekly),
 `+ (k−1)·14 days` (biweekly), or the same day of the month *k−1* months later, clamped to the month's
-last day (monthly); it ends the day before the next one starts; the name is `Sprint k`. The schedule is
-valid when `sprints_start_on` is on or after the class's `start_date` (when set) and the last sprint ends
-on or before `end_date` (when set); otherwise 422 `SPRINTS_PAST_END` with the last day in the detail.
+last day (monthly); it ends the day before the next one starts; the name is `Sprint k`. The schedule
+must fit the class's dates, each failure a 422 (`schedule_problem` reports the first): `sprints_start_on`
+on or after the class's `start_date` (`SPRINTS_BEFORE_START`) and at most 370 days after it, the latest
+last day of classes (`SPRINTS_START_TOO_LATE`, which also refuses a day so late that the schedule's days
+would pass the calendar's end); the last sprint ending on or before `end_date` (`SPRINTS_PAST_END`, with
+the last day in the detail). A class date that is not set allows any day on its side.
 
 - `POST /api/classes` (`CreateClassRequest`): `sprint_count` and `sprint_frequency` required;
   `sprints_start_on` optional, defaulting to `start_date`. The web form (`Classes/CreateClassModal.tsx`)
@@ -124,15 +128,16 @@ on or before `end_date` (when set); otherwise 422 `SPRINTS_PAST_END` with the la
   last sprint's end, as it already refuses a day that would hide attendance weeks: 409
   `END_DATE_BEFORE_SPRINTS` naming that sprint and its end. The Sprints section shows "Sprint 5 ends
   Dec 1" beside the last-day field, so the instructor shortens the schedule first. ⚑
-- `scrum.controller.ensure_project_sprints(client, project_id, schedule)`: for sequences 1..N, insert
-  the missing ones in one bulk insert, and write the name and dates of existing sequenced ones that
-  differ in one bulk upsert (on `id`, leaving `status` out). Sequences beyond N are deleted only
-  when they hold no stories and no plan beyond an untouched seed (a plan whose head is revision 1 of
-  source `seed`, never finalized, goes with its sprint); otherwise 409 `SPRINTS_IN_USE` naming the team
-  and the sprint, and nothing is written. PR 0 checks stories; PR A adds the plan rule when the table
-  arrives. Called from `projects.controller.create_project` right after the `projects` insert
-  (`controller.py:233`, the only insertion point) when the class has a schedule, and by the PATCH for
-  every project of the class (`fan_out` over teams, budget ≤ 3 round trips per team).
+- `scrum.controller.ensure_project_sprints(client, *, project_id, project_name, schedule)`: for
+  sequences 1..N, insert the missing ones in one bulk insert, and write the name and dates of
+  existing sequenced ones that differ in one bulk upsert (on `id`, leaving `status` out). Sequences
+  beyond N are deleted only when they hold no stories and no plan beyond an untouched seed (a plan
+  whose head is revision 1 of source `seed`, never finalized, goes with its sprint); otherwise 409
+  `SPRINTS_IN_USE` naming the team and the sprint, and nothing is written. PR 0 checks stories; PR A
+  adds the plan rule when the table arrives. Called from `projects.controller.create_project` right
+  after the `projects` insert (`controller.py:233`, the only insertion point) when the class has a
+  schedule, and by the PATCH for every project of the class (`fan_out` over teams, budget ≤ 3 round
+  trips per team).
 - `POST /api/projects/{id}/scrum/sprints` (`create_sprint`) stays for API callers; the web client no
   longer offers it and the catalog entry says so. Removing it is a follow-up decision.
 - Copy: the empty board reads "This class has no sprint schedule yet. Your instructor sets it in Class
@@ -160,7 +165,10 @@ points columns are as old as the table, so a 0/0 points row is a real zero.
   tasks_with_points}`: scope = the sum over the sprint's tasks of `points` (or `estimate_hours`),
   completed = the same sum over done tasks; story points no longer feed the burnup. `_live_burnup_totals`,
   `_snapshot_burnup_safe` and the `final` snapshot of the cumulative series carry both units;
-  `_sprint_progress` (the sprint picker's "12/20 pts") reports the chosen unit.
+  `_sprint_progress` (the sprint picker's "12/20 pts") returns tasks, points and hours together, and the
+  picker shows the unit the board's burnup draws ("12/20 h" in hours). An edit that changes a task's
+  points or hours, and the delete of a task that had either, take a snapshot; a story's points edit
+  takes none.
 - `burnup.build_sprint_series(..., unit)` reads `scope_<unit>` / `completed_<unit>`;
   `_completed_by_day_from_moves(client, task_values, ...)` takes the task → value map in the chosen
   unit.
@@ -168,12 +176,13 @@ points columns are as old as the table, so a 0/0 points row is a real zero.
   tasks_without_points: int}`. `units_available` holds `points` when the sprint has at least one task
   and every task has points, and always holds `hours` (a task without hours counts zero). The default
   is points when available, else hours; `GET …/scrum/board?unit=hours|points` picks one that is
-  available (422 otherwise).
-- Web: `BurnupChart` takes `unit` for its axis label ("hours" / "points") and a `SegmentedControl`
-  toggle when `units_available` has both; in hours the card shows "Burnup in hours · add points to
-  tasks for a points burnup (7 tasks without points)". `TaskCard` shows a faint dashed "– pts" chip
-  on a task without points (the design tokens' muted border, no fill), and the task editor's points
-  field hint reads "Used by the burnup".
+  available (422 `UNIT_UNAVAILABLE` otherwise).
+- Web: `BurnupChart` takes `unit` and names it in its stat ("13/18 pts" / "13/18 h") and its accessible
+  name ("points" / "hours"). The burnup view shows a `SegmentedControl` toggle (Points / Hours) when
+  `units_available` has both; when it lacks points, the view shows "Burnup in hours · Add points to
+  tasks for a points burnup (7 tasks without points)" instead. `TaskCard` shows a faint dashed "– pts"
+  chip on a task without points (the design tokens' muted border, no fill), and the task editor's
+  points field hint reads "Used by the burnup".
 
 ## Part 1 — Data model (documents)
 
@@ -528,10 +537,13 @@ rule's intent)
 
 | Constant | Status | Detail |
 | --- | --- | --- |
+| `SPRINTS_BEFORE_START` | 422 | `The first sprint starts before the class does` |
+| `SPRINTS_START_TOO_LATE` | 422 | `The first sprint must start within a year of the first week of term` |
 | `SPRINTS_PAST_END` | 422 | `The sprints run past the last day of classes (<date>)` |
 | `SPRINTS_IN_USE` | 409 | `<Team> already uses Sprint <k>; lower the count after they move their stories or delete that plan` |
 | `END_DATE_BEFORE_SPRINTS` | 409 | `Sprint <k> ends <date>; change the sprint schedule first` |
 | `NO_SPRINT_SCHEDULE` | 409 | `This class has no sprint schedule yet` |
+| `UNIT_UNAVAILABLE` | 422 | `Burnup unit not available for this sprint` |
 | `PLAN_NOT_FOUND` | 404 | `Sprint plan not found` |
 | `PLAN_EXISTS` | 409 | `This sprint already has a plan` |
 | `PLAN_FINAL` | 409 | `A finalized plan can't be deleted` |
@@ -714,10 +726,12 @@ server.
 
 | Where | Text |
 | --- | --- |
-| Create Class | Sprints · How many: 1–20 · Every: week / two weeks / month · First sprint starts: <date> · "Sprint 5 ends Dec 1" / "Sprint 5 would end after the last day of classes" |
-| Class Settings | Sprints · Set up sprints · Save and update every team's sprints |
-| Empty board | This class has no sprint schedule yet. Your instructor sets it in Class Settings. |
-| Burnup card | Burnup in hours · Add points to tasks for a points burnup (7 tasks without points) · Points / Hours |
+| Create Class | Sprints · How many: 1–20 · Every: week / two weeks / month · First sprint starts: <date> · "Sprint 5 ends Dec 1" / "Sprint 5 would end after the last day of classes" · "Enter a whole number from 1 to 20" (a count it can't use) |
+| Class Settings | Sprints · Set up sprints · the Create Class fields, last-sprint line and count error · Save and update every team's sprints · "Sprints updated for 3 teams" / "Sprints updated for 1 team" · "Sprints saved. New teams get them." (a class with no teams) |
+| Empty board | This class has no sprint schedule yet. Your instructor sets it in Class Settings. / Set the sprint schedule in Class Settings to create this team's sprints. (the class instructor) |
+| Burnup card | Burnup in hours · Add points to tasks for a points burnup (7 tasks without points; "1 task" in the singular; left out when the sprint has no task) · Points / Hours |
+| Task card | – pts (dashed, on a task without points; accessible name "No points yet") |
+| Task editor | Used by the burnup (the points field's hint) |
 | Board header button | Sprint plan |
 | Create card | Create sprint plan · "Seeded from the board and your last plan." |
 | Header actions | Save · Finalize · Finalize & export · Export to board · Re-import from board · Download Markdown · Copy · Revisions · Latest (rev 8) / Finalized (rev 5) · Delete plan (drafts, in the overflow menu) |
@@ -769,7 +783,7 @@ Backend (`pytest`, `FakeSupabase` / `ScrumFake`):
 - `tests/test_scrum_burnup_units.py`: `_totals` in both units from task values (story points ignored),
   points available only when every task has them, snapshot columns, series per unit, pre-migration
   snapshots carried forward, the default unit choice, `?unit=` validation, `tasks_without_points`,
-  `_sprint_progress` in the chosen unit.
+  `_sprint_progress` in both units.
 - `tests/test_documents_access.py`: the matrix in Part 2 for every route (member, staff, outsider,
   scrum master, elevated-when-none, preview).
 - `tests/test_documents_save.py`: validation (each limit), link and snapshot stamping (client values
