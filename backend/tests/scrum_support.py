@@ -9,8 +9,10 @@ class at all. ``OTHER_PID`` is a second project in the same class.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
+from app.assignments import deadlines
 from tests.fake_supabase import FakeSupabase
 
 PID = "00000000-0000-0000-0000-0000000000aa"
@@ -25,6 +27,7 @@ OUTSIDER = "outsider-1"
 
 RELATIONS = {
     ("projects", "classes"): ("class_id", "id", False),
+    ("project_members", "projects"): ("project_id", "id", False),  # the access check's school
     ("tasks", "user_stories"): ("story_id", "id", False),  # a dependency's story key and sprint
     ("user_stories", "tasks"): ("id", "story_id", True),  # the live burnup totals
     # Embedded on a move's insert: the mover's name and the task's story (for its sprint).
@@ -34,6 +37,20 @@ RELATIONS = {
     # Embedded on a comment's insert: its author's name.
     ("scrum_comments", "profiles!scrum_comments_author_id_fkey"): ("author_id", "id", False),
 }
+
+
+def pin_clock(monkeypatch, instant: datetime) -> None:
+    """Make ``instant`` (timezone-aware) the board's "now": the shared ``deadlines.now_utc``."""
+    monkeypatch.setattr(deadlines, "now_utc", lambda: instant.astimezone(UTC))
+
+
+def pin_today(monkeypatch, day: date) -> None:
+    """Make it noon on ``day`` at a school in the default zone (Pacific, where the seed's class
+    is): the board's "today" is ``day`` there."""
+    pin_clock(
+        monkeypatch,
+        datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
+    )
 
 
 def profile(uid: str, first: str, last: str = "X") -> dict:

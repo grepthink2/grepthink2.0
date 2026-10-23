@@ -23,10 +23,12 @@ from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
+from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
 from app.core.errors import AppError
+from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
@@ -36,9 +38,6 @@ from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
 
-# Pacific is hard-coded here, pending the school-zone follow-up. TA Meetings (attendance) already
-# works out "today" in each class's school zone, so the two differ for a school outside Pacific.
-_LA_TZ = ZoneInfo("America/Los_Angeles")
 PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 AI_DAILY_LIMIT = 10
@@ -67,8 +66,10 @@ DEPENDENCY_NOT_FOUND = "Dependency not found"
 # ------------------------------------------------------------------- access ----
 
 
-def _board_access(client, *, project_id: str, user_id: str) -> str:
-    """``'member'`` or ``'staff'``.
+def _board_access(client, *, project_id: str, user_id: str) -> tuple[str, str | None]:
+    """``('member' | 'staff', institution_id)``: the caller's access, and the school of the
+    project's class (``None`` when it has none). The board files its days in that school's
+    zone (:func:`_today`), so the id comes with the check every endpoint makes already.
 
     404 :data:`authz.PROJECT_NOT_FOUND` when the project does not exist; 403
     :data:`authz.NOT_PROJECT_MEMBER` when it exists but the caller is neither on the
@@ -78,23 +79,28 @@ def _board_access(client, *, project_id: str, user_id: str) -> str:
     # is nullable, and a member whose role is NULL is still on the team.
     member = (
         client.table("project_members")
-        .select("id")
+        .select("id, projects(classes(institution_id))")
         .eq("project_id", str(project_id))
         .eq("user_id", str(user_id))
         .limit(1)
         .execute()
     )
-    if member.data:
-        return "member"  # a membership row means the project exists
-    project = authz.load_project(client, project_id, class_columns="created_by")
+    if member.data:  # a membership row means the project exists
+        return "member", _institution_of(member.data[0].get("projects"))
+    project = authz.load_project(client, project_id, class_columns="created_by, institution_id")
     if _staff_among(client, project, {str(user_id)}):
-        return "staff"
+        return "staff", _institution_of(project)
     raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
+
+
+def _institution_of(project: dict | None) -> str | None:
+    """The school of a project row loaded with its class embedded (``classes(institution_id)``)."""
+    return ((project or {}).get("classes") or {}).get("institution_id")
 
 
 def _staff_among(client, project: dict, user_ids: set[str]) -> set[str]:
     """The ids in ``user_ids`` that are staff for ``project`` (loaded with
-    ``class_columns="created_by"``): its meeting TA, its class's instructor, or a TA
+    ``class_columns`` that include ``created_by``): its meeting TA, its class's instructor, or a TA
     of its class. Ids compare lowercased. The TA lookup is one round trip, skipped
     when every id is already settled by the project row.
     """
@@ -118,25 +124,27 @@ def _staff_among(client, project: dict, user_ids: set[str]) -> set[str]:
     return staff
 
 
-def _require_writer(client, *, project_id: str, user_id: str) -> None:
-    if _board_access(client, project_id=project_id, user_id=user_id) != "member":
+def _require_writer(client, *, project_id: str, user_id: str) -> str | None:
+    """403 :data:`MEMBERS_ONLY` unless the caller is on the team; else the project's
+    ``institution_id`` (see :func:`_board_access`), for the writes that file a burnup snapshot."""
+    access, institution_id = _board_access(client, project_id=project_id, user_id=user_id)
+    if access != "member":
         raise HTTPException(status_code=403, detail=MEMBERS_ONLY)
+    return institution_id
 
 
 # --------------------------------------------------------------------- time ----
 
 
-def _today_la() -> date:
-    """Calendar day in America/Los_Angeles.
-
-    Pacific is hard-coded here, pending the school-zone follow-up (TA Meetings uses the school's).
-    """
-    return datetime.now(_LA_TZ).date()
+def _today(zone: ZoneInfo) -> date:
+    """Today's date at the school (``zone``, from ``institution_timezone``), whatever the
+    server's zone: a school's day ends at its own midnight."""
+    return deadlines.now_utc().astimezone(zone).date()
 
 
-def _la_day(ts: str) -> date:
-    """LA calendar day of a Supabase timestamptz string."""
-    return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(_LA_TZ).date()
+def _school_day(ts: str, zone: ZoneInfo) -> date:
+    """The calendar day at the school (``zone``) of a Supabase timestamptz string."""
+    return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(zone).date()
 
 
 # ---------------------------------------------------------- settings, sprints ----
@@ -264,7 +272,7 @@ def _get_task_or_404(client, task_id: str) -> dict:
 
 def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
     client = get_client()
-    _require_writer(client, project_id=project_id, user_id=user_id)
+    institution_id = _require_writer(client, project_id=project_id, user_id=user_id)
     if fields.get("sprint_id"):
         _require_sprint_in_project(client, fields["sprint_id"], project_id)
     key = _next_key(client, project_id, "story")
@@ -277,14 +285,14 @@ def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
         raise HTTPException(status_code=500, detail="Failed to create story")
     story = res.data[0]
     if story.get("sprint_id"):
-        _snapshot_burnup_safe(client, story["sprint_id"])
+        _snapshot_burnup_safe(client, story["sprint_id"], institution_id)
     return story
 
 
 def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     client = get_client()
     story = _get_story_or_404(client, story_id)
-    _require_writer(client, project_id=story["project_id"], user_id=user_id)
+    institution_id = _require_writer(client, project_id=story["project_id"], user_id=user_id)
     if "title" in fields and fields["title"] is None:
         raise HTTPException(status_code=422, detail=TITLE_REQUIRED)
     payload: dict = {}
@@ -310,7 +318,7 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     if {"points", "sprint_id"} & payload.keys():
         for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
             if sid:
-                _snapshot_burnup_safe(client, sid)
+                _snapshot_burnup_safe(client, sid, institution_id)
     return res.data[0]
 
 
@@ -332,7 +340,7 @@ def delete_story(*, story_id: str, user_id: str) -> None:
 def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
     client = get_client()
     story = _get_story_or_404(client, story_id)
-    _require_writer(client, project_id=story["project_id"], user_id=user_id)
+    institution_id = _require_writer(client, project_id=story["project_id"], user_id=user_id)
     _validate_tags(fields.get("tags") or [])
     key = _next_key(client, story["project_id"], "task")
     row = {
@@ -348,7 +356,7 @@ def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create task")
     if story.get("sprint_id"):
-        _snapshot_burnup_safe(client, story["sprint_id"])
+        _snapshot_burnup_safe(client, story["sprint_id"], institution_id)
     return res.data[0]
 
 
@@ -676,15 +684,19 @@ def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
     return _totals(stories, done)
 
 
-def _snapshot_burnup_safe(client, sprint_id: str, totals: tuple[int, int] | None = None) -> None:
-    """Best-effort daily snapshot; never fails the triggering write.
+def _snapshot_burnup_safe(
+    client, sprint_id: str, institution_id: str | None, totals: tuple[int, int] | None = None
+) -> None:
+    """Best-effort daily snapshot, filed under the day at the project's school
+    (``institution_id``); never fails the triggering write, an unreadable school included.
     Pass precomputed (scope, completed) via `totals` to skip the recompute."""
     try:
+        day = _today(institution_timezone(institution_id))
         scope, completed = totals if totals is not None else _live_burnup_totals(client, sprint_id)
         client.table("sprint_burnup_days").upsert(
             {
                 "sprint_id": str(sprint_id),
-                "day": _today_la().isoformat(),
+                "day": day.isoformat(),
                 "scope_points": scope,
                 "completed_points": completed,
             },
@@ -695,10 +707,11 @@ def _snapshot_burnup_safe(client, sprint_id: str, totals: tuple[int, int] | None
 
 
 def _completed_by_day_from_moves(
-    client, task_points: dict[str, int], starts_at: date, ends_at: date
+    client, task_points: dict[str, int], starts_at: date, ends_at: date, zone: ZoneInfo
 ) -> dict[str, int]:
-    """Exact completed points per LA day for the sprint's tasks, reconstructed from the
-    task_moves audit (spec D7: fills past days that predate the lazy snapshots).
+    """Exact completed points per day at the school (``zone``) for the sprint's tasks,
+    reconstructed from the task_moves audit (spec D7: fills past days that predate the lazy
+    snapshots).
 
     ``task_points`` maps each task in the sprint's live stories to its points; the board
     has those rows loaded already, so only the audit is read here.
@@ -718,9 +731,9 @@ def _completed_by_day_from_moves(
     out: dict[str, int] = {}
     i = 0
     d = starts_at
-    end = min(ends_at, _today_la())
+    end = min(ends_at, _today(zone))
     while d <= end:
-        while i < len(moves) and _la_day(moves[i]["moved_at"]) <= d:
+        while i < len(moves) and _school_day(moves[i]["moved_at"], zone) <= d:
             status[moves[i]["task_id"]] = moves[i]["to_status"]
             i += 1
         out[d.isoformat()] = sum(task_points[tid] for tid, st in status.items() if st == "done")
@@ -736,7 +749,7 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
         raise HTTPException(status_code=422, detail="Unknown status")
     client = get_client()
     task = _get_task_or_404(client, task_id)
-    _require_writer(client, project_id=task["project_id"], user_id=user_id)
+    institution_id = _require_writer(client, project_id=task["project_id"], user_id=user_id)
     # Only leaving To do waits for the task's dependencies (spec D1): a task already under way
     # is never pulled back when a dependency reopens, and a move back to To do is always fine.
     if (
@@ -779,7 +792,7 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
         "moved_by_name": _display_name(mover),
     }
     if sprint_id:
-        _snapshot_burnup_safe(client, sprint_id)
+        _snapshot_burnup_safe(client, sprint_id, institution_id)
     return {"task": task, "move": move}
 
 
@@ -832,7 +845,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     from those rows, not from another query per sprint.
     """
     client = get_client()
-    access = _board_access(client, project_id=project_id, user_id=user_id)
+    access, institution_id = _board_access(client, project_id=project_id, user_id=user_id)
     pid = str(project_id)
 
     def rows(query) -> list[dict]:
@@ -993,10 +1006,11 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
 
     sprint_series = None
     live_totals: tuple[int, int] | None = None
-    today = _today_la()
     if selected:
+        zone = institution_timezone(institution_id)  # the school's day, not the server's
+        today = _today(zone)
         live_totals = sprint_totals(selected["id"])
-        _snapshot_burnup_safe(client, selected["id"], totals=live_totals)
+        _snapshot_burnup_safe(client, selected["id"], institution_id, totals=live_totals)
         starts = date.fromisoformat(str(selected["starts_at"]))
         ends = date.fromisoformat(str(selected["ends_at"]))
         snaps = snaps_by_sprint.get(selected["id"], [])
@@ -1019,7 +1033,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
                 for s in live_stories(selected["id"])
                 for t in s["tasks"]
             }
-            completed_by_day = _completed_by_day_from_moves(client, task_points, starts, ends)
+            completed_by_day = _completed_by_day_from_moves(client, task_points, starts, ends, zone)
         sprint_series = build_sprint_series(
             snapshots=snaps,
             starts_at=starts,
@@ -1312,11 +1326,12 @@ def ai_draft(
     *, project_id: str, user_id: str, kind: str, prompt: str, story_id: str | None
 ) -> dict:
     client = get_client()
-    _require_writer(client, project_id=project_id, user_id=user_id)
+    institution_id = _require_writer(client, project_id=project_id, user_id=user_id)
     if not settings.AI_API_KEY or not settings.AI_BASE_URL:
         raise HTTPException(status_code=503, detail="AI drafting is not configured")
 
-    today = _today_la().isoformat()
+    # The quota's day turns over at the school's midnight, like the board's other days.
+    today = _today(institution_timezone(institution_id)).isoformat()
     usage_res = (
         client.table("ai_draft_usage")
         .select("count")
