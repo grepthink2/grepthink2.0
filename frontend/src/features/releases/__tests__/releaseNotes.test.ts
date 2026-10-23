@@ -28,6 +28,10 @@ it('keeps continuations and nested lists, and reads "#" without a space as text'
   expect(parseRelease('0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- #hashtag, *a* and **b**\n  a => b\n  - nested\n').sections).toEqual([
     { kind: 'new', markdown: '- #hashtag, *a* and **b**\n  a => b\n  - nested' },
   ]));
+it('accepts autolinks, and "<" or "![" inside code', () =>
+  expect(parseRelease('0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- see <https://x.com>\n- `a<b` and ``![x](y)``\n').sections).toEqual([
+    { kind: 'new', markdown: '- see <https://x.com>\n- `a<b` and ``![x](y)``' },
+  ]));
 
 /** The message of the error `run` throws, so a test can compare all of it. */
 function thrownMessage(run: () => unknown): string {
@@ -72,6 +76,7 @@ it.each([
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- a\n  =', '0.91.0.md:6: no horizontal rules or underlined headings inside an item'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- see ![x](y.png)', '0.91.0.md:5: no images'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- <b>a</b>', '0.91.0.md:5: no HTML'],
+  ['0.91.0.md', '---\ndate: 2026-10-23\n---\n## New\n- `<b>` and <https://x.com>, then <i>x</i>', '0.91.0.md:5: no HTML'],
   ['0.91.0.md', '---\ndate: 2026-10-23\n---\n', '0.91.0.md:1: no sections'],
 ])('refuses %s: %j', (name, text, message) => expect(thrownMessage(() => parseRelease(name, text))).toBe(message));
 

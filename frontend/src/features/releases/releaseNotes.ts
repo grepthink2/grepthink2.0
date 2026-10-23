@@ -50,6 +50,10 @@ const SECTION_ORDER: readonly ReleaseSectionKind[] = ['new', 'improved', 'fixed'
 /** A front matter line: a key, a colon and a space, then the value. */
 const FRONT_MATTER_ENTRY = /^([A-Za-z][\w-]*): (.*)$/;
 const HTML_TAG = /<[a-zA-Z/!]/;
+/** A code span: a run of backticks, then text, then a run of the same length. Its text is never HTML. */
+const CODE_SPAN = /(`+)(?!`).*?(?<!`)\1(?!`)/g;
+/** An http(s) autolink, <https://…>, which the HTML check would otherwise take for a tag. */
+const AUTOLINK = /<https?:\/\/[^\s<>]+>/g;
 
 /** What would start a block of its own inside an item, checked after up to three spaces of indent. */
 const BLOCK_STARTS: readonly (readonly [RegExp, string])[] = [
@@ -164,8 +168,9 @@ export function parseRelease(fileName: string, text: string): Release {
     }
     const block = blockMarkdownIn(line.slice(2));
     if (block) throw new ReleaseNotesError(fileName, lineNumber, block);
-    if (line.includes('![')) throw new ReleaseNotesError(fileName, lineNumber, 'no images');
-    if (HTML_TAG.test(line)) throw new ReleaseNotesError(fileName, lineNumber, 'no HTML');
+    const inline = line.replace(CODE_SPAN, '').replace(AUTOLINK, '');
+    if (inline.includes('![')) throw new ReleaseNotesError(fileName, lineNumber, 'no images');
+    if (HTML_TAG.test(inline)) throw new ReleaseNotesError(fileName, lineNumber, 'no HTML');
     open.lines.push(line);
   }
   if (open) finish(open);
