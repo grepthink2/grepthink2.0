@@ -99,9 +99,11 @@ async function start(initial: string, classes: ApiClass[]) {
   commits.length = 0;
 }
 
-function pickFromProfileMenu(...names: (string | RegExp)[]) {
+/** Open the profile menu and pick a row: an action row, or a school's radio row. */
+function pickFromProfileMenu(name: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Profile menu' }));
-  for (const name of names) fireEvent.click(screen.getByRole('button', { name }));
+  const row = screen.queryByRole('menuitem', { name }) ?? screen.getByRole('menuitemradio', { name });
+  fireEvent.click(row);
 }
 
 /** Waits for `path`, then lets anything still queued land before the caller checks the history. */
@@ -198,7 +200,7 @@ describe('switching class on a detail page', () => {
       cls('A', 'Alpha', 'instructor', { institution: IST }),
       cls('B', 'Beta', 'ta', { institution: UCSC }),
     ]);
-    pickFromProfileMenu(/^School:/, 'UC Santa Cruz');
+    pickFromProfileMenu('UC Santa Cruz');
     await landsOn('/app/ta-meetings');
     expect(commits).toEqual(['/app/ta-meetings B']);
   });

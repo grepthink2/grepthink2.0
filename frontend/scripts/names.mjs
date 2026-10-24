@@ -126,6 +126,19 @@ export const NAMES_ALLOWLIST = [
       'titles (.section-title) itself.',
   },
   {
+    design: 'ProfileMenu',
+    status: 'same name',
+    keeps: 'ProfileMenu',
+    reason:
+      "The app header's profile menu is a composition of the kit (Popover, Menu, Avatar, NewDot) with the app's " +
+      'auth, class and preview state, so it lives with the header it belongs to, in ' +
+      'features/app/components/Layout/ProfileMenu.tsx, as design_handoff_whats_new/NOTES.md places it.',
+  },
+  {
+    path: 'src/features/app/components/Layout/ProfileMenu.tsx',
+    reason: "ProfileMenu's home beside the app header (see the ProfileMenu entry).",
+  },
+  {
     path: 'src/components/ErrorBoundary',
     reason: 'The error boundary App.tsx puts around the routes has no design counterpart.',
   },
