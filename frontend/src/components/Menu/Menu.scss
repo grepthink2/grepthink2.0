@@ -34,6 +34,11 @@
 .gt-menu__item--checked .gt-menu__icon { color: var(--gt-primary); }
 .gt-menu__check { display: inline-flex; width: 16px; flex-shrink: 0; color: var(--gt-primary); }
 .gt-menu__sep { height: 1px; margin: 4px 6px; background: var(--gt-border-subtle); }
+/* MenuGroup (2026-10-23): a caps label over a run of rows ("School" over the radio rows); role="group" named by it */
+.gt-menu__group { display: flex; flex-direction: column; }
+.gt-menu__heading { padding: 8px 10px 4px; font-size: 10.5px; font-weight: var(--gt-weight-semibold); letter-spacing: var(--gt-tracking-wide); text-transform: uppercase; color: var(--gt-text-tertiary); }
+/* MenuItem `trailing` (2026-10-23): a marker at the row's end (the "New" Badge sm); the label's flex: 1 pushes it right */
+.gt-menu__trailing { display: inline-flex; align-items: center; flex-shrink: 0; }
 
 /* ── Phones (< 768px) ── */
 @media (max-width: 767px) {
