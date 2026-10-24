@@ -28,6 +28,9 @@
 .gt-modal__close { position: absolute; top: 12px; right: 12px; }
 .gt-modal__tabs { margin-top: 16px; }
 .gt-modal__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 24px 20px; font-size: var(--gt-text-body); } /* contain: reaching the end of a long body never scrolls the page */
+/* Codebase-side (bodyLabel, 2026-10-23; folds back at the next design round): a body that is a focusable scroll region
+   shows the kit's tight ring inside its edge, since the sheet's rounded corners would clip one outside it. */
+.gt-modal__body:focus-visible { box-shadow: inset var(--gt-focus-ring-tight); }
 .gt-modal__footer { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: var(--gt-space-sm); padding: 14px 24px; border-top: 1px solid var(--gt-border-subtle); }
 .gt-modal--message .gt-modal__head { padding: 32px 48px 0; text-align: center; }
 .gt-modal--message .gt-modal__title { font-size: 1.75rem; }

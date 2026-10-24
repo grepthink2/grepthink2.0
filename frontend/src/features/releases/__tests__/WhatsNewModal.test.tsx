@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { APP_VERSION } from '../version';
 import type { ReleaseFeedProps } from '../components/ReleaseFeed';
@@ -96,6 +96,20 @@ describe('WhatsNewModal', () => {
     deferredFeed();
     render(<WhatsNewModal open onClose={vi.fn()} tone="light" lastSeen={null} />);
     expect(screen.getByRole('dialog', { name: "What's new" })).not.toHaveClass('gt-modal--dark');
+  });
+
+  it('starts on the feed, a named scroll region that is in the Tab cycle with the ×', async () => {
+    deferredFeed();
+    const user = userEvent.setup();
+    render(<WhatsNewModal open onClose={vi.fn()} tone="light" lastSeen={null} />);
+    const region = screen.getByRole('region', { name: 'Release notes' });
+    expect(region).toHaveClass('gt-modal__body');
+    expect(region).toHaveAttribute('tabindex', '0');
+    await waitFor(() => expect(region).toHaveFocus());
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    await user.tab();
+    expect(region).toHaveFocus();
   });
 
   it('closes from the × and from Esc', async () => {

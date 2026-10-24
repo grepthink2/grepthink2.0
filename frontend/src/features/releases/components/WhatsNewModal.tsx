@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { Modal } from '@/components/Modal/Modal';
 import { loadReleaseFeed } from '../loadReleaseFeed';
@@ -26,10 +26,12 @@ export interface WhatsNewModalProps {
  * title "What's new", the subtitle "Version x.y.z" (this build), the kit's ×, the feed scrolling in the
  * body and no footer. The frame ships with the page and the feed is a chunk of its own, so a chunk that
  * fails to load (a tab left open across a deploy) shows the failed state with "Reload" here, never the
- * app's top-level error screen. The dialog behaviour is the kit's: focus to the sheet, trapped, and back
- * to the opener on close.
+ * app's top-level error screen. The body is a focusable scroll region named "Release notes", and focus
+ * starts there, so the arrow keys and Page Up/Down scroll a long feed; Tab moves between it and the ×.
+ * The rest of the dialog behaviour is the kit's: focus trapped, and back to the opener on close.
  */
 export function WhatsNewModal({ open, onClose, tone, lastSeen }: WhatsNewModalProps) {
+  const bodyRef = useRef<HTMLDivElement>(null);
   return (
     <Modal
       open={open}
@@ -39,6 +41,9 @@ export function WhatsNewModal({ open, onClose, tone, lastSeen }: WhatsNewModalPr
       title="What's new"
       subtitle={`Version ${APP_VERSION}`}
       className="gt-whats-new"
+      bodyLabel="Release notes"
+      bodyRef={bodyRef}
+      initialFocusRef={bodyRef}
     >
       <ErrorBoundary fallback={<ReleaseFeedFailed tone={tone} />}>
         <Suspense fallback={<ReleaseFeedLoading tone={tone} />}>

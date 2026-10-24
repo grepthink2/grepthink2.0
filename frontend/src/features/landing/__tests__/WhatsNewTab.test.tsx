@@ -59,7 +59,7 @@ describe('WhatsNewTab', () => {
     const user = userEvent.setup();
     render(<WhatsNewTab />);
     await user.click(tab());
-    await waitFor(() => expect(screen.getByRole('dialog', { name: "What's new" })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Release notes' })).toHaveFocus());
     await user.keyboard('{Escape}');
     expect(tab()).toHaveFocus();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

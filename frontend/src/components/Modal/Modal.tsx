@@ -43,6 +43,14 @@ export interface ModalProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
   /** The dialog's name when it has no `title`. */
   ariaLabel?: string;
   /**
+   * Makes the body a focusable scroll region named by this label (`role="region"`, `tabIndex={0}`), for a
+   * dialog whose content is read rather than filled in: with focus there, the arrow keys, Page Up/Down and
+   * Space scroll it, and Tab reaches it. Pair it with `initialFocusRef` on `bodyRef` to start there.
+   */
+  bodyLabel?: string;
+  /** Reaches the body (`.gt-modal__body`) while it is mounted. */
+  bodyRef?: Ref<HTMLDivElement>;
+  /**
    * Set by the dialog itself: `aria-modal` always, `aria-labelledby` from `title` and `aria-label` from
    * `ariaLabel`. JSX takes any hyphenated prop a type leaves out, so they are declared `never`.
    */
@@ -65,11 +73,13 @@ export interface ModalProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
  * `closeDisabled`. `tone="dark"` is the landing page's look (the What's new modal); the app stays light.
  *
  * A caller's `aria-describedby` follows the subtitle in the description. Native props and `ref` reach
- * the sheet. Codebase-side: `ariaLabel` names a dialog with no title (as Drawer's does).
+ * the sheet. Codebase-side: `ariaLabel` names a dialog with no title (as Drawer's does), and `bodyLabel`
+ * (with `bodyRef`) makes the body a named, focusable scroll region with an inset focus ring, so a keyboard
+ * user can scroll a long read (the What's new feed); both fold back into the design at its next round.
  */
 export function Modal({
   open = false, onClose, title, subtitle, children, footer, tabs, size = 'md', width, variant = 'form', tone = 'light',
-  closeDisabled = false, initialFocusRef, hideClose = false, role = 'dialog', portal = true, ariaLabel,
+  closeDisabled = false, initialFocusRef, hideClose = false, role = 'dialog', portal = true, ariaLabel, bodyLabel, bodyRef,
   className = '', style, 'aria-describedby': describedBy, ref, ...rest
 }: ModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -116,7 +126,15 @@ export function Modal({
           )}
           {tabs && <div className="gt-modal__tabs">{tabs}</div>}
         </div>
-        <div className="gt-modal__body">{children}</div>
+        <div
+          ref={bodyRef}
+          className="gt-modal__body"
+          role={bodyLabel ? 'region' : undefined}
+          aria-label={bodyLabel}
+          tabIndex={bodyLabel ? 0 : undefined}
+        >
+          {children}
+        </div>
         {footer && <div className="gt-modal__footer">{footer}</div>}
       </div>
     </div>

@@ -259,3 +259,41 @@ describe('Modal tone', () => {
     expect(cssRules('.gt-modal__body')[0].getPropertyValue('overscroll-behavior')).toBe('contain');
   });
 });
+
+describe('Modal bodyLabel', () => {
+  it('leaves the body a plain box without a label', () => {
+    render(<Modal open title="Edit project"><p>Body</p></Modal>);
+    const body = screen.getByText('Body').parentElement;
+    expect(body).toHaveClass('gt-modal__body');
+    expect(body).not.toHaveAttribute('tabindex');
+    expect(body).not.toHaveAttribute('role');
+  });
+
+  it('makes the body a named, focusable scroll region with a visible ring, and hands it to bodyRef', () => {
+    const bodyRef = createRef<HTMLDivElement>();
+    render(<Modal open title="What's new" bodyLabel="Release notes" bodyRef={bodyRef}><p>Body</p></Modal>);
+    const region = screen.getByRole('region', { name: 'Release notes' });
+    expect(region).toHaveClass('gt-modal__body');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(bodyRef.current).toBe(region);
+    const [ring] = cssRules('.gt-modal__body:focus-visible');
+    expect(ring.getPropertyValue('box-shadow')).toBe('inset var(--gt-focus-ring-tight)');
+  });
+
+  it('takes focus on open through initialFocusRef, and Tab cycles between it and the ×', async () => {
+    const user = userEvent.setup();
+    const bodyRef = createRef<HTMLDivElement>();
+    render(
+      <Modal open onClose={() => {}} title="What's new" bodyLabel="Release notes" bodyRef={bodyRef} initialFocusRef={bodyRef}>
+        <p>Body</p>
+      </Modal>,
+    );
+    await settle();
+    const region = screen.getByRole('region', { name: 'Release notes' });
+    expect(region).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    await user.tab();
+    expect(region).toHaveFocus();
+  });
+});

@@ -269,7 +269,7 @@ describe("ProfileMenu: What's new", () => {
     expect(dialog).not.toHaveClass('gt-modal--dark');
     expect(localStorage.getItem(SEEN_KEY)).toBe(APP_VERSION);
     expect(trigger()).not.toHaveAccessibleDescription();
-    await waitFor(() => expect(dialog).toHaveFocus());
+    await waitFor(() => expect(within(dialog).getByRole('region', { name: 'Release notes' })).toHaveFocus());
 
     await user.keyboard('{Escape}');
     expect(trigger()).toHaveFocus();
