@@ -203,6 +203,22 @@
     overflow: hidden;
   }
 
+  // Above both burnups, which share one unit (spec D21): the Points | Hours toggle, or the line
+  // saying why they are in hours.
+  &__burnup-unit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+  }
+
+  &__burnup-note {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--gt-text-tertiary);
+  }
+
   // Burnup tab (L2): both charts share the full width the rail used to take.
   &__charts {
     display: grid;

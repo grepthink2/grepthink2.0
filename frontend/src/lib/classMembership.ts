@@ -3,7 +3,7 @@
  * role the UI shows, the schools, and the class switcher's per-school list. Pure helpers for
  * ClassProvider, plus the last-class-per-school storage the school switcher reads.
  */
-import type { ApiClass, ApiInstitutionSummary, ClassRole } from './api';
+import type { ApiClass, ApiInstitutionSummary, ApiSprintFrequency, ClassRole } from './api';
 import type { ClassLifecycleStatus } from './classPreferences';
 
 export type School = ApiInstitutionSummary;
@@ -34,6 +34,14 @@ export interface Class {
   institution_id?: string | null;
   /** The class's task board elsewhere, its sidebar's "Tasks - External" item; null hides it. */
   external_tasks_url?: string | null;
+  /**
+   * The class's sprint schedule, which every team's sprints follow: how many, how often, and the
+   * first sprint's first day (YYYY-MM-DD). All three or none: null until the instructor sets one, and
+   * missing from a class you don't teach.
+   */
+  sprint_count?: number | null;
+  sprint_frequency?: ApiSprintFrequency | null;
+  sprints_start_on?: string | null;
 }
 
 /** API row → Class. An older backend omits `my_role`: a class you created is yours to teach. */

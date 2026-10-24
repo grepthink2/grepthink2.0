@@ -320,9 +320,14 @@ export default function TaskEditorModal({
             disabledReason={ceiling != null
               ? `${story.key} has ${ceiling} pts left — raise the story's points to go higher`
               : undefined}
+            describedBy={ceiling != null
+              ? 'task-editor-points-hint task-editor-points-budget'
+              : 'task-editor-points-hint'}
           />
+          {/* A task's points, not its story's, are what the burnup counts (spec D21). */}
+          <span className="task-editor__hint" id="task-editor-points-hint">Used by the burnup</span>
           {ceiling != null && (
-            <span className="task-editor__hint">
+            <span className="task-editor__hint" id="task-editor-points-budget">
               {ceiling > 0
                 ? `${ceiling} of ${story.points} pts available in ${story.key}`
                 : `${story.key}'s ${story.points} pts are fully assigned — raise the story to add more`}

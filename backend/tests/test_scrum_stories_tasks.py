@@ -84,11 +84,12 @@ def test_creating_a_task_in_a_sprint_reads_the_burnup_totals_once(monkeypatch):
     db = scrum_db(
         monkeypatch,
         sprints=[dict(SPRINT)],
-        user_stories=[dict(STORY, sprint_id="sp1", points=3)],
+        user_stories=[dict(STORY, sprint_id="sp1", points=13)],
         tasks=[dict(TASK, status="done", points=2)],
     )
     controller.create_task(story_id="st1", user_id=UID, fields={"title": "x", "points": 1})
     [snap] = db.rows("sprint_burnup_days")
+    # The tasks' points, the new one's included; the story's 13 count nowhere (spec D21).
     assert (snap["scope_points"], snap["completed_points"]) == (3, 2)
     # The story, the writer check, the key, the insert, then the sprint's stories with their
     # tasks embedded (one read) and the snapshot's upsert.
@@ -180,6 +181,101 @@ def test_delete_task_removes_it(monkeypatch):
     db = scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK)])
     controller.delete_task(task_id="t1", user_id=UID)
     assert db.rows("tasks") == []
+
+
+#: A burnup snapshot's four values, in this order.
+SNAPSHOT = ("scope_points", "completed_points", "scope_hours", "completed_hours")
+
+
+def _full_edit(**changes) -> dict:
+    """What the web client's task editor sends on every save: each field, with TASK's values
+    (t1 in _task_in_sprint) unless changed."""
+    return {
+        "title": "Endpoint",
+        "description_md": None,
+        "tags": [],
+        "points": 3,
+        "estimate_hours": 4,
+        "assignee_id": None,
+        "pr_url": TASK["pr_url"],
+        **changes,
+    }
+
+
+def _task_in_sprint(monkeypatch, **story):
+    """st1 in sp1 (``story`` changes it) holds t1 (3 points, 4 h, done) and t2 (2 points,
+    6 h, to do)."""
+    return scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT)],
+        user_stories=[{**STORY, "sprint_id": "sp1", **story}],
+        tasks=[
+            dict(TASK, points=3, estimate_hours=4, status="done"),
+            dict(TASK, id="t2", key="GT-2", points=2, estimate_hours=6),
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("fields", "values"),
+    [
+        ({"points": 5}, [7, 5, 10, 4]),
+        ({"estimate_hours": None}, [5, 3, 6, 0]),
+        (_full_edit(estimate_hours=8), [5, 3, 14, 8]),
+    ],
+)
+def test_a_task_estimate_edit_snapshots_its_sprints_burnup(monkeypatch, fields, values):
+    """A task's points and hours are its sprint's scope (spec D21), and the web client applies
+    an edit to the board it holds without reloading it: the edit snapshots the sprint itself."""
+    db = _task_in_sprint(monkeypatch)
+    controller.update_task(task_id="t1", user_id=UID, fields=fields)
+    [snap] = db.rows("sprint_burnup_days")
+    assert [snap[k] for k in SNAPSHOT] == values
+    # The task with its story's sprint embedded, the writer check and the update, then the
+    # snapshot: the sprint's totals and the upsert. One snapshot, never two.
+    assert db.executes == 5
+
+
+@pytest.mark.parametrize(
+    ("story", "fields"),
+    [
+        ({}, _full_edit(title="Renamed")),  # every field sent, no estimate changed
+        ({"sprint_id": None}, {"points": 5}),  # a backlog task
+        ({"archived_at": ARCHIVED_AT}, {"points": 5}),  # a legacy archived story counts nowhere
+    ],
+)
+def test_a_task_edit_that_moves_no_burnup_line_takes_no_snapshot(monkeypatch, story, fields):
+    db = _task_in_sprint(monkeypatch, **story)
+    controller.update_task(task_id="t1", user_id=UID, fields=fields)
+    assert db.rows("sprint_burnup_days") == []
+    assert db.executes == 3  # the task with its story, the writer check, the update
+
+
+def test_deleting_a_task_snapshots_its_sprints_burnup(monkeypatch):
+    db = _task_in_sprint(monkeypatch)
+    controller.delete_task(task_id="t1", user_id=UID)
+    [snap] = db.rows("sprint_burnup_days")
+    assert [snap[k] for k in SNAPSHOT] == [2, 0, 6, 0]  # t2 is all that is left
+    # The task with its story's sprint embedded, the writer check and the delete, then the
+    # snapshot: the sprint's totals and the upsert.
+    assert db.executes == 5
+
+
+@pytest.mark.parametrize(
+    ("story", "task"),
+    [
+        ({"sprint_id": None}, {}),  # a backlog task
+        ({"archived_at": ARCHIVED_AT}, {}),  # a legacy archived story counts nowhere
+        ({}, {"points": None, "estimate_hours": None}),  # no estimate: no line moves
+    ],
+)
+def test_deleting_a_task_that_moves_no_burnup_line_takes_no_snapshot(monkeypatch, story, task):
+    db = _task_in_sprint(monkeypatch, **story)
+    db.rows("tasks")[0].update(task)
+    controller.delete_task(task_id="t1", user_id=UID)
+    assert [t["id"] for t in db.rows("tasks")] == ["t2"]
+    assert db.rows("sprint_burnup_days") == []
+    assert db.executes == 3  # the task with its story, the writer check, the delete
 
 
 def test_delete_story_removes_a_backlog_story(monkeypatch):

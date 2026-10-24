@@ -4,10 +4,12 @@ import type {
   ApiBulkInviteResult,
   ApiClass,
   ApiClassAttention,
+  ApiClassSprintSchedule,
   ApiProject,
   ApiRosterStudent,
   ApiRosterTimelineStudent,
   ApiRosterUploadResult,
+  ApiSprintFrequency,
   ApiStudent,
   ApiTurnInStats,
 } from './types';
@@ -15,6 +17,11 @@ import type {
 export const classesApi = {
 
   // Classes
+  /**
+   * Create a class with its sprint schedule (an instructor account), from which every team made in
+   * it gets its sprints; answers the class created. A schedule that starts before `start_date` or
+   * over a year after it, or runs past `end_date`, is refused with a 422 whose detail says which.
+   */
   createClass: async (data: {
     name: string;
     description?: string;
@@ -26,11 +33,18 @@ export const classesApi = {
     institution_id?: string;
     /** The class's "Tasks - External" link; omit for none. */
     external_tasks_url?: string;
-  }) => {
-    return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
+    /** How many sprints every team gets, 1–20. */
+    sprint_count: number;
+    sprint_frequency: ApiSprintFrequency;
+    /** The first sprint's first day (YYYY-MM-DD); `start_date` when omitted. */
+    sprints_start_on?: string;
+  }): Promise<ApiClass> => {
+    const res = await apiRequest<ApiClass | { message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    // An older backend answers {message, class}.
+    return 'class' in res ? res.class : res;
   },
 
   getClasses: async () => {
@@ -53,15 +67,34 @@ export const classesApi = {
     });
   },
 
-  // Set or change the class's last day of classes, before finals (a YYYY-MM-DD day from the class's
-  // first week of term to 370 days after it; class instructor only). A day that would hide a week with
-  // attendance is refused with a 409 naming the earliest day that keeps it. Returns {message, class}
-  // with the updated class.
-  updateClassEndDate: async (classId: string, endDate: string) => {
-    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/end-date`, {
-      method: 'PATCH',
-      body: JSON.stringify({ end_date: endDate }),
-    });
+  /**
+   * Set or change the class's last day of classes, before finals (a YYYY-MM-DD day from the class's
+   * first week of term to 370 days after it; class instructor only). A day that would hide a week with
+   * attendance, or that falls before the class's last sprint ends, is refused with a 409 whose detail
+   * says what to do. Answers the updated class.
+   */
+  updateClassEndDate: async (classId: string, endDate: string): Promise<ApiClass> => {
+    const res = await apiRequest<ApiClass | { message: string; class: ApiClass }>(
+      `/api/classes/${classId}/end-date`,
+      { method: 'PATCH', body: JSON.stringify({ end_date: endDate }) },
+    );
+    // An older backend answers {message, class}.
+    return 'class' in res ? res.class : res;
+  },
+
+  /**
+   * Set or change the class's sprint schedule (class instructor only), and every team's "Sprint 1"
+   * … "Sprint N" follow it: the missing ones are made, the ones whose name or dates differ are
+   * rewritten, and the ones past the count are deleted. A schedule that does not fit the class's
+   * dates is refused with a 422, and one that would delete a sprint a team has a story in with a
+   * 409, each with a detail that says why; both are checked before anything is written. Answers the
+   * updated class, its number of teams, and the sprints created, updated and deleted across them.
+   */
+  updateClassSprints: async (classId: string, body: ApiClassSprintSchedule) => {
+    return apiRequest<{ class: ApiClass; teams: number; created: number; updated: number; deleted: number }>(
+      `/api/classes/${classId}/sprints`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    );
   },
 
   // Join a class by course code (any account that has picked a role; the class instructor cannot

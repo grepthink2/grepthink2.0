@@ -39,8 +39,9 @@
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "end_date": "date (the last day of classes, before finals; from start_date to 370 days after it, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
-      "uiRoute": "/app → Create Class"
+      "params": {"name": "string!", "description": "string", "term": "string!", "start_date": "date!", "end_date": "date (the last day of classes, before finals; from start_date to 370 days after it, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)", "sprint_count": "int!", "sprint_frequency": "enum(weekly|biweekly|monthly)!", "sprints_start_on": "date"},
+      "uiRoute": "/app → Create Class",
+      "note": "sprint_count (1-20), sprint_frequency and sprints_start_on (the first sprint's first day; start_date when omitted) are the class's sprint schedule: every team made in the class gets its Sprint 1 … N from it, empty. The last sprint may end as late as the Sunday of the week (Monday to Sunday) that holds end_date. 422 when the schedule doesn't fit the class's dates ('The first sprint starts before the class does', 'The first sprint must start within a year of the first week of term', 'The sprints run past the last day of classes (Dec 4, 2026)', naming end_date). Answers the class row."
     },
     {
       "id": "list_my_classes", "title": "List my classes", "role": "any",
@@ -92,12 +93,19 @@
     {
       "id": "set_class_end_date", "title": "Set or change a class's last day of classes", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/end-date",
-      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance)"},
+      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance, or when the class's last sprint ends after the Sunday of the new last day's week, Monday to Sunday)"},
       "uiRoute": "/app/my-classes → Class Settings"
+    },
+    {
+      "id": "update_class_sprints", "title": "Set or change a class's sprint schedule", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/classes/{class_id}/sprints",
+      "params": {"sprint_count": "int!", "sprint_frequency": "enum(weekly|biweekly|monthly)!", "sprints_start_on": "date!"},
+      "uiRoute": "/app/my-classes → Class Settings",
+      "note": "sprint_count is 1-20 and sprints_start_on the first sprint's first day. Every team's Sprint 1 … N follow the schedule: the missing ones are created, the ones whose name or dates differ are rewritten in place (their stories stay), and the ones past the count are deleted; sprints made with create_sprint are left alone. The last sprint may end as late as the Sunday of the week (Monday to Sunday) that holds the class's end_date. Answers {class, teams, created, updated, deleted}: the class row, its number of teams and the sprints written across them. 422 when the schedule doesn't fit the class's dates ('The first sprint starts before the class does', 'The first sprint must start within a year of the first week of term', 'The sprints run past the last day of classes (Dec 4, 2026)', naming the class's end_date); 409 '{team} already uses Sprint {k}; lower the count after they move their stories or delete that plan' when a sprint the change would delete holds a story. Both are checked before anything is written."
     },
 
     {
-      "id": "create_project", "title": "Create a project", "role": "instructor",
+      "id": "create_project", "title": "Create a project", "role": "instructor|ta|student",
       "method": "POST", "endpoint": "/api/projects",
       "params": {"class_id": "uuid!", "name": "string!", "description": "string (markdown)", "team_size": "int!", "looking_for_roles": "string[]", "skills": "string[]", "sponsor_name": "string", "sponsor_company": "string", "sponsor_email": "string", "sponsor_website": "string", "sponsor_description": "string"},
       "uiRoute": "/app/create-project", "multiStep": true
@@ -347,8 +355,8 @@
     {
       "id": "view_scrum_board", "title": "View the scrum board (sprints, stories, tasks, burnup)", "role": "any",
       "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/board",
-      "params": {"sprint_id": "uuid (query — defaults to the active sprint)"}, "uiRoute": "/app/projects/{projectId}/board",
-      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404. Each story carries estimate_hours, the sum of its tasks' whole-hour estimates (null when none has one). Every task carries depends_on (the tasks it depends on) and blocks (the tasks that depend on it), each named as {id, key, title, status, story_id, story_key, sprint_id} (sprint_id null = backlog); task_index lists every task of the project, any sprint or the backlog, in key order."
+      "params": {"sprint_id": "uuid (query — defaults to today's sprint: the one whose dates hold today, Pacific time, else the latest one that has started, else the first)", "unit": "enum(points|hours) (query — the burnup's unit; defaults to points when every task in the sprint has points, else hours; 422 'Burnup unit not available for this sprint' for one the sprint can't draw)"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404. Each sprint's status follows its dates, and its progress counts tasks, points and hours done over total. burnup carries unit, units_available (points only when the sprint has tasks and every one has points; hours always) and tasks_without_points beside its sprint and cumulative series. Each story carries estimate_hours, the sum of its tasks' whole-hour estimates (null when none has one). Every task carries depends_on (the tasks it depends on) and blocks (the tasks that depend on it), each named as {id, key, title, status, story_id, story_key, sprint_id} (sprint_id null = backlog); task_index lists every task of the project, any sprint or the backlog, in key order."
     },
     {
       "id": "view_scrum_summary", "title": "View the current sprint's task counts for a project", "role": "any",
@@ -363,12 +371,14 @@
     {
       "id": "create_sprint", "title": "Create a sprint", "role": "project-member",
       "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/sprints",
-      "params": {"name": "string!", "starts_at": "date!", "ends_at": "date!"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"name": "string!", "starts_at": "date!", "ends_at": "date!"},
+      "note": "Sprints come from the class's sprint schedule (create_class, update_class_sprints): every team gets its Sprint 1 … N from it. This route stays for API callers; the web client no longer offers it. A sprint made here is outside the schedule, which leaves it alone."
     },
     {
-      "id": "update_sprint", "title": "Update a sprint (rename, dates, status)", "role": "project-member",
+      "id": "update_sprint", "title": "Update a sprint (rename, dates)", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/scrum/sprints/{sprint_id}",
-      "params": {"name": "string", "starts_at": "date", "ends_at": "date", "status": "enum(planned|active|completed)"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"name": "string", "starts_at": "date", "ends_at": "date"},
+      "note": "A sprint's status follows its dates (planned, active from starts_at through ends_at, completed after), so the body takes none; a status sent anyway is ignored. A sprint from the class's schedule gets its name and dates back the next time the instructor saves the schedule. This route is for API callers; the web client doesn't offer it."
     },
     {
       "id": "create_story", "title": "Create a user story", "role": "project-member",

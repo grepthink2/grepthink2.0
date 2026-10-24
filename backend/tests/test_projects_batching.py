@@ -1,4 +1,4 @@
-"""Behaviour + round-trip budgets for project reads and the join-request flow.
+"""Behaviour + round-trip budgets for project reads, project creation and the join-request flow.
 
 Each ``*_budget`` test bounds the Supabase round trips and checks that every read
 ran in a single ``fan_out`` wave (about one round trip of latency). The other tests
@@ -8,6 +8,8 @@ rejected call writes nothing.
 """
 
 from __future__ import annotations
+
+import logging
 
 import pytest
 from fastapi import HTTPException
@@ -603,3 +605,60 @@ def test_rejected_join_requests_write_nothing_and_keep_the_old_team(db):
     assert not any(q["op"] in WRITE_OPS for q in db.queries), _trace(db)
     assert {m["user_id"] for m in db.rows("project_members") if m["project_id"] == P1} == {S1, S2}
     assert db.rows("notifications") == []
+
+
+# ------------------------------------------------------------------- create_project
+
+
+def test_create_project_budget(db, waves):
+    """CLASS has no sprint schedule, so nothing reads or writes sprints; a class with one costs two
+    round trips more (tests/test_class_sprint_schedule.py)."""
+    gamma = projects.create_project(CLASS, "Gamma", "d", S6, 4)  # S6 is enrolled, on no team
+    assert [
+        (m["project_id"], m["role"]) for m in db.rows("project_members") if m["user_id"] == S6
+    ] == [(gamma["id"], "product owner")]
+    # One wave (the class, S6's enrollment); CLASS's teams and S6's memberships in them; the
+    # insert; S6's member row and the recount (a read and a write); the instructor's notification
+    # (S6's profile, the insert).
+    assert waves == [2], waves
+    assert db.executes == 10, _trace(db)
+    assert not [q for q in db.queries if q["table"] == "sprints"], _trace(db)
+
+    db.reset_counter()
+    waves.clear()
+    projects.create_project(CLASS, "Delta", "d", INSTR, 4)
+    # One wave (the class, an enrollment the instructor turns out not to need); the insert.
+    assert waves == [2], waves
+    assert db.executes == 3, _trace(db)
+    assert not [q for q in db.queries if q["table"] == "sprints"], _trace(db)
+
+
+# A team's name is its students' own text: what create_project logs names ids only (AGENTS.md,
+# Sentry).
+
+
+def test_create_project_logs_the_new_team_by_ids_only(db, caplog):
+    with caplog.at_level(logging.INFO, logger="app.projects.controller"):
+        gamma = projects.create_project(CLASS, "Gamma Squad", "d", S6, 4)
+    [created] = [r for r in caplog.records if r.name == "app.projects.controller"]
+    assert created.levelno == logging.INFO
+    assert created.getMessage() == (
+        f"Project created | project_id={gamma['id']} class_id={CLASS} created_by={S6} "
+        "is_instructor=False"
+    )
+
+
+def test_a_failed_create_project_logs_ids_only(db, caplog, monkeypatch):
+    def bug(*_args, **_kwargs):
+        raise RuntimeError("a bug")
+
+    monkeypatch.setattr(projects, "_get_student_project_in_class", bug)
+    with caplog.at_level(logging.INFO, logger="app.projects.controller"):
+        assert _denied(projects.create_project, CLASS, "Gamma Squad", "d", S6, 4) == (
+            500,
+            "Failed to create project",
+        )
+    [error] = [r for r in caplog.records if r.name == "app.projects.controller"]
+    assert error.levelno == logging.ERROR
+    assert error.getMessage() == f"Error creating project | class_id={CLASS}"
+    assert error.exc_info is not None

@@ -1,18 +1,20 @@
 """Tests for app.core.db: fan_out, the helper controllers use to run independent
-Supabase reads concurrently instead of one after another, and the DatabaseClient's
+Supabase requests concurrently instead of one after another, and the DatabaseClient's
 conversion of ids and instants into values supabase-py can send as JSON."""
 
 from __future__ import annotations
 
 import json
 import threading
+import time as clock
 from datetime import UTC, date, datetime, time
 from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
 
-from app.core.db import DatabaseClient, fan_out
+from app.core.db import DatabaseClient, fan_out, retry_on_disconnect
+from app.core.errors import DatabaseUnavailableError
 
 
 def test_fan_out_returns_results_by_key():
@@ -54,6 +56,94 @@ def test_nested_fan_out_runs_inline_instead_of_waiting_on_the_pool():
     outer_thread, inner_thread = fan_out({"o": outer, "p": lambda: 0})["o"]
     assert outer_thread.startswith("supabase-query")
     assert inner_thread == outer_thread
+
+
+def test_a_failed_fan_out_raises_only_once_every_job_has_finished():
+    """A job that fails fast does not leave a slow write running behind the error: the caller
+    answers only once nothing it started is still writing, so the write cannot land after a newer
+    request's."""
+    failed = threading.Event()
+    written = threading.Event()
+    outage = DatabaseUnavailableError(operation="write", target="sprints", retryable=True)
+
+    def fail_fast():
+        failed.set()
+        raise outage
+
+    def write_slowly():
+        failed.wait(timeout=5)  # still writing when the other job fails
+        clock.sleep(0.2)
+        written.set()
+        return "written"
+
+    with pytest.raises(DatabaseUnavailableError) as err:
+        fan_out({"read": lambda: "read", "fails": fail_fast, "writes": write_slowly})
+    assert written.is_set()
+    # The failure itself, its type unchanged: @retry_on_disconnect still sees a retryable outage.
+    assert err.value is outage
+
+
+def test_a_failed_fan_out_raises_the_first_failure_in_key_order():
+    """Not the first to fail in time: the first by key, whichever job finished first."""
+    first, second = ValueError("first by key"), LookupError("first in time")
+
+    def fail_slowly():
+        clock.sleep(0.1)
+        raise first
+
+    def fail_fast():
+        raise second
+
+    with pytest.raises(ValueError) as err:
+        fan_out({"a": lambda: 1, "b": fail_slowly, "c": fail_fast})
+    assert err.value is first
+
+
+def test_an_inline_fan_out_runs_every_job_before_it_raises():
+    """Run inline (here, from inside a pool worker), the jobs run one after another, in key order,
+    by the same rule: every job runs, and the first failure in key order is raised."""
+    ran: list[str] = []
+    first = ValueError("first by key")
+
+    def fail(name: str, error: Exception):
+        def job():
+            ran.append(name)
+            raise error
+
+        return job
+
+    def write():
+        ran.append("writes")
+        return "written"
+
+    def outer():
+        return fan_out(
+            {"fails": fail("fails", first), "writes": write, "also": fail("also", KeyError("x"))}
+        )
+
+    with pytest.raises(ValueError) as err:
+        fan_out({"outer": outer, "other": lambda: 0})
+    assert err.value is first
+    assert ran == ["fails", "writes", "also"]
+
+
+def test_a_retryable_outage_in_a_fan_out_is_retried():
+    """@retry_on_disconnect retries a dropped connection that a job raised: the error keeps its
+    type through fan_out."""
+    attempts: list[int] = []
+
+    @retry_on_disconnect()
+    def load():
+        def flaky():
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise DatabaseUnavailableError(operation="read", target="classes", retryable=True)
+            return "class"
+
+        return fan_out({"class": flaky, "teams": lambda: ["team"]})
+
+    assert load() == {"class": "class", "teams": ["team"]}
+    assert len(attempts) == 2
 
 
 # supabase-py encodes request bodies with json.dumps, which refuses a UUID or a datetime.

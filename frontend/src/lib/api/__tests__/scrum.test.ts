@@ -4,6 +4,7 @@ const getSession = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { auth: { getSession } } }));
 
 import { scrumApi } from '../scrum';
+import type { ApiScrumBurnupUnit, ApiUpdateSprintBody } from '../types';
 
 const fetchMock = vi.fn();
 
@@ -29,5 +30,30 @@ describe('getScrumSummary', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/projects/p1/scrum/summary');
     expect(init.method ?? 'GET').toBe('GET'); // fetch's default
+  });
+});
+
+describe('getScrumBoard', () => {
+  it.each<[string, string | undefined, ApiScrumBurnupUnit | undefined, string]>([
+    ['the sprint it opens on, in its default unit', undefined, undefined, ''],
+    ['a sprint', 's1', undefined, '?sprint_id=s1'],
+    ['a burnup unit', undefined, 'points', '?unit=points'],
+    ['a sprint and a burnup unit', 's1', 'hours', '?sprint_id=s1&unit=hours'],
+  ])('GETs the board for %s', async (_case, sprintId, unit, query) => {
+    const board = { sprint_id: 's1' };
+    fetchMock.mockResolvedValue(jsonResponse(200, board));
+
+    await expect(scrumApi.getScrumBoard('p1', sprintId, unit)).resolves.toEqual(board);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`/api/projects/p1/scrum/board${query}`);
+    expect(init.method ?? 'GET').toBe('GET'); // fetch's default
+  });
+});
+
+describe('updateSprint', () => {
+  it("takes no status, which follows the sprint's dates", () => {
+    // @ts-expect-error: a sprint's status follows its dates
+    const body: ApiUpdateSprintBody = { name: 'Sprint 1', status: 'active' };
+    expect(body).toBeTruthy();
   });
 });
