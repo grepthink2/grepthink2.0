@@ -6,7 +6,7 @@ import { Select } from '@/components/Select/Select';
 import { Textarea } from '@/components/Textarea/Textarea';
 import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useNow } from '@/lib/useNow';
-import { SCHOOL_ZONE, dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
+import { dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
 import {
   TEAM_MEETING_DURATIONS,
   TEAM_MEETING_NOTE_MAX,
@@ -56,8 +56,8 @@ export interface TeamMeetingFormProps {
   now?: Date;
   /** Viewer's IANA zone; defaults to the browser's. Date and time fields read on this clock. */
   zone?: string;
-  /** When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. @default 'America/Los_Angeles' */
-  schoolZone?: string;
+  /** The class's school's IANA zone (`useSchoolTimezone`). When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. */
+  schoolZone: string;
   /** Disables the fields and Cancel, and puts the submit button in its busy state. @default false */
   saving?: boolean;
   /** Inline save error, shown above the buttons; the draft is kept. */
@@ -83,7 +83,7 @@ export interface TeamMeetingFormProps {
  * problem. Escape cancels without closing the Edit Project modal around it.
  */
 export function TeamMeetingForm({
-  mode = 'create', meeting = null, now, zone, schoolZone = SCHOOL_ZONE, saving = false, error = null, onSubmit, onCancel,
+  mode = 'create', meeting = null, now, zone, schoolZone, saving = false, error = null, onSubmit, onCancel,
   onDirtyChange, className = '',
 }: TeamMeetingFormProps) {
   const vz = zone || viewerZone();

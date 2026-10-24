@@ -5,7 +5,6 @@ import { Badge } from '@/components/Badge/Badge';
 import type { BadgeStatus } from '@/components/Badge/badgeStatus';
 import { useNow } from '@/lib/useNow';
 import {
-  SCHOOL_ZONE,
   countdown,
   fmtDuration,
   fmtTime,
@@ -14,6 +13,7 @@ import {
   isoDuration,
   kindMeta,
   statusOf,
+  viewerZone,
   zoneLabel,
   type ScheduleItemData,
   type ScheduleLens,
@@ -35,9 +35,9 @@ export interface ScheduleItemProps {
   lens?: ScheduleLens;
   /** Clock used for status + the Join window; defaults to one that ticks every 30 s (useNow). */
   now?: Date;
-  /** Viewer's IANA zone (times render in it). @default 'America/Los_Angeles' */
+  /** Viewer's IANA zone (times render in it). @default the browser's zone */
   zone?: string;
-  /** The school's zone, used for the hover title when it differs. @default 'America/Los_Angeles' */
+  /** The school's IANA zone, for the hover title `showSchoolTime` asks for. Without it there is no campus time to show. */
   schoolZone?: string;
   /** Put the school-zone time in each <time>'s title. */
   showSchoolTime?: boolean;
@@ -60,7 +60,7 @@ export interface ScheduleItemProps {
  * `<Badge status="live" />` (blue: in progress) where the design draws a green pulsing pill.
  */
 export function ScheduleItem({
-  item, lens = 'student', now, zone = SCHOOL_ZONE, schoolZone = SCHOOL_ZONE, showSchoolTime = false,
+  item, lens = 'student', now, zone = viewerZone(), schoolZone, showSchoolTime = false,
   overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
   const nowD = useNow(30000, now);
@@ -74,7 +74,7 @@ export function ScheduleItem({
   const title = item.title || meta.label;
   const kindInTitle = title.toLowerCase().includes(meta.label.toLowerCase());
   const cd = item.kind === 'final_review' && status === 'upcoming' ? countdown(item, nowD, zone) : null;
-  const schoolTitle = showSchoolTime && !isAllDay && !isTbd ? `${fmtTimeRange(item, schoolZone)} ${zoneLabel(schoolZone, item.startsAt)}` : undefined;
+  const schoolTitle = showSchoolTime && schoolZone && !isAllDay && !isTbd ? `${fmtTimeRange(item, schoolZone)} ${zoneLabel(schoolZone, item.startsAt)}` : undefined;
   const dur = fmtDuration(item);
 
   // time strings

@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type ApiInstitution } from './api';
+import { SCHOOL_ZONE } from './schoolZone';
 
 let pending: Promise<ApiInstitution[] | null> | null = null;
 
@@ -58,18 +59,19 @@ export function useInstitutions(): ApiInstitution[] | null | undefined {
 }
 
 /**
- * The IANA zone the selected class's school keeps its dates in; Pacific until the list is known,
- * and for a zone this browser does not know (`startOfDayIn` would throw a RangeError on it).
+ * The IANA zone the selected class's school keeps its dates in. `SCHOOL_ZONE` (Pacific) is the last
+ * resort, for when no school's is known: until the list is, for a class with no school, and for a zone
+ * this browser does not know (`startOfDayIn` would throw a RangeError on it).
  */
 export function useSchoolTimezone(institutionId: string | null | undefined): string {
   const institutions = useInstitutions();
   const zone = institutions?.find((i) => i.id === institutionId)?.timezone;
   return useMemo(() => {
-    if (!zone) return 'America/Los_Angeles';
+    if (!zone) return SCHOOL_ZONE;
     try {
       new Intl.DateTimeFormat('en-US', { timeZone: zone });
     } catch {
-      return 'America/Los_Angeles';
+      return SCHOOL_ZONE;
     }
     return zone;
   }, [zone]);

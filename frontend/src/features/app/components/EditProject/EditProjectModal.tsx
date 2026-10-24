@@ -30,11 +30,12 @@ export interface EditProjectModalProps {
   canManageAdmins?: boolean;
   /** When false, only the admin-assignment section is editable (for class TAs). */
   canEditProjectDetails?: boolean;
-  /** The team's Product Owner also gets the Meetings tab; nobody else sees it. */
+  /** The team's Product Owner also gets the Meetings tab, given `meetingsList`; nobody else sees it. */
   viewerIsProductOwner?: boolean;
   /**
-   * The Meetings tab's list: the team's meetings and their handlers, which the project page shares
-   * with its card. The tab adds `variant="manage"`, `canManage` and `onEditorChange`.
+   * The Meetings tab's list: the team's meetings, their handlers and the zone of the class's school,
+   * which the project page shares with its card. The tab adds `variant="manage"`, `canManage` and
+   * `onEditorChange`. Without it there is no Meetings tab.
    */
   meetingsList?: Omit<TeamMeetingsListProps, 'variant' | 'canManage' | 'onEditorChange'>;
   /** The tab to open on (the project page's "Manage" and "Add one" open Meetings). @default 'details' */
@@ -47,9 +48,9 @@ export interface EditProjectModalProps {
 type TabId = EditProjectTab;
 
 /** Someone who may only manage admins sees the Team tab alone, and only the Product Owner has Meetings. */
-function openingTab(initialTab: TabId | undefined, canEditProjectDetails: boolean, viewerIsProductOwner: boolean): TabId {
+function openingTab(initialTab: TabId | undefined, canEditProjectDetails: boolean, hasMeetingsTab: boolean): TabId {
   if (!canEditProjectDetails) return 'team';
-  if (initialTab === 'meetings' && !viewerIsProductOwner) return 'details';
+  if (initialTab === 'meetings' && !hasMeetingsTab) return 'details';
   return initialTab ?? 'details';
 }
 
@@ -85,7 +86,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   onProjectChange,
   onDelete,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>(() => openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
+  // Only the team's Product Owner has the Meetings tab, and it needs the team's meetings (and the school's zone).
+  const hasMeetingsTab = viewerIsProductOwner && meetingsList !== undefined;
+  const [activeTab, setActiveTab] = useState<TabId>(() => openingTab(initialTab, canEditProjectDetails, hasMeetingsTab));
 
   // ── Details fields ────────────────────────────────
   const [name, setName] = useState(project.name ?? '');
@@ -142,7 +145,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       setTeamSizeError(null);
       setApiError(null);
       setSaving(false);
-      setActiveTab(openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
+      setActiveTab(openingTab(initialTab, canEditProjectDetails, hasMeetingsTab));
       setShowDeleteConfirm(false);
       setDeleteError(null);
 
@@ -341,11 +344,10 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     projectRole: m.project_role,
   }));
 
-  // Only the team's Product Owner has the Meetings tab.
   const tabItems: TabItem<TabId>[] = [
     { value: 'details', label: 'Details', icon: <FileText size={16} aria-hidden="true" /> },
     { value: 'team', label: 'Team', icon: <Users size={16} aria-hidden="true" /> },
-    ...(viewerIsProductOwner
+    ...(hasMeetingsTab
       ? [{ value: 'meetings' as const, label: 'Meetings', icon: <CalendarDays size={16} aria-hidden="true" /> }]
       : []),
   ];
@@ -457,7 +459,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             <TabPanel idBase={tabsId} value="team" active={activeTab === 'team'}>
               {teamTab}
             </TabPanel>
-            {viewerIsProductOwner && (
+            {hasMeetingsTab && (
               // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
               // Team edits do.
               <TabPanel idBase={tabsId} value="meetings" active={activeTab === 'meetings'} keepMounted>

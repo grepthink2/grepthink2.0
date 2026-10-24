@@ -1,8 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   COUNTDOWN_DAYS,
   JOIN_WINDOW_MS,
-  SCHOOL_ZONE,
   countdown,
   dayKey,
   fmtDayLabel,
@@ -25,6 +24,7 @@ import {
 
 const LA = 'America/Los_Angeles';
 const IST = 'Asia/Kolkata';
+const ISTANBUL = 'Europe/Istanbul';
 
 /** Tue Oct 20, 2026, 3:12 PM PT: the clock the design's demo is pinned to. */
 const NOW = new Date('2026-10-20T22:12:00Z');
@@ -45,8 +45,7 @@ afterEach(() => {
 });
 
 describe('constants', () => {
-  it('uses the Pacific school zone, a ten-minute Join window and a one-week countdown', () => {
-    expect(SCHOOL_ZONE).toBe('America/Los_Angeles');
+  it('uses a ten-minute Join window and a one-week countdown', () => {
     expect(JOIN_WINDOW_MS).toBe(10 * 60 * 1000);
     expect(COUNTDOWN_DAYS).toBe(7);
   });
@@ -69,7 +68,6 @@ describe('day keys', () => {
   it('reads the calendar day on the zone’s own clock', () => {
     expect(dayKey('2026-10-21T06:30:00Z', LA)).toBe('2026-10-20'); // 11:30 PM Tuesday in Santa Cruz
     expect(dayKey('2026-10-21T06:30:00Z', IST)).toBe('2026-10-21'); // noon Wednesday in Kolkata
-    expect(dayKey(new Date('2026-11-01T08:30:00Z'))).toBe('2026-11-01'); // the school zone by default
   });
 
   it('moves a key by whole days without being fooled by a daylight-saving change', () => {
@@ -278,14 +276,39 @@ describe('time zones', () => {
     expect(zoneDiffers(LA, 'Etc/GMT+8', summer)).toBe(true);
   });
 
-  it('reads the viewer’s zone from the browser, and falls back to the school zone', () => {
+  it('reads the viewer’s zone from the browser, and falls back to Pacific when it cannot say', () => {
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: IST } as Intl.ResolvedDateTimeFormatOptions);
     expect(viewerZone()).toBe(IST);
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: '' } as Intl.ResolvedDateTimeFormatOptions);
-    expect(viewerZone()).toBe(SCHOOL_ZONE);
+    expect(viewerZone()).toBe(LA);
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(() => {
       throw new Error('no Intl');
     });
-    expect(viewerZone()).toBe(SCHOOL_ZONE);
+    expect(viewerZone()).toBe(LA);
+  });
+});
+
+describe('the zone a formatter reads when it is not told one', () => {
+  // A viewer in Istanbul (UTC+3 all year). 22:00 UTC on Tue Oct 20 is 3:00 PM in Santa Cruz and already
+  // 1:00 AM on Wed Oct 21 here: the school's clock and the viewer's name different days.
+  beforeEach(() => {
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: ISTANBUL } as Intl.ResolvedDateTimeFormatOptions);
+  });
+
+  it('is the viewer’s clock, never the school’s', () => {
+    expect(dayKey('2026-10-20T22:00:00Z')).toBe('2026-10-21');
+    expect(fmtTime('2026-10-20T22:00:00Z')).toBe('1:00 AM');
+    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: '2026-10-20T23:00:00Z' })).toBe('1:00 – 2:00 AM');
+    // NOW is 1:12 AM on the 21st here.
+    expect(fmtDayLabel('2026-10-21', NOW)).toEqual({ title: 'Today', date: 'Wed, Oct 21', isToday: true });
+  });
+
+  it('counts the day, groups and judges an all-day item by the viewer’s days', () => {
+    expect(groupByDay([item()], { now: NOW }).map((g) => [g.key, g.isToday])).toEqual([['2026-10-21', true]]);
+    // At 23:00 on the 20th here the item (1:30 AM on the 21st) is tomorrow; in Santa Cruz it would be today.
+    const review = item({ kind: 'final_review', startsAt: '2026-10-20T22:30:00Z' });
+    expect(countdown(review, new Date('2026-10-20T20:00:00Z'))).toBe('tomorrow');
+    // An all-day item on the 21st is still upcoming at 11:00 AM on the 21st here; in Santa Cruz it is already past.
+    expect(statusOf(item({ allDay: true }), new Date('2026-10-21T08:00:00Z'))).toBe('upcoming');
   });
 });

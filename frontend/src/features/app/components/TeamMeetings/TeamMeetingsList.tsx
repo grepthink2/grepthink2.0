@@ -7,7 +7,6 @@ import { ScheduleDayHeader } from '@features/schedule/components/ScheduleDayHead
 import { ScheduleIcon } from '@features/schedule/components/ScheduleIcon';
 import { ScheduleItem } from '@features/schedule/components/ScheduleItem';
 import {
-  SCHOOL_ZONE,
   fmtTimeRange,
   groupByDay,
   viewerZone,
@@ -53,8 +52,8 @@ export interface TeamMeetingsListProps {
   now?: Date;
   /** Viewer's IANA zone; defaults to the browser's. All times render in it. */
   zone?: string;
-  /** When it differs, "Times in … · campus is PT" appears once and each time's title carries the campus time. @default 'America/Los_Angeles' */
-  schoolZone?: string;
+  /** The class's school's IANA zone (`useSchoolTimezone`). When it differs, "Times in … · campus is PT" appears once and each time's title carries the campus time. */
+  schoolZone: string;
   /** Product Owner: Add / Edit / Delete (manage) or the quiet "Add one" line when empty (card). @default false */
   canManage?: boolean;
   /** Team label for the ScheduleItem context line (card). */
@@ -102,7 +101,7 @@ export interface TeamMeetingsListProps {
  *   quiet "Add one" line when there are none (showTeamMeetingsCard() says whether to render the card).
  */
 export function TeamMeetingsList({
-  variant = 'manage', meetings = [], status = 'ready', now: nowProp, zone, schoolZone = SCHOOL_ZONE, canManage = false,
+  variant = 'manage', meetings = [], status = 'ready', now: nowProp, zone, schoolZone, canManage = false,
   teamName, people = {}, onCreate, onUpdate, onDelete, onRetry, onManage, onJoin, onEditorChange,
   scheduleHref = '/app/schedule', maxUpcoming = 5, defaultEditingId = null, defaultConfirmId = null, defaultPastOpen = false,
   className = '',
