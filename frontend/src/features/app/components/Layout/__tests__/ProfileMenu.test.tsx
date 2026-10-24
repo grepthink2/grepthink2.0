@@ -25,11 +25,15 @@ const state = vi.hoisted(() => ({
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ signOut: state.signOut, user: null }) }));
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => state.preview }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => state.ctx }));
-// The feed never arrives here: the modal's own tests cover it.
-vi.mock('@features/releases/loadReleaseFeed', () => ({
-  loadReleaseFeed: () => new Promise(() => {}),
-  preloadReleaseFeed: state.preload,
-}));
+// A stand-in feed that shows the lastSeen its host hands it.
+vi.mock('@features/releases/loadReleaseFeed', async () => {
+  const { createElement } = await import('react');
+  const FakeFeed = ({ lastSeen }: { lastSeen: string | null }) => createElement('p', null, `Feed since ${lastSeen ?? 'never'}`);
+  return {
+    loadReleaseFeed: () => Promise.resolve({ default: FakeFeed }),
+    preloadReleaseFeed: state.preload,
+  };
+});
 
 type Props = ComponentProps<typeof import('../ProfileMenu').default>;
 let ProfileMenu: ComponentType<Props>;
@@ -256,6 +260,19 @@ describe("ProfileMenu: What's new", () => {
     const row = screen.getByRole('menuitem', { name: "What's new" });
     expect(row).not.toHaveAccessibleDescription();
     expect(row.querySelector('.gt-menu__trailing')).toBeNull();
+  });
+
+  it.each([
+    ['an earlier release', '0.90.0', 'Feed since 0.90.0'],
+    ['nothing, on a first visit', null, 'Feed since never'],
+  ])('hands the feed the release seen before this opening (%s), and keeps it while the modal is open', async (_, stored, text) => {
+    localStorage.clear();
+    if (stored) localStorage.setItem(SEEN_KEY, stored);
+    renderAt();
+    await userEvent.click(trigger());
+    await userEvent.click(screen.getByRole('menuitem', { name: "What's new" }));
+    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(localStorage.getItem(SEEN_KEY)).toBe(APP_VERSION);
   });
 
   it('closes the menu, opens the light modal, and gives focus back to the profile button', async () => {

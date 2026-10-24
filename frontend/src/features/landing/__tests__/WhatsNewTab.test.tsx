@@ -9,11 +9,15 @@ import { APP_VERSION } from '@features/releases/version';
 import { SEEN_KEY } from '@features/releases/seenStore';
 
 const mocks = vi.hoisted(() => ({ preload: vi.fn() }));
-// The feed never arrives here: the modal's own tests cover it.
-vi.mock('@features/releases/loadReleaseFeed', () => ({
-  loadReleaseFeed: () => new Promise(() => {}),
-  preloadReleaseFeed: mocks.preload,
-}));
+// A stand-in feed that shows the lastSeen its host hands it.
+vi.mock('@features/releases/loadReleaseFeed', async () => {
+  const { createElement } = await import('react');
+  const FakeFeed = ({ lastSeen }: { lastSeen: string | null }) => createElement('p', null, `Feed since ${lastSeen ?? 'never'}`);
+  return {
+    loadReleaseFeed: () => Promise.resolve({ default: FakeFeed }),
+    preloadReleaseFeed: mocks.preload,
+  };
+});
 
 let WhatsNewTab: ComponentType;
 let Header: ComponentType;
@@ -53,6 +57,21 @@ describe('WhatsNewTab', () => {
     expect(localStorage.getItem(SEEN_KEY)).toBe(APP_VERSION);
     expect(tab()).not.toHaveAccessibleDescription();
     expect(dot()).toBeNull();
+  });
+
+  it('hands the feed the release seen before this opening, and keeps it while the modal is open', async () => {
+    localStorage.setItem(SEEN_KEY, '0.90.0');
+    render(<WhatsNewTab />);
+    await userEvent.click(tab());
+    expect(await screen.findByText('Feed since 0.90.0')).toBeInTheDocument();
+    expect(localStorage.getItem(SEEN_KEY)).toBe(APP_VERSION);
+  });
+
+  it('hands the feed null on a first visit', async () => {
+    render(<WhatsNewTab />);
+    await userEvent.click(tab());
+    expect(await screen.findByText('Feed since never')).toBeInTheDocument();
+    expect(localStorage.getItem(SEEN_KEY)).toBe(APP_VERSION);
   });
 
   it('closes on Esc with focus back on the tab', async () => {
