@@ -1,0 +1,51 @@
+// Pagination — ported from design/components/navigation/navigation.css so the two stay diffable: the
+// Pagination block, then its line from the file's phone block. The buttons' own border, background,
+// font and padding beat index.css's global button rule, which would otherwise reach these raw buttons.
+// Codebase-side: on phones the buttons may shrink in width to fit, and the transition goes under
+// reduced motion, as the kit's other controls do.
+
+/* ── Pagination ─────────────────────────────────────────── */
+.gt-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--gt-font-sans);
+}
+.gt-pagination__nav,
+.gt-pagination__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--gt-radius-sm);
+  background: transparent;
+  font-family: var(--gt-font-sans);
+  font-size: 0.8125rem;
+  font-weight: var(--gt-weight-medium);
+  color: var(--gt-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-pagination__nav:hover:not(:disabled),
+.gt-pagination__page:hover:not(.gt-pagination__page--active) { background-color: var(--gt-gray-100); color: var(--gt-text-primary); }
+.gt-pagination__nav:focus-visible,
+.gt-pagination__page:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-pagination__nav:disabled { opacity: 0.4; cursor: not-allowed; }
+.gt-pagination__page--active { background-color: var(--gt-primary); color: var(--gt-gray-0); cursor: default; }
+.gt-pagination__ellipsis { color: var(--gt-text-tertiary); padding: 0 4px; font-size: 0.8125rem; }
+
+/* ── Phones (< 768px) ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-pagination__nav, .gt-pagination__page { min-width: 44px; height: 44px; }
+  /* codebase-side: nine 44px buttons are wider than a phone, so they shrink to 32px wide (never in height) to fit */
+  .gt-pagination { max-width: 100%; }
+  .gt-pagination__nav, .gt-pagination__page { flex: 0 1 44px; min-width: 32px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-pagination__nav, .gt-pagination__page { transition: none; }
+}
