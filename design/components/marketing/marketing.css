@@ -13,7 +13,7 @@
 .gt-landing-header {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: var(--gt-z-tooltip);
+  z-index: var(--gt-z-sidebar); /* the chrome layer (99): above the page, below the What's new modal (--gt-z-modal, 100). Was --gt-z-tooltip (1000), which sat on top of the modal — port this with the tab. */
   padding: 0;
   background: var(--gt-mkt-dark);
   font-family: var(--gt-font-sans);
@@ -50,6 +50,14 @@
 }
 .gt-landing-header__link:hover { color: var(--gt-gray-0); }
 .gt-landing-header__link:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+/* The "ⓘ What's new" tab (2026-10-23): a button in the link's clothes; the NewDot on the icon's corner while unseen.
+   The visible tab keeps the links' height; ::after is a centred 44×44 hit area that may reach past its edge. */
+.gt-landing-header__tab { position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0; border: none; background: transparent; cursor: pointer; line-height: 1.5; }
+.gt-landing-header__tab::after { content: ''; position: absolute; top: 50%; left: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+.gt-landing-header__tab-icon { position: relative; display: inline-flex; flex-shrink: 0; }
+.gt-landing-header__tab-icon .gt-new-dot { position: absolute; top: -3px; right: -4px; }
+.gt-landing-header__tab-icon .gt-new-dot--ring { box-shadow: 0 0 0 2px var(--gt-mkt-dark); } /* the ring takes the bar's dark (the pill is 82% of the same dark) */
+.gt-landing-header__tab-text { white-space: nowrap; }
 .gt-landing-header__btn {
   display: inline-flex; align-items: center; justify-content: center;
   font-family: var(--gt-font-sans);
@@ -97,6 +105,27 @@
   .gt-landing-header__link { font-size: 11px; padding: 6px; }
   .gt-landing-header__btn { padding: 7px 9px; font-size: 11px; }
   .gt-landing-header__btn--primary { padding-right: 13px; }
+  /* the tab's label does not fit beside three essentials at 11px: the icon stands alone; the name stays "What's new" (aria-label) */
+  .gt-landing-header__tab { padding: 6px 5px; }
+  .gt-landing-header__tab-text { display: none; }
+  /* the pill: thinner margins, so the four items and the logo fit inside it at 375 */
+  .gt-landing-header--scrolled { padding: 10px 8px; }
+  .gt-landing-header--scrolled .gt-landing-header__inner { padding: 6px 10px; }
+}
+/* Phones scroll into the bands anyway; the nav keeps its three essentials (the code's rule, Header.scss) — plus the tab, its first item there */
+@media (max-width: 560px) {
+  .gt-landing-header__link--features { display: none; }
+}
+/* 320px with no horizontal scroll, in the bar and in the pill: a smaller logo, tighter gaps and buttons; nothing hides */
+@media (max-width: 360px) {
+  .gt-landing-header__inner { padding: 12px 10px; }
+  .gt-landing-header__logo img, .gt-landing-header--scrolled .gt-landing-header__logo img { height: 22px; }
+  .gt-landing-header__nav { gap: 1px; }
+  .gt-landing-header__link { padding: 6px 5px; }
+  .gt-landing-header__btn { padding: 7px 5px; }
+  .gt-landing-header__btn--primary { padding-left: 8px; padding-right: 8px; }
+  .gt-landing-header--scrolled { padding: 10px 6px; }
+  .gt-landing-header--scrolled .gt-landing-header__inner { padding: 6px 8px; }
 }
 
 /* ── Eyebrow (+ NEW / SOON badge) ────────────────────────── */

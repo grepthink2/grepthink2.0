@@ -13,6 +13,12 @@ Behaviour: `role="dialog"` + `aria-modal` on the **sheet** (not the scrim), labe
 
 Layout: header and footer pinned, the body scrolls (`max-height: 88vh`). Sizes sm 400 (confirms, messages) · md 560 (forms) · lg 760 (Edit Project's wide sheet). **Form header** (default): title 18/600 left, subtitle 13 secondary, × top-right (`IconButton` md "Close"), `tabs` under the title; footer right-aligned (outline Cancel, primary submit) over a hairline. **Message header**: centred 28px title, no footer rule. Phones: 12px margins, footer buttons stretch, 44px controls.
 
+**Dark variant** (`tone="dark"`, 2026-10-23): the landing page's What's new modal. One sheet colour (`--gt-dark-surface`) and one text ramp (`--gt-dark-text / -muted / -faint`, all ≥ 4.5:1), a deeper scrim, the × in the muted text with a translucent hover, and the kit pieces a body holds restyled with it — `.gt-md` (links `--gt-dark-link`, `code` on `--gt-dark-fill`), Skeleton, the card EmptyState, the info Badge (the "New" marker). Buttons keep their own colours (a primary Reload reads the same on dark). Nothing in the app uses it — the app stays light.
+
+```jsx
+<Modal open={open} onClose={close} tone="dark" title="What's new" subtitle="Version 0.91.0">…</Modal>
+```
+
 Layer: `--gt-z-modal` (100) — above the sidebar (99) and header, below toasts (1000) and the date picker (1100). Opens with a 0.15s fade; closes with a 0.15s fade, instant under reduced motion. No scale.
 
 **No dialogs over dialogs.** A row-level delete inside a dialog is an inline confirm row (`InlineConfirm`, the team-meetings `.gt-tm-row--confirm` model): the row turns into "Delete 'Sprint 3 planning'? It disappears from your team's calendars." with outline **Cancel** (focused) and danger **Delete**; Esc cancels. A destructive action outside a dialog is a ConfirmDialog.
