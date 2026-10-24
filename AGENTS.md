@@ -424,7 +424,11 @@ The full agent-facing action catalog (method, params, role) lives at
   `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
   shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
   they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
-  the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
+  every JS and CSS file `frontend/dist/index.html` loads (its scripts, stylesheets and modulepreload
+  links), not only the `index-*.js` line of `npm run build`: rolldown can split a shared module out of
+  `index-*.js` into a chunk that is still preloaded. Measured 2026-10-23: `index-*.js` 199 kB minified
+  (58 kB gzipped); all the files `index.html` loads, 817 kB of JS (238 kB gzipped, each file on its own)
+  and 132 kB of CSS (23 kB gzipped).
 - **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
   equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
   release adds both in a `release/<version>` pull request into `beta`. After the release merges into
