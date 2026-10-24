@@ -15,7 +15,9 @@
 </head>
 <body>
 <div id="root"></div>
-<script>window.loadReleasesSources('../..').then(window.runDeferredBabel);</script>
+<!-- Starts once the page is parsed: the deferred script below must be in the DOM before runDeferredBabel looks for it
+     (with a bundle that already carries the round, the loader resolves at once). -->
+<script>document.addEventListener('DOMContentLoaded', () => window.loadReleasesSources('../..').then(window.runDeferredBabel));</script>
 <script type="text/babel-deferred">
 const { Badge, BADGE_STATUS, CountBadge, UnreadBadge, NewDot, Tag, Avatar, AvatarGroup, AVATAR_COLORS, ProgressBar, Tooltip, InfoPopover, IconButton } = window.GrepThinkDesignSystem_36e7e3;
 const AREAS = [['Assignment (staff)', 'assignment.active assignment.draft assignment.closed'], ['Assignment (student)', 'assignment.not_started assignment.in_progress assignment.submitted assignment.due_soon assignment.opens_later assignment.missed'], ['Class', 'class.active class.complete'], ['Project (browse)', 'project.open project.closed project.member'], ['Sprint', 'sprint.active sprint.planned sprint.completed'], ['Task', 'task.todo task.in_progress task.done task.blocked'], ['Pull request', 'pr.open pr.merged pr.closed pr.draft'], ['Attendance', 'attendance.present attendance.late attendance.absent attendance.unmarked'], ['TA meeting setup', 'meeting.weekly meeting.no_zoom'], ['Roster', 'roster.enrolled roster.waitlisted roster.dropped roster.not_on_roster roster.registered roster.not_registered'], ['Requests', 'request.incoming request.invitation request.pending request.denied'], ['Health · sentiment', 'health.excellent health.warning health.poor sentiment.positive sentiment.neutral sentiment.negative'], ['Final reviews', 'signups.open signups.closed slot.free slot.yours slot.past review.no_review_ta review.no_product_owner'], ['Live', 'live']];

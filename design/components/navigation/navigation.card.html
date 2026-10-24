@@ -14,7 +14,9 @@
 </head>
 <body>
 <div id="root"></div>
-<script>window.loadReleasesSources('../..').then(window.runDeferredBabel);</script>
+<!-- Starts once the page is parsed: the deferred script below must be in the DOM before runDeferredBabel looks for it
+     (with a bundle that already carries the round, the loader resolves at once). -->
+<script>document.addEventListener('DOMContentLoaded', () => window.loadReleasesSources('../..').then(window.runDeferredBabel));</script>
 <script type="text/babel-deferred">
 const { Tabs, TabPanel, SegmentedControl, FilterChip, FilterChipGroup, Stepper, Pagination, SidebarNavItem, SidebarSectionTitle, ProfileMenu, UnreadBadge } = window.GrepThinkDesignSystem_36e7e3;
 const PHONE = new URLSearchParams(location.search).has('phone');
