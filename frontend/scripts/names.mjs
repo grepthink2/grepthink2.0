@@ -82,6 +82,7 @@ export const FEATURE_HOMES = {
   domain: ['src/features'],
   finalreviews: ['src/features/finalReviews'],
   marketing: ['src/features/landing'],
+  releases: ['src/features/releases'],
   schedule: ['src/features/schedule'],
   scrum: ['src/features/scrum'],
   search: ['src/features/search'],
@@ -313,6 +314,17 @@ export const NAMES_ALLOWLIST = [
     reason:
       "The landing page's footer is features/landing/components/Footer.tsx (.landing-footer). Kept for good, " +
       'with LandingHeader.',
+  },
+
+  // ── releases ──────────────────────────────────────────────────────────────────────────────────
+  {
+    design: 'ReleasesModel',
+    status: 'different name',
+    keeps: 'version',
+    reason:
+      "The design's one file for the release rules. The codebase splits them by job: version.ts (parseVersion, " +
+      'compareVersions), releaseNotes.ts (the notes parser), releaseDate.ts (formatReleaseDate) and seenStore.ts ' +
+      '(isUnseen, isReleaseNew, the seen state).',
   },
 
   // ── schedule ──────────────────────────────────────────────────────────────────────────────────
