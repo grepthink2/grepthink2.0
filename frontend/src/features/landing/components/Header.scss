@@ -271,6 +271,13 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 6px 5px;
   }
 
+  // Codebase-side, for the design's fold-back: the icon-alone tab is 26px wide and the nav's gap is 2px,
+  // so a 44px-wide hit area would reach 9px into Contact beside it. Keep the 44px height, and widen it
+  // by at most half the gap on each side.
+  .landing-header__tab::after {
+    width: calc(100% + 2px);
+  }
+
   .landing-header__tab-text {
     display: none;
   }
@@ -307,6 +314,11 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 
   .landing-header__nav {
     gap: 1px;
+  }
+
+  // The gap is 1px here: half of it on each side (see the 400px rule).
+  .landing-header__tab::after {
+    width: calc(100% + 1px);
   }
 
   .landing-header__link {

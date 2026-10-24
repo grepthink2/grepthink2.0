@@ -123,6 +123,17 @@ describe('WhatsNewTab', () => {
     expect(hit.getPropertyValue('width')).toBe('max(100%, 44px)');
     expect(hit.getPropertyValue('height')).toBe('max(100%, 44px)');
   });
+
+  it('keeps the hit area off its neighbours where the icon stands alone: 44px tall, at most half the gap wider', () => {
+    render(<WhatsNewTab />);
+    // The nav's gap is 2px at 400px and below, and 1px at 360px and below.
+    const [narrow] = cssRules('.landing-header__tab::after', 'max-width: 400px');
+    expect(narrow.getPropertyValue('width')).toBe('calc(100% + 2px)');
+    const [narrowest] = cssRules('.landing-header__tab::after', 'max-width: 360px');
+    expect(narrowest.getPropertyValue('width')).toBe('calc(100% + 1px)');
+    expect(cssRules('.landing-header__nav', 'max-width: 400px')[0].getPropertyValue('gap')).toBe('2px');
+    expect(cssRules('.landing-header__nav', 'max-width: 360px')[0].getPropertyValue('gap')).toBe('1px');
+  });
 });
 
 describe('the landing header', () => {
