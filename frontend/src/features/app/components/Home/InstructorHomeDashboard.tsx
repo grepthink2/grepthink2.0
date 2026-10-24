@@ -19,6 +19,7 @@ import { api } from '@/lib/api';
 import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { buildAttentionItems, type AttentionItem } from './attentionItems';
+import '@features/app/components/Modules/AddAssignmentButton.scss';
 import './InstructorHomeDashboard.scss';
 
 // Loads on first open; the form pulls in the date picker.

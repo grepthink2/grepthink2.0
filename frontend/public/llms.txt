@@ -27,9 +27,9 @@ role-gated (instructor / TA / student).
   TSR round or a feedback survey.
 - **TSR (Team Status Report)**: a weekly peer evaluation a student submits about each
   teammate (contribution %, positive + constructive feedback).
-- **TA**: an enrolled student promoted to a class-level TA. TAs run a team's weekly
-  meeting + take attendance (the "meeting TA") and/or review a team's TSRs (the
-  "review TA").
+- **TA**: an enrolled student promoted to a class-level TA. A team's assigned TA runs
+  its weekly meeting, takes attendance and reviews its TSRs; a second class TA can be
+  appointed as the team's end-of-quarter reviewer.
 - **Staffing / interest form**: students rank project preferences; instructors assign
   students to teams (manually or auto-assign).
 

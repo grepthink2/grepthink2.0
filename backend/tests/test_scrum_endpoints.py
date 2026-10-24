@@ -100,7 +100,7 @@ def test_posting_a_comment_answers_the_comment(monkeypatch, client, parent, pare
 def test_the_sprint_routes_answer_the_sprint_itself(monkeypatch, client):
     """Creating and updating a sprint answer the sprint, with the status of its dates, not
     wrapped in {message, sprint}."""
-    monkeypatch.setattr(controller, "_today_la", lambda: date(2026, 10, 22))
+    monkeypatch.setattr(controller, "_today", lambda zone: date(2026, 10, 22))
     db = scrum_db(monkeypatch)
     headers = header_for("tony@ucsc.edu", sub=UID)
     dates = {"starts_at": "2026-10-19", "ends_at": "2026-11-01"}

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 // https://vite.dev/config/
@@ -8,6 +9,7 @@ export default defineConfig(({ mode }) => {
     mode === 'prod'
       ? 'https://api.grepthink2.com'
       : 'http://localhost:5001';
+  const { version } = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string };
 
   return {
     plugins: [react()],
@@ -16,6 +18,11 @@ export default defineConfig(({ mode }) => {
     // backend's SUPABASE_SERVICE_ROLE_KEY and SUPABASE_JWT_SECRET; adding a
     // 'SUPABASE_' prefix here would inline them into the client JS.
     envPrefix: ['VITE_'],
+    // The release this build is, from package.json; the app reads it as APP_VERSION
+    // (src/features/releases/version.ts). Vitest uses this config, so tests see the same value.
+    define: {
+      __APP_VERSION__: JSON.stringify(version),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

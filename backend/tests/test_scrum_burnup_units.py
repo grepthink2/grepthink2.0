@@ -7,8 +7,8 @@ draws points when it can, else hours, and ``?unit=`` picks another unit the spri
 otherwise). Each day's snapshot keeps both units; a snapshot written before the hours columns
 existed reads 0 hours, and the series takes it as no snapshot in hours.
 
-Through the router, the real controller and a FakeSupabase with today pinned (``_today_la``), and
-the pure helpers directly.
+Through the router, the real controller and a FakeSupabase with today pinned (``_today``), and the
+pure helpers directly.
 """
 
 from datetime import date
@@ -77,7 +77,7 @@ def _seed(monkeypatch, *, t2_points: int | None = None, **tables):
 
     Neither the backlog story nor the story archived out of the sprint counts: their tasks have
     hours and no points, are done, and would change every number below if they did."""
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     seed = {
         "sprints": [dict(SPRINT)],
         "user_stories": [
@@ -166,7 +166,7 @@ def test_a_unit_the_sprint_cannot_draw_is_422(monkeypatch, client, t2_points, un
 
 
 def test_a_board_without_sprints_draws_hours_and_counts_no_task(monkeypatch, client):
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     scrum_db(monkeypatch)
     chart = _board(client).json()["burnup"]
     assert {k: chart[k] for k in ("unit", "units_available", "tasks_without_points")} == {

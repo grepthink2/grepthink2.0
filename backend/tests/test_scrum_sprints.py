@@ -43,7 +43,7 @@ def test_staff_cannot_change_settings(monkeypatch):
 
 
 def test_create_sprint_returns_the_row_with_the_status_of_its_dates(monkeypatch):
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     db = scrum_db(monkeypatch)
     out = controller.create_sprint(
         project_id=PID, user_id=UID, name="Sprint 1", starts_at="2026-08-17", ends_at="2026-08-30"
@@ -80,7 +80,7 @@ def test_update_sprint_rejects_reversed_effective_dates(monkeypatch):
 
 
 def test_update_sprint_writes_only_the_name_and_dates(monkeypatch):
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     db = scrum_db(monkeypatch, sprints=[dict(SPRINT)])
     out = controller.update_sprint(
         sprint_id="s1",

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import '@features/app/components/Modules/AddAssignmentButton.scss';
 import './ProjectActionButton.scss';
 
 interface ProjectActionButtonProps {

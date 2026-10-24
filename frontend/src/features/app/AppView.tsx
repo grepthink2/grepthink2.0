@@ -9,6 +9,9 @@ import { lazyModal } from '@/lib/lazyModal';
 import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
 import PageFallback from '@features/app/components/PageFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { Alert } from '@/components/Alert/Alert';
+import { Button } from '@/components/Button/Button';
+import { reloadPage } from '@/lib/reloadPage';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
@@ -29,6 +32,22 @@ const JoinClassModal = lazyModal(
   (p) => p.isOpen,
 );
 const Settings = lazyModal(() => import('@features/app/pages/Settings'), (p) => p.isOpen);
+
+// A modal whose code fails to load (most often a tab left open across a deploy that removed the
+// old files) shows this in a corner, so the shell stays usable. Its boundary sits here, not in
+// lazyModal: lazy pages import lazyModal too, and an Alert import there splits Alert and Button
+// out of the entry chunk into chunks of their own.
+const modalLoadError = (
+  <div className="app-modal-load-error">
+    <Alert
+      tone="error"
+      title="Couldn't open this"
+      actions={<Button size="sm" variant="outline" onClick={reloadPage}>Reload</Button>}
+    >
+      GrepThink may have been updated since this tab opened. Reload the page to get the latest version.
+    </Alert>
+  </div>
+);
 
 /** Phones get the sidebar as an off-canvas drawer (Sidebar's own breakpoint). */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -142,20 +161,22 @@ const AppView: React.FC = () => {
           </ErrorBoundary>
         </main>
 
-        {/* Create Class Modal */}
-        <CreateClassModal 
-          isOpen={isCreateClassModalOpen} 
-          onClose={handleCloseCreateClassModal} 
-        />
-
-        {/* Join Class Modal */}
-        <JoinClassModal
-          isOpen={isJoinClassModalOpen}
-          onClose={handleCloseJoinClassModal}
-        />
-
-        {/* Settings Modal */}
-        <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        {/* The modals, each in its own boundary: one that fails to load leaves the others be. */}
+        <ErrorBoundary fallback={modalLoadError}>
+          <CreateClassModal
+            isOpen={isCreateClassModalOpen}
+            onClose={handleCloseCreateClassModal}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={modalLoadError}>
+          <JoinClassModal
+            isOpen={isJoinClassModalOpen}
+            onClose={handleCloseJoinClassModal}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={modalLoadError}>
+          <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        </ErrorBoundary>
 
         {/* Global ⌘K search — one instance for every /app route (spec §3). */}
         <CommandPalette

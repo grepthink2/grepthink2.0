@@ -1,12 +1,12 @@
 import type { ElementType, ReactNode } from 'react';
-import { SCHOOL_ZONE, fmtDayLabel } from '../scheduleModel';
+import { fmtDayLabel, viewerZone } from '../scheduleModel';
 import '../schedule.scss';
 
 export interface ScheduleDayHeaderProps {
   /** 'YYYY-MM-DD': derives "Today / Tomorrow / Thursday" + the date. */
   dayKey?: string;
   now?: Date;
-  /** @default 'America/Los_Angeles' */
+  /** The IANA zone "today" is counted in. @default the browser's zone */
   zone?: string;
   /** Custom heading instead of the derived one (e.g. "Next"). */
   title?: ReactNode;
@@ -27,7 +27,7 @@ export interface ScheduleDayHeaderProps {
  * `title` + `date` for a custom heading ("Next · Monday, Oct 26").
  */
 export function ScheduleDayHeader({
-  dayKey, now, zone = SCHOOL_ZONE, title, date, isToday, aside, id, as: Tag = 'h3', className = '',
+  dayKey, now, zone = viewerZone(), title, date, isToday, aside, id, as: Tag = 'h3', className = '',
 }: ScheduleDayHeaderProps) {
   /* oxlint-disable-next-line react/purity -- reads the clock for this render;
      move it out of render before renders are memoized */

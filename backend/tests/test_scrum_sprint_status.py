@@ -1,5 +1,5 @@
 """Sprint status follows the calendar (spec D22): through the router, the real controller and a
-FakeSupabase, with today pinned (``_today_la``, the Pacific calendar day).
+FakeSupabase, with today pinned (``_today``, the calendar day at the project's school).
 
 A sprint is ``planned`` before ``starts_at``, ``active`` from ``starts_at`` through ``ends_at`` and
 ``completed`` after it, whatever the stored ``sprints.status`` says. Every sprint here is stored
@@ -51,7 +51,7 @@ CALENDAR = [
 
 
 def _seed(monkeypatch, today: date):
-    monkeypatch.setattr("app.scrum.controller._today_la", lambda: today)
+    monkeypatch.setattr("app.scrum.controller._today", lambda zone: today)
     return scrum_db(monkeypatch, sprints=[dict(A), dict(B), dict(C)])
 
 
@@ -98,16 +98,11 @@ def test_the_summary_shows_the_boards_sprint_with_the_same_status(
         (datetime(2026, 10, 29, 9, tzinfo=UTC), ["completed", "completed", "active"]),
     ],
 )
-def test_a_sprint_ends_at_midnight_pacific_time(monkeypatch, client, instant, statuses):
-    """Today is the Pacific calendar day (``_today_la``), not the UTC one. Each instant falls on
-    the same Pacific day at UTC-7 or UTC-8, so no daylight-time rule decides the outcome."""
-
-    class Clock(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return instant.astimezone(tz)
-
-    monkeypatch.setattr(controller, "datetime", Clock)
+def test_a_sprint_ends_at_midnight_at_the_school(monkeypatch, client, instant, statuses):
+    """Today is the calendar day at the project's school (``_today``), not the UTC one; these
+    projects' class has no school, so it is the Pacific day. Each instant falls on the same Pacific
+    day at UTC-7 or UTC-8, so no daylight-time rule decides the outcome."""
+    monkeypatch.setattr(controller.deadlines, "now_utc", lambda: instant)
     scrum_db(monkeypatch, sprints=[dict(A), dict(B), dict(C)])
     assert [s["status"] for s in _get(client, BOARD)["sprints"]] == statuses
 

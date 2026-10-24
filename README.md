@@ -206,12 +206,62 @@ it exists.
 
 - Work on a feature branch and open a pull request into `beta`. Fill in the template: what
   changed, how you verified it, which gates ran.
-- Nothing lands on `main` except a pull request from `beta` whose checks pass, merged with a
-  merge commit; squashing it leaves the two branches in conflict. Vercel deploys `main` to
-  production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
+- `main` takes only pull requests whose checks pass, merged with a merge commit: the release pull
+  request from `beta` (squashing it leaves the two branches in conflict), and Dependabot's security
+  updates, which merge into `main` directly and deploy without a new version. Vercel deploys `main`
+  to production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
   (`main.json`: pull requests only, both CI jobs required, merge commits only, no force-push or
   deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
   Rules.
+- **Every release has a version and release notes.** The version is `frontend/package.json`'s
+  `version`, `MAJOR.MINOR.PATCH`: a release with anything new or improved raises the minor number,
+  and a release with fixes only raises the patch (1.0.0 is the maintainer's call). Its notes are
+  `frontend/src/features/releases/notes/<version>.md`. A release takes three steps:
+  1. On a branch from `beta` (`release/<version>`), add `notes/<version>.md` and raise the version
+     with `npm --prefix frontend version <version> --no-git-tag-version`, which updates
+     `package-lock.json` as well. Open a pull request into `beta` and merge it.
+  2. Open the release pull request from `beta` into `main` as usual, and merge it with a merge
+     commit.
+  3. [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the merge commit
+     `v<version>` and publishes the GitHub release, with the notes (without the front matter) as
+     its body.
+
+  A release with nothing for users to read (internal work only) skips step 1 and keeps the version,
+  and so does a Dependabot security update: no notes and no tag. The release pull request then gets
+  a warning that its version is tagged already, which is right for internal work only.
+
+  `releaseNotes.test.ts` fails a pull request when a notes file breaks the format, or when the
+  newest one is not the version in `package.json`. A notes file looks like this:
+
+  ```markdown
+  ---
+  date: 2026-10-23
+  ---
+
+  ## New
+
+  - **What's new.** Release notes for every version, on the landing page and in your profile menu.
+
+  ## Improved
+
+  - Pages open faster: each page loads its own code the first time you visit it.
+
+  ## Fixed
+
+  - A live meeting on your schedule shows a blue Live badge again.
+  ```
+
+  - **`date`**, the front matter's only key, is the day the release reaches `main`, on the campus
+    calendar. If the release merges later than planned, fix the date in the release pull request.
+  - **The sections** are `## New`, `## Improved` and `## Fixed`, each optional and at most once, in
+    that order; a file has at least one. Each is a `- ` list, one item per change, in inline
+    Markdown only (bold, italics, `code` and links): no headings, images, tables, block quotes or
+    HTML.
+  - **Write for students, TAs and instructors at every school:** what they can do now, in plain
+    words. Leave out pull request numbers, file paths, component names and internal work (lint, CI,
+    refactors), unless users notice it ("Pages open faster"). One line per change, with an optional
+    bold lead-in. A line that concerns one role names it ("Instructors can now …"). Links are
+    allowed but rare.
 - Dependabot opens grouped dependency updates against `beta`: weekly for npm and pip, monthly for
   GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)).
 - Merging never changes a database. Add a migration as

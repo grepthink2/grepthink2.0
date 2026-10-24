@@ -68,7 +68,7 @@ def _seed(monkeypatch):
     """On TODAY Sprint 2 is under way and Sprint 3 is planned after it. Sprint 2's two live
     stories hold 1 task to do, 2 in progress and 3 done. D has no sprint and E is archived, so
     the backlog holds two stories; their tasks, and those of the other sprints, do not count."""
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     return scrum_db(
         monkeypatch,
         sprints=[S1, S2, S3],
