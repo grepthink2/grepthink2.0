@@ -5,11 +5,10 @@ import SectionLink from './SectionLink';
 import { SECTION_IDS } from '../landing.config';
 import './Footer.scss';
 
-const Footer: React.FC = () => {
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const year = new Date().getFullYear();
+/** Read once, when the page loads: a footer year needs no ticking clock. */
+const YEAR = new Date().getFullYear();
 
+const Footer: React.FC = () => {
   return (
     <footer className="landing-footer">
       <div className="landing-footer__inner">
@@ -40,7 +39,7 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="landing-footer__bar">
-        <span>© {year} grepthink</span>
+        <span>© {YEAR} grepthink</span>
       </div>
     </footer>
   );

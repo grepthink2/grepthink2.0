@@ -2,6 +2,7 @@ import React, { useState, useEffect, useEffectEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { SubmitFeedbackPayload } from '@/lib/api';
+import { useNow } from '@/lib/useNow';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { submissionWindowNotice } from '@/features/app/utils/assignmentState';
 import './FeedbackForm.scss';
@@ -72,6 +73,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const [error, setError] = useState<string | null>(null);
   /** When the loaded submission was first made (its created_at). */
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  // Ticks, so the window notice changes when the assignment opens or closes.
+  const now = useNow(30000);
 
   // An Effect Event reads the latest isSubmitted without making a change to it
   // a reason to fetch the submission again.
@@ -115,9 +118,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const dueAt = assignment.dueAt ? new Date(assignment.dueAt) : null;
   const submittedLate = Boolean(submittedAt && dueAt && new Date(submittedAt) >= dueAt);
   // Outside the window the server refuses the submission (403): say so before anything is typed.
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
+  const windowNotice = submissionWindowNotice(assignment, now, zone);
 
   const handleSubmit = async () => {
     setError(null);
