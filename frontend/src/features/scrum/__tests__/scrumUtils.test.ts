@@ -6,7 +6,7 @@ import { parseHours } from '../utils/estimateHours';
 import { storyRollup, storyHours, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
-import { percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
+import { newSprintDraft, percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
 import { makeRef, makeStory, makeTask } from './fixtures';
@@ -178,6 +178,20 @@ describe('sprint helpers', () => {
   });
   it('labels the three sprint statuses', () => {
     expect(STATUS_LABELS).toEqual({ active: 'Active', planned: 'Planned', completed: 'Completed' });
+  });
+  it("starts a project's first sprint today and runs it two weeks", () => {
+    expect(newSprintDraft([], new Date(2026, 9, 24, 15, 30))).toEqual({
+      name: 'Sprint 1', starts_at: '2026-10-24', ends_at: '2026-11-06',
+    });
+  });
+  it('starts the next sprint the day after the last one ends, when that is still ahead', () => {
+    const sprints = [{ ends_at: '2026-10-11' }, { ends_at: '2026-10-25' }];
+    expect(newSprintDraft(sprints, new Date(2026, 9, 24))).toEqual({
+      name: 'Sprint 3', starts_at: '2026-10-26', ends_at: '2026-11-08',
+    });
+  });
+  it('starts today when every sprint so far has ended', () => {
+    expect(newSprintDraft([{ ends_at: '2026-09-20' }], new Date(2026, 9, 24)).starts_at).toBe('2026-10-24');
   });
 });
 

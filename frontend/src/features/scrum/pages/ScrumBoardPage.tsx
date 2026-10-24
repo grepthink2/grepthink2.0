@@ -15,13 +15,16 @@ import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
+import { Button } from '@components/Button/Button';
 import SprintPicker from '../components/SprintPicker';
+import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorModal';
 import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
 import { isBacklogStory } from '../utils/backlog';
 import { collectTasks } from '../utils/rollups';
+import { newSprintDraft } from '../utils/sprints';
 import '../scrum.scss';
 import './ScrumBoardPage.scss';
 
@@ -72,7 +75,7 @@ export default function ScrumBoardPage() {
   const {
     board, loading, error, notice, clearNotice, canWrite,
     selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
-    deleteTask, addDependency, removeDependency, updateSettings, refresh,
+    deleteTask, addDependency, removeDependency, updateSettings, refresh, createSprint,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
@@ -86,6 +89,9 @@ export default function ScrumBoardPage() {
   const [creatingStory, setCreatingStory] = useState(false);
   const [savingStory, setSavingStory] = useState(false);
   const [deletingStory, setDeletingStory] = useState(false);
+  /** The New sprint form's starting values while it is open. */
+  const [sprintDraft, setSprintDraft] = useState<SprintDraft | null>(null);
+  const [savingSprint, setSavingSprint] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -265,6 +271,19 @@ export default function ScrumBoardPage() {
     if (ok) closeStory();              // drops ?story= and any stale ?task=
   };
 
+  // The defaults read the clock, so they are worked out on the click, not during render.
+  const openSprintEditor = () => setSprintDraft(newSprintDraft(board?.sprints ?? [], new Date()));
+
+  /** A new sprint is the one the board then shows, so a backlog story can move straight into it. */
+  const handleCreateSprint = async (body: SprintDraft) => {
+    setSavingSprint(true);
+    const created = await createSprint(body);
+    setSavingSprint(false);
+    if (!created) return;              // the hook already raised the error toast
+    setSprintDraft(null);
+    pickSprint(created.sprint.id);
+  };
+
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
     setSavingStory(true);
     const created = await createStory(body);
@@ -317,6 +336,7 @@ export default function ScrumBoardPage() {
               sprints={board.sprints}
               selectedId={board.sprint_id}
               onSelect={pickSprint}
+              onNewSprint={canWrite ? openSprintEditor : undefined}
             />
           )}
           <button
@@ -389,6 +409,11 @@ export default function ScrumBoardPage() {
             <div className="scrum-board__empty-state">
               <h2>No sprints yet</h2>
               <p>Create a sprint to start planning stories and tasks.</p>
+              {canWrite && (
+                <Button size="sm" className="scrum-board__empty-action" onClick={openSprintEditor}>
+                  Create a sprint
+                </Button>
+              )}
             </div>
           )
         )}
@@ -523,6 +548,15 @@ export default function ScrumBoardPage() {
           saving={savingStory}
           onClose={() => setCreatingStory(false)}
           onCreate={handleCreateStory}
+        />
+      )}
+
+      {sprintDraft && (
+        <SprintEditorModal
+          defaults={sprintDraft}
+          saving={savingSprint}
+          onClose={() => setSprintDraft(null)}
+          onCreate={handleCreateSprint}
         />
       )}
 

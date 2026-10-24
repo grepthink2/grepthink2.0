@@ -1,8 +1,8 @@
 import {
   useCallback, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type Ref,
 } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
-import { Menu, MenuItem } from '@/components/Menu/Menu';
+import { Check, ChevronDown, Plus } from 'lucide-react';
+import { Menu, MenuItem, MenuSeparator } from '@/components/Menu/Menu';
 import { Popover } from '@/components/Popover/Popover';
 import type { ApiScrumBoardSprint, ApiSprintProgress } from '@/lib/api';
 import { percentDone, sprintDates } from '../utils/sprints';
@@ -28,6 +28,8 @@ interface SprintPickerProps {
   selectedId: string | null;
   /** Called for a sprint other than the selected one. */
   onSelect: (sprintId: string) => void;
+  /** Given to team members: the menu ends with a New sprint row that calls it. */
+  onNewSprint?: () => void;
   /** The trigger button. React 19.2 passes `ref` as an ordinary prop — the first function component in
    *  this codebase to take one, so no precedent to copy; no `forwardRef`. */
   ref?: Ref<HTMLButtonElement>;
@@ -40,7 +42,7 @@ interface SprintPickerProps {
  * back on the trigger, and Tab out of the menu closes it.
  * Spec: docs/superpowers/specs/2026-10-16-scrum-sprint-picker-design.md.
  */
-export default function SprintPicker({ sprints, selectedId, onSelect, ref }: SprintPickerProps) {
+export default function SprintPicker({ sprints, selectedId, onSelect, onNewSprint, ref }: SprintPickerProps) {
   const [open, setOpen] = useState(false);
   const [shift, setShift] = useState(0);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -171,6 +173,18 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
               </MenuItem>
             );
           })}
+          {onNewSprint && (
+            <>
+              <MenuSeparator />
+              <MenuItem
+                className="sprint-picker__new"
+                icon={<Plus size={14} aria-hidden="true" />}
+                onSelect={() => { close(); onNewSprint(); }}
+              >
+                New sprint
+              </MenuItem>
+            </>
+          )}
         </Menu>
       </Popover>
     </span>
