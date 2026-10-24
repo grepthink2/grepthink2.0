@@ -1,0 +1,13 @@
+# Codecov settings. CI uploads two flags, frontend and backend (.github/workflows/test.yml).
+# On beta a change may skip one suite ("Detect changes"), so carryforward reuses the last
+# upload for the missing flag instead of reporting half a project.
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: frontend
+      paths:
+        - frontend/
+    - name: backend
+      paths:
+        - backend/
