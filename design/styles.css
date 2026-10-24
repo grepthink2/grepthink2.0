@@ -9,6 +9,9 @@
 @import url('./tokens/spacing.css');
 @import url('./tokens/marketing.css');
 
+/* The four shared keyframes (mirrors frontend/src/styles/keyframes.css) */
+@import url('./keyframes.css');
+
 /* Component layer (BEM classes matching the grepthink2.0 codebase idiom) */
 @import url('./components/primitives/primitives.css');
 @import url('./components/display/display.css');
@@ -19,8 +22,6 @@
 @import url('./components/assistant/assistant.css');
 @import url('./components/analytics/analytics.css');
 @import url('./components/search/search.css');
+@import url('./components/schedule/schedule.css');
+@import url('./components/finalreviews/finalreviews.css');
 @import url('./components/marketing/marketing.css');
-
-/* Figma-file reference layer (library variables + baked image assets) */
-@import url('./components/figma-reference/fig-tokens.css');
-@import url('./components/figma-reference/fig-assets.css');

@@ -1,3 +1,4 @@
+// Intentional addition: ContactCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ContactValues { name: string; email: string; message: string; }

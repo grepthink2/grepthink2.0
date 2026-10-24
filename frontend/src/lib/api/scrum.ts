@@ -97,11 +97,13 @@ export const scrumApi = {
   },
 
   /** 409 with code `task_blocked` for a task in To do that depends on a task not yet done. */
-  moveScrumTask: async (taskId: string, toStatus: ApiBoardStatus) => {
-    return apiRequest<{ message: string; task: ApiScrumTask }>(
+  moveScrumTask: async (taskId: string, toStatus: ApiBoardStatus): Promise<ApiScrumTask> => {
+    const res = await apiRequest<ApiScrumTask | { message: string; task: ApiScrumTask }>(
       `/api/scrum/tasks/${taskId}/move`,
       { method: 'POST', body: JSON.stringify({ to_status: toStatus }) },
     );
+    // An older backend answers {message, task}.
+    return 'task' in res ? res.task : res;
   },
 
   /** Make a task depend on another task of its project; answers with the task's dependencies. */
@@ -123,11 +125,17 @@ export const scrumApi = {
     return apiRequest<{ comments: ApiScrumComment[] }>(`/api/scrum/${parent}/${id}/comments`);
   },
 
-  createScrumComment: async (parent: 'stories' | 'tasks', id: string, bodyMd: string) => {
-    return apiRequest<{ message: string; comment: ApiScrumComment }>(
+  createScrumComment: async (
+    parent: 'stories' | 'tasks',
+    id: string,
+    bodyMd: string,
+  ): Promise<ApiScrumComment> => {
+    const res = await apiRequest<ApiScrumComment | { message: string; comment: ApiScrumComment }>(
       `/api/scrum/${parent}/${id}/comments`,
       { method: 'POST', body: JSON.stringify({ body_md: bodyMd }) },
     );
+    // An older backend answers {message, comment}.
+    return 'comment' in res ? res.comment : res;
   },
 
   refreshScrumPrStates: async (projectId: string) => {

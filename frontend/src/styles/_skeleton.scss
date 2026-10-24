@@ -10,24 +10,16 @@
  * block stays, the motion stops.
  */
 
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
+// @keyframes skeleton-shimmer lives in keyframes.css, which main.tsx loads once.
 
 @mixin skeleton-block {
   background-color: $background;
-  // The shimmer highlight predates the --gt-* design-token system (close to
-  // but not exactly --gt-gray-50); left as-is rather than churned as a side
-  // effect of wiring the adherence lint.
+  // The highlight is the design's --gt-skeleton-shine token: a step lighter than the block,
+  // close to but not --gt-gray-50.
   background-image: linear-gradient(
     90deg,
     $background 25%,
-    #f5f5f5 37%,
+    var(--gt-skeleton-shine) 37%,
     $background 63%
   );
   background-size: 400% 100%;

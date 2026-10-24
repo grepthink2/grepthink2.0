@@ -1,0 +1,46 @@
+// Tabs — ported from design/components/navigation/navigation.css so the two stay diffable: the Tabs
+// block, then its lines from the file's phone and reduced-motion blocks. A tab's count is CountBadge
+// (components/CountBadge), which brings its own styles. The tab's own padding, border, radius,
+// background, font and transition beat index.css's global button rule, which would otherwise reach
+// this raw button.
+
+/* ── Tabs — the grey segmented track (Edit Project, Requests, scrum Board / Backlog / Burnup,
+   TA meeting tabs, member manager). Tabs stretch across their container; a SegmentedControl
+   sizes to its options. Active = white tab, 1px shadow, primary text at 600 (weight + text
+   colour carry the state; the white-on-grey fill alone is 1.16:1). ── */
+.gt-tabs { display: flex; gap: 2px; padding: 4px; box-sizing: border-box; border-radius: var(--gt-radius-sm); background: var(--gt-gray-100); font-family: var(--gt-font-sans); }
+.gt-tabs__tab {
+  flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 6px 12px; box-sizing: border-box; border: none; border-radius: 6px; background: transparent;
+  font-family: var(--gt-font-sans); font-size: 13px; font-weight: var(--gt-weight-medium); color: var(--gt-text-tertiary);
+  white-space: nowrap; cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-tabs__tab:hover:not(:disabled):not(.gt-tabs__tab--active) { color: var(--gt-text-primary); }
+.gt-tabs__tab:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-tabs__tab:disabled { opacity: var(--gt-opacity-disabled); cursor: not-allowed; }
+.gt-tabs__tab--active { background: var(--gt-surface); color: var(--gt-text-primary); font-weight: var(--gt-weight-semibold); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+.gt-tabs__tab--active:focus-visible { box-shadow: var(--gt-focus-ring); }
+.gt-tabs__icon { display: inline-flex; flex-shrink: 0; }
+.gt-tabs__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gt-tabs__tab .gt-count { background: var(--gt-gray-200); }
+.gt-tabs__tab--active .gt-count { background: var(--gt-gray-100); }
+.gt-tabs--sm { padding: 3px; }
+.gt-tabs--sm .gt-tabs__tab { min-height: 28px; padding: 3px 10px; font-size: 12px; }
+.gt-tabs__panel:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: var(--gt-radius-sm); }
+/* the hidden attribute is the browser's weakest style: a feature class that sets display (flex, grid) would show a kept-mounted panel */
+.gt-tabs__panel[hidden] { display: none; }
+
+/* ── Phones (< 768px) ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-tabs__tab { min-height: 44px; }
+  /* the size rules have two classes and would win: repeat the 44px with their selectors */
+  .gt-tabs--sm .gt-tabs__tab { min-height: 44px; }
+  /* icon-only tabs: the label leaves the screen, not the accessible name */
+  .gt-tabs--collapse .gt-tabs__tab--has-icon .gt-tabs__label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-tabs__tab { transition: none; }
+}

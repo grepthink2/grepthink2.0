@@ -170,9 +170,20 @@
     border-color: $accent-color;
   }
 
+  &[aria-invalid='true'] {
+    border-color: var(--gt-error);
+  }
+
   &--narrow {
     width: 100px;
   }
+}
+
+// Why one field's value can't be used (the Tasks - External link), right under it.
+.create-class-modal__field-error {
+  margin: 0;
+  color: var(--gt-error-text);
+  font-size: $font-size-sm;
 }
 
 // Term Selection Buttons

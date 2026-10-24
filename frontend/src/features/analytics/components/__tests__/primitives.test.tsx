@@ -1,11 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Inbox } from 'lucide-react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChartCard } from '../ChartCard';
 import { ChartLegend } from '../ChartLegend';
 import { ChartTooltip } from '../ChartTooltip';
-import { DefinitionPopover } from '../DefinitionPopover';
 import { LivePill } from '../LivePill';
 import { UnitToggle } from '../UnitToggle';
 
@@ -22,7 +21,14 @@ describe('ChartCard', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText('body')).not.toBeInTheDocument();
     rerender(<ChartCard title="Messages" state="empty" emptyMessage={{ icon: Inbox, title: 'No sprints yet', hint: 'Boards fill in once teams create their first sprint.' }}><p>body</p></ChartCard>);
-    expect(screen.getByText('No sprints yet')).toBeInTheDocument();
+    // The shared EmptyState's card look, inside a status that announces it.
+    const empty = screen.getByRole('status');
+    expect(empty).toHaveTextContent('No sprints yet');
+    expect(empty).toHaveTextContent('Boards fill in once teams create their first sprint.');
+    expect(empty.firstElementChild).toHaveClass('gt-empty', 'gt-empty--card');
+    expect(empty.querySelector('.gt-empty__icon')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('Boards fill in once teams create their first sprint.')).toHaveClass('gt-empty__desc');
+    expect(screen.queryByRole('heading', { name: 'No sprints yet' })).not.toBeInTheDocument();
   });
   it('falls back to the default error copy, and an empty card never draws its children', () => {
     const { rerender } = render(<ChartCard title="Messages" state="error"><p>body</p></ChartCard>);
@@ -108,54 +114,5 @@ describe('ChartTooltip', () => {
     expect(tip.querySelector('.gt-chart-tip__key.gt-series--1')).not.toBeNull();
     expect(within(tip).getByText('Sep 7')).toBeInTheDocument();
     expect(within(tip).getByText('712')).toBeInTheDocument();
-  });
-});
-
-describe('DefinitionPopover', () => {
-  it('names its trigger after the card, toggles aria-expanded and closes on Escape', async () => {
-    render(<DefinitionPopover title="How this is counted" body="Every task in view." cardTitle="Scrum board" />);
-    const trigger = screen.getByRole('button', { name: 'How Scrum board is counted' });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Every task in view.')).toBeInTheDocument();
-    await userEvent.keyboard('{Escape}');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Every task in view.')).not.toBeInTheDocument();
-    await userEvent.click(trigger);
-    await userEvent.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  describe('on a screen too narrow for the panel at its ⓘ', () => {
-    // jsdom has no layout, so each case sizes the viewport, the ⓘ and the open panel (the first with what a 375 px phone measured).
-    const rect = (left: number, width: number) => ({ left, right: left + width, width, top: 0, bottom: 24, height: 24, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
-    const layout = (viewport: number, triggerLeft: number, panelWidth: number) => {
-      vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewport);
-      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-        if (this.classList.contains('gt-definition__trigger')) return rect(triggerLeft, 24);
-        if (this.classList.contains('gt-popover')) return rect(triggerLeft, panelWidth);
-        return rect(0, 0);
-      });
-    };
-    const open = async () => {
-      render(<DefinitionPopover title="How this is counted" body="Every message in view." cardTitle="Conversations" />);
-      await userEvent.click(screen.getByRole('button', { name: 'How Conversations is counted' }));
-      return screen.getByText('Every message in view.').closest('.gt-popover') as HTMLElement;
-    };
-    afterEach(() => vi.restoreAllMocks());
-
-    it('moves the panel left until its right edge is 8 px inside the viewport', async () => {
-      layout(375, 153, 354);
-      expect((await open()).style.left).toBe('-140px'); // its left edge lands at 375 − 8 − 354 = 13
-    });
-    it('never moves it past the left edge: a panel with less than 16 px to spare is centred', async () => {
-      layout(360, 153, 346);
-      expect((await open()).style.left).toBe('-146px'); // (360 − 346) / 2 = 7 on either side
-    });
-    it('leaves the panel at its ⓘ where it fits', async () => {
-      layout(1400, 600, 354);
-      expect((await open()).style.left).toBe('');
-    });
   });
 });

@@ -6,6 +6,8 @@ import { SECTION_IDS } from '../landing.config';
 import './Footer.scss';
 
 const Footer: React.FC = () => {
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const year = new Date().getFullYear();
 
   return (

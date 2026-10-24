@@ -10,7 +10,9 @@ from fastapi import HTTPException
 from app.core import authz
 from app.core.db import get_client
 from app.scrum import controller
+from tests.conftest import ISTINYE_INSTITUTION
 from tests.scrum_support import (
+    CLASS,
     INSTR,
     MEETING_TA,
     OUTSIDER,
@@ -22,10 +24,12 @@ from tests.scrum_support import (
 )
 
 MISSING_PID = "00000000-0000-0000-0000-00000000dead"
+SCHOOL = ISTINYE_INSTITUTION["id"]
 
 
 def _access(user_id, project_id=PID):
-    return controller._board_access(get_client(), project_id=project_id, user_id=user_id)
+    access, _school = controller._board_access(get_client(), project_id=project_id, user_id=user_id)
+    return access
 
 
 def test_member_is_member_in_one_round_trip(monkeypatch):
@@ -75,6 +79,36 @@ def test_staff_cannot_write(monkeypatch, staff):
 def test_member_can_write(monkeypatch):
     scrum_db(monkeypatch)
     controller._require_writer(get_client(), project_id=PID, user_id=UID)  # no raise
+
+
+def _class_at(institution_id):
+    return [{"id": CLASS, "created_by": INSTR, "institution_id": institution_id}]
+
+
+@pytest.mark.parametrize(("caller", "access"), [(UID, "member"), (INSTR, "staff")])
+def test_access_names_the_projects_school(monkeypatch, caller, access):
+    """The day-bound parts of the board (burnup, AI quota) need the school's zone: it comes
+    with the check every endpoint makes, so no endpoint reads the class for it."""
+    scrum_db(monkeypatch, classes=_class_at(SCHOOL))
+    got = controller._board_access(get_client(), project_id=PID, user_id=caller)
+    assert got == (access, SCHOOL)
+
+
+def test_a_members_access_still_costs_one_round_trip_with_the_school(monkeypatch):
+    db = scrum_db(monkeypatch, classes=_class_at(SCHOOL))
+    controller._board_access(get_client(), project_id=PID, user_id=UID)
+    assert db.executes == 1
+
+
+def test_a_class_with_no_school_has_no_institution(monkeypatch):
+    scrum_db(monkeypatch, classes=_class_at(None))
+    got = controller._board_access(get_client(), project_id=PID, user_id=UID)
+    assert got == ("member", None)
+
+
+def test_a_writer_check_answers_the_school(monkeypatch):
+    scrum_db(monkeypatch, classes=_class_at(SCHOOL))
+    assert controller._require_writer(get_client(), project_id=PID, user_id=UID) == SCHOOL
 
 
 @pytest.mark.parametrize("staff", [INSTR, TA, MEETING_TA])

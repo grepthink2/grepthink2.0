@@ -26,7 +26,9 @@ export function useConversationMessages(conversationId: string | null) {
     messages: [], loading: true, loadingOlder: false, hasMore: false, error: null,
   });
   const meIdRef = useRef<string | undefined>(undefined);
-  meIdRef.current = user?.id;
+  useEffect(() => {
+    meIdRef.current = user?.id;
+  }, [user?.id]);
   const cursor = useRef<string | null>(null);
   const cancelled = useRef(false);
   // Monotonic ticket per request: only the latest-issued request may commit
@@ -80,6 +82,8 @@ export function useConversationMessages(conversationId: string | null) {
     // before the null branch, so closing a thread also invalidates them.
     requestSeq.current += 1;
     if (!conversationId) {
+      /* oxlint-disable-next-line react/set-state-in-effect -- resets the thread's state when the
+         conversation closes or changes (the rule reports the first reset for both) */
       setState({ messages: [], loading: false, loadingOlder: false, hasMore: false, error: null });
       return;
     }

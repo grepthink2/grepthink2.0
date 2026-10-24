@@ -13,7 +13,7 @@ vi.mock('@/lib/api', () => ({ api }));
 vi.mock('@/lib/classContext', () => ({
   useClass: () => ({ refreshClasses: vi.fn(() => Promise.resolve()), currentSchool: null, classes: [] }),
 }));
-vi.mock('@/features/app/components/Fields/DatePickerField', () => ({ default: () => null }));
+vi.mock('@/components/DatePickerField/DatePickerField', () => ({ DatePickerField: () => null }));
 
 import { clearInstitutionsCache } from '@/lib/institutions';
 import CreateClassModal from '../CreateClassModal';

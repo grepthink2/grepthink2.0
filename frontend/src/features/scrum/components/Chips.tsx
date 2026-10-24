@@ -1,7 +1,7 @@
 import { ArrowRight, Clock, GitPullRequest } from 'lucide-react';
-import { InitialsAvatar } from '@features/messages/components/InitialsAvatar';
+import { Avatar } from '@/components/Avatar/Avatar';
 import { Tooltip, type TooltipProps } from '@components/Tooltip/Tooltip';
-import type { BoardPerson } from '../scrumTypes';
+import { avatarName, type BoardPerson } from '../scrumTypes';
 import { prLabel, prState } from '../utils/prLabel';
 
 /** Story-point chip — rounded square, mono numeral. */
@@ -51,23 +51,27 @@ export function PRLinkChip({ prUrl, provider, state }: { prUrl: string; provider
  * bubble above the first row would be cut off.
  */
 export function UserPair({
-  reporter, assignee, size = 18, tooltipSide = 'top',
+  reporter, assignee, size = 'xs', tooltipSide = 'top',
 }: {
   reporter: BoardPerson;
   assignee: BoardPerson;
-  size?: number;
+  /** xs 20px on cards and rows; sm 28px in the story modal. @default 'xs' */
+  size?: 'xs' | 'sm';
   tooltipSide?: TooltipProps['side'];
 }) {
-  // Not focusable: cards are buttons (or draggable cards), and the bubble's text
-  // already reads as part of the card's accessible name.
+  // Not focusable, and the avatars decorative: a screen reader hears each name once, from its
+  // bubble ("Reporter: Tony Wu"). On the board's cards, which are the control (a button, or a
+  // draggable card), that text is part of the card's accessible name, and a focusable span would
+  // nest one control in another; in a backlog row and the story modal the bubble's text sits in
+  // the reading order beside the pair.
   return (
     <span className="gt-userpair">
       <Tooltip content={`Reporter: ${reporter.name}`} side={tooltipSide} focusable={false}>
-        <InitialsAvatar name={reporter.name} imageUrl={reporter.image_url} size={size} />
+        <Avatar name={avatarName(reporter.name)} src={reporter.image_url ?? undefined} size={size} decorative />
       </Tooltip>
       <ArrowRight size={10} aria-hidden="true" />
       <Tooltip content={`Assignee: ${assignee.name}`} side={tooltipSide} focusable={false}>
-        <InitialsAvatar name={assignee.name} imageUrl={assignee.image_url} size={size} />
+        <Avatar name={avatarName(assignee.name)} src={assignee.image_url ?? undefined} size={size} decorative />
       </Tooltip>
     </span>
   );

@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, GraduationCap } from 'lucide-react';
+import { ChevronDown, ExternalLink, GraduationCap } from 'lucide-react';
 import { activeItemPath, buildSidebarConfig, SIDEBAR_HOVER } from '../../config/sidebar';
 import { CLASS_ROLE_LABELS, pathAfterClassSwitch } from '../../config/routePermissions';
 import { useAuth } from '@/lib/auth';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
+import { externalTasksHref } from '@/lib/externalTasksUrl';
+import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
 import { usePreview } from '@/lib/previewContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import wordmark from '@assets/grepthink-wordmark-text.svg?url';
@@ -38,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectorRef = useRef<HTMLButtonElement>(null);
   const openTimer = useRef<number | undefined>(undefined);
   const closeTimer = useRef<number | undefined>(undefined);
   // A pointer pressed on the sidebar: the focus it gives is the pointer's doing, not the keyboard's.
@@ -51,10 +54,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
 
   // The top sections follow what the account can do, except that "View class as student" shows
   // a student account's; the class section, your role in the selected class (TAs get the student
-  // groups plus "TA Review").
+  // groups plus "TA Review"), with the class's "Tasks - External" link when it has a usable one.
+  const externalTasksUrl = externalTasksHref(selectedClass?.external_tasks_url);
   const sidebarConfig = React.useMemo(
-    () => buildSidebarConfig({ canCreateClasses: canCreateClasses && !isPreviewing, classRole }),
-    [canCreateClasses, isPreviewing, classRole],
+    () => buildSidebarConfig({ canCreateClasses: canCreateClasses && !isPreviewing, classRole, externalTasksUrl }),
+    [canCreateClasses, isPreviewing, classRole, externalTasksUrl],
   );
   const activePath = activeItemPath(sidebarConfig, location.pathname);
   // Label each class with your role only when the list mixes roles.
@@ -125,6 +129,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
     }
   }, [unreadTotal]);
 
+  /** Let go of the focus hold and close the off-canvas drawer after a selection on mobile. */
+  const finishSelection = () => {
+    releaseFocusHold();
+    onMobileClose?.();
+  };
+
   const handleNavigation = (path: string) => {
     if (path === '/app/create-class' && onOpenCreateClass) {
       onOpenCreateClass();
@@ -137,9 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
     } else {
       navigate(path);
     }
-    releaseFocusHold();
-    // Close the off-canvas drawer after a selection on mobile.
-    onMobileClose?.();
+    finishSelection();
   };
 
   const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
@@ -158,6 +166,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
       if (next) navigate(next);
     });
   };
+
+  // A page with no class asks for the selector (NoClassSelected's "Choose a class"): open the class
+  // menu, which holds the rail open, and focus its button. On a phone, AppView opens the drawer.
+  useEffect(() => {
+    const openSelector = () => {
+      setShowClassDropdown(true);
+      selectorRef.current?.focus();
+    };
+    window.addEventListener(OPEN_CLASS_SELECTOR_EVENT, openSelector);
+    return () => window.removeEventListener(OPEN_CLASS_SELECTOR_EVENT, openSelector);
+  }, []);
 
   // A press outside the menu closes it; one outside the sidebar lets go of the focus hold too.
   useEffect(() => {
@@ -202,6 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
       {/* Class Selector: an icon tile in the rail, the class's name and its menu once open */}
       <div className="class-selector" ref={dropdownRef}>
         <button
+          ref={selectorRef}
           className="class-selector-header"
           onClick={() => setShowClassDropdown(!showClassDropdown)}
           aria-expanded={showClassDropdown}
@@ -255,6 +275,30 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
                 )}
                 <ul className="section-items">
                   {group.items.map((item) => {
+                    // Another site (the class's task board): a real link, in a new tab, never lit.
+                    if (item.external) {
+                      return (
+                        <li key={item.path}>
+                          <a
+                            className="sidebar-item"
+                            href={item.path}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${item.label} (opens in a new tab)`}
+                            onClick={(event) => {
+                              // Chrome focuses a clicked link and focuses it again when you come back
+                              // to this tab, which would hold the rail open. Enter (detail 0) keeps it.
+                              if (event.detail > 0) event.currentTarget.blur();
+                              finishSelection();
+                            }}
+                          >
+                            {React.createElement(item.icon, { size: 18 })}
+                            <span className="sidebar-item__label">{item.label}</span>
+                            <ExternalLink size={14} className="sidebar-item__external" aria-hidden />
+                          </a>
+                        </li>
+                      );
+                    }
                     const isActive = item.path === activePath;
                     return (
                       <li key={item.path}>

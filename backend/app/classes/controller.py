@@ -13,6 +13,8 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 
 from app.assignments import deadlines
+from app.classes import terms
+from app.classes.models import END_BEFORE_START, END_TOO_LATE
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
@@ -31,12 +33,6 @@ from app.utils.profiles import profile_display_name
 logger = logging.getLogger(__name__)
 
 _ROSTER_INSERT_BATCH = 200
-
-
-# Default TSR counts per term. Instructors may override at class creation.
-_FULL_TERM_NAMES = {"fall", "winter", "spring"}
-_SUMMER_TSR_COUNT = 3
-_FULL_TSR_COUNT = 5
 
 
 def normalize_roster_status(raw: str) -> str:
@@ -483,13 +479,11 @@ def _generate_tsr_assignments(
     One whose `due_at` has already passed (a back-dated start) is created as a draft: published,
     it would be frozen the moment it exists. The instructor publishes it if wanted.
 
-    Default counts (overridable via tsr_count):
+    Default counts (overridable via tsr_count; see ``terms.default_tsr_count``):
       Fall / Winter / Spring  →  5 TSR assignments
       Summer                  →  3 TSR assignments
     """
-    term_lower = (term or "").strip().lower()
-    default_count = _FULL_TSR_COUNT if term_lower in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
-    count = tsr_count if tsr_count is not None else default_count
+    count = tsr_count if tsr_count is not None else terms.default_tsr_count(term)
     count = max(1, min(count, 20))  # safety clamp
 
     first_open = start_date + datetime.timedelta(days=14)
@@ -563,6 +557,8 @@ def create_class(
     user_id: str,
     tsr_count: int | None = None,
     institution_id: UUID | str | None = None,
+    external_tasks_url: str | None = None,
+    end_date: datetime.date | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -571,6 +567,10 @@ def create_class(
     starting after the first 2 weeks of class. tsr_count overrides the
     term-based default (5 for Fall/Winter/Spring, 3 for Summer). ``institution_id`` must name
     an existing institution (400 otherwise); omitted, the class has none.
+    ``external_tasks_url`` (validated by the request model) is the class's "Tasks - External"
+    sidebar link; omitted, the class has none. ``end_date`` (the request model refuses one before
+    ``start_date``) is the class's last day of classes; omitted, none is stored and the class
+    keeps its term's fixed length.
     """
     try:
         if institution_id is not None and not is_known_institution(institution_id):
@@ -598,6 +598,10 @@ def create_class(
             class_data["description"] = description
         if institution_id is not None:
             class_data["institution_id"] = str(institution_id)
+        if external_tasks_url is not None:
+            class_data["external_tasks_url"] = external_tasks_url
+        if end_date is not None:
+            class_data["end_date"] = end_date.isoformat()
 
         result = client.table("classes").insert(class_data).execute()
         new_class = result.data[0]
@@ -662,10 +666,12 @@ def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int])
         cls["enrolled_count"] = count_by_class.get(cls["id"], 0)
 
 
-#: The class columns an enrolled student or TA may see (no review Zoom room, no settings).
+#: The class columns an enrolled student or TA may see (no review Zoom room, no settings). The
+#: "Tasks - External" link is for everyone in the class: it is their sidebar's item. So is the last
+#: day of classes: TA Meetings run through it, for the team's students as much as for its TA.
 _ENROLLED_CLASS_COLUMNS = (
     "id, name, description, created_by, created_at, course_code, status, term, start_date, "
-    "year, image_url"
+    "end_date, year, image_url, external_tasks_url"
 )
 
 
@@ -779,6 +785,152 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
             status,
         )
         raise HTTPException(status_code=500, detail="Failed to update class status")
+
+
+def update_class_external_tasks_url(
+    class_id: UUID, external_tasks_url: str | None, instructor_id: str
+) -> dict:
+    """Set, change or remove (``None``) the class's "Tasks - External" sidebar link.
+
+    Only the class instructor may (404 for a missing class, 403 for anyone else). The link
+    arrives validated by the request model. Returns the updated class row.
+    """
+    try:
+        client = get_client()
+        cid = str(class_id)
+
+        _require_owner(client, instructor_id, cid)
+
+        update_result = (
+            client.table("classes")
+            .update({"external_tasks_url": external_tasks_url})
+            .eq("id", cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update the tasks link")
+
+        logger.info(
+            "Class tasks link %s | class_id=%s updated_by=%s",
+            "set" if external_tasks_url else "removed",
+            class_id,
+            instructor_id,
+        )
+        return update_result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating class tasks link | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update the tasks link")
+
+
+def _class_project_ids(client, class_id: str) -> list[str]:
+    """The id of every project (team) in the class. One read."""
+    rows = client.table("projects").select("id").eq("class_id", class_id).execute().data or []
+    return [row["id"] for row in rows]
+
+
+def _refuse_hiding_attendance(
+    client,
+    project_ids: list[str],
+    term: str | None,
+    start: datetime.date,
+    end_date: datetime.date,
+) -> None:
+    """409 when ``end_date`` would leave a week that already has attendance past the term.
+
+    TA Meetings counts its weeks from the last day (``terms.term_week_count``) and refuses a week
+    past that count, so marks recorded there could no longer be opened. One read: the class's
+    highest week above the new count, newest first. The detail names the first day of that week,
+    the earliest last day that keeps every recorded week. A class with no teams has no attendance,
+    so nothing is read.
+    """
+    if not project_ids:
+        return
+    weeks = terms.term_week_count(term, start, end_date)
+    latest = (
+        client.table("attendance")
+        .select("week_number")
+        .in_("project_id", project_ids)
+        .gt("week_number", weeks)
+        .order("week_number", desc=True)
+        .limit(1)
+        .execute()
+    ).data
+    if latest:
+        week = int(latest[0]["week_number"])
+        earliest = start + datetime.timedelta(weeks=week - 1)
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Week {week} already has attendance. "
+                f"Pick {earliest:%b} {earliest.day}, {earliest.year} or later."
+            ),
+        )
+
+
+def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id: str) -> dict:
+    """Set or change the class's last day of classes (before finals).
+
+    Only the class instructor may (404 for a missing class, 403 for anyone else). For a class with
+    a ``start_date`` the day must also be:
+
+    - from that first week of term to a year after it, that is, at most 370 days on (400);
+    - late enough to keep every week that already has attendance (409; the detail names the
+      earliest day that does). TA Meetings counts its weeks from the last day, so a week past it
+      could no longer be opened.
+
+    Nothing is written when a day is refused. A class with no ``start_date`` has nothing to count
+    from or to fall before, so any day goes: its weeks stay the term's fixed length.
+
+    Round trips: the owner check (it reads ``term`` and ``start_date`` with the class) runs beside
+    the class's team ids; then one attendance read, only for a class with a start date and teams;
+    then the update. At most 4 queries in 3 waves. Returns the updated class row.
+    """
+    try:
+        client = get_client()
+        cid = str(class_id)
+
+        reads = fan_out(
+            {
+                "class": lambda: _require_owner(
+                    client, instructor_id, cid, columns="id, created_by, term, start_date"
+                ),
+                "project_ids": lambda: _class_project_ids(client, cid),
+            }
+        )
+        class_row = reads["class"]
+        if class_row.get("start_date") is not None:
+            start = datetime.date.fromisoformat(class_row["start_date"])
+            if end_date < start:
+                raise HTTPException(status_code=400, detail=END_BEFORE_START)
+            if end_date > terms.latest_last_day(start):
+                raise HTTPException(status_code=400, detail=END_TOO_LATE)
+            _refuse_hiding_attendance(
+                client, reads["project_ids"], class_row.get("term"), start, end_date
+            )
+
+        update_result = (
+            client.table("classes")
+            .update({"end_date": end_date.isoformat()})
+            .eq("id", cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update the last day of classes")
+
+        logger.info(
+            "Class end date set | class_id=%s end_date=%s updated_by=%s",
+            class_id,
+            end_date,
+            instructor_id,
+        )
+        return update_result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating class end date | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update the last day of classes")
 
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:

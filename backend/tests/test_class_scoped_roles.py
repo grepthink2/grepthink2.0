@@ -34,6 +34,7 @@ PROJECT = "0e3c2f9e-0000-4000-8000-0000000000b1"
 JOB = "0e3c2f9e-0000-4000-8000-0000000000f1"  # a pending_invites id
 CLASSES = "app.classes.views.controller"
 TAS = "app.tas.views.controller"
+REVIEW_SLOTS = "app.tas.views.review_slots"
 
 ROUTES = [
     pytest.param(
@@ -44,6 +45,24 @@ ROUTES = [
         {},
         ("instructor_id", "class_id"),
         id="class-status",
+    ),
+    pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/external-tasks-url",
+        {"json": {"external_tasks_url": "https://tasks.example.org/"}},
+        f"{CLASSES}.update_class_external_tasks_url",
+        {"id": CLASS},
+        ("instructor_id", "class_id"),
+        id="class-tasks-link",
+    ),
+    pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/end-date",
+        {"json": {"end_date": "2026-12-04"}},
+        f"{CLASSES}.update_class_end_date",
+        {"id": CLASS},
+        ("instructor_id", "class_id"),
+        id="class-end-date",
     ),
     pytest.param(
         "post",
@@ -182,12 +201,12 @@ ROUTES = [
     ),
     pytest.param(
         "post",
-        f"/api/tas/projects/{PROJECT}/review-time",
-        {"json": {"scheduled_at": "2026-12-01T20:00:00Z"}},
-        f"{TAS}.set_final_review_time",
-        {"ok": True},
-        ("instructor_id", "project_id"),
-        id="review-time",
+        f"/api/tas/classes/{CLASS}/review-slots",
+        {"json": {"starts_at": ["2026-12-07T17:00:00Z"]}},
+        f"{REVIEW_SLOTS}.create_review_slots",
+        {"created": 1},
+        ("instructor_id", "class_id"),
+        id="review-slots",
     ),
 ]
 

@@ -1,0 +1,34 @@
+// IconButton — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// IconButton block, then its lines from the file's phone and reduced-motion blocks. The label's
+// bubble is the Tooltip's (components/Tooltip/Tooltip.scss), which the component imports.
+
+/* ── IconButton ─────────────────────────────────────────── */
+.gt-icon-button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-sizing: border-box; padding: 0; border: 1px solid transparent; border-radius: var(--gt-radius-sm);
+  background: transparent; color: var(--gt-text-secondary); cursor: pointer;
+  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-icon-button:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-icon-button:active:not(:disabled) { transform: translateY(0.5px); }
+.gt-icon-button:disabled { opacity: var(--gt-opacity-disabled); cursor: not-allowed; }
+.gt-icon-button--sm { width: 28px; height: 28px; }
+.gt-icon-button--md { width: 36px; height: 36px; }
+.gt-icon-button--lg { width: 44px; height: 44px; }
+.gt-icon-button--ghost:hover:not(:disabled) { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+.gt-icon-button--solid { background: var(--gt-gray-100); }
+.gt-icon-button--solid:hover:not(:disabled) { background: var(--gt-border); color: var(--gt-text-primary); }
+.gt-icon-button--danger { color: var(--gt-error); }
+.gt-icon-button--danger:hover:not(:disabled) { background: var(--gt-error-soft); color: var(--gt-error-text); }
+.gt-icon-button[aria-pressed="true"] { background: var(--gt-primary-soft); border-color: var(--gt-primary); color: var(--gt-primary-hover); }
+.gt-icon-tip { position: relative; display: inline-flex; }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-icon-button { min-width: 44px; min-height: 44px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-icon-button { transition: none; }
+}

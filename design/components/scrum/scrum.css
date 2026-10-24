@@ -1,7 +1,7 @@
 /* ============================================================
    GrepThink · Scrum layer (.gt-tagbadge, .gt-points, .gt-estimate,
    .gt-prchip, .gt-userpair, .gt-story, .gt-task, .gt-board,
-   .gt-burnup, .gt-scalepicker, .gt-pointpicker, .gt-md,
+   .gt-burnup, .gt-scalepicker, .gt-pointpicker,
    .gt-comments, .gt-aidraft, .gt-backlog-row, .gt-mentionbox)
    ============================================================ */
 
@@ -78,7 +78,7 @@
 .gt-prchip:hover { filter: brightness(0.94); }
 .gt-prchip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 .gt-prchip--open   { background: var(--gt-success-soft); color: var(--gt-success-text); }
-.gt-prchip--merged { background: rgba(125, 60, 152, 0.12); color: #7D3C98; }
+.gt-prchip--merged { background: var(--gt-purple-soft); color: var(--gt-purple); }
 .gt-prchip--closed { background: var(--gt-error-soft); color: var(--gt-error-text); }
 .gt-prchip--draft  { background: var(--gt-gray-100); color: var(--gt-gray-600); }
 .gt-userpair {
@@ -293,30 +293,7 @@
 .gt-pointpicker__chip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .gt-pointpicker__chip--active { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-gray-0); }
 
-/* ── Markdown + mentions ────────────────────────────────── */
-.gt-md { font-family: var(--gt-font-sans); font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-normal); }
-.gt-md p { margin: 0 0 6px; }
-.gt-md p:last-child { margin-bottom: 0; }
-.gt-md ul { margin: 0 0 6px; padding-left: 18px; }
-.gt-md li { margin: 2px 0; }
-.gt-md__code {
-  font-family: var(--gt-font-mono);
-  font-size: 11px;
-  background: var(--gt-gray-100);
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: var(--gt-gray-700);
-}
-.gt-md__link { color: var(--gt-text-link); text-decoration: none; }
-.gt-md__link:hover { text-decoration: underline; }
-.gt-mention {
-  display: inline-block;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: var(--gt-info-soft);
-  color: var(--gt-info-text);
-  font-weight: var(--gt-weight-medium);
-}
+/* ── Markdown + mentions: .gt-md and .gt-mention live in display.css now (the kit's Markdown, 2026-10-22) ── */
 
 /* ── CommentThread ──────────────────────────────────────── */
 .gt-comments { display: flex; flex-direction: column; gap: 12px; font-family: var(--gt-font-sans); }

@@ -225,19 +225,25 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
-  const refreshPresence = () => {
+  const refreshPresence = useCallback(() => {
     if (!divRef.current) return;
     setMissingSignup(!divRef.current.querySelector(`[data-token="${TOKEN_SIGNUP}"]`));
     setMissingCode(!divRef.current.querySelector(`[data-token="${TOKEN_CODE}"]`));
-  };
+  }, []);
+
+  // While typing, htmlContent follows the editor; it is written back into the editor only when
+  // the caller asks for a reset, so the reset effect reads the latest value from a ref.
+  const htmlContentRef = useRef(htmlContent);
+  useEffect(() => {
+    htmlContentRef.current = htmlContent;
+  }, [htmlContent]);
 
   useEffect(() => {
     if (!divRef.current) return;
     setShowLinkPanel(false);
-    divRef.current.innerHTML = htmlContent;
+    divRef.current.innerHTML = htmlContentRef.current;
     refreshPresence();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetSignal]);
+  }, [resetSignal, refreshPresence]);
 
   useEffect(() => {
     if (!showLinkPanel) return;
@@ -292,18 +298,22 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
     if (showLinkPanel) { closeLinkPanel(); } else { openLinkPanel(); }
   };
 
+  // The document-level ⌘K listener is registered once and calls the toggleLinkPanel of the latest
+  // render through a ref, so it always sees the current showLinkPanel.
+  const toggleLinkPanelRef = useRef(toggleLinkPanel);
+  useEffect(() => {
+    toggleLinkPanelRef.current = toggleLinkPanel;
+  });
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        toggleLinkPanel();
+        toggleLinkPanelRef.current();
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  // toggleLinkPanel reads showLinkPanel via closure — re-register when it changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showLinkPanel]);
+  }, []);
 
   const refreshActiveFormats = () => {
     const formats = new Set<string>();

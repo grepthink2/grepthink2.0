@@ -1,0 +1,54 @@
+// Input — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Input / Textarea block, which the design writes as one, then the input group block, then their
+// lines from the file's phone and reduced-motion blocks. Textarea imports this stylesheet for its
+// half of the shared block.
+
+/* ── Input / Textarea ───────────────────────────────────── */
+.gt-input, .gt-textarea {
+  width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 13px;
+  border: 1px solid var(--gt-border-control); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
+  font-family: var(--gt-font-sans); font-size: var(--gt-text-body); line-height: 1.5; color: var(--gt-text-primary); outline: none;
+  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-input { min-height: 40px; }
+.gt-input::placeholder, .gt-textarea::placeholder { color: var(--gt-text-tertiary); }
+.gt-input:hover:not(:disabled), .gt-textarea:hover:not(:disabled) { border-color: var(--gt-border-control-hover); }
+.gt-input:focus, .gt-textarea:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.gt-input:disabled, .gt-textarea:disabled { background: var(--gt-surface-sunken); border-color: var(--gt-border); color: var(--gt-text-tertiary); cursor: not-allowed; }
+.gt-input--has-icon { padding-left: 38px; }
+.gt-input--compact { min-height: 32px; padding-top: 4px; padding-bottom: 4px; font-size: 12.5px; }
+.gt-textarea { display: block; resize: vertical; min-height: 90px; }
+.gt-field--error .gt-input, .gt-field--error .gt-textarea, .gt-field--over .gt-input, .gt-field--over .gt-textarea { border-color: var(--gt-error); }
+.gt-field--error .gt-input:focus, .gt-field--error .gt-textarea:focus { box-shadow: 0 0 0 2px var(--gt-error); }
+
+/* Input group: icon / text prefix / suffix / action sit inside one bordered box */
+.gt-input-group {
+  display: flex; align-items: center; width: 100%; min-height: 40px; box-sizing: border-box;
+  border: 1px solid var(--gt-border-control); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
+  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-input-group:hover { border-color: var(--gt-border-control-hover); }
+.gt-input-group:focus-within { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.gt-input-group .gt-input { flex: 1; min-height: 38px; border: none; border-radius: var(--gt-radius-sm); background: transparent; box-shadow: none; }
+.gt-input-group .gt-input:focus { box-shadow: none; }
+.gt-input-group--compact { min-height: 32px; }
+.gt-input-group--compact .gt-input { min-height: 30px; }
+.gt-input-group--disabled, .gt-input-group--disabled:hover { background: var(--gt-surface-sunken); border-color: var(--gt-border); }
+.gt-input-group__icon { display: inline-flex; padding-left: 12px; color: var(--gt-text-tertiary); pointer-events: none; }
+.gt-input-group__icon + .gt-input { padding-left: 8px; }
+.gt-input-group__prefix { padding-left: 13px; font-size: var(--gt-text-body); color: var(--gt-text-tertiary); white-space: nowrap; user-select: none; }
+.gt-input-group__prefix + .gt-input { padding-left: 1px; }
+.gt-input-group__suffix { display: inline-flex; align-items: center; padding-right: 12px; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); white-space: nowrap; }
+.gt-input-group__action { display: inline-flex; align-items: center; padding-right: 3px; }
+.gt-field--error .gt-input-group, .gt-field--over .gt-input-group { border-color: var(--gt-error); }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-input, .gt-input-group { min-height: 44px; }
+  .gt-input-group .gt-input { min-height: 42px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-input, .gt-textarea, .gt-input-group { transition: none; }
+}

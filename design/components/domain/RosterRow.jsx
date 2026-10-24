@@ -32,7 +32,7 @@ export function RosterRow({
       <div className="gt-roster-row__meta">
         {team && <span className="gt-roster-row__team">{team}</span>}
         {status && <Badge tone={statusTone}>{status}</Badge>}
-        <Badge role={role}>{role.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</Badge>
+        <Badge projectRole={role} />
       </div>
       {actions && <div className="gt-roster-row__actions">{actions}</div>}
     </div>

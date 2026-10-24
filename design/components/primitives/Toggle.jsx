@@ -1,24 +1,15 @@
 import React from 'react';
 
 /**
- * On/off toggle switch (settings, dark mode, notification prefs).
- * Green track when on, matching the app's Toggle-Switch component.
+ * On/off switch (`role="switch"`) for settings that apply at once — email preferences,
+ * notification prefs. Green track when on. The native input covers the row; a description is
+ * linked with `aria-describedby`.
  */
-export function Toggle({
-  id,
-  label,
-  checked = false,
-  onChange,
-  disabled = false,
-  description,
-  className = '',
-  ...rest
-}) {
+export function Toggle({ id, label, checked = false, onChange, disabled = false, description, className = '', ...rest }) {
   const reactId = React.useId();
   const inputId = id || reactId;
-
   return (
-    <label className={['gt-toggle', disabled ? 'gt-toggle--disabled' : '', className].filter(Boolean).join(' ')} htmlFor={inputId}>
+    <label className={['gt-toggle', description ? 'gt-toggle--with-desc' : '', disabled ? 'gt-toggle--disabled' : '', className].filter(Boolean).join(' ')} htmlFor={inputId}>
       <input
         id={inputId}
         type="checkbox"
@@ -27,15 +18,15 @@ export function Toggle({
         checked={checked}
         onChange={onChange}
         disabled={disabled}
+        aria-labelledby={label ? `${inputId}-label` : undefined}
+        aria-describedby={description ? `${inputId}-desc` : undefined}
         {...rest}
       />
-      <span className="gt-toggle__track" aria-hidden="true">
-        <span className="gt-toggle__thumb" />
-      </span>
+      <span className="gt-toggle__track" aria-hidden="true"><span className="gt-toggle__thumb" /></span>
       {(label || description) && (
         <span className="gt-toggle__text">
-          {label && <span className="gt-toggle__label">{label}</span>}
-          {description && <span className="gt-toggle__desc">{description}</span>}
+          {label && <span className="gt-toggle__label" id={`${inputId}-label`}>{label}</span>}
+          {description && <span className="gt-toggle__desc" id={`${inputId}-desc`}>{description}</span>}
         </span>
       )}
     </label>

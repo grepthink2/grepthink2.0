@@ -152,7 +152,7 @@ export default function StoryModal({
         <div className="story-modal__meta">
           {story.points != null && <PointsChip points={story.points} />}
           {hours != null && <EstimateChip estimate={`${hours}h`} />}
-          <UserPair reporter={reporter} assignee={assignee} size={24} />
+          <UserPair reporter={reporter} assignee={assignee} size="sm" />
           <span className="story-modal__rollup">
             {tasksDone}/{tasksTotal} tasks{story.points ? ` · ${pointsDone}/${story.points} pts` : ''}
           </span>

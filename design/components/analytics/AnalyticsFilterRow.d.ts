@@ -1,3 +1,4 @@
+// Intentional addition: RANGE_PRESETS, AnalyticsFilterRow — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export type RangePreset = '7d' | '30d' | '90d' | 'class' | 'all' | 'custom';

@@ -1,5 +1,10 @@
 # Code Review: GrepThink 2.0
 
+> **Historical (April 2026).** Code comments cite these items by number (`CODE_REVIEW.md #n`), so the
+> numbering stays. Line numbers predate the September 2026 refactor, and the ✅ marks reflect the
+> `pranay-kt` branch at the time; more items have been fixed since (for example #5, rate limiting, and
+> #7, the test endpoints). Treat the file as a record, not a to-do list.
+
 Findings organized by severity. Each item includes file locations and a suggested fix.
 
 > **Status legend:**

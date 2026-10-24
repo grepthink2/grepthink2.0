@@ -1,22 +1,33 @@
+// Intentional addition: Card — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-  /** Custom header row (overrides title/subtitle). */
+export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'onClick'> {
+  children?: React.ReactNode;
+  /** Replaces the default title / subtitle block. */
   header?: React.ReactNode;
-  /** Footer row with top border (actions). */
   footer?: React.ReactNode;
-  /** Simple header title. */
-  title?: string;
-  subtitle?: string;
-  /** 'card' = signature 2.61px shadow · 'hairline' = 1px border + 4px shadow · 'none'. @default 'card' */
+  /** Visible heading (not the HTML tooltip attribute — the card never forwards it). Required for an interactive card: it becomes the link / button. */
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  /** Right side of the header (IconButtons, a Menu trigger, a small Button). */
+  actions?: React.ReactNode;
+  /** Heading element for the title. @default 'h3' */
+  titleAs?: 'h2' | 'h3' | 'h4' | 'p';
+  /** @default 'card' */
   shadow?: 'card' | 'hairline' | 'none';
-  /** Pad the body (24/32px). Set false for flush content like tables. @default true */
+  /** 1px border, no shadow, radius 7, 12×14 padding — cards inside a card or a list. @default false */
+  bordered?: boolean;
+  /** Makes the card a link (stretched over the card from the title) to another site. */
+  href?: string;
+  /** Makes the card a link to an in-app route (the codebase renders a react-router Link; the kit an <a>). */
+  to?: string;
+  /** Makes the card a button (stretched from the title). */
+  onClick?: () => void;
+  /** Selected border (2px inset green); with `onClick` also sets `aria-pressed`, with `href` / `to` `aria-current="true"`. */
+  selected?: boolean;
+  /** @default true */
   padded?: boolean;
 }
 
-/**
- * Standard white surface card.
- * @startingPoint section="Primitives" subtitle="Card with header, body & footer" viewport="700x260"
- */
+/** Standard white surface. */
 export function Card(props: CardProps): React.JSX.Element;

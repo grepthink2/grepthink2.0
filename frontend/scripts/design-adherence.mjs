@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 /**
- * Design-system adherence check: non-token color literals.
+ * Design-system adherence checks, run by `npm run lint:design`. It fails (exit 1) when any
+ * check finds something:
+ *   1. Non-token color literals: raw hex outside the token files (this file; described below).
+ *   2. Shared component ownership: a stylesheet or markup outside src/components/ that copies a
+ *      shared component's classes instead of using the component (ownership.mjs, where the
+ *      rule is described).
+ *   3. Design-export names: a kit component in src/components/ whose folder or file is not named
+ *      after its export in design/_ds_manifest.json (names.mjs, where the rules are described).
+ *      Its findings in the feature layers and constants are warnings, which never fail the run.
  *
- * SCOPE (read before trusting a clean run): this scanner matches only bare
+ * SCOPE of the hex scan (read before trusting a clean run): this scanner matches only bare
  * `#hex`/`#rrggbb`/`#rrggbbaa` literals. It does NOT scan `rgba()`/`rgb()`/
  * `hsl()`/`hsla()` literals — as of this writing 51 files under src/ contain
  * at least one. Extending coverage to those is real, separate work: it needs
@@ -12,7 +20,7 @@
  * non-token color this script exists to catch) — tracked as a possible
  * follow-up, not attempted here.
  *
- * This script is the ENTIRE `lint:design` gate. An oxlint half was vendored
+ * These three checks are the whole `lint:design` gate. An oxlint half was vendored
  * briefly and removed by the final branch review: the only rules oxlint could
  * actually run (`no-restricted-imports` on DS-component paths, an empty
  * `forbid-elements`) matched zero files in this repo — the globs referenced a
@@ -37,8 +45,9 @@
  * relation to the DS's `Avatar`).
  *
  * What's genuinely usable from that config (restricted imports of DS
- * component internals, forbidden elements) is vendored as-is in
- * frontend/.oxlintrc-adherence.json and run by oxlint. This script
+ * component internals, forbidden elements) matched nothing here and was
+ * dropped, as above; the repo's own lint config, frontend/.oxlintrc.json, is
+ * unrelated to it. This script
  * reimplements the one part of the config's *intent* that actually has bite
  * in this codebase: catching raw hex color literals that bypass the
  * `--gt-*` design-token layer, across the stylesheet layer (.scss/.css) and
@@ -68,12 +77,21 @@
  */
 
 import { readdirSync, statSync, readFileSync } from 'node:fs';
-import { extname, join, relative, sep } from 'node:path';
+import { basename, extname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  checkMarkup,
+  checkStylesheet,
+  compileScss,
+  ownedClasses,
+  splitCodeAndComments,
+} from './ownership.mjs';
+import { checkNames } from './names.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FRONTEND_ROOT = join(__dirname, '..');
 const SRC_DIR = join(FRONTEND_ROOT, 'src');
+const MANIFEST = join(FRONTEND_ROOT, '..', 'design', '_ds_manifest.json');
 
 const SCAN_EXTS = new Set(['.scss', '.css', '.ts', '.tsx']);
 
@@ -142,62 +160,6 @@ function walk(dir, out) {
   return out;
 }
 
-/**
- * Splits source text into `code` (same length/layout as the input, with
- * comments and string/template contents blanked to spaces) and `comments`
- * (the concatenated raw text of every comment span). Hex literals inside
- * string/template literals are left in `code` — a chart-color constant like
- * `'#018156'` is a real usage, not commentary. A quick char-scanner is
- * enough here; this isn't trying to be a real parser.
- */
-function splitCodeAndComments(text) {
-  let code = '';
-  let comments = '';
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    const c = text[i];
-    const c2 = text[i + 1];
-    // Line comment — guard against `://` (protocol-relative URLs).
-    if (c === '/' && c2 === '/' && text[i - 1] !== ':') {
-      let j = i;
-      while (j < n && text[j] !== '\n') j++;
-      // Leading space keeps this comment from gluing onto whatever
-      // (unrelated) comment text precedes it with no separator.
-      comments += ' ' + text.slice(i, j);
-      code += ' '.repeat(j - i);
-      i = j;
-      continue;
-    }
-    // Block comment.
-    if (c === '/' && c2 === '*') {
-      let j = i + 2;
-      while (j < n && !(text[j] === '*' && text[j + 1] === '/')) j++;
-      j = Math.min(j + 2, n);
-      comments += ' ' + text.slice(i, j);
-      code += text.slice(i, j).replace(/[^\n]/g, ' ');
-      i = j;
-      continue;
-    }
-    // String / template literal — copy through as code.
-    if (c === '"' || c === "'" || c === '`') {
-      const quote = c;
-      let j = i + 1;
-      while (j < n && text[j] !== quote) {
-        if (text[j] === '\\') j++;
-        j++;
-      }
-      j = Math.min(j + 1, n);
-      code += text.slice(i, j);
-      i = j;
-      continue;
-    }
-    code += c;
-    i++;
-  }
-  return { code, comments };
-}
-
 function lineNumberAt(text, index) {
   let line = 1;
   for (let k = 0; k < index; k++) if (text[k] === '\n') line++;
@@ -214,7 +176,9 @@ for (const abs of files) {
   if (DEFINITION_FILES.has(rel)) continue;
 
   const text = readFileSync(abs, 'utf8');
-  const { code, comments } = splitCodeAndComments(text);
+  // `code` blanks the comments and keeps string and template literals: a chart-color constant
+  // like `'#018156'` is a real usage, not commentary.
+  const { code, comments } = splitCodeAndComments(text, { script: /\.tsx?$/.test(rel) });
   const falsePositives = NON_COLOR_FALSE_POSITIVES.filter((fp) => fp.file === rel);
 
   // Normalize away line-wrapping before matching markers: a wrapped JSDoc/
@@ -247,22 +211,180 @@ for (const abs of files) {
   }
 }
 
+// ── Shared component ownership (rules in ownership.mjs) ─────────────────────
+const COMPONENTS_DIR = 'src/components/';
+const toRel = (abs) => relative(FRONTEND_ROOT, abs).split(sep).join('/');
+const isStylesheet = (rel) => rel.endsWith('.scss') || rel.endsWith('.css');
+const isTest = (rel) => rel.includes('/__tests__/') || basename(rel).includes('.test.');
+const compileErrors = [];
+
+function compileOrReport(abs, rel) {
+  try {
+    return compileScss(abs, SRC_DIR);
+  } catch (error) {
+    compileErrors.push(`  ${rel}  ${String(error.message).split('\n')[0]}`);
+    return '';
+  }
+}
+
+// The compiled stylesheets of each component folder (a stylesheet directly in src/components/
+// is a component of its own).
+const componentCss = new Map();
+for (const abs of files) {
+  const rel = toRel(abs);
+  if (!rel.startsWith(COMPONENTS_DIR) || extname(rel) !== '.scss') continue;
+  const parts = rel.slice(COMPONENTS_DIR.length).split('/');
+  const owner = parts.length > 1 ? parts[0] : basename(parts[0], '.scss');
+  componentCss.set(owner, `${componentCss.get(owner) ?? ''}${compileOrReport(abs, rel)}\n`);
+}
+const owned = ownedClasses(componentCss);
+
+// Every other stylesheet Vite compiles on its own (a partial is checked through the stylesheets
+// that @use it), and every source file that is not a test.
+const ownershipViolations = [];
+let stylesheetCount = 0;
+let sourceCount = 0;
+for (const abs of files) {
+  const rel = toRel(abs);
+  if (rel.startsWith(COMPONENTS_DIR)) continue;
+  if (isStylesheet(rel)) {
+    if (basename(rel).startsWith('_')) continue;
+    stylesheetCount++;
+    ownershipViolations.push(...checkStylesheet(rel, compileOrReport(abs, rel), owned));
+  } else if (!isTest(rel)) {
+    sourceCount++;
+    ownershipViolations.push(...checkMarkup(rel, readFileSync(abs, 'utf8'), owned));
+  }
+}
+
+// ── Design-export names (rules in names.mjs) ────────────────────────────────
+// A manifest that cannot be read or has no components[] list stops this check, and fails the run.
+let names = null;
+let namesError = '';
+try {
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  names = checkNames(
+    manifest,
+    files.map((abs) => {
+      const rel = toRel(abs);
+      return { path: rel, source: /\.tsx?$/.test(rel) ? readFileSync(abs, 'utf8') : undefined };
+    })
+  );
+} catch (error) {
+  namesError = String(error?.message ?? error).split('\n')[0];
+}
+
+// ── Report ──────────────────────────────────────────────────────────────────
+let failed = false;
+
 if (violations.length === 0) {
   console.log(
     `design-adherence: OK — 0 non-token color literals (${allowedCount} pre-cleared by ` +
       `in-file ledger comments/known false-positives across ${ledgerFileCount} ledger files, ` +
       `${DEFINITION_FILES.size} token-definition files exempted).`
   );
-  process.exit(0);
+} else {
+  failed = true;
+  console.error(`design-adherence: ${violations.length} non-token color literal(s) found:\n`);
+  for (const v of violations) {
+    console.error(`  ${v.file}:${v.line}  ${v.value}`);
+  }
+  console.error(
+    '\nUse a --gt-* design token via var(...) instead. If this is a deliberate, already-reviewed ' +
+      'exception, document it with a comment in the file (see existing "bespoke" / "legacy palette" ' +
+      '/ "left as raw hex" comments for the convention) rather than adding it here.'
+  );
 }
 
-console.error(`design-adherence: ${violations.length} non-token color literal(s) found:\n`);
-for (const v of violations) {
-  console.error(`  ${v.file}:${v.line}  ${v.value}`);
+// A partial that two stylesheets @use reports once for each; the same rule twice in one file, once.
+const ownershipLines = [
+  ...new Set(
+    ownershipViolations.map(
+      (v) =>
+        `  ${v.file}${v.line ? `:${v.line}` : ''}  ${v.selector ?? v.cls} belongs to ` +
+        `components/${v.owner}. Use the component; adjust it from your feature's own class.`
+    )
+  ),
+];
+if (compileErrors.length > 0) {
+  failed = true;
+  console.error(
+    `\ndesign-adherence: ${compileErrors.length} stylesheet(s) did not compile, so their ` +
+      `ownership was not checked:\n`
+  );
+  for (const line of compileErrors) console.error(line);
 }
-console.error(
-  '\nUse a --gt-* design token via var(...) instead. If this is a deliberate, already-reviewed ' +
-    'exception, document it with a comment in the file (see existing "bespoke" / "legacy palette" ' +
-    '/ "left as raw hex" comments for the convention) rather than adding it here.'
-);
-process.exit(1);
+if (ownershipLines.length > 0) {
+  failed = true;
+  console.error(
+    `\ndesign-adherence: ${ownershipLines.length} copy(ies) of a shared component's classes ` +
+      `outside src/components/:\n`
+  );
+  for (const line of ownershipLines) console.error(line);
+  console.error(
+    "\nA feature adjusts a shared component from its own class (`.my-feature__head .gt-button`). " +
+      'An exception the design itself defines goes in OWNERSHIP_ALLOWLIST (scripts/ownership.mjs) ' +
+      'with its reason.'
+  );
+}
+if (compileErrors.length === 0 && ownershipLines.length === 0) {
+  console.log(
+    `design-adherence: OK — no stylesheet or markup outside src/components/ copies a shared ` +
+      `component's classes (${owned.size} classes of ${componentCss.size} components; ` +
+      `${stylesheetCount} stylesheets and ${sourceCount} source files checked).`
+  );
+}
+
+if (names === null) {
+  failed = true;
+  console.error(`\ndesign-adherence: the names check could not run: ${namesError}`);
+} else {
+  if (names.failures.length > 0) {
+    failed = true;
+    console.error(
+      `\ndesign-adherence: ${names.failures.length} shared component name(s) differ from the design's ` +
+        `exports:\n`
+    );
+    for (const f of names.failures) console.error(`  ${f.message}`);
+    console.error(
+      '\nA kit component lives at src/components/<Name>/<Name>.tsx, named after its export in ' +
+        "design/_ds_manifest.json; an export the design ships in another component's file may also " +
+        "live in that component's folder. A deliberate difference goes in NAMES_ALLOWLIST " +
+        '(scripts/names.mjs) with its reason.'
+    );
+  }
+  if (names.warnings.length > 0) {
+    console.warn(`\ndesign-adherence: ${names.warnings.length} naming warning(s), report only:\n`);
+    for (const w of names.warnings) console.warn(`  ${w.message}`);
+    console.warn(
+      "\nWarnings never fail the run. Name the codebase side after the design's export, or record " +
+        'a deliberate difference in NAMES_ALLOWLIST (scripts/names.mjs) with its status and reason; ' +
+        'an entry that hides nothing any more can go.'
+    );
+  }
+  for (const note of names.notes) console.log(`design-adherence: note: ${note.message}`);
+  if (names.failures.length === 0) {
+    // Each export: under its own name, accounted for in NAMES_ALLOWLIST, waiting for a feature
+    // folder that does not exist yet, or left to a warning.
+    const tally = (rows) => {
+      const listed = rows.filter((row) => row.allowlisted).length;
+      const same = rows.filter((row) => !row.allowlisted && row.status === 'same name').length;
+      const waiting = rows.filter((row) => !row.allowlisted && row.status === 'not ported').length;
+      const open = rows.length - listed - same - waiting;
+      return (
+        `${same} under their own name, ${listed} in NAMES_ALLOWLIST` +
+        (waiting > 0 ? `, ${waiting} waiting for their folder` : '') +
+        (open > 0 ? `, ${open} with a warning` : '')
+      );
+    };
+    const kit = names.audit.filter((row) => row.kit);
+    const features = names.audit.filter((row) => !row.kit);
+    console.log(
+      `design-adherence: OK — every kit component in src/components/ carries its design export's ` +
+        `name (${kit.length} kit exports: ${tally(kit)}; ${features.length} feature-layer exports: ` +
+        `${tally(features)}).`
+    );
+  }
+}
+
+process.exit(failed ? 1 : 0);

@@ -1,0 +1,98 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApiAssignmentTsrEntry, ApiScrumComment, ApiScrumTask } from '../api/types';
+
+// The three calls are checked at the `apiRequest` seam. Each answers its resource whichever shape
+// the backend sends: the resource itself, or { message, <resource> } from a backend deployed
+// before this client (the two deploy separately).
+const apiRequest = vi.hoisted(() => vi.fn());
+vi.mock('../api/client', () => ({ apiRequest }));
+
+import { assignmentsApi } from '../api/assignments';
+import { scrumApi } from '../api/scrum';
+
+const TASK: ApiScrumTask = {
+  id: 't1',
+  story_id: 's1',
+  key: 'GT-1',
+  title: 'Search',
+  description_md: null,
+  points: 3,
+  estimate_hours: null,
+  status: 'done',
+  reporter_id: 'u1',
+  assignee_id: null,
+  tags: [],
+  pr_url: null,
+  pr_provider: null,
+  pr_state: null,
+  moved_by: 'u1',
+  moved_by_name: 'Tony Wu',
+  moved_at: '2026-10-21T12:00:00Z',
+  comment_count: 0,
+  depends_on: [],
+  blocks: [],
+};
+const COMMENT: ApiScrumComment = {
+  id: 'c1',
+  author_id: 'u1',
+  author_name: 'Tony Wu',
+  body_md: 'Looks good',
+  created_at: '2026-10-21T12:00:00Z',
+};
+const ENTRY: ApiAssignmentTsrEntry = {
+  tsr_id: 'tsr1',
+  evaluator_id: 'u1',
+  evaluatee_id: 'u2',
+  evaluator_name: 'Tony Wu',
+  evaluatee_name: 'Ana Xu',
+  percent_contribution: 50,
+  positive_feedback: 'Steady work',
+};
+
+beforeEach(() => {
+  apiRequest.mockReset();
+});
+
+describe('moveScrumTask', () => {
+  it.each([
+    ['the task itself', TASK],
+    ['{ message, task }', { message: 'Task moved successfully', task: TASK }],
+  ])('answers the task when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(scrumApi.moveScrumTask('t1', 'done')).resolves.toEqual(TASK);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/scrum/tasks/t1/move');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ to_status: 'done' });
+  });
+});
+
+describe('createScrumComment', () => {
+  it.each([
+    ['the comment itself', COMMENT],
+    ['{ message, comment }', { message: 'Comment added successfully', comment: COMMENT }],
+  ])('answers the comment when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(scrumApi.createScrumComment('tasks', 't1', 'Looks good')).resolves.toEqual(COMMENT);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/scrum/tasks/t1/comments');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ body_md: 'Looks good' });
+  });
+});
+
+describe('updateAssignmentTsr', () => {
+  it.each([
+    ['the entry itself', ENTRY],
+    ['{ message, tsr }', { message: 'TSR updated successfully', tsr: ENTRY }],
+  ])('answers the entry when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    await expect(
+      assignmentsApi.updateAssignmentTsr('a1', 'tsr1', { positive_feedback: 'Steady work' }),
+    ).resolves.toEqual(ENTRY);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/assignments/a1/tsrs/tsr1');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ positive_feedback: 'Steady work' });
+  });
+});

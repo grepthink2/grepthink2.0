@@ -1,0 +1,24 @@
+// A feature stylesheet for the ownership tests. Two rules copy a shared component's classes;
+// the others adjust the component from the feature's own class. The check reads the CSS that
+// Sass compiles, so the nesting below is resolved first.
+@use '@styles' as styles;
+@use '@styles/motion' as *;
+@use '@/styles/skeleton' as skeleton;
+
+.gt-button {
+  &--sm { padding: 0; }
+}
+
+.feature {
+  &__head .gt-button { flex-shrink: 0; }
+  .gt-button--sm { margin: 0; }
+  &.gt-button { margin: 0; }
+}
+
+@media (max-width: 767px) {
+  .gt-button--sm { min-height: 44px; }
+}
+
+.feature__spinner { @include gt-spinner; }
+.feature__placeholder { @include skeleton.skeleton-block; }
+.feature__label { @include styles.gt-visually-hidden; }

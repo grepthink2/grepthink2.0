@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml?query=branch%3Amain"><img alt="Tests on main" src="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml/badge.svg?branch=main"></a>
   <a href="https://codecov.io/gh/grepthink2/grepthink2.0"><img alt="Coverage" src="https://codecov.io/gh/grepthink2/grepthink2.0/branch/main/graph/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue"></a>
   <a href="https://grepthink2.com"><img alt="grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-frontend?label=grepthink2.com&logo=vercel&logoColor=white"></a>
   <a href="https://api.grepthink2.com/health"><img alt="api.grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-backend?label=api.grepthink2.com&logo=vercel&logoColor=white"></a>
 </p>
@@ -33,7 +34,7 @@ series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is 
 | Path | What | Docs |
 |---|---|---|
 | `frontend/` | React 19, TypeScript and Vite, styled with SCSS | [frontend/README.md](frontend/README.md) |
-| `backend/` | FastAPI on Supabase (Postgres), through the service role | [backend/README.md](backend/README.md) · [style guide](backend/STYLE_GUIDE.md) · [API for the frontend](backend/docs/FRONTEND_API.md) |
+| `backend/` | FastAPI on Supabase (Postgres), through the service role | [backend/README.md](backend/README.md) · [style guide](backend/STYLE_GUIDE.md) · routes: each feature's `url.py` and `/docs` |
 | `backend/database/migrations/` | SQL applied by hand, one folder per month | [DEPLOY.md](DEPLOY.md), "Database migrations" |
 | `supabase/` | schema snapshot, auth and storage setup for a fresh database | [supabase/README.md](supabase/README.md) |
 | `design/` | the Claude Design export (the design system), ported into `frontend/` by hand | [design/PORTING.md](design/PORTING.md) |
@@ -210,14 +211,64 @@ it exists.
 
 - Work on a feature branch and open a pull request into `beta`. Fill in the template: what
   changed, how you verified it, which gates ran.
-- Nothing lands on `main` except a pull request from `beta` whose checks pass, merged with a
-  merge commit; squashing it leaves the two branches in conflict. Vercel deploys `main` to
-  production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
+- `main` takes only pull requests whose checks pass, merged with a merge commit: the release pull
+  request from `beta` (squashing it leaves the two branches in conflict), and Dependabot's security
+  updates, which merge into `main` directly and deploy without a new version. Vercel deploys `main`
+  to production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
   (`main.json`: pull requests only, both CI jobs required, merge commits only, no force-push or
   deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
   Rules.
-- Dependabot opens grouped dependency updates against `beta` once a week
-  ([`.github/dependabot.yml`](.github/dependabot.yml)).
+- **Every release has a version and release notes.** The version is `frontend/package.json`'s
+  `version`, `MAJOR.MINOR.PATCH`: a release with anything new or improved raises the minor number,
+  and a release with fixes only raises the patch (1.0.0 is the maintainer's call). Its notes are
+  `frontend/src/features/releases/notes/<version>.md`. A release takes three steps:
+  1. On a branch from `beta` (`release/<version>`), add `notes/<version>.md` and raise the version
+     with `npm --prefix frontend version <version> --no-git-tag-version`, which updates
+     `package-lock.json` as well. Open a pull request into `beta` and merge it.
+  2. Open the release pull request from `beta` into `main` as usual, and merge it with a merge
+     commit.
+  3. [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the merge commit
+     `v<version>` and publishes the GitHub release, with the notes (without the front matter) as
+     its body.
+
+  A release with nothing for users to read (internal work only) skips step 1 and keeps the version,
+  and so does a Dependabot security update: no notes and no tag. The release pull request then gets
+  a warning that its version is tagged already, which is right for internal work only.
+
+  `releaseNotes.test.ts` fails a pull request when a notes file breaks the format, or when the
+  newest one is not the version in `package.json`. A notes file looks like this:
+
+  ```markdown
+  ---
+  date: 2026-10-23
+  ---
+
+  ## New
+
+  - **What's new.** Release notes for every version, on the landing page and in your profile menu.
+
+  ## Improved
+
+  - Pages open faster: each page loads its own code the first time you visit it.
+
+  ## Fixed
+
+  - A live meeting on your schedule shows a blue Live badge again.
+  ```
+
+  - **`date`**, the front matter's only key, is the day the release reaches `main`, on the campus
+    calendar. If the release merges later than planned, fix the date in the release pull request.
+  - **The sections** are `## New`, `## Improved` and `## Fixed`, each optional and at most once, in
+    that order; a file has at least one. Each is a `- ` list, one item per change, in inline
+    Markdown only (bold, italics, `code` and links): no headings, images, tables, block quotes or
+    HTML.
+  - **Write for students, TAs and instructors at every school:** what they can do now, in plain
+    words. Leave out pull request numbers, file paths, component names and internal work (lint, CI,
+    refactors), unless users notice it ("Pages open faster"). One line per change, with an optional
+    bold lead-in. A line that concerns one role names it ("Instructors can now …"). Links are
+    allowed but rare.
+- Dependabot opens grouped dependency updates against `beta`: weekly for npm and pip, monthly for
+  GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)).
 - Merging never changes a database. Add a migration as
   `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, apply it by hand to DEV, and
   apply it to PROD before the release whose code needs it ([DEPLOY.md](DEPLOY.md), "Database
@@ -230,3 +281,13 @@ it exists.
 
 Found a vulnerability? Report it privately, as [SECURITY.md](SECURITY.md) describes, rather than
 in a public issue.
+
+## License
+
+GrepThink 2.0 is free software under the [GNU Affero General Public License v3.0](LICENSE)
+(`AGPL-3.0-only`). You may run, study, change and share it, and if you run a modified version as a
+service you must offer its source to your users. Copyright © 2026 GrepThink.
+
+Contributions are accepted under the [Contributor License Agreement](CLA.md), which lets the project
+also offer GrepThink under other terms, for example to an institution that cannot accept the AGPL.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the short version of how to contribute.

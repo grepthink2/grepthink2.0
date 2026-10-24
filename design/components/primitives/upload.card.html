@@ -1,0 +1,83 @@
+<!-- @dsCard group="Components" viewport="760x980" name="Primitives — Upload & Markdown" subtitle="FileUpload image picker and CSV drop area (empty, drag-over, chosen, error, disabled); MarkdownEditor write / preview / over limit; phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { FileUpload, MarkdownEditor } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const MB = 1024 * 1024;
+const MD = '**Bike Share Map** shows every campus dock with live availability.\n\n- Built with _React_ and `PostgreSQL`\n- Sponsor: [Transportation & Parking](https://taps.ucsc.edu)\n\nWe meet Tuesdays after section.';
+
+function Phone() {
+  return (
+    <div className="col">
+      <p className="lbl">Phone — buttons 44px, rows wrap</p>
+      <FileUpload variant="image" label="Profile photo" accept="image/png,image/jpeg" helperText="PNG or JPG, up to 2 MB." onSelect={() => {}} />
+      <FileUpload label="Roster CSV" accept=".csv" typeHint="a .csv file" file={{ name: 'cse115a-fall26-roster.csv', size: 18432 }} fileMeta="62 rows" onRemove={() => {}} onSelect={() => {}} />
+      <MarkdownEditor label="Description" value={MD} onChange={() => {}} maxLength={2000} rows={4} />
+    </div>
+  );
+}
+
+function Demo() {
+  const [csv, setCsv] = React.useState(null);
+  const [img, setImg] = React.useState('');
+  const [md, setMd] = React.useState(MD);
+  const [long, setLong] = React.useState(MD.repeat(4));
+  return (
+    <div className="st">
+      <div className="sec">
+        <p className="lbl">FileUpload · image — empty (try it) · with preview · square logo · error · disabled</p>
+        <div className="grid2">
+          <FileUpload variant="image" label="Profile photo" accept="image/png,image/jpeg" maxSize={2 * MB} typeHint="a PNG or JPG" helperText="PNG or JPG, up to 2 MB."
+            previewUrl={img} onSelect={(f) => setImg(URL.createObjectURL(f))} onRemove={() => setImg('')} />
+          <FileUpload variant="image" label="Profile photo" previewUrl="../../assets/slug.svg" helperText="PNG or JPG, up to 2 MB." onSelect={() => {}} onRemove={() => {}} />
+          <FileUpload variant="image" shape="square" label="Project logo" optional previewUrl="../../assets/gt2bulb.svg" helperText="Square PNG or SVG, up to 1 MB." onSelect={() => {}} onRemove={() => {}} />
+          <FileUpload variant="image" label="Profile photo" error="That file is 3.2 MB. The limit is 2 MB." onSelect={() => {}} />
+          <FileUpload variant="image" label="Profile photo" disabled helperText="Photos are off for this school." onSelect={() => {}} />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">FileUpload · drop — empty (drag a .csv on it) · drag-over · chosen · error · disabled</p>
+        <div className="grid2">
+          <FileUpload label="Roster CSV" accept=".csv" typeHint="a .csv file" dropTitle="Drag your roster CSV here" helperText="Export it from Canvas → People." file={csv} fileMeta="62 rows" onSelect={setCsv} onRemove={() => setCsv(null)} />
+          <div className="gt-field"><span className="gt-field__label">Drag-over</span><div className="gt-upload-drop gt-upload-drop--over"><span className="gt-upload-drop__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg></span><p className="gt-upload-drop__title">Drop to upload</p><p className="gt-upload-drop__hint">roster.csv</p></div></div>
+          <FileUpload label="Roster CSV" file={{ name: 'cse115a-fall26-roster.csv', size: 18432 }} fileMeta="62 rows" onSelect={() => {}} onRemove={() => {}} />
+          <FileUpload label="Roster CSV" accept=".csv" error="Choose a .csv file." onSelect={() => {}} />
+          <FileUpload label="Roster CSV" disabled helperText="Imports are paused while the term rolls over." onSelect={() => {}} />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">MarkdownEditor — write (toolbar: ← → between tools, Ctrl+B / I / K) · Preview tab · over the limit · disabled</p>
+        <div className="grid2">
+          <MarkdownEditor label="Project description" value={md} onChange={setMd} maxLength={2000} helperText="Markdown: **bold**, _italic_, lists, links." />
+          <MarkdownEditor label="Issue details" value={long} onChange={setLong} maxLength={600} rows={4} error={long.length > 600 ? `Shorten this by ${long.length - 600} characters.` : undefined} />
+          <MarkdownEditor label="Email body" value="Hi team — you're invited to **CSE 115A**." onChange={() => {}} disabled rows={3} />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width</p>
+        <iframe className="phone" src="upload.card.html?phone" height="660" title="Upload and Markdown at phone width" />
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>

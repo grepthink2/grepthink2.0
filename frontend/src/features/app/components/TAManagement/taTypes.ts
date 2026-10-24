@@ -60,3 +60,11 @@ export const STATUS_LABEL: Record<AttendanceStatus, string> = {
 export const WEEKDAYS = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 ] as const;
+
+/**
+ * The meetings-per-week choices: 1 or 2. The API still accepts 1-7, so a class already saved above
+ * 2 keeps its own value in the list instead of leaving the select with no option to show.
+ */
+export function meetingsPerWeekOptions(current: number): number[] {
+  return current > 2 ? [1, 2, current] : [1, 2];
+}

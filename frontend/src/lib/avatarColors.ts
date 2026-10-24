@@ -1,7 +1,9 @@
 /**
- * The design system's initials-avatar palette (design/components/display/Avatar.jsx), kept
- * verbatim. All six pass 4.5:1 behind white initials, and it is the one palette for avatars
- * everywhere, the landing page's decorative ones included.
+ * The landing page's copy of the avatar palette, as hex: its decorative floating cards
+ * (features/landing/components/FloatingCards.tsx) paint with these. Everything else takes the kit's
+ * palette and hash from components/Avatar/avatarHelpers.ts (AVATAR_COLORS as the --gt-avatar-1…6
+ * tokens, hashColor, initialsOf). The six are kept verbatim, in the tokens' order, and
+ * lib/__tests__/avatarColors.test.ts pins the two together.
  */
 export const AVATAR_COLORS = [
   '#018156',

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ProjectView from '../components/Project/ProjectView';
-import ConfirmModal from '../components/Overlays/ConfirmModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import ProjectHeader from '../components/CreateProject/ProjectHeader';
 import DescriptionEditor from '../components/CreateProject/DescriptionEditor';
 import TeamSidePanel from '../components/CreateProject/TeamSidePanel';
@@ -331,31 +331,32 @@ const CreateProject: React.FC = () => {
         onCreateProject={handleCreateProject}
       />
 
-      <ConfirmModal
-        isOpen={showClearDescriptionModal}
-        onClose={() => setShowClearDescriptionModal(false)}
+      <ConfirmDialog
+        open={showClearDescriptionModal}
+        destructive
+        title="Clear project description?"
+        message="This will clear all content in the project description. This cannot be undone."
+        confirmLabel="Clear"
+        onCancel={() => setShowClearDescriptionModal(false)}
         onConfirm={() => {
           clearDescriptionContent();
           setShowClearDescriptionModal(false);
         }}
-        title="Clear project description?"
-        message="This will clear all content in the project description. This cannot be undone."
-        confirmText="Clear"
-        cancelText="Cancel"
       />
 
-      <ConfirmModal
-        isOpen={showSwitchToTemplateWarningModal}
-        onClose={() => setShowSwitchToTemplateWarningModal(false)}
-        onConfirm={() => setShowSwitchToTemplateWarningModal(false)}
-        onCancel={() => {
+      {/* Cancel ("Stay") is the safe choice, so it takes focus; switching drops content. */}
+      <ConfirmDialog
+        open={showSwitchToTemplateWarningModal}
+        destructive
+        title="Switch to Template?"
+        message="The current markdown uses custom formatting (headings or the overview text). Switching back to Template will map only the standard sections (Problem Statement, Project Goals, Scope of Work, Tech Stack) and will reset and drop other content."
+        confirmLabel="Switch to template"
+        cancelLabel="Stay"
+        onCancel={() => setShowSwitchToTemplateWarningModal(false)}
+        onConfirm={() => {
           performSwitchToTemplate();
           setShowSwitchToTemplateWarningModal(false);
         }}
-        title="Switch to Template?"
-        message="The current markdown uses custom formatting (headings or the overview text). Switching back to Template will map only the standard sections (Problem Statement, Project Goals, Scope of Work, Tech Stack) and will reset and drop other content."
-        confirmText="Stay"
-        cancelText="Continue"
       />
     </div>
   );

@@ -1,35 +1,27 @@
 import type { ReactNode } from 'react';
+import { Table, type TableColumn } from '@/components/Table/Table';
 
 export interface CardTableColumn { key: string; label: string; numeric?: boolean }
 export interface CardTableRow { key: string; cells: ReactNode[] }
 export interface CardTableProps { caption: string; columns: CardTableColumn[]; rows: CardTableRow[] }
 
 /**
- * A card's figures as a table, the twin its Table toggle shows in place of the chart: a visually hidden caption names it,
- * each row's first cell is that row's header, numeric columns align right, and it scrolls inside the card under a header
- * that sticks.
+ * A card's figures as a table, the twin its Table toggle shows in place of the chart, on the shared Table with a header
+ * that sticks: a visually hidden caption names it, each row's first cell is that row's header, numeric
+ * columns align right, and it scrolls inside the card. It takes the design's breakdown look, as the breakdown table does
+ * (`.gt-table--breakdown` in analytics.scss).
  */
 export function CardTable({ caption, columns, rows }: CardTableProps) {
-  const numeric = (i: number) => (columns[i]?.numeric ? 'gt-table__num' : undefined);
+  const tableColumns: TableColumn<CardTableRow>[] = columns.map((c, i) => ({
+    key: c.key,
+    label: c.label,
+    rowHeader: i === 0,
+    className: c.numeric ? 'gt-table__num' : undefined,
+    render: (row) => row.cells[i],
+  }));
   return (
-    <div className="gt-table__scroll">
-      <table className="gt-table__table">
-        <caption className="gt-table__caption">{caption}</caption>
-        <thead>
-          <tr>
-            {columns.map((c, i) => <th key={c.key} scope="col" className={numeric(i)}>{c.label}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key}>
-              {row.cells.map((cell, i) => (i === 0
-                ? <th key={columns[i]?.key ?? i} scope="row" className={numeric(i)}>{cell}</th>
-                : <td key={columns[i]?.key ?? i} className={numeric(i)}>{cell}</td>))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="gt-table--breakdown">
+      <Table caption={caption} columns={tableColumns} rows={rows} rowKey={(row) => row.key} stickyHeader />
     </div>
   );
 }

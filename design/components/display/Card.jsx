@@ -1,31 +1,44 @@
 import React from 'react';
 
 /**
- * White surface card — the app's standard container.
- * `shadow="card"` uses the signature 2.61px shadow; `shadow="hairline"`
- * pairs a 1px border with a 4px whisper shadow (metric cards).
+ * White surface card. `shadow`: card (2.61px signature) · hairline (1px border + whisper) · none.
+ * `bordered`: 1px border, no shadow, radius 7 — for cards nested in a card or a list.
+ * Interactive (`href`, `to` or `onClick`): the title becomes a stretched link / button, so the whole
+ * card is the target while header actions and the footer stay clickable above it; hover lifts the
+ * shadow, keyboard focus rings the card, `selected` draws the green selected border (`aria-pressed`
+ * on a button card, `aria-current="true"` on a link card). `to` is an in-app route: the codebase
+ * renders a react-router Link there, as Button does; the kit has no router, so it renders an <a>.
+ * `actions` sit right of the title (as ChartCard's tools do). The card does not clip: a flush body
+ * clips and rounds itself, and a focused flush child rings the card.
  */
 export function Card({
-  children,
-  header,
-  footer,
-  title,
-  subtitle,
-  shadow = 'card',
-  padded = true,
-  className = '',
-  ...rest
+  children, header, footer, title, subtitle, actions, titleAs = 'h3', shadow = 'card', bordered = false,
+  href, to, onClick, selected, padded = true, className = '', ...rest
 }) {
+  const interactive = !!(href || to != null || onClick) && title != null;
+  const T = titleAs;
+  const current = selected ? 'true' : undefined;
+  const titleNode = title != null && (
+    <T className="gt-card__title">
+      {!interactive ? title : (href || to != null)
+        ? <a className="gt-card__link" href={href || String(to)} aria-current={current}>{title}</a>
+        : <button type="button" className="gt-card__link" onClick={() => onClick()} aria-pressed={selected === undefined ? undefined : !!selected}>{title}</button>}
+    </T>
+  );
   return (
-    <div className={['gt-card', `gt-card--${shadow}`, className].filter(Boolean).join(' ')} {...rest}>
-      {(header || title) && (
+    <div
+      className={['gt-card', bordered ? 'gt-card--bordered' : `gt-card--${shadow}`, interactive ? 'gt-card--interactive' : '', selected ? 'gt-card--selected' : '', className].filter(Boolean).join(' ')}
+      {...rest}
+    >
+      {(header || title != null || actions) && (
         <div className="gt-card__header">
           {header || (
-            <div>
-              <h3 className="gt-card__title">{title}</h3>
+            <div className="gt-card__heading">
+              {titleNode}
               {subtitle && <p className="gt-card__subtitle">{subtitle}</p>}
             </div>
           )}
+          {actions && <div className="gt-card__actions">{actions}</div>}
         </div>
       )}
       <div className={padded ? 'gt-card__body' : 'gt-card__body gt-card__body--flush'}>{children}</div>

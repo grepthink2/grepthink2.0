@@ -1,7 +1,8 @@
 import React from 'react';
 import { ChartTooltip, useChartTip, useMeasure, fmtWeek, fmtPct, niceScale } from './ChartTooltip.jsx';
 import { ChartLegend } from './ChartLegend.jsx';
-import { ChartEmptyState } from './ChartEmptyState.jsx';
+import { EmptyState } from '../feedback/EmptyState.jsx';
+import { AnalyticsIcon } from './ChartLegend.jsx';
 
 const M = { top: 12, right: 10, bottom: 20, left: 6 };
 const UNIT_SHORT = { 'per team per week': '/team/wk', 'per team': '/team', rate: 'rate' };
@@ -106,7 +107,7 @@ export function TrendLines({ panels = [], compare = true, asOf, height = 96, vie
     else if (complete.every((p) => p.current.every((pt) => !isNum(pt.value) || pt.value === 0))) empty = 'no_activity';
   }
   if (empty) {
-    return <div className="gt-trend__empty"><ChartEmptyState icon="trending-up" title={EMPTY_COPY[empty] || empty} /></div>;
+    return <div className="gt-trend__empty"><EmptyState variant="card" titleAs="p" icon={<AnalyticsIcon name="trending-up" size={18} />} title={EMPTY_COPY[empty] || empty} /></div>;
   }
   const anyPrev = compare && complete.some((p) => p.previous && p.previous.length);
   if (view === 'table') {

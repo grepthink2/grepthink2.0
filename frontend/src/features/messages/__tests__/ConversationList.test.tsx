@@ -98,3 +98,41 @@ describe('ConversationList rows', () => {
     expect(secondRow).toHaveTextContent('pushed the fix');
   });
 });
+
+describe('ConversationList avatars', () => {
+  it('draws each row’s avatar hidden beside the printed name: the peer’s photo, the channel’s initials', () => {
+    const { container } = render(
+      <ConversationList
+        loading={false}
+        conversations={[
+          conversation({ id: 'c1', other_user: { id: 'u2', email: 'sam@ucsc.edu', name: 'Sam Lee', image_url: 'https://img.example/sam.png' } }),
+          conversation({ id: 'c2', type: 'team_members', team_name: 'Trailhead' }),
+        ]}
+      />,
+    );
+    expect(screen.queryByRole('img')).toBeNull();
+    const [photo, initials] = Array.from(container.querySelectorAll('.gt-avatar'));
+    expect(photo.tagName).toBe('IMG');
+    expect(photo).toHaveAttribute('src', 'https://img.example/sam.png');
+    expect(photo).toHaveAttribute('alt', '');
+    expect(photo).toHaveAttribute('aria-hidden', 'true');
+    expect(photo).toHaveClass('gt-avatar--lg');
+    expect(initials).toHaveTextContent('TR');
+    expect(initials).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('draws "?" for a DM with no peer, not the initials of its Unknown title', () => {
+    const { container } = render(<ConversationList loading={false} conversations={[conversation({ other_user: null })]} />);
+    expect(screen.getByText('Unknown')).toHaveClass('messages-list__name');
+    expect(container.querySelector('.gt-avatar')).toHaveTextContent(/^\?$/);
+  });
+
+  it('sizes the avatars and their loading circles by avatarSize', () => {
+    const { container, rerender } = render(<ConversationList loading conversations={[]} avatarSize="md" />);
+    const circles = container.querySelectorAll<HTMLElement>('.gt-skeleton');
+    expect(circles[0].style.width).toBe('36px');
+    expect(circles[0].style.height).toBe('36px');
+    rerender(<ConversationList loading={false} conversations={[conversation({ other_user: { id: 'u2', email: 'sam@ucsc.edu', name: 'Sam Lee' } })]} avatarSize="md" />);
+    expect(container.querySelector('.gt-avatar')).toHaveClass('gt-avatar--md');
+  });
+});

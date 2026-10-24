@@ -1,6 +1,7 @@
+// Intentional addition: TaskCard — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 import { TaskTag } from './TagBadge';
-import { PRLinkChipProps } from './PointsChip';
+import { PRLinkChipProps } from './Chips';
 
 export interface TaskMoveAudit {
   /** Column it landed in ("Done"). */

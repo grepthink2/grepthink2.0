@@ -132,6 +132,14 @@ $panel-width: 420px;
   color: $text-secondary;
 }
 
+// Until this modal's other fields move onto the kit, its date fields' labels (FieldShell's) keep the look of the labels beside them.
+.aem .gt-field__label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+}
+
 .aem__hint {
   font-size: 12px;
   color: var(--gt-text-tertiary);
@@ -404,7 +412,7 @@ $panel-width: 420px;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-// Date picker styles live in DatePickerField.scss (shared component)
+// Date picker styles live in components/DatePickerField/DatePickerField.scss (the shared component)
 
 @media (max-width: 480px) {
   .aem {

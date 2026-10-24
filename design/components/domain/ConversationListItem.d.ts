@@ -1,3 +1,4 @@
+// Intentional addition: ConversationListItem, MessageBubble, MessageComposer — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface ConversationListItemProps {
@@ -36,14 +37,6 @@ export interface MessageComposerProps {
   className?: string;
 }
 
-export interface UnreadBadgeProps {
-  count: number;
-  /** Cap shown as "99+". @default 99 */
-  max?: number;
-  className?: string;
-}
-
 export function ConversationListItem(props: ConversationListItemProps): React.JSX.Element;
 export function MessageBubble(props: MessageBubbleProps): React.JSX.Element;
 export function MessageComposer(props: MessageComposerProps): React.JSX.Element;
-export function UnreadBadge(props: UnreadBadgeProps): React.JSX.Element | null;

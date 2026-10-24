@@ -13,8 +13,6 @@
 //   * .gt-story--active:hover keeps the selection ring under the pointer, where
 //     the design's hover shadow replaced it (maintainer 2026-09-25), and
 //     .gt-story:focus-visible is restated after it so keyboard focus still wins
-//   * the .gt-md rules live in components/Markdown/MarkdownText.scss, which the shared
-//     renderer imports: the contact page's issue preview never loads this file
 //   * .gt-comments__send stays enabled while posting (spec 2026-10-15 G): it is an
 //     inline-flex with a min-width that fits its busy state, a .gt-comments__spinner
 //     (the gt-spinner mixin, hence the @use above) before "Posting…", and a progress cursor
@@ -25,7 +23,7 @@
 /* ============================================================
    GrepThink · Scrum layer (.gt-tagbadge, .gt-points, .gt-estimate,
    .gt-prchip, .gt-userpair, .gt-story, .gt-task, .gt-board,
-   .gt-burnup, .gt-scalepicker, .gt-pointpicker, .gt-md,
+   .gt-burnup, .gt-scalepicker, .gt-pointpicker,
    .gt-comments, .gt-aidraft, .gt-backlog-row, .gt-mentionbox)
    ============================================================ */
 
@@ -334,15 +332,8 @@
 }
 .gt-pointpicker__chip--blocked:hover { border-color: var(--gt-border); color: var(--gt-text-secondary); }
 
-/* ── Markdown + mentions ────────────────────────────────── */
-.gt-mention {
-  display: inline-block;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: var(--gt-info-soft);
-  color: var(--gt-info-text);
-  font-weight: var(--gt-weight-medium);
-}
+/* ── Markdown + mentions: .gt-md and .gt-mention live in display.css now (the kit's Markdown, 2026-10-22) ── */
+// Here that is components/Markdown/MarkdownText.scss, which MarkdownText imports.
 
 /* ── CommentThread ──────────────────────────────────────── */
 .gt-comments { display: flex; flex-direction: column; gap: 12px; font-family: var(--gt-font-sans); }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useEffectEvent } from 'react';
 import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe } from 'lucide-react';
-import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
 import './CreateAssignmentModal.scss';
 
 type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form' | 'Post Feedback';
@@ -97,6 +98,8 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
 
   if (!isOpen && !isClosing) return null;
 
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
 
   return (
@@ -154,7 +157,6 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
                 value={openDate}
                 onChange={setOpenDate}
                 showTime
-                labelClassName="create-assignment-modal__sublabel"
               />
 
               <DatePickerField
@@ -163,7 +165,6 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
                 onChange={setDueDate}
                 showTime
                 disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
-                labelClassName="create-assignment-modal__sublabel"
               />
             </div>
           </div>

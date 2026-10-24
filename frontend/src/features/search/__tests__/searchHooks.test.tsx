@@ -94,7 +94,7 @@ describe('useSearchIndex', () => {
     expect(api.getSearchIndex).not.toHaveBeenCalled();
     expect(result.current.status).toBe('ready');
 
-    primeSearchIndexCache('me', [item('old')], Date.now() - 31_000);
+    act(() => primeSearchIndexCache('me', [item('old')], Date.now() - 31_000));
     vi.mocked(api.getSearchIndex).mockResolvedValue(index(['new']));
     act(() => result.current.refresh());
     expect(result.current.status).toBe('refetching');
@@ -122,7 +122,7 @@ describe('useSearchIndex', () => {
     await waitFor(() => expect(result.current.status).toBe('error'));
     expect(result.current.items).toEqual([]);
 
-    primeSearchIndexCache('me', [item('kept')], Date.now() - 31_000);
+    act(() => primeSearchIndexCache('me', [item('kept')], Date.now() - 31_000));
     act(() => result.current.refresh());
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.items.map((i) => i.id)).toEqual(['kept']);
@@ -138,6 +138,17 @@ describe('useSearchIndex', () => {
     rerender({ userId: null });
     act(() => result.current.refresh());
     expect(api.getSearchIndex).not.toHaveBeenCalled();
+  });
+
+  it('re-renders when the cache changes, with none of its own state changing', () => {
+    const { result } = renderHook(() => useSearchIndex('me'));
+    expect(result.current.status).toBe('idle');
+    act(() => primeSearchIndexCache('me', [item('a')], Date.now()));
+    expect(result.current.items.map((i) => i.id)).toEqual(['a']);
+    expect(result.current.status).toBe('ready');
+    act(() => resetSearchIndexCache());
+    expect(result.current.items).toEqual([]);
+    expect(result.current.status).toBe('idle');
   });
 
   it('aborts the request in flight on unmount', () => {

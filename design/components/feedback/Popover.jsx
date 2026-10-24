@@ -4,7 +4,9 @@ import React from 'react';
  * Anchored floating surface — the primitive Menu, MentionListbox and
  * the board-settings panel compose on. Positions above/below its
  * anchor with a 6px offset, closes on Esc / outside click, never
- * traps focus.
+ * traps focus. Esc is taken in the capture phase and stopped, so a
+ * popover inside a Modal closes on its own; the surface sets its own
+ * text colour (both adopted from the codebase).
  */
 export function Popover({
   open = false,
@@ -21,12 +23,13 @@ export function Popover({
   const ref = React.useRef(null);
   React.useEffect(() => {
     if (!open) return;
-    const key = (e) => { if (e.key === 'Escape') onClose && onClose(); };
-    const down = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose && onClose(); };
-    document.addEventListener('keydown', key);
+    // capture + stop: a popover inside a modal closes alone (adopted from the codebase)
+    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); if (onClose) onClose(); } };
+    const down = (e) => { if (ref.current && !ref.current.contains(e.target) && onClose) onClose(); };
+    document.addEventListener('keydown', key, true);
     document.addEventListener('mousedown', down);
     return () => {
-      document.removeEventListener('keydown', key);
+      document.removeEventListener('keydown', key, true);
       document.removeEventListener('mousedown', down);
     };
   }, [open, onClose]);

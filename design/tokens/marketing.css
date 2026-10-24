@@ -38,6 +38,10 @@
   --gt-mkt-hairline: #e5e7eb;   /* window chrome border */
   --gt-mkt-well:     #f7f8f9;   /* mini board columns, task chip */
   --gt-mkt-bubble:   #f1f3f4;   /* received bubble on the landing stage */
+  --gt-mkt-note-ring: #eceef0;  /* spotlight note hairline */
+  --gt-mkt-chrome-red:    #fc5c65;  /* preview window traffic lights */
+  --gt-mkt-chrome-yellow: #fed330;
+  --gt-mkt-chrome-green:  #26de81;
 
   /* ── Green accents (heading accents & tints ONLY) ───────── */
   --gt-mkt-green-light:     #02a06b;                       /* 2nd gradient stop — never solo */

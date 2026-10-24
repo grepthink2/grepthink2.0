@@ -196,10 +196,7 @@
 // ── One team's row ──────────────────────────────────────────────
 .fr-row {
   display: grid;
-  // Time column widened 170→220px: the confirm ✓ button added alongside the
-  // existing clear ✕ button means the native datetime-local input plus two
-  // icon buttons (~213px measured) no longer fit in the old 170px track.
-  grid-template-columns: 220px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr) auto;
+  grid-template-columns: 170px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr) auto;
   gap: $spacing-md;
   align-items: center;
   padding: $spacing-sm $spacing-md;
@@ -364,8 +361,7 @@
 }
 
 // ── Instructor editors ──────────────────────────────────────────
-.fr-row__ta-select,
-.fr-row__time-input {
+.fr-row__ta-select {
   font-family: $primary-font;
   // 13px rounded down to the 12px caption step.
   font-size: var(--gt-text-caption);
@@ -384,41 +380,6 @@
     box-shadow: var(--gt-focus-ring-tight);
   }
   &:disabled { opacity: 0.6; }
-
-  // Instructor typed an unparseable time draft — flagged instead of sent.
-  &[aria-invalid='true'] {
-    border-color: var(--gt-error);
-  }
-}
-
-.fr-row__time-edit {
-  display: inline-flex;
-  align-items: center;
-  // 4px — exact match for the xs step.
-  gap: var(--gt-space-xs);
-}
-
-.fr-row__time-confirm,
-.fr-row__time-clear {
-  display: inline-flex;
-  border: none;
-  background: none;
-  color: $text-tertiary;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: $border-radius-sm;
-  @include gt-transition(background-color, color, border-color);
-  @include gt-press;
-
-  &:disabled { opacity: 0.55; cursor: default; }
-}
-
-.fr-row__time-confirm {
-  &:hover:not(:disabled) { color: var(--gt-primary); background: var(--gt-primary-soft); }
-}
-
-.fr-row__time-clear {
-  &:hover:not(:disabled) { color: $error-color; background: $background; }
 }
 
 // ── Mobile ──────────────────────────────────────────────────────

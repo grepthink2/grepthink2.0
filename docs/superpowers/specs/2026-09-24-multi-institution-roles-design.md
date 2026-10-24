@@ -3,8 +3,8 @@
 **Date:** 2026-09-24
 **Branch:** `claude/multi-domain-role-design-8dca42` (cut from `origin/beta` @ `551da7d`)
 **Status:** The data model and frontend were agreed with the maintainer section by section. The
-backend section comes from an endpoint-by-endpoint audit and is reviewed with this spec. Nothing is
-implemented or applied yet.
+backend section comes from an endpoint-by-endpoint audit and is reviewed with this spec. Implemented in
+#187 (merged 2026-09-26).
 
 ## Problem
 

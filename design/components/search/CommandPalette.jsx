@@ -3,6 +3,8 @@ import { ResultRow, ResultGroup } from './ResultRow.jsx';
 import { SearchPagination } from './SearchPagination.jsx';
 import { Kbd, modKey } from './Kbd.jsx';
 import { rankResults, countByType, paginate, routeFor, SEARCH_ENTITIES, useDebounced } from './SearchModel.jsx';
+import { useDialog, dialogPortal } from '../feedback/Modal.jsx';
+import { FilterChipGroup } from '../navigation/FilterChip.jsx';
 
 const SearchGlyph = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
 
@@ -22,42 +24,31 @@ export function usePaletteHotkey(onToggle, { enabled = true } = {}) {
  * Global search dialog. Controlled: `open` + `onClose`. Results come from
  * `items` (ranked client-side) or `onSearch(query, scope)` (async, debounced
  * 250ms; previous results stay visible while a new query loads).
+ * Joins the dialog stack (useDialog, like Modal and Drawer): Esc and the scrim close only the
+ * topmost layer, so over a Modal the first Esc closes the palette and focus returns into the
+ * dialog, and the second Esc closes the dialog. Tab stays inside; portaled to <body>.
+ * Scopes are a single-choice FilterChipGroup (radio group). `inline` renders in place (galleries).
  */
 export function CommandPalette({
   open = false, onClose, onOpen, hotkey = true,
   items = [], onSearch, recent = [], onSelect, role = 'student',
   pageSize = 8, placeholder = 'Search people, teams, projects, tasks…', scopes,
-  initialQuery = '', className = '',
+  initialQuery = '', inline = false, className = '',
 }) {
   const baseId = React.useId();
   const inputRef = React.useRef(null);
   const panelRef = React.useRef(null);
-  const restoreRef = React.useRef(null);
-  const [closing, setClosing] = React.useState(false);
   const [query, setQuery] = React.useState(initialQuery);
   const [scope, setScope] = React.useState('all');
   const [page, setPage] = React.useState(1);
   const [active, setActive] = React.useState(0);
   const [remote, setRemote] = React.useState({ status: 'idle', items: [] });
   const debounced = useDebounced(query, onSearch ? 250 : 0);
+  const { mounted, closing, onScrimDown } = useDialog({ open, onClose, sheetRef: panelRef, initialFocusRef: inputRef, exitMs: 150, inPlace: inline });
 
-  const requestClose = React.useCallback(() => {
-    if (closing) return;
-    setClosing(true);
-    setTimeout(() => { setClosing(false); onClose && onClose(); }, 150);
-  }, [closing, onClose]);
+  const requestClose = React.useCallback(() => { if (onClose) onClose(); }, [onClose]);
 
-  usePaletteHotkey(React.useCallback(() => (open ? requestClose() : onOpen && onOpen()), [open, requestClose, onOpen]), { enabled: hotkey });
-
-  // open: focus input, lock scroll, remember what to restore
-  React.useEffect(() => {
-    if (!open) return undefined;
-    restoreRef.current = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => inputRef.current && inputRef.current.focus());
-    return () => { document.body.style.overflow = prevOverflow; restoreRef.current && restoreRef.current.focus && restoreRef.current.focus(); };
-  }, [open]);
+  usePaletteHotkey(React.useCallback(() => (open ? requestClose() : onOpen && onOpen()), [open, requestClose, onOpen]), { enabled: hotkey && !inline });
 
   // reset per open
   React.useEffect(() => { if (open) { setQuery(initialQuery); setScope('all'); setPage(1); setActive(0); } }, [open, initialQuery]);
@@ -99,9 +90,9 @@ export function CommandPalette({
     requestClose();
   };
 
+  // Esc is the dialog stack's (useDialog): it closes only the topmost layer.
   const onKeyDown = (e) => {
     const n = optionRows.length;
-    if (e.key === 'Escape') { e.preventDefault(); requestClose(); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); if (n) setActive((i) => (i + 1) % n); return; }
     if (e.key === 'ArrowUp') { e.preventDefault(); if (n) setActive((i) => (i - 1 + n) % n); return; }
     if (e.key === 'Home' && n) { e.preventDefault(); setActive(0); return; }
@@ -113,18 +104,26 @@ export function CommandPalette({
     if (e.key === 'Enter' && optionRows[active]) { e.preventDefault(); select(optionRows[active].item); }
   };
 
-  if (!open && !closing) return null;
+  if (!mounted) return null;
 
   const scopeList = (scopes || SEARCH_ENTITIES.map((e) => e.type)).filter((t) => t !== 'action');
+  const scopeOptions = [
+    { value: 'all', label: 'All', count: unscoped.length },
+    ...scopeList.map((t) => {
+      const meta = SEARCH_ENTITIES.find((e) => e.type === t);
+      const c = counts[t] || 0;
+      return { value: t, label: meta ? meta.label : t, count: c > 0 ? c : undefined, disabled: !c && scope !== t };
+    }),
+  ];
   const activeId = optionRows[active] ? `${baseId}-opt-${active}` : undefined;
   let optIndex = -1;
 
-  return (
+  return dialogPortal(
     <div
       className={['gt-palette-backdrop', closing ? 'gt-palette-backdrop--closing' : ''].filter(Boolean).join(' ')}
-      onMouseDown={(e) => { if (panelRef.current && !panelRef.current.contains(e.target)) requestClose(); }}
+      onMouseDown={inline ? undefined : onScrimDown}
     >
-      <div ref={panelRef} className={['gt-palette', className].filter(Boolean).join(' ')} role="dialog" aria-modal="true" aria-label="Search">
+      <div ref={panelRef} className={['gt-palette', className].filter(Boolean).join(' ')} role="dialog" aria-modal={inline ? undefined : 'true'} aria-label="Search">
         <div className="gt-palette__input-row">
           <span className="gt-palette__search-icon"><SearchGlyph /></span>
           <input
@@ -148,19 +147,8 @@ export function CommandPalette({
         </div>
 
         {!idle && (
-          <div className="gt-palette__scopes" role="group" aria-label="Filter by type">
-            <button type="button" className={['gt-scope', scope === 'all' ? 'gt-scope--active' : ''].join(' ')} aria-pressed={scope === 'all'} onClick={() => setScope('all')}>
-              All <span className="gt-scope__count">{unscoped.length}</span>
-            </button>
-            {scopeList.map((t) => {
-              const meta = SEARCH_ENTITIES.find((e) => e.type === t);
-              const c = counts[t] || 0;
-              return (
-                <button key={t} type="button" className={['gt-scope', scope === t ? 'gt-scope--active' : ''].join(' ')} aria-pressed={scope === t} disabled={!c && scope !== t} onClick={() => setScope(t)}>
-                  {meta ? meta.label : t} {c > 0 && <span className="gt-scope__count">{c}</span>}
-                </button>
-              );
-            })}
+          <div className="gt-palette__scopes">
+            <FilterChipGroup type="single" size="sm" ariaLabel="Filter by type" value={scope} onChange={setScope} options={scopeOptions} />
           </div>
         )}
 
@@ -218,6 +206,7 @@ export function CommandPalette({
           {!idle && <SearchPagination page={pageData.page} pages={pageData.pages} from={pageData.from} to={pageData.to} total={pageData.total} onChange={setPage} />}
         </div>
       </div>
-    </div>
+    </div>,
+    inline,
   );
 }

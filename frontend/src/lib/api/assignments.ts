@@ -67,14 +67,16 @@ export const assignmentsApi = {
     assignmentId: string,
     tsrId: string,
     data: UpdateAssignmentTsrPayload,
-  ) => {
-    return apiRequest<{ message: string; tsr: ApiAssignmentTsrEntry }>(
+  ): Promise<ApiAssignmentTsrEntry> => {
+    const res = await apiRequest<ApiAssignmentTsrEntry | { message: string; tsr: ApiAssignmentTsrEntry }>(
       `/api/assignments/${assignmentId}/tsrs/${tsrId}`,
       {
         method: 'PATCH',
         body: JSON.stringify(data),
       },
     );
+    // An older backend answers {message, tsr}.
+    return 'tsr' in res ? res.tsr : res;
   },
 
   /** Submit (or update) a student's feedback response (POST /api/assignments/:id/feedback) */

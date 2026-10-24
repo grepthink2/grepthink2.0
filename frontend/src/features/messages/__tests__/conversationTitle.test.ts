@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { conversationTitle, conversationBadge } from '../conversationTitle';
+import { conversationAvatarName, conversationTitle, conversationBadge } from '../conversationTitle';
 import type { ApiConversationSummary } from '@/lib/api';
 
 const base: Omit<ApiConversationSummary, 'type' | 'team_name' | 'other_user'> = {
@@ -34,6 +34,26 @@ describe('conversationTitle', () => {
     const conv = { ...base, type: 'team_members', team_name: null,
       other_user: null } as ApiConversationSummary;
     expect(conversationTitle(conv)).toBe('Your team');
+  });
+});
+
+describe('conversationAvatarName', () => {
+  it('names a DM’s avatar after its peer, and gives a DM with no peer no name, not Unknown', () => {
+    const named = { ...base, type: 'dm', team_name: null,
+      other_user: { id: 'x', email: 'x@ucsc.edu', name: 'Xena X' } } as ApiConversationSummary;
+    expect(conversationAvatarName(named)).toBe('Xena X');
+    const noName = { ...base, type: 'dm', team_name: null,
+      other_user: { id: 'x', email: 'x@ucsc.edu', name: null } } as ApiConversationSummary;
+    expect(conversationAvatarName(noName)).toBe('x@ucsc.edu');
+    const nothing = { ...base, type: 'dm', team_name: null, other_user: null } as ApiConversationSummary;
+    expect(conversationAvatarName(nothing)).toBeUndefined();
+  });
+
+  it('names a channel’s avatar after its title', () => {
+    const conv = { ...base, type: 'team_ta', team_name: 'Team Rocket', other_user: null } as ApiConversationSummary;
+    expect(conversationAvatarName(conv)).toBe('Team Rocket');
+    const unnamed = { ...base, type: 'team_members', team_name: null, other_user: null } as ApiConversationSummary;
+    expect(conversationAvatarName(unnamed)).toBe('Your team');
   });
 });
 

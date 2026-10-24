@@ -1,3 +1,5 @@
+@use '@styles/index.scss' as *;
+
 // Scrum layer — ported 1:1 from design/components/scrum/scrum.css so the two
 // stay diffable (D12 keeps the .gt-* class names verbatim). Only deltas:
 //   * the two literal purple/gold values now read from --gt-purple and
@@ -11,6 +13,13 @@
 //   * .gt-story--active:hover keeps the selection ring under the pointer, where
 //     the design's hover shadow replaced it (maintainer 2026-09-25), and
 //     .gt-story:focus-visible is restated after it so keyboard focus still wins
+//   * the .gt-md rules live in components/Markdown/MarkdownText.scss, which the shared
+//     renderer imports: the contact page's issue preview never loads this file
+//   * .gt-comments__send stays enabled while posting (spec 2026-10-15 G): it is an
+//     inline-flex with a min-width that fits its busy state, a .gt-comments__spinner
+//     (the gt-spinner mixin, hence the @use above) before "Posting…", and a progress cursor
+//   * .gt-backlog-row__archived is dropped: the archive is gone (spec 2026-10-15 A), and a
+//     legacy archived story is an ordinary backlog row
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -326,21 +335,6 @@
 .gt-pointpicker__chip--blocked:hover { border-color: var(--gt-border); color: var(--gt-text-secondary); }
 
 /* ── Markdown + mentions ────────────────────────────────── */
-.gt-md { font-family: var(--gt-font-sans); font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-normal); }
-.gt-md p { margin: 0 0 6px; }
-.gt-md p:last-child { margin-bottom: 0; }
-.gt-md ul { margin: 0 0 6px; padding-left: 18px; }
-.gt-md li { margin: 2px 0; }
-.gt-md__code {
-  font-family: var(--gt-font-mono);
-  font-size: 11px;
-  background: var(--gt-gray-100);
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: var(--gt-gray-700);
-}
-.gt-md__link { color: var(--gt-text-link); text-decoration: none; }
-.gt-md__link:hover { text-decoration: underline; }
 .gt-mention {
   display: inline-block;
   padding: 0 4px;
@@ -382,6 +376,11 @@
 .gt-comments__composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .gt-comments__hint { font-size: 10px; color: var(--gt-text-tertiary); font-family: var(--gt-font-mono); }
 .gt-comments__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
   padding: 6px 16px;
   border: none;
   border-radius: var(--gt-radius-sm);
@@ -396,6 +395,8 @@
 .gt-comments__send:hover:not(:disabled) { background: var(--gt-primary-hover); }
 .gt-comments__send:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .gt-comments__send:disabled { opacity: 0.45; cursor: not-allowed; }
+.gt-comments__send[aria-busy='true'] { cursor: progress; }
+.gt-comments__spinner { @include gt-spinner; }
 
 /* ── BacklogRow ─────────────────────────────────────────── */
 .gt-backlog-row {
@@ -422,7 +423,6 @@
 }
 .gt-backlog-row__title:hover { color: var(--gt-primary); }
 .gt-backlog-row__title:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-.gt-backlog-row__archived { font-size: 10px; color: var(--gt-text-tertiary); font-style: italic; flex-shrink: 0; }
 .gt-backlog-row__meta { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .gt-backlog-row__restore {
   display: inline-flex;

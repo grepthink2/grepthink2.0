@@ -1,0 +1,77 @@
+<!-- @dsCard group="Components" viewport="760x1900" name="Team meetings — Meetings tab & project card" subtitle="TeamMeetingsList manage (ready · editing + delete confirm · empty · loading · error · many) and card (live · past · empty · another zone), TeamMeetingForm (create with campus time · edit with save error · saving)" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../schedule/scheduleSrcLoader.js"></script>
+<script src="./teamMeetingsData.js"></script>
+<script src="./teamMeetingsSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  a { color: var(--gt-text-link); } a:hover { color: var(--gt-info-text); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .panel { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); padding: 16px 20px; }
+  .card { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); padding: 16px 20px 14px; }
+  .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .card__title { margin: 0; font-size: 16px; font-weight: 600; }
+  .card__link { font-size: 12px; font-weight: 500; }
+  .cap { margin: 0 0 6px; font-size: 11.5px; color: var(--gt-text-tertiary); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { TeamMeetingsList, TeamMeetingForm } = NS;
+const S = window.GT_TEAM_MEETINGS_SAMPLE;
+const NOW = new Date(S.now), PT = 'America/Los_Angeles', IST = 'Asia/Kolkata';
+const Card = ({ manage, children }) => <section className="card"><div className="card__head"><h3 className="card__title">Team meetings</h3>{manage && <a className="card__link" href="#">Manage</a>}</div>{children}</section>;
+const noop = () => new Promise((r) => setTimeout(r, 600));
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">TeamMeetingsList manage — the Meetings tab (Product Owner): upcoming first, live row, Past (3) collapsed</p>
+      <div className="panel"><TeamMeetingsList variant="manage" meetings={S.meetings} canManage now={NOW} zone={PT} onCreate={noop} onUpdate={noop} onDelete={noop} /></div>
+
+      <p className="lbl">One editor at a time — a row in edit (others disabled) · a row waiting on its delete confirm</p>
+      <div className="panel"><TeamMeetingsList variant="manage" meetings={S.upcoming} canManage now={NOW} zone={PT} defaultEditingId="tm-2" defaultConfirmId="tm-3" onCreate={noop} onUpdate={noop} onDelete={noop} /></div>
+
+      <p className="lbl">Empty · Loading · Error · 8+ meetings with a long title (past open)</p>
+      <div className="cols">
+        <div className="panel"><TeamMeetingsList variant="manage" meetings={[]} canManage now={NOW} zone={PT} /></div>
+        <div className="panel"><TeamMeetingsList variant="manage" status="loading" now={NOW} /></div>
+        <div className="panel"><TeamMeetingsList variant="manage" status="error" now={NOW} onRetry={() => {}} /></div>
+        <div className="panel"><TeamMeetingsList variant="manage" meetings={S.many} canManage now={NOW} zone={PT} defaultPastOpen /></div>
+      </div>
+
+      <p className="lbl">TeamMeetingForm — new (viewer in IST: campus time under the field) · edit with a save error (draft kept) · saving</p>
+      <div className="cols">
+        <div className="panel"><TeamMeetingForm mode="create" now={NOW} zone={IST} onSubmit={() => {}} onCancel={() => {}} /></div>
+        <div className="panel"><TeamMeetingForm mode="edit" meeting={S.upcoming[2]} now={NOW} zone={PT} error="Couldn’t save this meeting. Your changes are still here — try again." onSubmit={() => {}} onCancel={() => {}} /></div>
+        <div className="panel"><TeamMeetingForm mode="edit" meeting={S.upcoming[1]} now={NOW} zone={PT} saving onSubmit={() => {}} onCancel={() => {}} /></div>
+      </div>
+
+      <p className="lbl">TeamMeetingsList card — the project page: compact ScheduleItem rows by day (live → Join Zoom), Past meetings (3) · past open · empty for the Product Owner · viewer in IST</p>
+      <div className="cols">
+        <Card manage><TeamMeetingsList variant="card" meetings={S.meetings} teamName={S.teamName} people={S.people} canManage now={NOW} zone={PT} /></Card>
+        <Card><TeamMeetingsList variant="card" meetings={S.meetings} teamName={S.teamName} people={S.people} now={NOW} zone={PT} defaultPastOpen /></Card>
+        <Card manage><TeamMeetingsList variant="card" meetings={[]} canManage now={NOW} zone={PT} onManage={() => {}} /></Card>
+        <Card><TeamMeetingsList variant="card" meetings={S.meetings} teamName={S.teamName} people={S.people} now={NOW} zone={IST} /></Card>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+<script>loadTeamMeetingSources('../..').then(runDeferredBabel);</script>
+</body>
+</html>

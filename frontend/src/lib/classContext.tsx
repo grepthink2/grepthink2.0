@@ -103,6 +103,10 @@ interface ClassContextValue {
   setSuccessMessage: (message: string | null) => void;
   getClassStatus: (classItem: Class) => ClassLifecycleStatus;
   setClassLifecycleStatus: (classId: string, status: ClassLifecycleStatus) => Promise<void>;
+  /** Save (null removes) the class's "Tasks - External" link; the sidebar shows it at once. */
+  setClassExternalTasksUrl: (classId: string, externalTasksUrl: string | null) => Promise<void>;
+  /** Save the class's last day of classes (a YYYY-MM-DD day); the class list shows it at once. */
+  setClassEndDate: (classId: string, endDate: string) => Promise<void>;
   hideClassFromUI: (classId: string) => void;
 }
 
@@ -265,13 +269,37 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [],
   );
 
-  const setClassLifecycleStatus = useCallback(async (classId: string, status: ClassLifecycleStatus) => {
-    const { class: updated } = await api.updateClassStatus(classId, status);
-    // Retire the loads in flight: one may answer the old status and undo this change.
+  /** Apply a class row the API just updated: to the list, and to the selected class. */
+  const applyUpdatedClass = useCallback((classId: string, updated: Partial<Class>) => {
+    // Retire the loads in flight: one may answer the old row and undo this change.
     appliedSeq.current = loadSeq.current;
     setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...updated } : c)));
     setSelectedClassState((prev) => (prev?.id === classId ? { ...prev, ...updated } : prev));
   }, []);
+
+  const setClassLifecycleStatus = useCallback(
+    async (classId: string, status: ClassLifecycleStatus) => {
+      const { class: updated } = await api.updateClassStatus(classId, status);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
+
+  const setClassExternalTasksUrl = useCallback(
+    async (classId: string, externalTasksUrl: string | null) => {
+      const { class: updated } = await api.updateClassExternalTasksUrl(classId, externalTasksUrl);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
+
+  const setClassEndDate = useCallback(
+    async (classId: string, endDate: string) => {
+      const { class: updated } = await api.updateClassEndDate(classId, endDate);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
 
   const hideClassFromUI = useCallback(
     (classId: string) => {
@@ -399,6 +427,8 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setSuccessMessage,
       getClassStatus,
       setClassLifecycleStatus,
+      setClassExternalTasksUrl,
+      setClassEndDate,
       hideClassFromUI,
     }),
     [
@@ -417,6 +447,8 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       successMessage,
       getClassStatus,
       setClassLifecycleStatus,
+      setClassExternalTasksUrl,
+      setClassEndDate,
       hideClassFromUI,
     ],
   );
@@ -424,7 +456,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return <ClassContext.Provider value={value}>{children}</ClassContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useClass = () => {
   const context = useContext(ClassContext);
   if (!context) {
@@ -434,7 +466,7 @@ export const useClass = () => {
 };
 
 /** Your role in the selected class: undefined while classes load, null with no class. */
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useSelectedClassRole = (): ClassRole | null | undefined => {
   const { selectedClass, loading, previewClassId } = useClass();
   if (!selectedClass) return loading ? undefined : null;
@@ -442,7 +474,7 @@ export const useSelectedClassRole = (): ClassRole | null | undefined => {
 };
 
 /** Your role in `classId`: undefined while classes load, null when you are not in it (or no id). */
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useClassRole = (classId: string | null | undefined): ClassRole | null | undefined => {
   const { classes, loading, previewClassId } = useClass();
   if (!classId) return null;

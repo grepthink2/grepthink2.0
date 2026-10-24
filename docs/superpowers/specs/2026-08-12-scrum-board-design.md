@@ -2,11 +2,12 @@
 
 **Date:** 2026-08-12
 **Branch:** `claude/scrum-board-design-arch-59b8ce`
-**Status:** DRAFT — written in an autonomous session; the **Decisions** table below is
-recommendations, not maintainer-approved choices. Flagged rows (⚑) most need review.
+**Status:** Implemented; shipped in #196 (2026-10-02). The 2026-10-15 batch-1 spec and the 2026-10-16
+sprint-picker, task-hours and task-dependencies specs revise several decisions below. Written in an
+autonomous session; the **Decisions** table was recommendations at the time.
 **Design source:** `design/design_handoff_scrum_board/README.md` + `design/components/scrum/`
 (partial mirror of the "GrepThink Design System" claude.ai project, synced 2026-08-12 —
-see `design/README-PARTIAL-SYNC.md`).
+see `design/PORTING.md`).
 
 ## Goals
 

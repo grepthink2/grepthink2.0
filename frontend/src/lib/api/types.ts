@@ -27,6 +27,8 @@ export interface ApiClass {
   teacher_email?: string;
   term?: string;
   start_date?: string;
+  /** The last day of classes, before finals (YYYY-MM-DD); null until the class has one. */
+  end_date?: string | null;
   year?: number;
   image_url?: string;
   status?: 'active' | 'complete';
@@ -37,6 +39,8 @@ export interface ApiClass {
   /** The school the class belongs to; null when unassigned or before the institutions migration. */
   institution?: ApiInstitutionSummary | null;
   institution_id?: string | null;
+  /** The class's task board elsewhere, its sidebar's "Tasks - External" item; null hides it. */
+  external_tasks_url?: string | null;
 }
 
 /**
@@ -122,7 +126,7 @@ export interface ApiFinalReviewTeam {
   /** ISO timestamptz of the team's review slot; null = unscheduled. */
   final_review_at: string | null;
   home_ta: ApiFinalReviewTa | null;
-  /** The additional reviewer; null = open slot. */
+  /** The additional reviewer; null = open seat. */
   review_ta: ApiFinalReviewTa | null;
 }
 
@@ -134,6 +138,52 @@ export interface ApiFinalReviewSchedule {
   /** Teams where the current viewer is the Review TA. */
   my_review_count: number;
   teams: ApiFinalReviewTeam[];
+}
+
+/** One instructor-posted final-review slot (60 minutes) and the team that booked it. */
+export interface ApiReviewSlot {
+  id: string;
+  /** ISO timestamptz, e.g. "2026-12-07T17:00:00+00:00". */
+  starts_at: string;
+  duration_minutes: number;
+  /** The team holding the slot; null = free. */
+  team: { project_id: string; name: string } | null;
+}
+
+/** A class's final-review slots, as GET /api/tas/classes/{class_id}/review-slots answers them. */
+export interface ApiReviewSlots {
+  class_id: string;
+  /** The class's review sign-up window (classes.review_period_open). */
+  signups_open: boolean;
+  /** Every slot in the class, in starts_at order. */
+  slots: ApiReviewSlot[];
+  /** The caller's own team; null when the caller is on no team (staff). */
+  my_team: {
+    project_id: string;
+    name: string;
+    is_product_owner: boolean;
+    slot_id: string | null;
+    starts_at: string | null;
+    /** The shared review room; it and both reviewers are filled in only once the team holds a slot. */
+    zoom_url: string | null;
+    home_ta: { user_id: string; name: string } | null;
+    review_ta: { user_id: string; name: string } | null;
+  } | null;
+  /** Teams without a slot, by name: for the instructor and class TAs only, empty for anyone else. */
+  unbooked_teams: {
+    project_id: string;
+    name: string;
+    product_owner: { user_id: string; name: string } | null;
+  }[];
+  /** The shared review room: for the instructor and class TAs only, null for anyone else. */
+  review_zoom_url: string | null;
+}
+
+/** A booked slot: a team's first booking, or a move from the slot it held. */
+export interface ApiReviewSlotBooking {
+  status: 'booked' | 'moved';
+  slot_id: string;
+  starts_at: string;
 }
 
 /** Who entered a final-review score row: the team's Home TA (3 category
@@ -350,6 +400,36 @@ export interface ApiProjectMember {
   github?: string;
   image_url?: string;
   edu_email?: string | null;
+}
+
+/**
+ * One of a team's own one-off meetings (/api/projects/{project_id}/meetings), which its Product
+ * Owner keeps. Not the TA's weekly slot: that is ApiTeamMeeting.
+ */
+export interface ApiProjectMeeting {
+  id: string;
+  project_id: string;
+  title: string;
+  /** ISO 8601 instant with its offset, e.g. "2026-10-20T22:00:00+00:00". */
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  zoom_url: string | null;
+  note: string | null;
+  /** Null once the creator's profile is deleted. */
+  created_by: string | null;
+  updated_at: string;
+}
+
+/** The body that adds a team meeting (POST); a PATCH sends any part of it. */
+export interface ProjectMeetingPayload {
+  title: string;
+  /** ISO 8601 with an offset: the API refuses a time without one. */
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  zoom_url: string | null;
+  note: string | null;
 }
 
 export interface CreateProjectPayload {

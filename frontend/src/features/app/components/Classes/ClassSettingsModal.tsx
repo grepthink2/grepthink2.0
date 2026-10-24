@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Download, Trash2, X } from 'lucide-react';
 import type { Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
-import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
+import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import {
   buildClassExportCsv,
   buildExportFilename,
@@ -20,7 +22,8 @@ interface ClassSettingsModalProps {
 }
 
 const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose, classItem }) => {
-  const { getClassStatus, setClassLifecycleStatus, hideClassFromUI } = useClass();
+  const { getClassStatus, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate, hideClassFromUI } =
+    useClass();
   const [isClosing, setIsClosing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [lifecycleStatus, setLifecycleStatus] = useState<ClassLifecycleStatus>('active');
@@ -28,9 +31,25 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [exportError, setExportError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  // The class's "Tasks - External" link: what the box holds, and what was last saved (this
+  // dialog's class row is the one it opened with, so it would still show the old link).
+  const [tasksUrl, setTasksUrl] = useState('');
+  const [savedTasksUrl, setSavedTasksUrl] = useState<string | null>(null);
+  const [tasksUrlChecked, setTasksUrlChecked] = useState(false);
+  const [isSavingTasksUrl, setIsSavingTasksUrl] = useState(false);
+  const [tasksUrlSaveError, setTasksUrlSaveError] = useState<string | null>(null);
+  const [tasksUrlNotice, setTasksUrlNotice] = useState<string | null>(null);
+  const tasksUrlInput = useRef<HTMLInputElement>(null);
+  // The class's last day of classes: the day the picker holds, and the day last saved (the row
+  // this dialog opened with still has the old one).
+  const [endDate, setEndDate] = useState('');
+  const [savedEndDate, setSavedEndDate] = useState('');
+  const [isSavingEndDate, setIsSavingEndDate] = useState(false);
+  const [endDateSaveError, setEndDateSaveError] = useState<string | null>(null);
+  const [endDateNotice, setEndDateNotice] = useState<string | null>(null);
 
   // Each open (or a switch to another class while open) starts from that
-  // class's saved status with no errors showing. Adjusted during render when
+  // class's saved status, link and last day with no errors showing. Adjusted during render when
   // the open class changes, instead of in an effect afterwards.
   const openClass = isOpen ? classItem : null;
   const [prevOpenClass, setPrevOpenClass] = useState<Class | null>(null);
@@ -40,8 +59,32 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setLifecycleStatus(getClassStatus(openClass));
       setExportError(null);
       setStatusError(null);
+      setTasksUrl(openClass.external_tasks_url ?? '');
+      setSavedTasksUrl(openClass.external_tasks_url ?? null);
+      setTasksUrlChecked(false);
+      setIsSavingTasksUrl(false);
+      setTasksUrlSaveError(null);
+      setTasksUrlNotice(null);
+      setEndDate(openClass.end_date ?? '');
+      setSavedEndDate(openClass.end_date ?? '');
+      setIsSavingEndDate(false);
+      setEndDateSaveError(null);
+      setEndDateNotice(null);
     }
   }
+
+  // The class the dialog shows now, for a save that answers after it moved on to another.
+  const openClassId = useRef<string | null>(null);
+  useEffect(() => {
+    openClassId.current = openClass?.id ?? null;
+  }, [openClass]);
+
+  const parsedTasksUrl = parseExternalTasksUrl(tasksUrl);
+  const tasksUrlProblem = tasksUrlChecked && 'error' in parsedTasksUrl ? parsedTasksUrl.error : null;
+  // A box that can't be saved counts as changed, so Save is there to say why.
+  const tasksUrlChanged = 'error' in parsedTasksUrl || parsedTasksUrl.url !== savedTasksUrl;
+  // The API takes a day and never clears it, so Save waits for a day other than the saved one.
+  const endDateChanged = endDate !== '' && endDate !== savedEndDate;
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -91,6 +134,66 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setStatusError(err instanceof Error ? err.message : 'Failed to update class status');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const saveTasksUrl = async (next: string | null) => {
+    if (!classItem || isSavingTasksUrl) return;
+    const classId = classItem.id;
+    setIsSavingTasksUrl(true);
+    setTasksUrlSaveError(null);
+    setTasksUrlNotice(null);
+    try {
+      await setClassExternalTasksUrl(classId, next);
+      if (openClassId.current !== classId) return; // the dialog shows another class now
+      setSavedTasksUrl(next);
+      setTasksUrl(next ?? '');
+      setTasksUrlChecked(false);
+      setTasksUrlNotice(next ? 'Link saved. It is in the class sidebar now.' : 'Link removed from the class sidebar.');
+      // Remove goes away and Save turns disabled: keep the keyboard in the box, not on the page.
+      tasksUrlInput.current?.focus();
+    } catch (err) {
+      if (openClassId.current !== classId) return;
+      setTasksUrlSaveError(
+        isExternalTasksUrlRefusal(err)
+          ? LINK_REFUSED_BY_API
+          : err instanceof Error
+            ? err.message
+            : 'Failed to update the tasks link',
+      );
+    } finally {
+      if (openClassId.current === classId) setIsSavingTasksUrl(false);
+    }
+  };
+
+  const handleSaveTasksUrl = () => {
+    if ('error' in parsedTasksUrl) {
+      // The box says why; focus takes a screen reader there.
+      setTasksUrlChecked(true);
+      tasksUrlInput.current?.focus();
+      return;
+    }
+    void saveTasksUrl(parsedTasksUrl.url);
+  };
+
+  const saveEndDate = async () => {
+    if (!classItem || isSavingEndDate) return;
+    const classId = classItem.id;
+    const day = endDate;
+    setIsSavingEndDate(true);
+    setEndDateSaveError(null);
+    setEndDateNotice(null);
+    try {
+      await setClassEndDate(classId, day);
+      if (openClassId.current !== classId) return; // the dialog shows another class now
+      setSavedEndDate(day);
+      setEndDate(day);
+      setEndDateNotice('Last day of classes saved.');
+    } catch (err) {
+      if (openClassId.current !== classId) return;
+      setEndDateSaveError(err instanceof Error ? err.message : 'Failed to update the last day of classes');
+    } finally {
+      if (openClassId.current === classId) setIsSavingEndDate(false);
     }
   };
 
@@ -193,6 +296,110 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
             </section>
 
             <section className="class-settings-modal__section">
+              <DatePickerField
+                label="Last Day of Classes"
+                value={endDate}
+                onChange={(next) => {
+                  setEndDate(next);
+                  setEndDateSaveError(null);
+                  setEndDateNotice(null);
+                }}
+                // A day picked while the save is in flight would be written over by the day being saved.
+                disabled={isSavingEndDate}
+              />
+              <p className="class-settings-modal__hint">Before finals week</p>
+              <div className="class-settings-modal__link-actions">
+                <button
+                  type="button"
+                  className="class-settings-modal__export-button class-settings-modal__save-button"
+                  onClick={() => void saveEndDate()}
+                  disabled={!endDateChanged || isSavingEndDate}
+                >
+                  {isSavingEndDate ? 'Saving…' : 'Save last day'}
+                </button>
+                {/* Always on the page, so a screen reader announces the text when it appears */}
+                <span className="class-settings-modal__link-notice" role="status">
+                  {endDateNotice}
+                </span>
+              </div>
+              {endDateSaveError && (
+                <p className="class-settings-modal__export-error" role="alert">
+                  {endDateSaveError}
+                </p>
+              )}
+            </section>
+
+            <section className="class-settings-modal__section">
+              <div className="class-settings-modal__section-heading">
+                <h2 className="class-settings-modal__label">
+                  <label htmlFor="class-settings-tasks-url">Tasks - External link</label>
+                </h2>
+                <p id="class-settings-tasks-url-hint" className="class-settings-modal__hint">
+                  Your class&apos;s task board elsewhere. Everyone in the class sees it as Tasks&nbsp;-&nbsp;External in
+                  the sidebar. Leave it empty to hide it.
+                </p>
+              </div>
+              <input
+                ref={tasksUrlInput}
+                id="class-settings-tasks-url"
+                type="text"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="class-settings-modal__input"
+                placeholder="https://tasks.example.com/your-class"
+                value={tasksUrl}
+                onChange={(e) => {
+                  setTasksUrl(e.target.value);
+                  setTasksUrlSaveError(null);
+                  setTasksUrlNotice(null);
+                }}
+                onBlur={() => setTasksUrlChecked(true)}
+                aria-invalid={tasksUrlProblem ? true : undefined}
+                aria-describedby={
+                  tasksUrlProblem
+                    ? 'class-settings-tasks-url-hint class-settings-tasks-url-error'
+                    : 'class-settings-tasks-url-hint'
+                }
+              />
+              {tasksUrlProblem && (
+                <p id="class-settings-tasks-url-error" className="class-settings-modal__export-error">
+                  {tasksUrlProblem}
+                </p>
+              )}
+              <div className="class-settings-modal__link-actions">
+                <button
+                  type="button"
+                  className="class-settings-modal__export-button class-settings-modal__save-button"
+                  onClick={handleSaveTasksUrl}
+                  disabled={!tasksUrlChanged || isSavingTasksUrl}
+                >
+                  {isSavingTasksUrl ? 'Saving…' : 'Save link'}
+                </button>
+                {savedTasksUrl && (
+                  <button
+                    type="button"
+                    className="class-settings-modal__text-button"
+                    onClick={() => void saveTasksUrl(null)}
+                    disabled={isSavingTasksUrl}
+                  >
+                    Remove link
+                  </button>
+                )}
+                {/* Always on the page, so a screen reader announces the text when it appears */}
+                <span className="class-settings-modal__link-notice" role="status">
+                  {tasksUrlNotice}
+                </span>
+              </div>
+              {tasksUrlSaveError && (
+                <p className="class-settings-modal__export-error" role="alert">
+                  {tasksUrlSaveError}
+                </p>
+              )}
+            </section>
+
+            <section className="class-settings-modal__section">
               <h2 className="class-settings-modal__label">Export</h2>
               <button
                 type="button"
@@ -231,14 +438,14 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
         </div>
       </div>
 
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDeleteConfirm}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        destructive
         title="Delete class?"
         message={`Remove "${classItem.name}" from your classes list? This only hides it for you and does not delete the class from the database.`}
-        confirmText="Remove from my view"
-        cancelText="Cancel"
+        confirmLabel="Remove from my view"
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

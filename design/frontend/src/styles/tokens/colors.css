@@ -91,4 +91,23 @@
 
   /* Overlay / scrim */
   --gt-scrim: rgba(0, 0, 0, 0.5);
+
+  /* ---- Schedule kind palette (schedule handoff, 2026-10) — the icon + text label always travel with the color ---- */
+  --gt-sched-ta-soft:       var(--gt-primary-soft);     /* weekly TA meeting tile */
+  --gt-sched-ta-text:       var(--gt-green-700);
+  --gt-sched-review-soft:   rgba(125, 60, 152, 0.12);   /* final review — the purple slot, same tint as the search story disc */
+  --gt-sched-review-text:   var(--gt-purple);
+  --gt-sched-meeting-soft:  var(--gt-info-soft);        /* one-off meeting */
+  --gt-sched-meeting-text:  var(--gt-info-text);
+  --gt-sched-lecture-soft:  var(--gt-gray-100);         /* lecture — quiet background structure */
+  --gt-sched-lecture-text:  var(--gt-gray-700);
+  --gt-sched-oh-soft:       var(--gt-surface);          /* office hours — optional drop-in: white tile, dashed outline */
+  --gt-sched-oh-text:       var(--gt-gray-700);
+  --gt-sched-oh-border:     var(--gt-border-strong);
+  --gt-sched-deadline-text: var(--gt-warning-text);     /* deadline marker glyph (matches the search assignment disc) */
+  --gt-sched-now:           var(--gt-primary);          /* the Now line */
+
+  /* ---- Alignment round (2026-10-19): literals the component CSS used to carry ---- */
+  --gt-skeleton-shine: #F5F5F5;                /* skeleton shimmer highlight (_skeleton.scss) */
+  --gt-opacity-disabled: 0.45; /* @kind other */ /* the one disabled opacity for buttons, chips, tabs, checks */
 }

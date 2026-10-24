@@ -1,5 +1,5 @@
 import React from 'react';
-import { PointsChip, EstimateChip, UserPair } from './PointsChip.jsx';
+import { PointsChip, EstimateChip, UserPair } from './Chips.jsx';
 
 /**
  * Backlog row — archived / not-yet-scheduled User Story. Dense list

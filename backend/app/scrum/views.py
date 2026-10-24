@@ -13,7 +13,6 @@ from app.scrum.models import (
     BoardResponse,
     BoardSummaryResponse,
     CommentOut,
-    CommentResponse,
     CommentsListResponse,
     CreateCommentRequest,
     CreateSprintRequest,
@@ -159,11 +158,9 @@ def delete_task(task_id: str, user_id: str = Depends(require_user)) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def move_task(
-    task_id: str, body: MoveTaskRequest, user_id: str = Depends(require_user)
-) -> TaskResponse:
+def move_task(task_id: str, body: MoveTaskRequest, user_id: str = Depends(require_user)) -> TaskOut:
     out = controller.move_task(task_id=task_id, user_id=user_id, to_status=body.to_status)
-    return TaskResponse(message="Task moved successfully", task=_task_out(out["task"]))
+    return _task_out(out["task"])
 
 
 def add_dependency(
@@ -193,11 +190,11 @@ def list_story_comments(
 
 def create_story_comment(
     story_id: str, body: CreateCommentRequest, user_id: str = Depends(require_user)
-) -> CommentResponse:
+) -> CommentOut:
     row = controller.create_comment(
         parent_kind="story", parent_id=story_id, user_id=user_id, body_md=body.body_md
     )
-    return CommentResponse(message="Comment added successfully", comment=CommentOut(**row))
+    return CommentOut(**row)
 
 
 def list_task_comments(task_id: str, user_id: str = Depends(require_user)) -> CommentsListResponse:
@@ -207,11 +204,11 @@ def list_task_comments(task_id: str, user_id: str = Depends(require_user)) -> Co
 
 def create_task_comment(
     task_id: str, body: CreateCommentRequest, user_id: str = Depends(require_user)
-) -> CommentResponse:
+) -> CommentOut:
     row = controller.create_comment(
         parent_kind="task", parent_id=task_id, user_id=user_id, body_md=body.body_md
     )
-    return CommentResponse(message="Comment added successfully", comment=CommentOut(**row))
+    return CommentOut(**row)
 
 
 @limiter.limit("10/minute")

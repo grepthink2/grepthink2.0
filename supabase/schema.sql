@@ -55,6 +55,60 @@ CREATE TYPE "public"."user_role" AS ENUM (
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
 
+-- From 2026-10-18_final_review_slots.sql, with release_final_review_slot and the final_review_slots table.
+CREATE OR REPLACE FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") RETURNS "text"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_starts_at timestamptz;
+  v_holder    uuid;
+  v_freed     integer;
+BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
+  SELECT s.starts_at, s.project_id
+    INTO v_starts_at, v_holder
+    FROM final_review_slots s
+    JOIN projects p ON p.id = p_project AND p.class_id = s.class_id
+   WHERE s.id = p_slot
+     FOR UPDATE OF s;
+  IF NOT FOUND THEN
+    RETURN 'not_found';
+  END IF;
+  IF v_holder = p_project THEN
+    RETURN 'booked';
+  END IF;
+  IF v_holder IS NOT NULL THEN
+    RETURN 'slot_taken';
+  END IF;
+
+  -- Free the team's other slot first: while that row still names the team,
+  -- final_review_slots_project_uniq would refuse the claim below.
+  UPDATE final_review_slots
+     SET project_id = NULL, booked_by = NULL, booked_at = NULL
+   WHERE project_id = p_project;
+  GET DIAGNOSTICS v_freed = ROW_COUNT;
+
+  UPDATE final_review_slots
+     SET project_id = p_project, booked_by = p_actor, booked_at = now()
+   WHERE id = p_slot;
+
+  UPDATE projects SET final_review_at = v_starts_at WHERE id = p_project;
+
+  IF v_freed = 0 THEN
+    RETURN 'booked';
+  END IF;
+  DELETE FROM project_review_tas WHERE project_id = p_project;
+  RETURN 'moved';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."bump_conversation_last_message"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -181,6 +235,35 @@ $$;
 
 ALTER FUNCTION "public"."profiles_role_sanitizer"() OWNER TO "postgres";
 
+
+-- From 2026-10-18_final_review_slots.sql, with book_final_review_slot and the final_review_slots table.
+CREATE OR REPLACE FUNCTION "public"."release_final_review_slot"("p_project" "uuid") RETURNS boolean
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_freed integer;
+BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
+  UPDATE final_review_slots
+     SET project_id = NULL, booked_by = NULL, booked_at = NULL
+   WHERE project_id = p_project;
+  GET DIAGNOSTICS v_freed = ROW_COUNT;
+  IF v_freed = 0 THEN
+    RETURN false;
+  END IF;
+
+  UPDATE projects SET final_review_at = NULL WHERE id = p_project;
+  DELETE FROM project_review_tas WHERE project_id = p_project;
+  RETURN true;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."release_final_review_slot"("p_project" "uuid") OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -279,7 +362,11 @@ CREATE TABLE IF NOT EXISTS "public"."classes" (
     "image_url" "text",
     "status" "text" NOT NULL,
     "review_period_open" boolean DEFAULT false NOT NULL,
-    "review_zoom_url" "text"
+    "review_zoom_url" "text",
+    "external_tasks_url" "text",
+    "end_date" "date",
+    CONSTRAINT "classes_end_date_after_start" CHECK ((("end_date" IS NULL) OR ("start_date" IS NULL) OR (("end_date" >= "start_date") AND ("end_date" <= ("start_date" + 370))))),
+    CONSTRAINT "classes_external_tasks_url_valid" CHECK ((("external_tasks_url" IS NULL) OR (("length"("external_tasks_url") <= 2048) AND ("external_tasks_url" ~* '^https?://[^/?#[:space:]]+[^[:space:]]*$'::"text"))))
 );
 
 
@@ -384,6 +471,43 @@ CREATE TABLE IF NOT EXISTS "public"."interest_team_preferences" (
 
 
 ALTER TABLE "public"."interest_team_preferences" OWNER TO "postgres";
+
+
+-- meetings: 2026-06-26_meetings.sql, plus kind, note, meetings_kind_valid, meetings_team_meeting_shape, the
+-- three length caps, ON DELETE SET NULL on meetings_created_by_fkey and meetings_project_once_idx from
+-- 2026-10-18_team_meetings.sql (Applied: DEV 2026-10-18, PROD pending). Its primary key, indexes, foreign keys,
+-- RLS and grant follow in the sections below, as in a dump.
+CREATE TABLE IF NOT EXISTS "public"."meetings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "project_id" "uuid",
+    "title" "text",
+    "cadence" "text" DEFAULT 'weekly'::"text" NOT NULL,
+    "day_of_week" "text",
+    "start_time" time without time zone,
+    "scheduled_at" timestamp with time zone,
+    "duration_minutes" integer DEFAULT 30 NOT NULL,
+    "sequence" integer DEFAULT 1 NOT NULL,
+    "location" "text",
+    "zoom_url" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "kind" "text" DEFAULT 'ta_meeting'::"text" NOT NULL,
+    "note" "text",
+    CONSTRAINT "meetings_cadence_valid" CHECK (("cadence" = ANY (ARRAY['weekly'::"text", 'once'::"text"]))),
+    CONSTRAINT "meetings_day_valid" CHECK ((("day_of_week" IS NULL) OR ("lower"("day_of_week") = ANY (ARRAY['monday'::"text", 'tuesday'::"text", 'wednesday'::"text", 'thursday'::"text", 'friday'::"text", 'saturday'::"text", 'sunday'::"text"])))),
+    CONSTRAINT "meetings_kind_valid" CHECK (("kind" = ANY (ARRAY['ta_meeting'::"text", 'team_meeting'::"text"]))),
+    CONSTRAINT "meetings_location_length" CHECK ((("location" IS NULL) OR ("char_length"("location") <= 120))),
+    CONSTRAINT "meetings_note_length" CHECK ((("note" IS NULL) OR ("char_length"("note") <= 500))),
+    CONSTRAINT "meetings_seq_positive" CHECK (("sequence" >= 1)),
+    CONSTRAINT "meetings_shape" CHECK ((("cadence" = 'weekly'::"text") OR (("cadence" = 'once'::"text") AND ("scheduled_at" IS NOT NULL)))),
+    CONSTRAINT "meetings_team_meeting_shape" CHECK ((("kind" <> 'team_meeting'::"text") OR (("cadence" = 'once'::"text") AND ("project_id" IS NOT NULL) AND ("title" IS NOT NULL) AND (("char_length"("btrim"("title")) >= 1) AND ("char_length"("btrim"("title")) <= 80)) AND (("duration_minutes" % 15) = 0) AND (("duration_minutes" >= 15) AND ("duration_minutes" <= 240))))),
+    CONSTRAINT "meetings_zoom_url_length" CHECK ((("zoom_url" IS NULL) OR ("char_length"("zoom_url") <= 500)))
+);
+
+
+ALTER TABLE "public"."meetings" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."messages" (
@@ -531,6 +655,26 @@ CREATE TABLE IF NOT EXISTS "public"."final_review_notes" (
 ALTER TABLE "public"."final_review_notes" OWNER TO "postgres";
 
 
+-- final_review_slots: 2026-10-18_final_review_slots.sql (Applied: DEV 2026-10-19, PROD pending), with the
+-- functions book_final_review_slot and release_final_review_slot (in the functions section above). Its
+-- primary key, unique key, indexes, foreign keys, RLS and grant follow in the sections below, as in a dump.
+CREATE TABLE IF NOT EXISTS "public"."final_review_slots" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "starts_at" timestamp with time zone NOT NULL,
+    "duration_minutes" integer DEFAULT 60 NOT NULL,
+    "project_id" "uuid",
+    "booked_by" "uuid",
+    "booked_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_review_slots_duration_valid" CHECK (("duration_minutes" = 60))
+);
+
+
+ALTER TABLE "public"."final_review_slots" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."projects" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "class_id" "uuid" NOT NULL,
@@ -654,6 +798,16 @@ ALTER TABLE ONLY "public"."feedback_submissions"
 
 
 
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_class_start_uniq" UNIQUE ("class_id", "starts_at");
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."interest_form"
     ADD CONSTRAINT "interest_form_pkey" PRIMARY KEY ("id");
 
@@ -681,6 +835,11 @@ ALTER TABLE ONLY "public"."interest_team_preferences"
 
 ALTER TABLE ONLY "public"."interest_team_preferences"
     ADD CONSTRAINT "interest_team_preferences_unique" UNIQUE ("user_id", "class_id", "peer_user_id", "kind");
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_pkey" PRIMARY KEY ("id");
 
 
 
@@ -775,6 +934,10 @@ CREATE INDEX "conversations_user_b_idx" ON "public"."conversations" USING "btree
 
 
 
+CREATE UNIQUE INDEX "final_review_slots_project_uniq" ON "public"."final_review_slots" USING "btree" ("project_id") WHERE ("project_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_class_enrollments_class_id" ON "public"."class_enrollments" USING "btree" ("class_id");
 
 
@@ -811,6 +974,18 @@ CREATE INDEX "idx_final_review_scores_student" ON "public"."final_review_scores"
 
 
 
+CREATE INDEX "idx_final_review_slots_booked_by" ON "public"."final_review_slots" USING "btree" ("booked_by");
+
+
+
+CREATE INDEX "idx_final_review_slots_created_by" ON "public"."final_review_slots" USING "btree" ("created_by");
+
+
+
+CREATE INDEX "idx_meetings_created_by" ON "public"."meetings" USING "btree" ("created_by");
+
+
+
 CREATE INDEX "idx_project_review_tas_class" ON "public"."project_review_tas" USING "btree" ("class_id");
 
 
@@ -844,6 +1019,22 @@ CREATE INDEX "interest_team_preferences_class_idx" ON "public"."interest_team_pr
 
 
 CREATE INDEX "interest_team_preferences_peer_idx" ON "public"."interest_team_preferences" USING "btree" ("peer_user_id", "class_id");
+
+
+
+CREATE INDEX "meetings_class_idx" ON "public"."meetings" USING "btree" ("class_id");
+
+
+
+CREATE INDEX "meetings_project_idx" ON "public"."meetings" USING "btree" ("project_id");
+
+
+
+CREATE INDEX "meetings_project_once_idx" ON "public"."meetings" USING "btree" ("project_id", "scheduled_at") WHERE ("cadence" = 'once'::"text");
+
+
+
+CREATE UNIQUE INDEX "meetings_project_seq_uniq" ON "public"."meetings" USING "btree" ("project_id", "sequence") WHERE ("cadence" = 'weekly'::"text");
 
 
 
@@ -974,6 +1165,26 @@ ALTER TABLE ONLY "public"."feedback_submissions"
 
 
 
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_booked_by_fkey" FOREIGN KEY ("booked_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."interest_form"
     ADD CONSTRAINT "interest_form_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id");
 
@@ -1011,6 +1222,21 @@ ALTER TABLE ONLY "public"."interest_team_preferences"
 
 ALTER TABLE ONLY "public"."interest_team_preferences"
     ADD CONSTRAINT "interest_team_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
 
 
 
@@ -1160,6 +1386,9 @@ ALTER TABLE "public"."interest_submissions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."interest_team_preferences" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."meetings" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1203,6 +1432,9 @@ ALTER TABLE "public"."final_review_notes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."final_review_scores" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."final_review_slots" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."project_review_tas" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1220,6 +1452,11 @@ GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
+
+
+
+REVOKE ALL ON FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") TO "service_role";
 
 
 
@@ -1250,6 +1487,11 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "anon";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."release_final_review_slot"("p_project" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."release_final_review_slot"("p_project" "uuid") TO "service_role";
 
 
 
@@ -1325,6 +1567,11 @@ GRANT ALL ON TABLE "public"."interest_team_preferences" TO "service_role";
 
 
 
+-- meetings is service_role only: the browser roles hold nothing on it (2026-09-21_lock_down_direct_table_access.sql).
+GRANT ALL ON TABLE "public"."meetings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."messages" TO "anon";
 GRANT ALL ON TABLE "public"."messages" TO "authenticated";
 GRANT ALL ON TABLE "public"."messages" TO "service_role";
@@ -1363,6 +1610,11 @@ GRANT ALL ON TABLE "public"."final_review_notes" TO "service_role";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "anon";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "authenticated";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "service_role";
+
+
+
+-- final_review_slots is service_role only: the browser roles hold nothing on it (2026-09-21_lock_down_direct_table_access.sql).
+GRANT ALL ON TABLE "public"."final_review_slots" TO "service_role";
 
 
 

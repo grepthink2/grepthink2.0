@@ -1,0 +1,22 @@
+// CodeInput — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// CodeInput block, then its line from the file's phone block (the reduced-motion block has none).
+
+/* ── CodeInput ──────────────────────────────────────────── */
+.gt-code { display: flex; align-items: center; gap: 8px; max-width: 100%; }
+.gt-code__box {
+  flex: 0 1 44px; min-width: 0; height: 52px; box-sizing: border-box; padding: 0;
+  border: 1px solid var(--gt-border-control); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
+  font-family: var(--gt-font-mono); font-size: 20px; font-weight: var(--gt-weight-medium); text-align: center; text-transform: uppercase;
+  color: var(--gt-text-primary); caret-color: var(--gt-accent); outline: none;
+  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-code__box:hover:not(:disabled) { border-color: var(--gt-border-control-hover); }
+.gt-code__box:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.gt-code__box:disabled { background: var(--gt-surface-sunken); border-color: var(--gt-border); color: var(--gt-text-tertiary); cursor: not-allowed; }
+.gt-code__sep { flex: 0 0 8px; height: 2px; border-radius: 1px; background: var(--gt-border-strong); }
+.gt-field--error .gt-code__box { border-color: var(--gt-error); }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-code { gap: 6px; }
+}

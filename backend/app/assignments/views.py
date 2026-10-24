@@ -76,7 +76,7 @@ def update_tsr_entry(
         scrum_master_assessment=data.scrum_master_assessment,
         scrum_master_notes=data.scrum_master_notes,
     )
-    return {"message": "TSR updated successfully", "tsr": entry}
+    return entry
 
 
 def get_my_tsrs(

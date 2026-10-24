@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, startTransition } from 'react';
+import React, { useState, useEffect, useRef, useMemo, startTransition, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
@@ -7,13 +7,18 @@ import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
-import { MessagePlainText } from '@features/messages/components/MessageMarkdown';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { apiRequest, type ApiProfile } from '@/lib/api';
 import SchoolSwitcher from './SchoolSwitcher';
 import { SearchTrigger } from '@features/search/components/SearchTrigger';
 import { buildBreadcrumbs } from './breadcrumbs';
 import './Header.scss';
+
+// The Markdown parser is a chunk of its own, and of the shell only the message previews in the
+// notification list need it, so it loads the first time one renders; the raw text shows meanwhile.
+const MessagePlainText = lazy(() =>
+  import('@features/messages/components/MessageMarkdown').then((m) => ({ default: m.MessagePlainText })),
+);
 
 /**
  * Notices the class's instructor answers on that class's Roster: its roster is missing, or an
@@ -338,7 +343,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
                         <div className="app-header__notification-title">{notification.title}</div>
                         <div className="app-header__notification-content">
                           {notification.type === 'message' ? (
-                            <MessagePlainText body={notification.body} />
+                            <Suspense fallback={notification.body}>
+                              <MessagePlainText body={notification.body} />
+                            </Suspense>
                           ) : (
                             notification.body
                           )}

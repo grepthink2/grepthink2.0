@@ -6,7 +6,7 @@ project meeting/Zoom metadata, and per-week attendance.
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SetClassTARequest(BaseModel):
@@ -53,10 +53,12 @@ class UpdateProjectMeetingRequest(BaseModel):
 
     Any field left as ``None`` is unchanged. Send an empty string to clear a
     field (e.g. ``zoom_url=""`` removes the link). ``meeting_in_week`` selects
-    which of the team's weekly meetings (1, 2, …) this slot is.
+    which of the team's weekly meetings (1, 2, …) this slot is. A link is at most
+    500 characters, the ``meetings_zoom_url_length`` CHECK: past it, the database
+    would refuse the write and the request would end as a 500.
     """
 
     meeting_in_week: int = 1
-    zoom_url: str | None = None
+    zoom_url: str | None = Field(default=None, max_length=500)
     meeting_day: str | None = None
     meeting_time: str | None = None

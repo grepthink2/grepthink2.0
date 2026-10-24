@@ -9,8 +9,10 @@ class at all. ``OTHER_PID`` is a second project in the same class.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
+from app.assignments import deadlines
 from tests.fake_supabase import FakeSupabase
 
 PID = "00000000-0000-0000-0000-0000000000aa"
@@ -25,8 +27,30 @@ OUTSIDER = "outsider-1"
 
 RELATIONS = {
     ("projects", "classes"): ("class_id", "id", False),
+    ("project_members", "projects"): ("project_id", "id", False),  # the access check's school
     ("tasks", "user_stories"): ("story_id", "id", False),  # a dependency's story key and sprint
+    ("user_stories", "tasks"): ("id", "story_id", True),  # the live burnup totals
+    # Embedded on a move's insert: the mover's name and the task's story (for its sprint).
+    ("task_moves", "profiles!task_moves_moved_by_fkey"): ("moved_by", "id", False),
+    ("task_moves", "tasks!task_moves_task_id_fkey"): ("task_id", "id", False),
+    ("tasks", "user_stories!tasks_story_id_fkey"): ("story_id", "id", False),
+    # Embedded on a comment's insert: its author's name.
+    ("scrum_comments", "profiles!scrum_comments_author_id_fkey"): ("author_id", "id", False),
 }
+
+
+def pin_clock(monkeypatch, instant: datetime) -> None:
+    """Make ``instant`` (timezone-aware) the board's "now": the shared ``deadlines.now_utc``."""
+    monkeypatch.setattr(deadlines, "now_utc", lambda: instant.astimezone(UTC))
+
+
+def pin_today(monkeypatch, day: date) -> None:
+    """Make it noon on ``day`` at a school in the default zone (Pacific, where the seed's class
+    is): the board's "today" is ``day`` there."""
+    pin_clock(
+        monkeypatch,
+        datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
+    )
 
 
 def profile(uid: str, first: str, last: str = "X") -> dict:
@@ -43,8 +67,10 @@ class ScrumFake(FakeSupabase):
     """FakeSupabase plus what the scrum migration makes Postgres do on a task move
     (2026-08-12_scrum_board.sql): ``task_moves.moved_at`` defaults to now(), and the
     ``scrum_apply_task_move`` BEFORE INSERT trigger copies the task's status into
-    ``from_status`` and applies the move to the task. ``scrum_next_key`` hands out
-    1, 2, 3… per project and kind, like the counter table behind it.
+    ``from_status`` and applies the move to the task. Both run as the fake's insert
+    trigger, so a task embedded on the move's insert shows its status before the move,
+    as in Postgres. ``scrum_next_key`` hands out 1, 2, 3… per project and kind, like the
+    counter table behind it.
     """
 
     def __init__(self, **kwargs):
@@ -55,32 +81,24 @@ class ScrumFake(FakeSupabase):
             counters[k] = counters.get(k, 0) + 1
             return counters[k]
 
-        super().__init__(rpc={"scrum_next_key": next_key}, **kwargs)
+        def apply_move(db: FakeSupabase, row: dict) -> None:
+            task = next((t for t in db.rows("tasks") if t["id"] == row["task_id"]), None)
+            if task is None:  # the trigger raises too
+                raise RuntimeError(f"task {row['task_id']} not found")
+            row.setdefault("moved_at", datetime.now(UTC).isoformat())
+            row["from_status"] = task["status"]
+            task.update(
+                status=row["to_status"],
+                moved_by=row.get("moved_by"),
+                moved_at=row["moved_at"],
+                updated_at=row["moved_at"],
+            )
 
-    def table(self, name):
-        query = super().table(name)
-        if name != "task_moves":
-            return query
-        insert = query.insert
-
-        def insert_move(payload):
-            now = datetime.now(UTC).isoformat()
-            for row in payload if isinstance(payload, list) else [payload]:
-                task = next((t for t in self.rows("tasks") if t["id"] == row["task_id"]), None)
-                if task is None:  # the trigger raises too
-                    raise RuntimeError(f"task {row['task_id']} not found")
-                row.setdefault("moved_at", now)
-                row["from_status"] = task["status"]
-                task.update(
-                    status=row["to_status"],
-                    moved_by=row.get("moved_by"),
-                    moved_at=row["moved_at"],
-                    updated_at=row["moved_at"],
-                )
-            return insert(payload)
-
-        query.insert = insert_move
-        return query
+        super().__init__(
+            rpc={"scrum_next_key": next_key},
+            triggers={("task_moves", "insert"): apply_move},
+            **kwargs,
+        )
 
 
 def scrum_db(monkeypatch, **tables) -> ScrumFake:

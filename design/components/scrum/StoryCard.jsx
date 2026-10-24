@@ -1,5 +1,5 @@
 import React from 'react';
-import { PointsChip, EstimateChip, UserPair } from './PointsChip.jsx';
+import { PointsChip, EstimateChip, UserPair } from './Chips.jsx';
 
 /**
  * User Story card — key, title, points + estimate, reporter → assignee,

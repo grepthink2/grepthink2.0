@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Brush,
   Check,
@@ -26,10 +26,16 @@ import SprintProgressCard from './SprintProgressCard';
 import type { ProjectMember } from './projectMembers';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
-import EditProjectModal from '../EditProject/EditProjectModal';
-import ConfirmModal from '../Overlays/ConfirmModal';
+import EditProjectModal, { type EditProjectTab } from '../EditProject/EditProjectModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
+import { TeamMeetingsList } from '../TeamMeetings/TeamMeetingsList';
+import { toProjectMeetingPayload, toTeamMeeting } from '../TeamMeetings/teamMeetingRows';
+import { showTeamMeetingsCard, type TeamMeeting, type TeamMeetingPayload } from '../TeamMeetings/teamMeetingsModel';
+import type { SchedulePerson } from '@features/schedule/scheduleModel';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
+import { ApiError } from '@/lib/api/client';
+import { useSchoolTimezone } from '@/lib/institutions';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
 
 /** Stacks skeleton rows with the cards' inner rhythm. */
@@ -86,6 +92,75 @@ export const ProjectViewSkeleton: React.FC = () => (
 
 /** Roles that can manage the project (add/drop members, edit project). */
 const MANAGER_ROLES = ['owner', 'admin', 'product owner'] as const;
+
+/** How the team's meetings loaded. 'forbidden' is a viewer outside the team, who gets no card. */
+type MeetingsStatus = 'loading' | 'ready' | 'error' | 'forbidden';
+
+/** The answer to one load: which project and attempt it belongs to, so an older one reads as loading. */
+interface MeetingsLoad {
+  projectId: string;
+  attempt: number;
+  status: Exclude<MeetingsStatus, 'loading'>;
+  meetings: TeamMeeting[];
+  canManage: boolean;
+}
+
+/**
+ * The team's meetings, one set for both of the page's views of them: the card and the Edit Project
+ * Meetings tab, where the Product Owner adds, edits and deletes. Each change updates the set in place.
+ */
+function useTeamMeetings(projectId: string | undefined) {
+  const [attempt, setAttempt] = useState(0);
+  const [load, setLoad] = useState<MeetingsLoad | null>(null);
+  useEffect(() => {
+    if (!projectId) return undefined;
+    let cancelled = false;
+    // A promise chain: react-hooks/set-state-in-effect accepts setState in its callbacks.
+    api.getProjectMeetings(projectId).then(
+      (res) => {
+        if (cancelled) return;
+        setLoad({ projectId, attempt, status: 'ready', meetings: res.meetings.map(toTeamMeeting), canManage: res.can_manage });
+      },
+      (err: unknown) => {
+        if (cancelled) return;
+        const status = err instanceof ApiError && err.status === 403 ? 'forbidden' : 'error';
+        setLoad({ projectId, attempt, status, meetings: [], canManage: false });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, attempt]);
+
+  const current = load && load.projectId === projectId && load.attempt === attempt ? load : null;
+  const status: MeetingsStatus = current?.status ?? 'loading';
+  const edit = (change: (meetings: TeamMeeting[]) => TeamMeeting[]) =>
+    setLoad((prev) => (prev ? { ...prev, meetings: change(prev.meetings) } : prev));
+
+  return {
+    status,
+    meetings: current?.meetings ?? [],
+    canManage: current?.canManage ?? false,
+    retry: () => setAttempt((n) => n + 1),
+    /** Resolves with the new meeting, so the Meetings tab can put focus on its row. */
+    create: async (value: TeamMeetingPayload) => {
+      if (!projectId) return undefined;
+      const meeting = toTeamMeeting(await api.createProjectMeeting(projectId, toProjectMeetingPayload(value)));
+      edit((meetings) => [...meetings, meeting]);
+      return meeting;
+    },
+    update: async (meetingId: string, value: TeamMeetingPayload) => {
+      if (!projectId) return;
+      const row = await api.updateProjectMeeting(projectId, meetingId, toProjectMeetingPayload(value));
+      edit((meetings) => meetings.map((m) => (m.id === meetingId ? toTeamMeeting(row) : m)));
+    },
+    remove: async (meetingId: string) => {
+      if (!projectId) return;
+      await api.deleteProjectMeeting(projectId, meetingId);
+      edit((meetings) => meetings.filter((m) => m.id !== meetingId));
+    },
+  };
+}
 
 /** "3 spots available", "1 spot available", or "Team full" once nobody else fits. */
 function spotsText(spots: number): string {
@@ -180,8 +255,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   onRequestCancelled,
 }) => {
   const { user } = useAuth();
-  const { selectedClass } = useClass();
+  const { selectedClass, classes } = useClass();
   const rolesId = useId();
+  const meetingsId = useId();
   // Your role in the project's class. The Create Project preview has no class yet: the project
   // goes to the selected class.
   const classRole = useClassRole(classId ?? selectedClass?.id);
@@ -197,13 +273,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     project?.created_by === user?.id &&
     projectMembers.length === 0;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [deletingProject, setDeletingProject] = useState(false);
+  // Why the last deletion was refused, shown in the confirm dialog.
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestedHovered, setRequestedHovered] = useState(false);
   const [cancellingRequest, setCancellingRequest] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
-  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  /** The tab Edit Project is open on; null while it is closed. */
+  const [editProjectTab, setEditProjectTab] = useState<EditProjectTab | null>(null);
   const [joinedOpen, setJoinedOpen] = useState(false);
   const joinedButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -226,6 +303,26 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   // The class instructor and class TAs may manage project admins.
   const canManageAdmins = Boolean(classId) && (classRole === 'instructor' || classRole === 'ta');
 
+  // Team meetings: every member reads them, only the team's Product Owner changes them. Times show on
+  // the viewer's clock, with the school's zone (its institution's) for campus time.
+  const viewerIsProductOwner = userRoleOnProject === 'product owner';
+  const teamMeetings = useTeamMeetings(projectId);
+  const meetingsStatus = teamMeetings.status === 'forbidden' ? null : teamMeetings.status;
+  const canManageMeetings = viewerIsProductOwner && teamMeetings.canManage;
+  const projectClass = classId ? classes.find((c) => c.id === classId) : selectedClass;
+  const schoolZone = useSchoolTimezone(projectClass?.institution?.id);
+  // Members see the card once a meeting exists; the Product Owner sees it empty too, to add one.
+  const showMeetingsCard =
+    Boolean(projectId) &&
+    meetingsStatus !== null &&
+    showTeamMeetingsCard(teamMeetings.meetings, { canManage: canManageMeetings, status: meetingsStatus });
+  // Each row's organizer face: the team's members by id.
+  const meetingPeople = Object.fromEntries(
+    members
+      .filter((m): m is ProjectMember & { id: string } => Boolean(m.id))
+      .map((m): [string, SchedulePerson] => [m.id, { id: m.id, name: m.displayName, avatarUrl: m.imageUrl, you: m.id === user?.id }]),
+  );
+
   const handleCancelRequest = useCallback(async () => {
     if (!pendingRequestId || cancellingRequest) return;
     setCancellingRequest(true);
@@ -240,18 +337,18 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     }
   }, [pendingRequestId, cancellingRequest, onRequestCancelled]);
 
+  // The confirm dialog is busy while this runs; a refusal stays in it, with the API's reason.
   const handleDeleteEmptyProject = async () => {
-    if (!projectId || deletingProject) return;
-    setDeletingProject(true);
+    if (!projectId) return;
     setDeleteError(null);
     try {
       await api.deleteProject(projectId);
-      onDelete?.();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
-    } finally {
-      setDeletingProject(false);
+      return;
     }
+    setConfirmDeleteOpen(false);
+    onDelete?.();
   };
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
@@ -311,7 +408,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 <button
                   type="button"
                   className="project-view__request-button"
-                  onClick={() => projectId && project && setEditProjectOpen(true)}
+                  onClick={() => projectId && project && setEditProjectTab('details')}
                   disabled={!projectId || !project}
                 >
                   <SquarePen size={18} />
@@ -322,7 +419,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
               <button
                 type="button"
                 className="project-view__request-button"
-                onClick={() => projectId && project && setEditProjectOpen(true)}
+                onClick={() => projectId && project && setEditProjectTab('details')}
                 disabled={!projectId || !project}
               >
                 <SquarePen size={18} />
@@ -403,17 +500,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 <button
                   type="button"
                   className="project-view__request-button project-view__request-button--danger"
-                  onClick={() => setConfirmDeleteOpen(true)}
-                  disabled={deletingProject}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setConfirmDeleteOpen(true);
+                  }}
                 >
                   <Trash2 size={18} />
-                  {deletingProject ? 'Deleting…' : 'Delete Project'}
+                  Delete Project
                 </button>
-                {deleteError && (
-                  <p className="project-view__action-error" role="alert">
-                    {deleteError}
-                  </p>
-                )}
               </div>
             ) : (
               <button
@@ -441,6 +535,33 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         {hasAside && (
           <div className="project-view__aside">
             {projectId && <SprintProgressCard key={projectId} projectId={projectId} projectName={displayTitle} />}
+            {showMeetingsCard && meetingsStatus && (
+              <section className="project-view__card" aria-labelledby={meetingsId}>
+                <div className="project-view__card-head">
+                  <h3 id={meetingsId} className="project-view__section-title">
+                    Team meetings
+                  </h3>
+                  {canManageMeetings && meetingsStatus === 'ready' && teamMeetings.meetings.length > 0 && (
+                    <button type="button" className="gt-tm__link" onClick={() => setEditProjectTab('meetings')}>
+                      Manage
+                    </button>
+                  )}
+                </div>
+                <TeamMeetingsList
+                  variant="card"
+                  meetings={teamMeetings.meetings}
+                  status={meetingsStatus}
+                  schoolZone={schoolZone}
+                  canManage={canManageMeetings}
+                  teamName={displayTitle}
+                  people={meetingPeople}
+                  // "+n more" would point at the Schedule page, which doesn't exist yet: list them all.
+                  maxUpcoming={Infinity}
+                  onManage={() => setEditProjectTab('meetings')}
+                  onRetry={teamMeetings.retry}
+                />
+              </section>
+            )}
             {selectedRoles.length > 0 && (
               <section className="project-view__card project-view__roles" aria-labelledby={rolesId}>
                 <h3 id={rolesId} className="project-view__section-title">
@@ -483,25 +604,38 @@ const ProjectView: React.FC<ProjectViewProps> = ({
       )}
       {projectId && project && (
         <EditProjectModal
-          isOpen={editProjectOpen}
-          onClose={() => setEditProjectOpen(false)}
+          isOpen={editProjectTab !== null}
+          initialTab={editProjectTab ?? undefined}
+          onClose={() => setEditProjectTab(null)}
           project={project}
           projectMembers={projectMembers}
           canManageAdmins={canManageAdmins}
           canEditProjectDetails={canManageProject}
+          viewerIsProductOwner={viewerIsProductOwner}
+          meetingsList={{
+            meetings: teamMeetings.meetings,
+            status: meetingsStatus ?? 'error',
+            schoolZone,
+            onCreate: teamMeetings.create,
+            onUpdate: teamMeetings.update,
+            onDelete: teamMeetings.remove,
+            onRetry: teamMeetings.retry,
+          }}
           onProjectChange={onMembersChange}
           onDelete={onDelete}
         />
       )}
       {canDeleteEmptyProject && (
-        <ConfirmModal
-          isOpen={confirmDeleteOpen}
-          onClose={() => setConfirmDeleteOpen(false)}
-          onConfirm={() => void handleDeleteEmptyProject()}
+        <ConfirmDialog
+          open={confirmDeleteOpen}
+          destructive
           title="Delete project?"
           message={`Nobody is left in "${project?.name ?? projectTitle}". Deleting it removes the project for good; this cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
+          confirmLabel="Delete"
+          busyLabel="Deleting…"
+          error={deleteError}
+          onCancel={() => setConfirmDeleteOpen(false)}
+          onConfirm={handleDeleteEmptyProject}
         />
       )}
     </div>

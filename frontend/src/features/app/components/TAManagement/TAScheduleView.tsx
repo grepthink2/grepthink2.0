@@ -8,6 +8,7 @@ import WeekNavigator from './WeekNavigator';
 import AddZoomModal from './AddZoomModal';
 import DesignateTAsModal from './DesignateTAsModal';
 import {
+  meetingsPerWeekOptions,
   toTeamMeetingItem,
   type AttendanceRow,
   type AttendanceStatus,
@@ -302,7 +303,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
                 disabled={savingCadence}
                 onChange={(e) => handleSetCadence({ meetings_per_week: Number(e.target.value) })}
               >
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                {meetingsPerWeekOptions(meetingsPerWeek).map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
               {meetingDuration != null && <span className="ta-page__cadence-dur">· {meetingDuration} min</span>}
             </label>
