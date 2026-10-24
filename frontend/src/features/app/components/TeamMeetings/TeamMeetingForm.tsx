@@ -5,7 +5,8 @@ import { Input } from '@/components/Input/Input';
 import { Select } from '@/components/Select/Select';
 import { Textarea } from '@/components/Textarea/Textarea';
 import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
-import { SCHOOL_ZONE, dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
+import { useNow } from '@/lib/useNow';
+import { dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
 import {
   TEAM_MEETING_DURATIONS,
   TEAM_MEETING_NOTE_MAX,
@@ -51,12 +52,12 @@ export interface TeamMeetingFormProps {
   mode?: 'create' | 'edit';
   /** The meeting being edited (seeds the draft on the viewer's clock). */
   meeting?: TeamMeeting | null;
-  /** Pin the clock (tests, demos); otherwise the time of each render and of the submit. */
+  /** Pin the clock (tests, demos); otherwise renders read a 30-second clock and the submit reads the current time. */
   now?: Date;
   /** Viewer's IANA zone; defaults to the browser's. Date and time fields read on this clock. */
   zone?: string;
-  /** When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. @default 'America/Los_Angeles' */
-  schoolZone?: string;
+  /** The class's school's IANA zone (`useSchoolTimezone`). When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. */
+  schoolZone: string;
   /** Disables the fields and Cancel, and puts the submit button in its busy state. @default false */
   saving?: boolean;
   /** Inline save error, shown above the buttons; the draft is kept. */
@@ -82,7 +83,7 @@ export interface TeamMeetingFormProps {
  * problem. Escape cancels without closing the Edit Project modal around it.
  */
 export function TeamMeetingForm({
-  mode = 'create', meeting = null, now, zone, schoolZone = SCHOOL_ZONE, saving = false, error = null, onSubmit, onCancel,
+  mode = 'create', meeting = null, now, zone, schoolZone, saving = false, error = null, onSubmit, onCancel,
   onDirtyChange, className = '',
 }: TeamMeetingFormProps) {
   const vz = zone || viewerZone();
@@ -101,9 +102,7 @@ export function TeamMeetingForm({
     titleRef.current?.focus();
   }, []);
 
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const nowD = now ?? new Date();
+  const nowD = useNow(30000, now);
   const creating = mode === 'create';
   const differs = zoneDiffers(vz, schoolZone, nowD);
   const campus = differs ? campusTimeOf(draft.date, draft.time, vz, schoolZone) : null;

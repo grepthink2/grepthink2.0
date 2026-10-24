@@ -79,6 +79,8 @@ backend/
 │
 ├── database/migrations/     # SQL by month (<YYYY-MM>/, PROD-only in prod/<YYYY-MM>/), applied by hand
 │                            # (dev, then prod); merging does not apply it
+├── scripts/
+│   └── check_api_client.py  # Web client requests and the action catalog vs the routes
 ├── tests/
 │   ├── conftest.py          # Env stubs, HS256 test tokens
 │   ├── fake_supabase.py     # In-memory PostgREST double with a round-trip counter

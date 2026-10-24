@@ -20,6 +20,8 @@ export interface ModalProps {
   width?: number;
   /** 'form': title left 18/600, tabs below, pinned footer. 'message': centred 28px title. @default 'form' */
   variant?: 'form' | 'message';
+  /** 'dark' is the landing page's look (the What's new modal): scrim, sheet, head, × and the kit pieces inside take the --gt-dark-* ramp. The app stays 'light'. @default 'light' */
+  tone?: 'light' | 'dark';
   /** Holds the dialog open while it saves (× disabled, Esc / scrim ignored). @default false */
   closeDisabled?: boolean;
   /** Element to focus on open (default: [data-autofocus], then the first field, then the sheet). */

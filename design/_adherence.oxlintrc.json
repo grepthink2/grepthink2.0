@@ -25,6 +25,7 @@
               "components/marketing/**",
               "components/navigation/**",
               "components/primitives/**",
+              "components/releases/**",
               "components/schedule/**",
               "components/scrum/**",
               "components/search/**",
@@ -115,12 +116,16 @@
         "message": "<BacklogRow> doesn't accept that prop. Declared props: storyKey, title, points, estimate, reporter, assignee, archivedAt, onRestore, restoreLabel, onOpen, className."
       },
       {
-        "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|tone|status|category|projectRole|icon|solid|key|ref|className|style|children)$/]",
-        "message": "<Badge> doesn't accept that prop. Declared props: children, tone, status, category, projectRole, icon, solid."
+        "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|tone|status|category|projectRole|icon|solid|size|key|ref|className|style|children)$/]",
+        "message": "<Badge> doesn't accept that prop. Declared props: children, tone, status, category, projectRole, icon, solid, size."
       },
       {
         "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:neutral|success|warning|error|info|gold|merged)$/]",
         "message": "<Badge> tone must be one of 'neutral' | 'success' | 'warning' | 'error' | 'info' | 'gold' | 'merged'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Badge'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<Badge> size must be one of 'sm' | 'md'."
       },
       {
         "selector": "JSXOpeningElement[name.name='SprintColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|ordinal|median|n|key|ref|className|style|children)$/]",
@@ -383,8 +388,8 @@
         "message": "<FooterColumn> doesn't accept that prop. Declared props: title, links."
       },
       {
-        "selector": "JSXOpeningElement[name.name='LandingNavLink'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|href|key|ref|className|style|children)$/]",
-        "message": "<LandingNavLink> doesn't accept that prop. Declared props: label, href."
+        "selector": "JSXOpeningElement[name.name='LandingNavLink'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|href|hideOnPhone|key|ref|className|style|children)$/]",
+        "message": "<LandingNavLink> doesn't accept that prop. Declared props: label, href, hideOnPhone."
       },
       {
         "selector": "JSXOpeningElement[name.name='LivePill'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|title|className|key|ref|className|style|children)$/]",
@@ -419,8 +424,8 @@
         "message": "<Menu> doesn't accept that prop. Declared props: children, onClose, ariaLabel, autoFocus, className."
       },
       {
-        "selector": "JSXOpeningElement[name.name='Modal'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|title|subtitle|children|footer|tabs|size|width|variant|closeDisabled|initialFocusRef|hideClose|role|portal|className|key|ref|className|style|children)$/]",
-        "message": "<Modal> doesn't accept that prop. Declared props: open, onClose, title, subtitle, children, footer, tabs, size, width, variant, closeDisabled, initialFocusRef, hideClose, role, portal, className."
+        "selector": "JSXOpeningElement[name.name='Modal'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|title|subtitle|children|footer|tabs|size|width|variant|tone|closeDisabled|initialFocusRef|hideClose|role|portal|className|key|ref|className|style|children)$/]",
+        "message": "<Modal> doesn't accept that prop. Declared props: open, onClose, title, subtitle, children, footer, tabs, size, width, variant, tone, closeDisabled, initialFocusRef, hideClose, role, portal, className."
       },
       {
         "selector": "JSXOpeningElement[name.name='Modal'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
@@ -431,8 +436,16 @@
         "message": "<Modal> variant must be one of 'form' | 'message'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='Modal'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:light|dark)$/]",
+        "message": "<Modal> tone must be one of 'light' | 'dark'."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='Modal'] > JSXAttribute[name.name='role'] > Literal[value!=/^(?:dialog|alertdialog)$/]",
         "message": "<Modal> role must be one of 'dialog' | 'alertdialog'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='NewDot'] > JSXAttribute > JSXIdentifier[name!=/^(?:ring|className|key|ref|className|style|children)$/]",
+        "message": "<NewDot> doesn't accept that prop. Declared props: ring, className."
       },
       {
         "selector": "JSXOpeningElement[name.name='OnTimeMeter'] > JSXAttribute > JSXIdentifier[name!=/^(?:rate|late|missing|expected|editedLate|className|key|ref|className|style|children)$/]",
@@ -471,6 +484,10 @@
         "message": "<PostSlotsDrawer> doesn't accept that prop. Declared props: open, onClose, onPost, existing, now, zone, schoolZone, defaultEntries, defaultDay, portal, width."
       },
       {
+        "selector": "JSXOpeningElement[name.name='ProfileMenuSchool'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|name|key|ref|className|style|children)$/]",
+        "message": "<ProfileMenuSchool> doesn't accept that prop. Declared props: id, name."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='ProgressBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|max|tone|size|showLabel|label|valueText|inline|decorative|meter|className|key|ref|className|style|children)$/]",
         "message": "<ProgressBar> doesn't accept that prop. Declared props: value, max, tone, size, showLabel, label, valueText, inline, decorative, meter, className."
       },
@@ -497,6 +514,34 @@
       {
         "selector": "JSXOpeningElement[name.name='RankedProjectSlot'] > JSXAttribute > JSXIdentifier[name!=/^(?:rank|project|team|onMoveUp|onMoveDown|onRemove|emptyLabel|className|key|ref|className|style|children)$/]",
         "message": "<RankedProjectSlot> doesn't accept that prop. Declared props: rank, project, team, onMoveUp, onMoveDown, onRemove, emptyLabel, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseEntry'] > JSXAttribute > JSXIdentifier[name!=/^(?:release|isNew|titleAs|className|key|ref|className|style|children)$/]",
+        "message": "<ReleaseEntry> doesn't accept that prop. Declared props: release, isNew, titleAs, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseEntry'] > JSXAttribute[name.name='titleAs'] > Literal[value!=/^(?:h2|h3|h4|h5)$/]",
+        "message": "<ReleaseEntry> titleAs must be one of 'h2' | 'h3' | 'h4' | 'h5'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseFeed'] > JSXAttribute > JSXIdentifier[name!=/^(?:releases|lastSeen|status|onReload|tone|titleAs|className|key|ref|className|style|children)$/]",
+        "message": "<ReleaseFeed> doesn't accept that prop. Declared props: releases, lastSeen, status, onReload, tone, titleAs, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseFeed'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:loading|ready|failed)$/]",
+        "message": "<ReleaseFeed> status must be one of 'loading' | 'ready' | 'failed'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseFeed'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:light|dark)$/]",
+        "message": "<ReleaseFeed> tone must be one of 'light' | 'dark'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseFeed'] > JSXAttribute[name.name='titleAs'] > Literal[value!=/^(?:h2|h3|h4|h5)$/]",
+        "message": "<ReleaseFeed> titleAs must be one of 'h2' | 'h3' | 'h4' | 'h5'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReleaseSection'] > JSXAttribute > JSXIdentifier[name!=/^(?:kind|markdown|key|ref|className|style|children)$/]",
+        "message": "<ReleaseSection> doesn't accept that prop. Declared props: kind, markdown."
       },
       {
         "selector": "JSXOpeningElement[name.name='ReportCheckRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:kind|text|onReview|key|ref|className|style|children)$/]",
@@ -833,6 +878,18 @@
       {
         "selector": "JSXOpeningElement[name.name='WeeklyPoint'] > JSXAttribute > JSXIdentifier[name!=/^(?:weekStart|value|key|ref|className|style|children)$/]",
         "message": "<WeeklyPoint> doesn't accept that prop. Declared props: weekStart, value."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='WhatsNewModal'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|tone|releases|currentVersion|lastSeen|status|onReload|portal|className|key|ref|className|style|children)$/]",
+        "message": "<WhatsNewModal> doesn't accept that prop. Declared props: open, onClose, tone, releases, currentVersion, lastSeen, status, onReload, portal, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='WhatsNewModal'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:dark|light)$/]",
+        "message": "<WhatsNewModal> tone must be one of 'dark' | 'light'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='WhatsNewModal'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:loading|ready|failed)$/]",
+        "message": "<WhatsNewModal> status must be one of 'loading' | 'ready' | 'failed'."
       }
     ]
   },
@@ -1022,6 +1079,9 @@
       "Modal": {
         "replaces": []
       },
+      "NewDot": {
+        "replaces": []
+      },
       "OnTimeMeter": {
         "replaces": []
       },
@@ -1040,6 +1100,9 @@
       "PostSlotsDrawer": {
         "replaces": []
       },
+      "ProfileMenuSchool": {
+        "replaces": []
+      },
       "ProgressBar": {
         "replaces": []
       },
@@ -1050,6 +1113,15 @@
         "replaces": []
       },
       "RankedProjectSlot": {
+        "replaces": []
+      },
+      "ReleaseEntry": {
+        "replaces": []
+      },
+      "ReleaseFeed": {
+        "replaces": []
+      },
+      "ReleaseSection": {
         "replaces": []
       },
       "ReportCheckRow": {
@@ -1219,6 +1291,9 @@
       },
       "WeeklyPoint": {
         "replaces": []
+      },
+      "WhatsNewModal": {
+        "replaces": []
       }
     },
     "tokens": [
@@ -1264,6 +1339,18 @@
       "--gt-chart-hover",
       "--gt-chart-wash",
       "--gt-container",
+      "--gt-dark-accent-soft",
+      "--gt-dark-accent-text",
+      "--gt-dark-fill",
+      "--gt-dark-fill-hover",
+      "--gt-dark-hairline",
+      "--gt-dark-link",
+      "--gt-dark-scrim",
+      "--gt-dark-shadow-modal",
+      "--gt-dark-surface",
+      "--gt-dark-text",
+      "--gt-dark-text-faint",
+      "--gt-dark-text-muted",
       "--gt-disabled-bg",
       "--gt-disabled-text",
       "--gt-error",
@@ -1426,6 +1513,8 @@
       "--gt-mkt-tracking-caps",
       "--gt-mkt-tracking-display",
       "--gt-mkt-well",
+      "--gt-new-dot",
+      "--gt-new-dot-ring",
       "--gt-opacity-disabled",
       "--gt-opacity-refetch",
       "--gt-primary",
@@ -1628,6 +1717,20 @@
       "--gt-avatar-4": "color",
       "--gt-avatar-5": "color",
       "--gt-avatar-6": "color",
+      "--gt-dark-surface": "color",
+      "--gt-dark-fill": "color",
+      "--gt-dark-fill-hover": "color",
+      "--gt-dark-hairline": "color",
+      "--gt-dark-text": "font",
+      "--gt-dark-text-muted": "font",
+      "--gt-dark-text-faint": "font",
+      "--gt-dark-link": "color",
+      "--gt-dark-accent-soft": "color",
+      "--gt-dark-accent-text": "font",
+      "--gt-dark-scrim": "color",
+      "--gt-dark-shadow-modal": "shadow",
+      "--gt-new-dot": "color",
+      "--gt-new-dot-ring": "color",
       "--gt-gold": "color",
       "--gt-gold-text": "font",
       "--gt-gold-deep": "color",

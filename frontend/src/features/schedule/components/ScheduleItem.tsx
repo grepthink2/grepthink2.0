@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { Avatar } from '@/components/Avatar/Avatar';
 import { Badge } from '@/components/Badge/Badge';
 import type { BadgeStatus } from '@/components/Badge/badgeStatus';
+import { useNow } from '@/lib/useNow';
 import {
-  SCHOOL_ZONE,
   countdown,
   fmtDuration,
   fmtTime,
@@ -13,6 +13,7 @@ import {
   isoDuration,
   kindMeta,
   statusOf,
+  viewerZone,
   zoneLabel,
   type ScheduleItemData,
   type ScheduleLens,
@@ -32,11 +33,11 @@ export interface ScheduleItemProps {
   item: ScheduleItemData;
   /** Only changes which actions render (Mark attendance / Set time for staff). @default 'student' */
   lens?: ScheduleLens;
-  /** Clock used for status + the Join window; defaults to new Date(). */
+  /** Clock used for status + the Join window; defaults to one that ticks every 30 s (useNow). */
   now?: Date;
-  /** Viewer's IANA zone (times render in it). @default 'America/Los_Angeles' */
+  /** Viewer's IANA zone (times render in it). @default the browser's zone */
   zone?: string;
-  /** The school's zone, used for the hover title when it differs. @default 'America/Los_Angeles' */
+  /** The school's IANA zone, for the hover title `showSchoolTime` asks for. Without it there is no campus time to show. */
   schoolZone?: string;
   /** Put the school-zone time in each <time>'s title. */
   showSchoolTime?: boolean;
@@ -59,12 +60,10 @@ export interface ScheduleItemProps {
  * `<Badge status="live" />` (blue: in progress) where the design draws a green pulsing pill.
  */
 export function ScheduleItem({
-  item, lens = 'student', now, zone = SCHOOL_ZONE, schoolZone = SCHOOL_ZONE, showSchoolTime = false,
+  item, lens = 'student', now, zone = viewerZone(), schoolZone, showSchoolTime = false,
   overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const nowD = now ?? new Date();
+  const nowD = useNow(30000, now);
   const meta = kindMeta(item.kind);
   const status = statusOf(item, nowD, zone);
   const joinable = isJoinable(item, nowD);
@@ -75,7 +74,7 @@ export function ScheduleItem({
   const title = item.title || meta.label;
   const kindInTitle = title.toLowerCase().includes(meta.label.toLowerCase());
   const cd = item.kind === 'final_review' && status === 'upcoming' ? countdown(item, nowD, zone) : null;
-  const schoolTitle = showSchoolTime && !isAllDay && !isTbd ? `${fmtTimeRange(item, schoolZone)} ${zoneLabel(schoolZone, item.startsAt)}` : undefined;
+  const schoolTitle = showSchoolTime && schoolZone && !isAllDay && !isTbd ? `${fmtTimeRange(item, schoolZone)} ${zoneLabel(schoolZone, item.startsAt)}` : undefined;
   const dur = fmtDuration(item);
 
   // time strings

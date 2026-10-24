@@ -10,11 +10,15 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="../../_ds_bundle.js"></script>
+<script src="../releases/releasesSrcLoader.js"></script>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const { Modal, ConfirmDialog, Drawer, InlineConfirm, Button, Input, Select, Tabs, TabPanel, CodeInput, Textarea } = window.GrepThinkDesignSystem_36e7e3;
+<!-- Starts once the page is parsed: the deferred script below must be in the DOM before runDeferredBabel looks for it
+     (with a bundle that already carries the round, the loader resolves at once). -->
+<script>document.addEventListener('DOMContentLoaded', () => window.loadReleasesSources('../..').then(window.runDeferredBabel));</script>
+<script type="text/babel-deferred">
+const { Modal, ConfirmDialog, Drawer, InlineConfirm, Button, Input, Select, Tabs, TabPanel, CodeInput, Textarea, MarkdownText, Badge, Skeleton } = window.GrepThinkDesignSystem_36e7e3;
 const PHONE = new URLSearchParams(location.search).has('phone');
 const I = ({ d }) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 const TABS = [
@@ -42,6 +46,16 @@ function EditProject({ portal = true, open = true, onClose = () => {} }) {
   );
 }
 
+function DarkBody() {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}><strong style={{ fontSize: 15 }}>October 23, 2026</strong><span style={{ fontFamily: 'var(--gt-font-mono)', fontSize: 12, color: 'var(--gt-dark-text-muted)' }}>0.91.0</span><Badge status="release.new" size="sm" /></div>
+      <MarkdownText>{'- **What\'s new.** Release notes for every version, on the landing page and in your profile menu.\n- The [help center](/app/help-center) walks you through booking a slot; a `?` no longer shows in place of an avatar.'}</MarkdownText>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}><Skeleton width="60%" height={12} /><Skeleton width="80%" height={11} /></div>
+    </div>
+  );
+}
+
 function Phone() {
   return (
     <div className="stage" style={{ height: 620 }}>
@@ -65,6 +79,7 @@ function Demo() {
           <Button variant="danger-ghost" onClick={() => setLive('confirm-fail')}>Delete sprint (fails)</Button>
           <Button variant="outline" onClick={() => setLive('drawer')}>Edit assignment (drawer)</Button>
           <Button variant="outline" onClick={() => setLive('nav')}>Phone nav (left drawer)</Button>
+          <Button variant="outline" onClick={() => setLive('dark')}>What's new (dark variant)</Button>
         </div>
       </div>
       <EditProject open={live === 'edit'} onClose={close} />
@@ -81,6 +96,14 @@ function Demo() {
         <div className="col"><Input label="Title" defaultValue="TSR 4" /><Select label="Sprint" defaultValue="s3" options={[{ value: 's3', label: 'Sprint 3' }]} /></div>
       </Drawer>
       <Drawer open={live === 'nav'} onClose={close} side="left" width={280} ariaLabel="Main menu"><p style={{ margin: 0 }}>Navigation items</p></Drawer>
+      <Modal open={live === 'dark'} onClose={close} tone="dark" title="What's new" subtitle="Version 0.91.0"><DarkBody /></Modal>
+
+      <div className="sec">
+        <p className="lbl">Modal · dark (tone="dark", 2026-10-23) — the landing page's look for What's new: scrim, sheet, head, ×, and the kit pieces inside (.gt-md with a link and code, the info Badge, Skeleton). The app stays light.</p>
+        <div className="stage" style={{ height: 330, background: 'var(--gt-mkt-hero-wash), var(--gt-canvas)' }}>
+          <Modal open portal={false} tone="dark" title="What's new" subtitle="Version 0.91.0" onClose={() => {}}><DarkBody /></Modal>
+        </div>
+      </div>
 
       <div className="sec">
         <p className="lbl">Modal · form header — title left, tabs under it, pinned footer (lg 760; md 560 default)</p>

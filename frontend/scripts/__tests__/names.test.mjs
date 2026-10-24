@@ -323,7 +323,7 @@ describe('checkNames: the manifest', () => {
   it('knows every family design/PORTING.md maps', () => {
     expect(KIT_FAMILIES).toEqual(['primitives', 'display', 'feedback', 'navigation']);
     expect(Object.keys(FEATURE_HOMES).sort()).toEqual(
-      ['analytics', 'assistant', 'domain', 'finalreviews', 'marketing', 'schedule', 'scrum', 'search'],
+      ['analytics', 'assistant', 'domain', 'finalreviews', 'marketing', 'releases', 'schedule', 'scrum', 'search'],
     );
   });
 });

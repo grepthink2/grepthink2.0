@@ -49,6 +49,13 @@ $success-color: #018156;
   flex-shrink: 0;
 }
 
+// The student list, then the TA list.
+.roster__lists {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
 .roster__action-message {
   display: flex;
   align-items: center;

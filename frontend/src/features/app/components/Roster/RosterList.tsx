@@ -18,6 +18,8 @@ interface RosterListProps {
   invitingEmails?: Set<string>;
   onAddStudent?: () => void;
   onDeleteManual?: (student: UiStudent) => void;
+  /** Which part of the roster this lists. The TA list has no Course Status column. */
+  group?: 'students' | 'tas';
 }
 
 /** Manually added rows can be right-clicked to delete them entirely from the roster. */
@@ -66,7 +68,9 @@ const RosterList: React.FC<RosterListProps> = ({
   invitingEmails = NO_INVITING_EMAILS,
   onAddStudent,
   onDeleteManual,
+  group = 'students',
 }) => {
+  const isTaList = group === 'tas';
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
     students,
     SORT_ACCESSORS,
@@ -100,8 +104,15 @@ const RosterList: React.FC<RosterListProps> = ({
     setContextMenu(null);
   };
 
-  // TAs and dropped students don't count toward the roster total.
-  const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
+  // The roster total leaves out TAs and dropped students; the TA list counts its rows.
+  const count = isTaList
+    ? students.length
+    : countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
+  const title = isTaList ? (
+    'TAs'
+  ) : (
+    <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+  );
 
   if (loading) {
     const headers = ['Name', 'Email', 'Course Status', 'GrepThink Status', 'Projects'];
@@ -121,9 +132,7 @@ const RosterList: React.FC<RosterListProps> = ({
     return (
       <div className="roster-list">
         <div className="roster-list__header">
-          <h2 className="roster-list__title">
-            <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
-          </h2>
+          <h2 className="roster-list__title">{title}</h2>
         </div>
         <div className="roster-list__table-card">
           <div className="roster-list__table-wrapper">
@@ -137,10 +146,8 @@ const RosterList: React.FC<RosterListProps> = ({
   return (
     <div className="roster-list">
       <div className="roster-list__header">
-        <h2 className="roster-list__title">
-          <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
-        </h2>
-        <span className="roster-list__count-badge">{studentCount}</span>
+        <h2 className="roster-list__title">{title}</h2>
+        <span className="roster-list__count-badge">{count}</span>
         {onAddStudent && (
           <button
             className="roster-list__add-student-btn"
@@ -163,12 +170,15 @@ const RosterList: React.FC<RosterListProps> = ({
           ) : (
             <table
               className={`roster-list__table${showActions ? '' : ' roster-list__table--no-actions'}`}
+              aria-label={isTaList ? 'TAs' : 'Students'}
             >
               <thead>
                 <tr>
                   <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Email" sortKey="email" currentSort={sort} onSort={toggleSort} />
-                  <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  {!isTaList && (
+                    <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  )}
                   <SortableHeader label="GrepThink Status" sortKey="grepthinkStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Projects" sortKey="projects" currentSort={sort} onSort={toggleSort} />
                   {showActions && <th>Actions</th>}
@@ -181,20 +191,19 @@ const RosterList: React.FC<RosterListProps> = ({
                     onContextMenu={(e) => handleContextMenu(e, student)}
                     className={isManualDeletable(student) ? 'roster-list__tr--deletable' : undefined}
                   >
-                    <td className="roster-list__td-name">
-                      {student.name}
-                      {student.isTa && <span className="roster-list__ta-badge">TA</span>}
-                    </td>
+                    <td className="roster-list__td-name">{student.name}</td>
                     <td className="roster-list__td-email">
                       <a href={`mailto:${student.email}`} className="roster-list__email-link">
                         {student.email}
                       </a>
                     </td>
-                    <td>
-                      <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
-                        {CLASS_STATUS_LABELS[student.classStatus]}
-                      </span>
-                    </td>
+                    {!isTaList && (
+                      <td>
+                        <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
+                          {CLASS_STATUS_LABELS[student.classStatus]}
+                        </span>
+                      </td>
+                    )}
                     <td>
                       <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
                         {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
@@ -257,18 +266,17 @@ const RosterList: React.FC<RosterListProps> = ({
             >
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
-                  <span className="roster-list__td-name">
-                    {student.name}
-                    {student.isTa && <span className="roster-list__ta-badge">TA</span>}
-                  </span>
+                  <span className="roster-list__td-name">{student.name}</span>
                   <a href={`mailto:${student.email}`} className="roster-list__email-link">
                     {student.email}
                   </a>
                 </div>
                 <div className="roster-list__mobile-card-badges">
-                  <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
-                    {CLASS_STATUS_LABELS[student.classStatus]}
-                  </span>
+                  {!isTaList && (
+                    <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
+                      {CLASS_STATUS_LABELS[student.classStatus]}
+                    </span>
+                  )}
                   <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
                     {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
                   </span>

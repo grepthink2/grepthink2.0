@@ -1,0 +1,47 @@
+// Releases — ported from design/components/releases/releases.css so the two stay diffable: the What's new
+// modal's body (.gt-whats-new), the feed (.gt-release-feed) and one entry (.gt-release). Built on the kit
+// (Modal, MarkdownText, Badge, Skeleton, EmptyState, Button), which it adjusts only from these classes.
+
+/* ── The modal: the head is the kit's; the body holds the feed and scrolls alone ── */
+.gt-whats-new .gt-modal__body { padding-top: 6px; }
+
+/* ── The feed — entries newest first, a hairline between them; no rail, no dots, no line ── */
+.gt-release-feed { display: flex; flex-direction: column; font-family: var(--gt-font-sans); }
+.gt-release { padding: 18px 0 20px; border-top: 1px solid var(--gt-border-subtle); }
+.gt-release:first-child { padding-top: 10px; border-top: none; }
+.gt-release:last-child { padding-bottom: 6px; }
+.gt-release__head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 4px; }
+.gt-release__date { margin: 0; font-size: 15px; font-weight: var(--gt-weight-semibold); line-height: 1.35; letter-spacing: var(--gt-tracking-tight); color: var(--gt-text-primary); }
+.gt-release__version { font-family: var(--gt-font-mono); font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-tertiary); }
+.gt-release__marker { margin-left: 2px; }
+.gt-release__group { margin-top: 12px; }
+.gt-release__label { margin: 0 0 3px; font-size: 11px; font-weight: var(--gt-weight-semibold); letter-spacing: var(--gt-tracking-wide); text-transform: uppercase; color: var(--gt-text-tertiary); }
+/* the kit's Markdown at reading size: the notes are the modal's content, not a comment */
+.gt-release__group .gt-md { font-size: 13.5px; line-height: 1.55; }
+.gt-release__group .gt-md ul { margin: 0; padding-left: 20px; }
+.gt-release__group .gt-md li { margin: 3px 0; }
+.gt-release__group .gt-md li::marker { color: var(--gt-text-tertiary); }
+.gt-release__group .gt-md__code { font-size: 12px; }
+
+/* ── Loading — two ghost entries ── */
+.gt-release-feed__ghost { display: flex; flex-direction: column; gap: 9px; padding: 16px 0 22px; border-top: 1px solid var(--gt-border-subtle); }
+.gt-release-feed__ghost:first-of-type { padding-top: 12px; border-top: none; }
+.gt-release-feed__ghost-head { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.gt-release-feed__ghost-head .gt-skeleton { display: inline-block; }
+
+/* ── Failed · empty — the kit's card EmptyState, centred in the body ── */
+.gt-release-feed--failed .gt-empty, .gt-release-feed--empty .gt-empty { min-height: 196px; }
+
+/* ── Dark (inside Modal tone="dark") — the entry's own text follows the dark ramp; .gt-md, the marker,
+   the Skeletons and the EmptyState are the dark variant's ── */
+.gt-release-feed--dark .gt-release, .gt-release-feed--dark .gt-release-feed__ghost { border-top-color: var(--gt-dark-hairline); }
+.gt-release-feed--dark .gt-release__date { color: var(--gt-dark-text); }
+.gt-release-feed--dark .gt-release__version { color: var(--gt-dark-text-muted); }
+.gt-release-feed--dark .gt-release__label { color: var(--gt-dark-text-faint); }
+.gt-release-feed--dark .gt-release__group .gt-md li::marker { color: var(--gt-dark-text-muted); }
+
+/* ── Phones ── */
+@media (max-width: 767px) {
+  .gt-release { padding: 16px 0 18px; }
+  .gt-release__group .gt-md { font-size: 14px; }
+}

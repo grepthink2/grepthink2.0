@@ -9,7 +9,7 @@ from datetime import date
 
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import CLASS, OUTSIDER, PID, UID, scrum_db
+from tests.scrum_support import CLASS, OUTSIDER, PID, UID, pin_today, scrum_db
 
 TODAY = date(2026, 9, 10)
 URL = f"/api/projects/{PID}/scrum/board"
@@ -60,7 +60,7 @@ def _task(tid, story, points, status, created, **extra):
 def _seed(monkeypatch):
     """Three sprints and none of them has a burnup snapshot yet: the worst case for a
     board that used to query each sprint's totals separately."""
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    pin_today(monkeypatch, TODAY)
     return scrum_db(
         monkeypatch,
         sprints=[

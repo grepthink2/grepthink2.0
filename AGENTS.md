@@ -122,6 +122,8 @@ backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_su
 
 frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
+  features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
+                      # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
@@ -131,11 +133,11 @@ frontend/src/
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
   components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
-                      # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
-                      # (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip
-                      # (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs (+TabPanel),
-                      # SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton, ErrorBoundary,
-                      # Popover, Menu, Tooltip, Toast, Markdown; hooks/useRovingFocus)
+                      # Slider, Modal (+useDialog, tone="dark"), Drawer, ConfirmDialog (+InlineConfirm), Alert,
+                      # EmptyState (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, NewDot, Tag,
+                      # FilterChip (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs
+                      # (+TabPanel), SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton,
+                      # ErrorBoundary, Popover, Menu (+MenuGroup), Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -263,10 +265,11 @@ The full agent-facing action catalog (method, params, role) lives at
   role, so Row-Level Security does **not** protect you (RLS is on for every table, and most
   have no policies). A missing membership/ownership check in a controller is an
   IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
-- **Two distinct project-TA roles (by design):** `projects.assigned_ta_id` = the
-  *meeting TA* (runs the weekly meeting + takes attendance; `app/attendance`).
-  `project_review_tas` = the *review TA* (reviews TSRs; `app/tas`). Both draw
-  from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
+- **Two project-TA roles (by design):** `projects.assigned_ta_id` = the team's *assigned TA*
+  (runs the weekly meeting, takes attendance and reviews the team's TSRs; set through
+  `app/attendance`). `project_review_tas` = the *second end-of-quarter reviewer* (at most one per
+  team; `app/tas`), a different class TA than the assigned one, who is reviewer #1 and is not
+  stored there. Both draw from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
 - **`meetings` holds two kinds of row.** `kind = 'ta_meeting'` is a TA's weekly slot
@@ -300,6 +303,9 @@ The full agent-facing action catalog (method, params, role) lives at
   hand-maintained, so they can drift. Confirm a route exists before adding or calling a client
   method, and add the method to the matching domain file (`lib/api.ts` spreads them all into
   `api`; `apiFacade.test.ts` fails if two domains share a method name).
+  `backend/scripts/check_api_client.py` (run by pytest and as its own CI step) fails when a
+  request in `frontend/src` or an action in `grepthink-actions.json` matches no route, or when
+  a route has no caller there and no reason in its `SERVER_ONLY` list.
 - **Never depend on unapplied SQL.** Migrations in `backend/database/migrations/` are
   applied by hand, dev first and then prod; merging does not apply them. Code must work on
   the schema that is live, and an upsert needs a unique constraint that already exists.
@@ -342,14 +348,19 @@ The full agent-facing action catalog (method, params, role) lives at
   tests).
 - **Times: store instants, compute in the school's zone, show in the viewer's.**
   - The database holds `timestamptz` instants.
-  - Calendar boundaries (a day, a term week, a deadline's `due_at`) are computed in the school's zone:
-    `institutions.timezone`, read through `app.institutions.controller.institution_timezone()`.
+  - Calendar boundaries (a day, a term week, a deadline's `due_at`, the scrum board's burnup day) are
+    computed in the school's zone: `institutions.timezone`, read through
+    `app.institutions.controller.institution_timezone()`. A controller with no class row at hand embeds
+    `classes(institution_id)` in a read it makes anyway: scrum's `_board_access` does, and answers the
+    project's `institution_id` along with the caller's access.
   - The web client shows times in the viewer's zone, with the campus time beside them when the two
     differ (`features/schedule/scheduleModel.ts` `zoneDiffers` / `viewerZone`,
-    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`).
-  - Known exceptions, still to fix: the scrum board's day boundary is hard-coded to Pacific
-    (`app/scrum/controller.py`), the Final Reviews page shows the browser's zone with no campus time,
-    and the web client's fallback `SCHOOL_ZONE` is a Pacific constant.
+    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`). The campus zone is the class's school's, from
+    `useSchoolTimezone(class.institution.id)` (`lib/institutions.ts`), and the components and helpers
+    that show campus time take it as an argument, with no default of their own. `SCHOOL_ZONE`
+    (`lib/schoolZone.ts`, Pacific) is only that hook's last resort, when no school's zone is known, and
+    `viewerZone()`'s when the browser cannot say where it is.
+  - Known exception, still to fix: the Final Reviews page shows the browser's zone with no campus time.
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
@@ -365,10 +376,12 @@ The full agent-facing action catalog (method, params, role) lives at
   tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
   the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
   SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
-  dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
-  InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip with FilterChipGroup, Avatar with
-  AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
-  SortableHeader and `useTableSort`, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. Tabs switch
+  dialogs (Modal, with a dark tone for the landing page, Drawer, ConfirmDialog with InlineConfirm), Alert,
+  EmptyState with NoClassSelected, InfoPopover, Badge (with a small size), CountBadge, UnreadBadge, NewDot
+  (the blue "something new" dot, never the red unread count), Tag, FilterChip with FilterChipGroup, Avatar
+  with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
+  SortableHeader and `useTableSort`, Popover, Menu (with MenuGroup and a `trailing` slot on MenuItem),
+  Tooltip, Toast, Skeleton and Markdown. Tabs switch
   panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
   a list. A table row that opens something carries a link or button in its first cell (Table's
   `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
@@ -394,7 +407,8 @@ The full agent-facing action catalog (method, params, role) lives at
   the output prints the classic hooks rules as `react-hooks(...)`). The React rules are native ports
   of `eslint-plugin-react-hooks`, the React Compiler rules included; they run on every TypeScript
   file, tests too, and find more than the ESLint plugin did (a clock read during render, a ref
-  written during render). A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
+  written during render). A component reads the clock through `lib/useNow.ts`, never with
+  `new Date()` in render. A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
   hides one finding; a reason that wraps needs a block comment, because the directive covers the
   line after the comment ends. Never suppress `react/exhaustive-deps` or `react/rules-of-hooks`
   inside a component: in oxlint 1.89 such a directive also hides every React Compiler finding in
@@ -410,7 +424,16 @@ The full agent-facing action catalog (method, params, role) lives at
   `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
   shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
   they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
-  the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
+  every JS and CSS file `frontend/dist/index.html` loads (its scripts, stylesheets and modulepreload
+  links), not only the `index-*.js` line of `npm run build`: rolldown can split a shared module out of
+  `index-*.js` into a chunk that is still preloaded. Measured 2026-10-23: `index-*.js` 199 kB minified
+  (58 kB gzipped); all the files `index.html` loads, 817 kB of JS (238 kB gzipped, each file on its own)
+  and 132 kB of CSS (23 kB gzipped).
+- **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
+  equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
+  release adds both in a `release/<version>` pull request into `beta`. After the release merges into
+  `main`, `.github/workflows/release.yml` tags it and publishes the GitHub release from the same file.
+  A deploy with nothing for users to read keeps the version and gets no tag.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

@@ -39,9 +39,11 @@ export function Menu({ children, onClose, ariaLabel, autoFocus = false, classNam
 /**
  * One row. `checked` makes it a `menuitemcheckbox` (multi-select lists: labels); with `radio`
  * a `menuitemradio` (one choice: the scrum board's sprint picker). Checkable rows without an
- * icon show a check slot, so the state is not colour alone.
+ * icon show a check slot, so the state is not colour alone. `trailing` (2026-10-23) is a slot at
+ * the row's end for a marker — the profile menu's "New" Badge on "What's new" (pass it
+ * `aria-hidden` and describe the row with `aria-describedby` when the words live elsewhere).
  */
-export function MenuItem({ icon, children, shortcut, destructive = false, disabled = false, checked, radio = false, onSelect, className = '', ...rest }) {
+export function MenuItem({ icon, children, shortcut, trailing, destructive = false, disabled = false, checked, radio = false, onSelect, className = '', ...rest }) {
   const checkable = checked !== undefined;
   return (
     <button
@@ -55,8 +57,23 @@ export function MenuItem({ icon, children, shortcut, destructive = false, disabl
     >
       {icon ? <span className="gt-menu__icon">{icon}</span> : checkable && <span className="gt-menu__check">{checked ? <Check /> : null}</span>}
       <span className="gt-menu__label">{children}</span>
+      {trailing && <span className="gt-menu__trailing">{trailing}</span>}
       {shortcut && <span className="gt-menu__shortcut">{shortcut}</span>}
     </button>
+  );
+}
+
+/**
+ * A labelled run of rows (2026-10-23): `role="group"` named by a caps label ("School" over the
+ * profile menu's radio rows). The label is not a row — the arrow keys skip it.
+ */
+export function MenuGroup({ label, children, className = '' }) {
+  const id = React.useId();
+  return (
+    <div role="group" aria-labelledby={`${id}-h`} className={['gt-menu__group', className].filter(Boolean).join(' ')}>
+      <div id={`${id}-h`} className="gt-menu__heading" role="presentation">{label}</div>
+      {children}
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"MarkdownText","sourcePath":"components/display/Markdown.jsx"},{"name":"Markdown","sourcePath":"components/display/Markdown.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"SortableHeader","sourcePath":"components/display/Table.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"ZoomRoomField","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsHeader","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsIcon","sourcePath":"components/finalreviews/FinalReviewsIcon.jsx"},{"name":"SLOT_MINUTES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"SLOT_POST_MAX","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_LENSES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_REASONS","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FinalReviewsModel","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"PostSlotsDrawer","sourcePath":"components/finalreviews/PostSlotsDrawer.jsx"},{"name":"ReviewWorkspaceHeader","sourcePath":"components/finalreviews/ReviewWorkspaceHeader.jsx"},{"name":"SlotActionDialog","sourcePath":"components/finalreviews/SlotActionDialog.jsx"},{"name":"SlotBoard","sourcePath":"components/finalreviews/SlotBoard.jsx"},{"name":"SlotRow","sourcePath":"components/finalreviews/SlotRow.jsx"},{"name":"SlotTime","sourcePath":"components/finalreviews/SlotTime.jsx"},{"name":"TeamReview","sourcePath":"components/finalreviews/TeamReview.jsx"},{"name":"UnbookedTeams","sourcePath":"components/finalreviews/UnbookedTeams.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Slider","sourcePath":"components/primitives/Slider.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"UserPair","sourcePath":"components/scrum/Chips.jsx"},{"name":"Chips","sourcePath":"components/scrum/Chips.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"012797c0b2c0","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"52db4d853416","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"10361b92642f","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"d31276c6ed1b","components/display/Badge.jsx":"e3e5eb99080f","components/display/Card.jsx":"3f8eccef7a04","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/Markdown.jsx":"0ead671deba5","components/display/ProgressBar.jsx":"a3c8f40e3c89","components/display/StatCard.jsx":"572cae4761e0","components/display/Table.jsx":"becbe6149582","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"97fcc971789d","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"2d0da52858ed","components/domain/TeamMeetingsList.jsx":"e20d11f58a24","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"ca829c4744dd","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"4812a0252d18","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"2798c10857d9","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/finalreviews/FinalReviewsHeader.jsx":"b481dc32397b","components/finalreviews/FinalReviewsIcon.jsx":"5f999d24929b","components/finalreviews/FinalReviewsModel.jsx":"5b257ede1bef","components/finalreviews/PostSlotsDrawer.jsx":"9cbf8dd9a984","components/finalreviews/ReviewWorkspaceHeader.jsx":"5dc779d2ba54","components/finalreviews/SlotActionDialog.jsx":"9f7d30684170","components/finalreviews/SlotBoard.jsx":"c38113917512","components/finalreviews/SlotRow.jsx":"dcf8b1319a32","components/finalreviews/SlotTime.jsx":"68241f5e84df","components/finalreviews/TeamReview.jsx":"7233f71ccb63","components/finalreviews/UnbookedTeams.jsx":"155846fe8db2","components/finalreviews/finalReviewsData.js":"93059c906883","components/finalreviews/finalReviewsSrcLoader.js":"041f63efb75b","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"1266a02611ed","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"a44e40e15c9f","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"d3c2c08443ed","components/primitives/Button.jsx":"0cf89801fd2e","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"95504fc92773","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07979ba9510c","components/primitives/FieldShell.jsx":"c590ca793848","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"57702d48c675","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Slider.jsx":"56c6a60afddc","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"0bc8a9f26166","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"d5bdd4082d5e","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/Chips.jsx":"b7499f9c651c","components/scrum/CommentThread.jsx":"362b1550ca24","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"fa8d9d60277a","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"3473c5919bb0","components/search/CommandPalette.jsx":"3bc5a84c066f","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"82b39ded26bf","ui_kits/grepthink/FinalReviewsScreen.jsx":"1bcbdc6636d1","ui_kits/grepthink/FinalReviewsStates.jsx":"14f8a1ddebf8","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/TeamMeetingsScreen.jsx":"3b3ac80ccc85","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"45547d3fb712"},"inlinedExternals":[],"unexposedExports":[{"name":"boardCounts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"boardFilters","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"compareValues","sourcePath":"components/display/Table.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"confirmCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"countsText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"errorCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtSlotWhen","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"freeSlotGroups","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupSlots","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"historyRows","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hourlyStarts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"indexTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isReviewJoinable","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isStaffLens","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"lensOf","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"lockBodyScroll","sourcePath":"components/feedback/Modal.jsx"},{"name":"matchesFilter","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextSortState","sourcePath":"components/display/Table.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"offsetIso","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"poCanChange","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postedMessage","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postingDraft","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"reviewCountdown","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"reviewingText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"showTeamReviewCard","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotEnd","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotPhase","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotView","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"sortRows","sourcePath":"components/display/Table.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"successCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewState","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"unbookedTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"useTableSort","sourcePath":"components/display/Table.jsx"},{"name":"useTooltipDismiss","sourcePath":"components/display/Tooltip.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"whenText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneNote","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"MarkdownText","sourcePath":"components/display/Markdown.jsx"},{"name":"Markdown","sourcePath":"components/display/Markdown.jsx"},{"name":"NewDot","sourcePath":"components/display/NewDot.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"SortableHeader","sourcePath":"components/display/Table.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuGroup","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"ZoomRoomField","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsHeader","sourcePath":"components/finalreviews/FinalReviewsHeader.jsx"},{"name":"FinalReviewsIcon","sourcePath":"components/finalreviews/FinalReviewsIcon.jsx"},{"name":"SLOT_MINUTES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"SLOT_POST_MAX","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_LENSES","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FR_REASONS","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"FinalReviewsModel","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"PostSlotsDrawer","sourcePath":"components/finalreviews/PostSlotsDrawer.jsx"},{"name":"ReviewWorkspaceHeader","sourcePath":"components/finalreviews/ReviewWorkspaceHeader.jsx"},{"name":"SlotActionDialog","sourcePath":"components/finalreviews/SlotActionDialog.jsx"},{"name":"SlotBoard","sourcePath":"components/finalreviews/SlotBoard.jsx"},{"name":"SlotRow","sourcePath":"components/finalreviews/SlotRow.jsx"},{"name":"SlotTime","sourcePath":"components/finalreviews/SlotTime.jsx"},{"name":"TeamReview","sourcePath":"components/finalreviews/TeamReview.jsx"},{"name":"UnbookedTeams","sourcePath":"components/finalreviews/UnbookedTeams.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"WhatsNewTab","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"ProfileMenu","sourcePath":"components/navigation/ProfileMenu.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Slider","sourcePath":"components/primitives/Slider.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ReleaseEntry","sourcePath":"components/releases/ReleaseEntry.jsx"},{"name":"ReleaseFeed","sourcePath":"components/releases/ReleaseFeed.jsx"},{"name":"RELEASE_GROUPS","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"ReleasesModel","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"WhatsNewModal","sourcePath":"components/releases/WhatsNewModal.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/Chips.jsx"},{"name":"UserPair","sourcePath":"components/scrum/Chips.jsx"},{"name":"Chips","sourcePath":"components/scrum/Chips.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"012797c0b2c0","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"52db4d853416","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"10361b92642f","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"d31276c6ed1b","components/display/Badge.jsx":"e4d808370596","components/display/Card.jsx":"3f8eccef7a04","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/Markdown.jsx":"0ead671deba5","components/display/NewDot.jsx":"56e99c63c950","components/display/ProgressBar.jsx":"a3c8f40e3c89","components/display/StatCard.jsx":"572cae4761e0","components/display/Table.jsx":"becbe6149582","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"97fcc971789d","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"2d0da52858ed","components/domain/TeamMeetingsList.jsx":"e20d11f58a24","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"ca829c4744dd","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"4812a0252d18","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"c9c8b24b2b4f","components/feedback/Modal.jsx":"75f0bba1f15b","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/finalreviews/FinalReviewsHeader.jsx":"b481dc32397b","components/finalreviews/FinalReviewsIcon.jsx":"5f999d24929b","components/finalreviews/FinalReviewsModel.jsx":"5b257ede1bef","components/finalreviews/PostSlotsDrawer.jsx":"9cbf8dd9a984","components/finalreviews/ReviewWorkspaceHeader.jsx":"5dc779d2ba54","components/finalreviews/SlotActionDialog.jsx":"9f7d30684170","components/finalreviews/SlotBoard.jsx":"c38113917512","components/finalreviews/SlotRow.jsx":"dcf8b1319a32","components/finalreviews/SlotTime.jsx":"68241f5e84df","components/finalreviews/TeamReview.jsx":"7233f71ccb63","components/finalreviews/UnbookedTeams.jsx":"155846fe8db2","components/finalreviews/finalReviewsData.js":"93059c906883","components/finalreviews/finalReviewsSrcLoader.js":"041f63efb75b","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"0ce67607e072","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"1266a02611ed","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/ProfileMenu.jsx":"294c846c7300","components/navigation/SegmentedControl.jsx":"a44e40e15c9f","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"d3c2c08443ed","components/primitives/Button.jsx":"0cf89801fd2e","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"95504fc92773","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07979ba9510c","components/primitives/FieldShell.jsx":"c590ca793848","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"57702d48c675","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Slider.jsx":"56c6a60afddc","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/releases/ReleaseEntry.jsx":"6b7d217e0240","components/releases/ReleaseFeed.jsx":"d91863c462a4","components/releases/ReleasesModel.jsx":"98f468839de7","components/releases/WhatsNewModal.jsx":"6b68ed0615f4","components/releases/releasesData.js":"e21e8a897326","components/releases/releasesSrcLoader.js":"593cb589e3e4","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"0bc8a9f26166","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"d5bdd4082d5e","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/Chips.jsx":"b7499f9c651c","components/scrum/CommentThread.jsx":"362b1550ca24","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"fa8d9d60277a","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"3473c5919bb0","components/search/CommandPalette.jsx":"3bc5a84c066f","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"82b39ded26bf","ui_kits/grepthink/FinalReviewsScreen.jsx":"1bcbdc6636d1","ui_kits/grepthink/FinalReviewsStates.jsx":"14f8a1ddebf8","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/TeamMeetingsScreen.jsx":"3b3ac80ccc85","ui_kits/grepthink/WhatsNewScreen.jsx":"fe4161698b54","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"45547d3fb712"},"inlinedExternals":[],"unexposedExports":[{"name":"boardCounts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"boardFilters","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"compareValues","sourcePath":"components/display/Table.jsx"},{"name":"compareVersions","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"confirmCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"countsText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"errorCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtSlotWhen","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"formatReleaseDate","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"freeSlotGroups","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupLabel","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"groupSlots","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"historyRows","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"hourlyStarts","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"indexTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isNewSince","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isReviewJoinable","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isStaffLens","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"isUnseen","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"lensOf","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"lockBodyScroll","sourcePath":"components/feedback/Modal.jsx"},{"name":"matchesFilter","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextSortState","sourcePath":"components/display/Table.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"offsetIso","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"parseReleaseNotes","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"parseVersion","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"poCanChange","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postedMessage","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"postingDraft","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"releasesFromNotes","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"reviewCountdown","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"reviewingText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"showTeamReviewCard","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotEnd","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotPhase","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"slotView","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"sortReleases","sourcePath":"components/releases/ReleasesModel.jsx"},{"name":"sortRows","sourcePath":"components/display/Table.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"successCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewCopy","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"teamReviewState","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"unbookedTeams","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"useTableSort","sourcePath":"components/display/Table.jsx"},{"name":"useTooltipDismiss","sourcePath":"components/display/Tooltip.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"whenText","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneNote","sourcePath":"components/finalreviews/FinalReviewsModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
 
 (() => {
 
@@ -2088,7 +2088,8 @@ const BADGE_STATUS = {
   'slot.past': ['neutral', 'Past'],
   'review.no_review_ta': ['warning', 'No Review TA'],
   'review.no_product_owner': ['warning', 'No Product Owner'],
-  live: ['info', 'Live']
+  live: ['info', 'Live'],
+  'release.new': ['info', 'New'] /* What's new (2026-10-23): an entry newer than the version this browser last saw — informational, never the unread red */
 };
 
 /** Category labels are not statuses: outlined neutral + an icon, never a status colour. */
@@ -2110,7 +2111,10 @@ const PROJECT_ROLES = {
   member: [null, 'Member']
 };
 
-/** Status / category / role pill. `projectRole` replaces the old `role` prop, which shadowed the ARIA attribute. */
+/**
+ * Status / category / role pill. `projectRole` replaces the old `role` prop, which shadowed the ARIA attribute.
+ * `size="sm"` (2026-10-23) is the 11px marker that sits in a heading row or a 32px menu row (the "New" marker).
+ */
 function Badge({
   children,
   tone = 'neutral',
@@ -2119,6 +2123,7 @@ function Badge({
   projectRole,
   icon,
   solid = false,
+  size = 'md',
   className = '',
   ...rest
 }) {
@@ -2143,7 +2148,7 @@ function Badge({
     if (glyph === undefined && ic) glyph = ICONS[ic];
     if (label == null) label = l;
   }
-  const cls = ['gt-badge', cat ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !cat ? 'gt-badge--solid' : '', roleCls, className].filter(Boolean).join(' ');
+  const cls = ['gt-badge', cat ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !cat ? 'gt-badge--solid' : '', size === 'sm' ? 'gt-badge--sm' : '', roleCls, className].filter(Boolean).join(' ');
   return /*#__PURE__*/React.createElement("span", _extends({
     className: cls
   }, rest), glyph && /*#__PURE__*/React.createElement("span", {
@@ -2445,6 +2450,30 @@ const Markdown = {
 };
 Object.assign(__ds_scope, { MarkdownText, Markdown });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Markdown.jsx", error: String((e && e.message) || e) }); }
+
+// components/display/NewDot.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * The "new" dot (What's new, 2026-10-23): something new to read — release notes — never unread messages.
+ * Blue (`--gt-new-dot`: informational under the status rule), 8px, and decorative (`aria-hidden`): the host says
+ * what it means from a visually hidden "New release notes" its control is described by (`aria-describedby`), so
+ * the control's name never changes ("What's new", "Profile menu"). `ring` draws a 2px ring in the surface behind
+ * it (`--gt-new-dot-ring`, default `--gt-surface`) for a dot over an avatar or an icon's corner. Position it, and
+ * re-colour the ring for a dark surface, from the host's own class. Not UnreadBadge: that one is red and carries a count.
+ */
+function NewDot({
+  ring = false,
+  className = '',
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("span", _extends({
+    className: ['gt-new-dot', ring ? 'gt-new-dot--ring' : '', className].filter(Boolean).join(' '),
+    "aria-hidden": "true"
+  }, rest));
+}
+Object.assign(__ds_scope, { NewDot });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/NewDot.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/ProgressBar.jsx
 try { (() => {
@@ -3734,12 +3763,15 @@ function Menu({
 /**
  * One row. `checked` makes it a `menuitemcheckbox` (multi-select lists: labels); with `radio`
  * a `menuitemradio` (one choice: the scrum board's sprint picker). Checkable rows without an
- * icon show a check slot, so the state is not colour alone.
+ * icon show a check slot, so the state is not colour alone. `trailing` (2026-10-23) is a slot at
+ * the row's end for a marker — the profile menu's "New" Badge on "What's new" (pass it
+ * `aria-hidden` and describe the row with `aria-describedby` when the words live elsewhere).
  */
 function MenuItem({
   icon,
   children,
   shortcut,
+  trailing,
   destructive = false,
   disabled = false,
   checked,
@@ -3762,9 +3794,32 @@ function MenuItem({
     className: "gt-menu__check"
   }, checked ? /*#__PURE__*/React.createElement(Check, null) : null), /*#__PURE__*/React.createElement("span", {
     className: "gt-menu__label"
-  }, children), shortcut && /*#__PURE__*/React.createElement("span", {
+  }, children), trailing && /*#__PURE__*/React.createElement("span", {
+    className: "gt-menu__trailing"
+  }, trailing), shortcut && /*#__PURE__*/React.createElement("span", {
     className: "gt-menu__shortcut"
   }, shortcut));
+}
+
+/**
+ * A labelled run of rows (2026-10-23): `role="group"` named by a caps label ("School" over the
+ * profile menu's radio rows). The label is not a row — the arrow keys skip it.
+ */
+function MenuGroup({
+  label,
+  children,
+  className = ''
+}) {
+  const id = React.useId();
+  return /*#__PURE__*/React.createElement("div", {
+    role: "group",
+    "aria-labelledby": `${id}-h`,
+    className: ['gt-menu__group', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    id: `${id}-h`,
+    className: "gt-menu__heading",
+    role: "presentation"
+  }, label), children);
 }
 
 /** Thin rule between item groups. */
@@ -3774,7 +3829,7 @@ function MenuSeparator() {
     role: "separator"
   });
 }
-Object.assign(__ds_scope, { Menu, MenuItem, MenuSeparator });
+Object.assign(__ds_scope, { Menu, MenuItem, MenuGroup, MenuSeparator });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Menu.jsx", error: String((e && e.message) || e) }); }
 
 // components/feedback/Popover.jsx
@@ -5536,19 +5591,78 @@ Object.assign(__ds_scope, { LandingFooter });
 
 // components/marketing/LandingHeader.jsx
 try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const InfoGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 16v-4M12 8h.01"
+}));
+
+/**
+ * The header's "ⓘ What's new" tab (2026-10-23; the codebase's `features/landing/components/WhatsNewTab.tsx`): a
+ * button in the header link's clothes with the lucide Info icon and the label, `aria-haspopup="dialog"`, Enter or
+ * Space opens the modal. Its name is always "What's new" (`aria-label`), so at ≤ 400px the label can go and the
+ * icon stands alone. While a release is unread the NewDot sits on the icon's corner (its ring re-coloured to the bar's dark from the header's class)
+ * and the button is also described as "New release notes" (a visually hidden span). The touch target is 44px
+ * through a hit area past the visible edge (`::after`); the visible button keeps the other links' height.
+ */
+function WhatsNewTab({
+  onOpen,
+  unseen = false,
+  label = "What's new",
+  className = '',
+  ...rest
+}) {
+  const descId = React.useId();
+  return /*#__PURE__*/React.createElement("button", _extends({
+    type: "button",
+    className: ['gt-landing-header__link', 'gt-landing-header__tab', className].filter(Boolean).join(' '),
+    "aria-label": label,
+    "aria-haspopup": "dialog",
+    "aria-describedby": unseen ? descId : undefined,
+    onClick: onOpen
+  }, rest), /*#__PURE__*/React.createElement("span", {
+    className: "gt-landing-header__tab-icon"
+  }, /*#__PURE__*/React.createElement(InfoGlyph, null), unseen && /*#__PURE__*/React.createElement(__ds_scope.NewDot, {
+    ring: true
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-landing-header__tab-text"
+  }, label), unseen && /*#__PURE__*/React.createElement("span", {
+    id: descId,
+    className: "gt-visually-hidden"
+  }, "New release notes"));
+}
+
 /**
  * Public landing header (grepthink2.com). Full-width dark bar that morphs
  * into a centered translucent pill once the page scrolls past 64px.
  * Pass `scrolled` to control the morph, or leave it undefined to let the
  * component track window scroll itself. `fixed={false}` renders in-flow
  * (galleries, previews).
+ * 2026-10-23: `onWhatsNew` renders the "ⓘ What's new" tab between Features and Contact (`whatsNewUnseen` shows
+ * its dot). A link with `hideOnPhone` (Features) hides at ≤ 560px, as the code's `landing-header__link--features`
+ * does: phones scroll into the bands anyway, and the nav keeps its three essentials plus the tab, which becomes
+ * the nav's first item there.
  */
 function LandingHeader({
   logoSrc,
   homeHref = '/',
   links = [{
     label: 'Features',
-    href: '#scrum-board'
+    href: '#scrum-board',
+    hideOnPhone: true
   }, {
     label: 'Contact',
     href: '/contact'
@@ -5557,6 +5671,9 @@ function LandingHeader({
   signInLabel = 'Sign in',
   ctaHref = '/select',
   ctaLabel = 'Get started',
+  onWhatsNew,
+  whatsNewUnseen = false,
+  whatsNewLabel = "What's new",
   scrolled,
   fixed = true,
   scrollThreshold = 64,
@@ -5585,6 +5702,13 @@ function LandingHeader({
   }, [controlled, fixed, scrollThreshold]);
   const isScrolled = controlled ? scrolled : autoScrolled;
   const cls = ['gt-landing-header', isScrolled ? 'gt-landing-header--scrolled' : '', fixed ? '' : 'gt-landing-header--static', className].filter(Boolean).join(' ');
+  const link = l => /*#__PURE__*/React.createElement("a", {
+    key: l.href,
+    href: l.href,
+    className: ['gt-landing-header__link', l.hideOnPhone ? 'gt-landing-header__link--features' : ''].filter(Boolean).join(' ')
+  }, l.label);
+  const splitAt = links.length > 1 ? 1 : 0; // the tab sits between Features and Contact
+
   return /*#__PURE__*/React.createElement("header", {
     className: cls
   }, /*#__PURE__*/React.createElement("div", {
@@ -5606,11 +5730,11 @@ function LandingHeader({
   }, "grepthink")), /*#__PURE__*/React.createElement("nav", {
     className: "gt-landing-header__nav",
     "aria-label": "Primary"
-  }, links.map(l => /*#__PURE__*/React.createElement("a", {
-    key: l.href,
-    href: l.href,
-    className: "gt-landing-header__link"
-  }, l.label)), /*#__PURE__*/React.createElement("a", {
+  }, links.slice(0, splitAt).map(link), onWhatsNew && /*#__PURE__*/React.createElement(WhatsNewTab, {
+    onOpen: onWhatsNew,
+    unseen: whatsNewUnseen,
+    label: whatsNewLabel
+  }), links.slice(splitAt).map(link), /*#__PURE__*/React.createElement("a", {
     href: signInHref,
     className: "gt-landing-header__btn gt-landing-header__btn--ghost"
   }, signInLabel), /*#__PURE__*/React.createElement("a", {
@@ -5618,7 +5742,7 @@ function LandingHeader({
     className: "gt-landing-header__btn gt-landing-header__btn--primary"
   }, ctaLabel))));
 }
-Object.assign(__ds_scope, { LandingHeader });
+Object.assign(__ds_scope, { WhatsNewTab, LandingHeader });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/LandingHeader.jsx", error: String((e && e.message) || e) }); }
 
 // components/marketing/Spotlight.jsx
@@ -6171,6 +6295,190 @@ function Pagination({
 }
 Object.assign(__ds_scope, { Pagination });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/Pagination.jsx", error: String((e && e.message) || e) }); }
+
+// components/navigation/ProfileMenu.jsx
+try { (() => {
+const I = ({
+  d,
+  size = 16
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d);
+const UserGlyph = () => /*#__PURE__*/React.createElement(I, {
+  size: 20,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "7",
+    r: "4"
+  }))
+});
+const Chevron = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement("path", {
+    d: "m6 9 6 6 6-6"
+  })
+});
+const Eye = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "3"
+  }))
+});
+const Gear = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "3"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+  }))
+});
+const Info = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 16v-4M12 8h.01"
+  }))
+});
+const LogOutGlyph = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m16 17 5-5-5-5M21 12H9"
+  }))
+});
+
+/**
+ * The app header's profile menu on the kit (What's new, 2026-10-23; `features/app/components/Layout/ProfileMenu.tsx`):
+ * today's profile button — the avatar, or a user icon when there is none, and a chevron — with `aria-haspopup="menu"`
+ * and `aria-expanded`, over a flush `Popover` (align end) holding a `Menu` (autoFocus). Rows, in order: a "School"
+ * group of radio rows for an account at two or more schools (the current one checked; the switcher no longer
+ * expands in place), "View class as student" / "Instructor view" in a class the user teaches, "Settings",
+ * "ⓘ What's new" with the "New" marker while unseen, a separator, then "Log Out" (destructive). While unseen the
+ * avatar carries the NewDot and the button and the row are also described as "New release notes" — their names
+ * never change. Keyboard: the Menu pattern (↑ ↓ Home End, Enter); Esc or a pick closes with focus back on the
+ * button; tabbing out closes it. "What's new" closes the menu first, so the modal's opener is the profile button.
+ */
+function ProfileMenu({
+  name = '',
+  avatarUrl,
+  schools = [],
+  currentSchoolId,
+  onPickSchool,
+  teaching = false,
+  previewing = false,
+  onTogglePreview,
+  onSettings,
+  onWhatsNew,
+  onLogout,
+  unseen = false,
+  defaultOpen = false,
+  className = ''
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  const buttonRef = React.useRef(null);
+  const wrapRef = React.useRef(null);
+  const descId = React.useId();
+  // Close; focus goes back to the button only when it would otherwise be lost with the menu (not after an outside click).
+  const close = () => {
+    setOpen(false);
+    const a = document.activeElement;
+    if (buttonRef.current && (!a || a === document.body || wrapRef.current && wrapRef.current.contains(a))) buttonRef.current.focus();
+  };
+  const pick = fn => () => {
+    close();
+    if (fn) fn();
+  };
+  const onBlur = e => {
+    if (open && wrapRef.current && e.relatedTarget && !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
+  };
+  const twoSchools = schools.length > 1;
+  const trigger = /*#__PURE__*/React.createElement("button", {
+    ref: buttonRef,
+    type: "button",
+    className: "gt-profile-menu__button",
+    "aria-label": "Profile menu",
+    "aria-haspopup": "menu",
+    "aria-expanded": open,
+    "aria-describedby": unseen ? descId : undefined,
+    onClick: () => setOpen(v => !v)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-profile-menu__avatar"
+  }, avatarUrl ? /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    src: avatarUrl,
+    name: name,
+    size: "sm",
+    decorative: true
+  }) : /*#__PURE__*/React.createElement("span", {
+    className: "gt-profile-menu__icon"
+  }, /*#__PURE__*/React.createElement(UserGlyph, null)), unseen && /*#__PURE__*/React.createElement(__ds_scope.NewDot, {
+    ring: true,
+    className: "gt-profile-menu__dot"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-profile-menu__chevron"
+  }, /*#__PURE__*/React.createElement(Chevron, null)));
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-profile-menu', className].filter(Boolean).join(' '),
+    ref: wrapRef,
+    onBlur: onBlur
+  }, /*#__PURE__*/React.createElement(__ds_scope.Popover, {
+    open: open,
+    onClose: close,
+    placement: "bottom",
+    align: "end",
+    padded: false,
+    anchor: trigger
+  }, /*#__PURE__*/React.createElement(__ds_scope.Menu, {
+    ariaLabel: "Profile",
+    autoFocus: true,
+    onClose: close
+  }, twoSchools && /*#__PURE__*/React.createElement(__ds_scope.MenuGroup, {
+    label: "School"
+  }, schools.map(s => /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    key: s.id,
+    radio: true,
+    checked: s.id === currentSchoolId,
+    onSelect: pick(() => onPickSchool && onPickSchool(s.id))
+  }, s.name))), twoSchools && /*#__PURE__*/React.createElement(__ds_scope.MenuSeparator, null), teaching && /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    icon: /*#__PURE__*/React.createElement(Eye, null),
+    onSelect: pick(onTogglePreview)
+  }, previewing ? 'Instructor view' : 'View class as student'), /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    icon: /*#__PURE__*/React.createElement(Gear, null),
+    onSelect: pick(onSettings)
+  }, "Settings"), /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    icon: /*#__PURE__*/React.createElement(Info, null),
+    trailing: unseen ? /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+      status: "release.new",
+      size: "sm",
+      "aria-hidden": "true"
+    }) : null,
+    "aria-describedby": unseen ? descId : undefined,
+    onSelect: pick(onWhatsNew)
+  }, "What's new"), /*#__PURE__*/React.createElement(__ds_scope.MenuSeparator, null), /*#__PURE__*/React.createElement(__ds_scope.MenuItem, {
+    icon: /*#__PURE__*/React.createElement(LogOutGlyph, null),
+    destructive: true,
+    onSelect: pick(onLogout)
+  }, "Log Out"))), unseen && /*#__PURE__*/React.createElement("span", {
+    id: descId,
+    className: "gt-visually-hidden"
+  }, "New release notes"));
+}
+Object.assign(__ds_scope, { ProfileMenu });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/ProfileMenu.jsx", error: String((e && e.message) || e) }); }
 
 // components/navigation/SegmentedControl.jsx
 try { (() => {
@@ -8827,6 +9135,8 @@ const XGlyph = () => /*#__PURE__*/React.createElement("svg", {
  * lg 760. `role="dialog"` + `aria-modal` on the sheet, labelled by its title and described by the
  * subtitle (and by `aria-describedby`, which ConfirmDialog points at its message); `closeDisabled`
  * holds it open while saving. Portaled to <body> at --gt-z-modal; closes with a 0.15s fade.
+ * `tone="dark"` (2026-10-23) is the landing page's look — the What's new modal: the scrim, the sheet, the head, the ×
+ * and the kit pieces a body holds (.gt-md, Skeleton, EmptyState, the info Badge) take the --gt-dark-* ramp. The app stays light.
  */
 function Modal({
   open = false,
@@ -8845,6 +9155,7 @@ function Modal({
   role = 'dialog',
   portal = true,
   className = '',
+  tone = 'light',
   'aria-describedby': describedBy
 }) {
   const sheetRef = React.useRef(null);
@@ -8863,11 +9174,11 @@ function Modal({
   });
   if (!mounted) return null;
   return dialogPortal(/*#__PURE__*/React.createElement("div", {
-    className: ['gt-modal-backdrop', closing ? 'gt-modal-backdrop--closing' : '', portal ? '' : 'gt-modal-backdrop--inline'].filter(Boolean).join(' '),
+    className: ['gt-modal-backdrop', closing ? 'gt-modal-backdrop--closing' : '', portal ? '' : 'gt-modal-backdrop--inline', tone === 'dark' ? 'gt-modal-backdrop--dark' : ''].filter(Boolean).join(' '),
     onMouseDown: onScrimDown
   }, /*#__PURE__*/React.createElement("div", {
     ref: sheetRef,
-    className: ['gt-modal', `gt-modal--${size}`, `gt-modal--${variant}`, className].filter(Boolean).join(' '),
+    className: ['gt-modal', `gt-modal--${size}`, `gt-modal--${variant}`, tone === 'dark' ? 'gt-modal--dark' : '', className].filter(Boolean).join(' '),
     role: role,
     "aria-modal": "true",
     "aria-labelledby": title ? `${id}-title` : undefined,
@@ -10506,6 +10817,401 @@ function Toggle({
 }
 Object.assign(__ds_scope, { Toggle });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Toggle.jsx", error: String((e && e.message) || e) }); }
+
+// components/releases/ReleasesModel.jsx
+try { (() => {
+/**
+ * What's new — the model (2026-10-23): versions, the "New" rule, the date, and the notes-file parser the galleries
+ * feed the brief's sample Markdown through. The codebase's `features/releases/{version,releaseNotes,releaseDate}.ts`.
+ */
+
+/** The groups in the order they always read; the entry draws the label — the notes' `##` lines are markers only. */
+const RELEASE_GROUPS = [{
+  kind: 'new',
+  label: 'New'
+}, {
+  kind: 'improved',
+  label: 'Improved'
+}, {
+  kind: 'fixed',
+  label: 'Fixed'
+}];
+const GROUP_INDEX = Object.fromEntries(RELEASE_GROUPS.map((g, i) => [g.kind, i]));
+function groupLabel(kind) {
+  const g = RELEASE_GROUPS[GROUP_INDEX[kind]];
+  return g ? g.label : kind;
+}
+
+/** "0.91.0" → [0, 91, 0]; null for anything else (a suffix, a leading zero, letters). */
+function parseVersion(v) {
+  const m = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(String(v == null ? '' : v).trim());
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+/** Part by part, numerically (0.9.0 < 0.10.0 < 0.91.0 < 1.0.0); an invalid version sorts below every valid one. */
+function compareVersions(a, b) {
+  const pa = parseVersion(a),
+    pb = parseVersion(b);
+  if (!pa && !pb) return 0;
+  if (!pa) return -1;
+  if (!pb) return 1;
+  for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+  return 0;
+}
+/** Newest first. */
+function sortReleases(releases) {
+  return [...releases].sort((a, b) => compareVersions(b.version, a.version));
+}
+
+/** The "New" marker: an entry newer than the version this browser last saw; on a first visit (`lastSeen` null or unreadable) only the newest entry. */
+function isNewSince(release, lastSeen, index) {
+  if (lastSeen == null || !parseVersion(lastSeen)) return index === 0;
+  return compareVersions(release.version, lastSeen) > 0;
+}
+/** The dot: unseen until this browser opens the modal on the current version. A higher stored version (a rollback) counts as seen. */
+function isUnseen(currentVersion, lastSeen) {
+  if (!parseVersion(currentVersion)) return false;
+  if (lastSeen == null || !parseVersion(lastSeen)) return true;
+  return compareVersions(lastSeen, currentVersion) < 0;
+}
+
+/** "2026-10-23" → "October 23, 2026" in every time zone: a calendar date, built from its parts and formatted in UTC. */
+function formatReleaseDate(date, locale = 'en-US') {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
+  if (!m) return String(date || '');
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.toLocaleDateString(locale, {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+/**
+ * One notes file → a Release. The front matter holds `date`; `## New` / `## Improved` / `## Fixed` are markers, and
+ * each section's bullet list stays Markdown for MarkdownText. Sections come out in the canonical order whatever
+ * the file's. (The repo's test rejects anything else; this parser only reads.)
+ */
+function parseReleaseNotes(version, markdown) {
+  const text = String(markdown || '').replace(/\r\n?/g, '\n');
+  const fm = /^---\n([\s\S]*?)\n---\n?/.exec(text);
+  const dateLine = fm ? /^date:\s*(\d{4}-\d{2}-\d{2})\s*$/m.exec(fm[1]) : null;
+  const body = fm ? text.slice(fm[0].length) : text;
+  const heads = [];
+  const re = /^##\s+(New|Improved|Fixed)\s*$/gim;
+  let m;
+  while (m = re.exec(body)) heads.push({
+    kind: m[1].toLowerCase(),
+    start: m.index,
+    end: m.index + m[0].length
+  });
+  const sections = [];
+  heads.forEach((h, i) => {
+    const chunk = body.slice(h.end, i + 1 < heads.length ? heads[i + 1].start : undefined).trim();
+    if (chunk) sections.push({
+      kind: h.kind,
+      markdown: chunk
+    });
+  });
+  sections.sort((a, b) => GROUP_INDEX[a.kind] - GROUP_INDEX[b.kind]);
+  return {
+    version,
+    date: dateLine ? dateLine[1] : '',
+    sections
+  };
+}
+/** { '0.91.0': '---\ndate: …' , … } → releases, newest first. */
+function releasesFromNotes(notes) {
+  return sortReleases(Object.keys(notes).map(v => parseReleaseNotes(v, notes[v])));
+}
+
+/** The file's helpers under one name, for the bundle (design-only, like ScheduleModel). */
+const ReleasesModel = {
+  RELEASE_GROUPS,
+  groupLabel,
+  parseVersion,
+  compareVersions,
+  sortReleases,
+  isNewSince,
+  isUnseen,
+  formatReleaseDate,
+  parseReleaseNotes,
+  releasesFromNotes
+};
+Object.assign(__ds_scope, { RELEASE_GROUPS, groupLabel, parseVersion, compareVersions, sortReleases, isNewSince, isUnseen, formatReleaseDate, parseReleaseNotes, releasesFromNotes, ReleasesModel });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/ReleasesModel.jsx", error: String((e && e.message) || e) }); }
+
+// components/releases/ReleaseEntry.jsx
+try { (() => {
+/**
+ * One release (What's new, 2026-10-23): its date written out as the heading, its version beside it, the "New"
+ * marker when it applies (`Badge status="release.new" size="sm"`), then its groups in the order New · Improved ·
+ * Fixed, each a caps label above its bullet list (the kit's MarkdownText). A missing group leaves no gap. No rail,
+ * no dots, no connecting line — the feed draws a hairline between entries. Heading levels follow the host:
+ * `titleAs` (h3 under the modal's h2) and the group labels one level down.
+ */
+function ReleaseEntry({
+  release,
+  isNew = false,
+  titleAs = 'h3',
+  className = ''
+}) {
+  const T = titleAs;
+  const level = Number(String(titleAs).replace(/\D/g, ''));
+  const G = level >= 1 && level < 6 ? `h${level + 1}` : 'p';
+  const byKind = Object.fromEntries((release.sections || []).map(s => [s.kind, s]));
+  return /*#__PURE__*/React.createElement("article", {
+    className: ['gt-release', isNew ? 'gt-release--new' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "gt-release__head"
+  }, /*#__PURE__*/React.createElement(T, {
+    className: "gt-release__date"
+  }, /*#__PURE__*/React.createElement("time", {
+    dateTime: release.date
+  }, __ds_scope.formatReleaseDate(release.date))), /*#__PURE__*/React.createElement("span", {
+    className: "gt-release__version"
+  }, release.version), isNew && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    status: "release.new",
+    size: "sm",
+    className: "gt-release__marker"
+  })), __ds_scope.RELEASE_GROUPS.map(({
+    kind,
+    label
+  }) => byKind[kind] && /*#__PURE__*/React.createElement("section", {
+    key: kind,
+    className: `gt-release__group gt-release__group--${kind}`
+  }, /*#__PURE__*/React.createElement(G, {
+    className: "gt-release__label"
+  }, label), /*#__PURE__*/React.createElement(__ds_scope.MarkdownText, {
+    className: "gt-release__list"
+  }, byKind[kind].markdown))));
+}
+Object.assign(__ds_scope, { ReleaseEntry });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/ReleaseEntry.jsx", error: String((e && e.message) || e) }); }
+
+// components/releases/ReleaseFeed.jsx
+try { (() => {
+const G = ({
+  children,
+  size = 16
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, children);
+const AlertGlyph = () => /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 8v4M12 16h.01"
+}));
+const NotesGlyph = () => /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("path", {
+  d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M14 2v4a2 2 0 0 0 2 2h4M8 13h8M8 17h5"
+}));
+
+/**
+ * The modal's content (What's new, 2026-10-23): the releases newest first with their "New" markers, and the
+ * three other states — `loading` (two ghost entries of Skeleton rows, `aria-busy`), `failed` (one line and a
+ * "Reload" button that reloads the page: after a deploy a retry would ask for the same missing file) and empty
+ * (the kit's card EmptyState; it cannot ship, but it has a look). Entries are separated by a hairline, no rail.
+ * The host passes the `lastSeen` it opened with, so the markers stay put while the modal is open. `tone="dark"`
+ * inside a dark Modal: the heading, version, labels and bullets follow the dark ramp.
+ */
+function ReleaseFeed({
+  releases = [],
+  lastSeen = null,
+  status = 'ready',
+  onReload,
+  tone = 'light',
+  titleAs = 'h3',
+  className = ''
+}) {
+  const cls = state => ['gt-release-feed', state ? `gt-release-feed--${state}` : '', tone === 'dark' ? 'gt-release-feed--dark' : '', className].filter(Boolean).join(' ');
+  const reload = onReload || (() => window.location.reload());
+  if (status === 'loading') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls('loading'),
+      "aria-busy": "true"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-visually-hidden",
+      role: "status"
+    }, "Loading release notes"), [0, 1].map(i => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "gt-release-feed__ghost"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-release-feed__ghost-head"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 148,
+      height: 14
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 46,
+      height: 11
+    })), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 56,
+      height: 9
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "92%",
+      height: 11
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "78%",
+      height: 11
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "64%",
+      height: 11
+    }))));
+  }
+  if (status === 'failed') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls('failed'),
+      role: "status"
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "card",
+      titleAs: titleAs,
+      icon: /*#__PURE__*/React.createElement(AlertGlyph, null),
+      title: "The release notes didn\u2019t load.",
+      action: /*#__PURE__*/React.createElement(__ds_scope.Button, {
+        size: "sm",
+        onClick: reload
+      }, "Reload")
+    }));
+  }
+  if (!releases.length) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls('empty')
+    }, /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+      variant: "card",
+      titleAs: titleAs,
+      icon: /*#__PURE__*/React.createElement(NotesGlyph, null),
+      title: "No release notes yet",
+      description: "Every version from 0.91.0 on comes with its notes. They appear here."
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: cls('')
+  }, releases.map((r, i) => /*#__PURE__*/React.createElement(__ds_scope.ReleaseEntry, {
+    key: r.version,
+    release: r,
+    isNew: __ds_scope.isNewSince(r, lastSeen, i),
+    titleAs: titleAs
+  })));
+}
+Object.assign(__ds_scope, { ReleaseFeed });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/ReleaseFeed.jsx", error: String((e && e.message) || e) }); }
+
+// components/releases/WhatsNewModal.jsx
+try { (() => {
+/**
+ * What's new (2026-10-23) — the release notes in the kit's Modal: the title "What's new", the subtitle
+ * "Version 0.91.0" (the visitor's version), the kit's × ("Close"), the feed scrolling inside the body, no footer.
+ * `tone="dark"` on the landing page, the kit's light look in the app; `md` (560px) and the kit's phone layout.
+ * The dialog behaviour is Modal's: focus moves to the sheet (there is no field) and stays trapped, Esc / the
+ * scrim / the × close it, focus returns to the opener — the landing tab, or in the app the profile button.
+ * Opening marks the version seen; pass the `lastSeen` the modal opened with so its "New" markers stay put.
+ */
+function WhatsNewModal({
+  open = false,
+  onClose,
+  tone = 'light',
+  releases = [],
+  currentVersion,
+  lastSeen = null,
+  status = 'ready',
+  onReload,
+  portal = true,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement(__ds_scope.Modal, {
+    open: open,
+    onClose: onClose,
+    tone: tone,
+    size: "md",
+    title: "What's new",
+    subtitle: currentVersion ? `Version ${currentVersion}` : undefined,
+    portal: portal,
+    className: ['gt-whats-new', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(__ds_scope.ReleaseFeed, {
+    releases: releases,
+    lastSeen: lastSeen,
+    status: status,
+    onReload: onReload,
+    tone: tone
+  }));
+}
+Object.assign(__ds_scope, { WhatsNewModal });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/WhatsNewModal.jsx", error: String((e && e.message) || e) }); }
+
+// components/releases/releasesData.js
+try { (() => {
+/* GrepThink What's new — sample notes for the galleries (brief §8), one Markdown string per version, as the files in
+   frontend/src/features/releases/notes/<version>.md read (front matter + ## New / ## Improved / ## Fixed bullet lists).
+   Sample data, not real release notes. window.GT_RELEASE_NOTES_SAMPLE = the brief's three; window.GT_RELEASE_NOTES_MORE
+   adds two invented ones for the "five or more" and "a long entry" states. Parse with ReleasesModel.releasesFromNotes. */
+(function () {
+  const sample = {
+    '0.92.0': ['---', 'date: 2026-11-05', '---', '', '## New', '', '- **Final review sign-up.** Product Owners book their team\'s final review slot, and TAs sign up to review the teams that hold one.', '- Instructors post one-hour slots for the class and open or close sign-ups with one switch.', '', '## Improved', '', '- The scrum board\'s sprint picker shows each sprint\'s dates, status and progress.', '- Final review times show in your time zone, with the campus time beside them when the two differ.', '- The [help center](/app/help-center) walks you through booking a slot.', '', '## Fixed', '', '- A `?` no longer shows in place of a member\'s avatar before they add their name.', ''].join('\n'),
+    '0.91.1': ['---', 'date: 2026-10-28', '---', '', '## Fixed', '', '- Picking a school in the profile menu keeps you on the page you were on, when your role there allows it.', '- On phones, the last line of a long dialog is no longer hidden behind its buttons.', ''].join('\n'),
+    '0.91.0': ['---', 'date: 2026-10-23', '---', '', '## New', '', '- **What\'s new.** Release notes for every version, on the landing page and in your profile menu.', '- A meeting that is happening now shows a blue **Live** badge on your schedule.', '', '## Improved', '', '- Pages open faster: each page loads its own code the first time you visit it.', '- Buttons, fields, dialogs, badges, cards and tabs share one look across the app.', '', '## Fixed', '', '- The date picker\'s weekday header lines up with its days again.', '- Closing a dialog returns you to the button that opened it.', ''].join('\n')
+  };
+  const more = {
+    ...sample,
+    '0.93.0': ['---', 'date: 2026-11-19', '---', '', '## New', '', '- **Notifications on the kit.** The bell\'s list uses the same rows, buttons and empty state as the rest of the app, and it reads well with a screen reader.', '- Instructors export a class\'s attendance as CSV from the Roster page.', '- Team channels show who is typing.', '', '## Improved', '', '- The ⌘K search finds assignments by their due date ("due friday") and people by their role ("scrum master").', '- Analytics charts label their bars directly; the tooltip repeats the figure instead of being the only place it shows.', '- The sprint burnup keeps its last point on the right edge when a sprint ends early.', '- The sidebar remembers whether you collapsed it, per browser.', '- Long project names wrap in the project card instead of being cut.', '', '## Fixed', '', '- A comment with `code` that contained an asterisk no longer renders the rest of the thread in italics.', '- The schedule\'s Now line sits on the right minute after the clocks change.', '- Marking all notifications read no longer leaves the badge at 1 until the next refresh.', '- The final review slot board scrolls to the current week on phones.', ''].join('\n'),
+    '0.92.1': ['---', 'date: 2026-11-10', '---', '', '## Fixed', '', '- A booked final review slot shows its Zoom link to every member of the team, not only the Product Owner.', ''].join('\n')
+  };
+  window.GT_RELEASE_NOTES_SAMPLE = sample;
+  window.GT_RELEASE_NOTES_MORE = more;
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/releasesData.js", error: String((e && e.message) || e) }); }
+
+// components/releases/releasesSrcLoader.js
+try { (() => {
+/* Dev fallback: when the compiled _ds_bundle.js predates the What's new round (it regenerates once per turn),
+   transpile the round's new and changed files straight from source into the same namespace — the releases family,
+   NewDot, Badge (size="sm", release.new), Menu (MenuGroup, trailing), Modal (tone="dark"), LandingHeader (the tab)
+   and ProfileMenu. Inert as soon as the bundle carries WhatsNewModal and WhatsNewTab. */
+window.loadReleasesSources = async function loadReleasesSources(base) {
+  const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
+  if (NS.WhatsNewModal && NS.WhatsNewTab && NS.ProfileMenu && NS.MenuGroup && NS.NewDot) return NS;
+  const order = ['display/Badge', 'display/NewDot', 'feedback/Menu', 'feedback/Modal', 'marketing/LandingHeader', 'navigation/ProfileMenu', 'releases/ReleasesModel', 'releases/ReleaseEntry', 'releases/ReleaseFeed', 'releases/WhatsNewModal'];
+  for (const file of order) {
+    let src = await (await fetch(`${base}/components/${file}.jsx`)).text();
+    const needed = [],
+      found = [];
+    src = src.replace(/import\s*\{([^}]*)\}\s*from\s*'[^']+';?/g, (m, names) => {
+      needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
+      return '';
+    });
+    src = src.replace(/^import React[^\n]*$/mg, '');
+    src = src.replace(/^export\s+(function|const)\s+([A-Za-z_$][\w$]*)/mg, (m, kind, id) => {
+      found.push(id);
+      return `${kind} ${id}`;
+    });
+    const prelude = needed.length ? `const {${[...new Set(needed)].join(',')}} = __NS;\n` : '';
+    const code = Babel.transform(prelude + src + `\n;Object.assign(__NS, {${found.join(',')}});`, {
+      presets: ['react']
+    }).code;
+    new Function('React', '__NS', code)(window.React, NS);
+  }
+  return NS;
+};
+
+/* Transpile + run an inline <script type="text/babel-deferred"> after the sources are in. */
+window.runDeferredBabel = window.runDeferredBabel || function runDeferredBabel() {
+  document.querySelectorAll('script[type="text/babel-deferred"]').forEach(s => {
+    new Function(Babel.transform(s.textContent, {
+      presets: ['react']
+    }).code)();
+  });
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/releases/releasesSrcLoader.js", error: String((e && e.message) || e) }); }
 
 // components/schedule/ScheduleDivider.jsx
 try { (() => {
@@ -23210,6 +23916,327 @@ function TeamMeetingsApp() {
 window.TeamMeetingsApp = TeamMeetingsApp;
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/TeamMeetingsScreen.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/WhatsNewScreen.jsx
+try { (() => {
+/* GrepThink — What's new (2026-10-23): the landing page and the app shell with the release notes modal, the header's
+   ⓘ tab and the profile menu on the kit. Two modes in one file: the shell (demo bar + a framed stage at the chosen
+   width) and ?stage (the composition itself, so the header's media queries see a real viewport). */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  LandingHeader,
+  Hero,
+  AnnouncementPill,
+  WhatsNewModal,
+  ProfileMenu,
+  ReleasesModel,
+  UnreadBadge
+} = NS;
+const RELEASES = ReleasesModel.releasesFromNotes(window.GT_RELEASE_NOTES_SAMPLE); // 0.92.0 · 0.91.1 · 0.91.0
+const CURRENT = RELEASES[0].version;
+const LOGO = '../../assets/grepthink-logo.svg';
+const params = new URLSearchParams(location.search);
+const SEEN = {
+  first: null,
+  partial: '0.91.0',
+  all: CURRENT
+};
+const PERSONAS = {
+  student: {
+    name: 'Ashton Liu'
+  },
+  instructor: {
+    name: 'Priya Raman',
+    teaching: true
+  },
+  preview: {
+    name: 'Priya Raman',
+    teaching: true,
+    previewing: true
+  },
+  schools: {
+    name: 'Jordan Lee',
+    schools: [{
+      id: 'ucsc',
+      name: 'UC Santa Cruz'
+    }, {
+      id: 'cabrillo',
+      name: 'Cabrillo College'
+    }],
+    currentSchoolId: 'ucsc'
+  }
+};
+const I = ({
+  d,
+  size = 20
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d);
+const Bell = () => /*#__PURE__*/React.createElement(I, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M10.3 21a1.94 1.94 0 0 0 3.4 0"
+  }))
+});
+const Search = () => /*#__PURE__*/React.createElement(I, {
+  size: 16,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "11",
+    cy: "11",
+    r: "8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m21 21-4.35-4.35"
+  }))
+});
+const Burger = () => /*#__PURE__*/React.createElement(I, {
+  size: 22,
+  d: /*#__PURE__*/React.createElement("path", {
+    d: "M4 6h16M4 12h16M4 18h16"
+  })
+});
+
+/* The seen store, in memory for the kit (the app keeps it in localStorage['gt:whats-new:seen']): opening the modal marks
+   the current version seen and clears every dot, while the modal keeps the lastSeen it opened with. */
+function useWhatsNew(initialSeen) {
+  const startOpen = params.get('open') === '1'; // the demo bar's "Modal: open" counts as an opening: it marks the version seen
+  const [seen, setSeen] = React.useState(startOpen ? CURRENT : initialSeen);
+  const [open, setOpen] = React.useState(startOpen);
+  const [lastSeenAtOpen, setLastSeenAtOpen] = React.useState(initialSeen);
+  const openModal = () => {
+    setLastSeenAtOpen(seen);
+    setSeen(CURRENT);
+    setOpen(true);
+  };
+  return {
+    unseen: ReleasesModel.isUnseen(CURRENT, seen),
+    open,
+    openModal,
+    close: () => setOpen(false),
+    lastSeenAtOpen
+  };
+}
+function LandingStage({
+  hdr,
+  seen
+}) {
+  const wn = useWhatsNew(seen);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wn-landing"
+  }, /*#__PURE__*/React.createElement(LandingHeader, {
+    logoSrc: LOGO,
+    scrolled: hdr === 'pill',
+    onWhatsNew: wn.openModal,
+    whatsNewUnseen: wn.unseen
+  }), /*#__PURE__*/React.createElement(Hero, {
+    compact: true,
+    announcement: /*#__PURE__*/React.createElement(AnnouncementPill, {
+      href: "#scrum-board"
+    }, "Scrum boards and team channels"),
+    title: "Build better project teams,",
+    titleAccent: "all in one place",
+    subtitle: "grepthink helps instructors and student teams form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos."
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "wn-landing__band"
+  }, ['Smart team formation', 'Weekly status reports', 'Scrum boards and channels'].map(t => /*#__PURE__*/React.createElement("div", {
+    key: t,
+    className: "wn-card"
+  }, /*#__PURE__*/React.createElement("h2", null, t), /*#__PURE__*/React.createElement("p", null, "One of the landing page's feature columns. The header's tab opens What's new in the dark look.")))), /*#__PURE__*/React.createElement(WhatsNewModal, {
+    open: wn.open,
+    onClose: wn.close,
+    tone: "dark",
+    releases: RELEASES,
+    currentVersion: CURRENT,
+    lastSeen: wn.lastSeenAtOpen,
+    status: "ready"
+  }));
+}
+function AppStage({
+  seen,
+  persona
+}) {
+  const wn = useWhatsNew(seen);
+  const p = PERSONAS[persona] || PERSONAS.student;
+  const [previewing, setPreviewing] = React.useState(!!p.previewing);
+  const [school, setSchool] = React.useState(p.currentSchoolId);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wn-app"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "wn-side",
+    "aria-label": "Sidebar"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "wn-side__logo",
+    src: LOGO,
+    alt: "grepthink"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "wn-class"
+  }, /*#__PURE__*/React.createElement("span", null, "CSE 115C \xB7 Fall 2026"), /*#__PURE__*/React.createElement("span", null, "\u25BE"))), /*#__PURE__*/React.createElement("div", {
+    className: "wn-main"
+  }, previewing && /*#__PURE__*/React.createElement("div", {
+    className: "wn-banner"
+  }, "Previewing the class as a student. Pick \u201CInstructor view\u201D in the profile menu to go back."), /*#__PURE__*/React.createElement("header", {
+    className: "wn-header"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "wn-header__menu",
+    "aria-label": "Open menu"
+  }, /*#__PURE__*/React.createElement(Burger, null)), /*#__PURE__*/React.createElement("h1", {
+    className: "wn-header__title"
+  }, "Home"), /*#__PURE__*/React.createElement("div", {
+    className: "wn-header__right"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "wn-header__icon",
+    "aria-label": "Notifications, 3 unread"
+  }, /*#__PURE__*/React.createElement(Bell, null), /*#__PURE__*/React.createElement(UnreadBadge, {
+    count: 3,
+    style: {
+      position: 'absolute',
+      top: -6,
+      right: -6
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "wn-header__search",
+    "aria-label": "Search (\u2318K)"
+  }, /*#__PURE__*/React.createElement(Search, null), /*#__PURE__*/React.createElement("span", null, "Search"), /*#__PURE__*/React.createElement("kbd", null, "\u2318K")), /*#__PURE__*/React.createElement(ProfileMenu, {
+    name: p.name,
+    schools: p.schools,
+    currentSchoolId: school,
+    onPickSchool: setSchool,
+    teaching: p.teaching,
+    previewing: previewing,
+    onTogglePreview: () => setPreviewing(v => !v),
+    onSettings: () => {},
+    onWhatsNew: wn.openModal,
+    onLogout: () => {},
+    unseen: wn.unseen
+  }))), /*#__PURE__*/React.createElement("main", {
+    className: "wn-content"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "wn-content__welcome"
+  }, "Welcome back, ", p.name.split(' ')[0]), /*#__PURE__*/React.createElement("div", {
+    className: "wn-content__grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "wn-card"
+  }, /*#__PURE__*/React.createElement("h2", null, "Today's schedule"), /*#__PURE__*/React.createElement("p", null, "Sprint 3 planning at 3:00 PM \xB7 TA meeting at 4:30 PM.")), /*#__PURE__*/React.createElement("div", {
+    className: "wn-card"
+  }, /*#__PURE__*/React.createElement("h2", null, "Your team"), /*#__PURE__*/React.createElement("p", null, "Bike Share Map \xB7 five members \xB7 Sprint 3 of 5.")), /*#__PURE__*/React.createElement("div", {
+    className: "wn-card"
+  }, /*#__PURE__*/React.createElement("h2", null, "Assignments"), /*#__PURE__*/React.createElement("p", null, "TSR 4 due Friday \xB7 Interest form closed."))))), /*#__PURE__*/React.createElement(WhatsNewModal, {
+    open: wn.open,
+    onClose: wn.close,
+    tone: "light",
+    releases: RELEASES,
+    currentVersion: CURRENT,
+    lastSeen: wn.lastSeenAtOpen,
+    status: "ready"
+  }));
+}
+function Stage() {
+  const ctx = params.get('ctx') || 'landing';
+  const seen = SEEN[params.get('seen') || 'first'] ?? null;
+  return ctx === 'app' ? /*#__PURE__*/React.createElement(AppStage, {
+    seen: seen,
+    persona: params.get('persona') || 'student'
+  }) : /*#__PURE__*/React.createElement(LandingStage, {
+    hdr: params.get('hdr') || 'bar',
+    seen: seen
+  });
+}
+const Group = ({
+  label,
+  value,
+  options,
+  onChange,
+  disabled
+}) => /*#__PURE__*/React.createElement("span", {
+  className: "wn-demo__group",
+  role: "group",
+  "aria-label": label,
+  "aria-disabled": disabled || undefined
+}, /*#__PURE__*/React.createElement("span", {
+  className: "wn-demo__lbl"
+}, label), options.map(([v, l]) => /*#__PURE__*/React.createElement("button", {
+  key: v,
+  type: "button",
+  className: "wn-demo__opt",
+  "aria-pressed": value === v,
+  onClick: () => onChange(v)
+}, l)));
+function Shell() {
+  const [s, setS] = React.useState({
+    ctx: 'landing',
+    hdr: 'bar',
+    w: 1280,
+    seen: 'first',
+    persona: 'student',
+    open: '0'
+  });
+  const set = k => v => setS(prev => ({
+    ...prev,
+    [k]: v
+  }));
+  const src = `whats-new.html?stage&ctx=${s.ctx}&hdr=${s.hdr}&seen=${s.seen}&persona=${s.persona}&open=${s.open}`;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wn-shell"
+  }, /*#__PURE__*/React.createElement("iframe", {
+    key: src,
+    className: "wn-shell__frame",
+    src: src,
+    style: {
+      width: s.w
+    },
+    title: `What's new — ${s.ctx} at ${s.w}px`
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "wn-demo",
+    role: "toolbar",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement(Group, {
+    label: "Context",
+    value: s.ctx,
+    onChange: set('ctx'),
+    options: [['landing', 'Landing'], ['app', 'App']]
+  }), /*#__PURE__*/React.createElement(Group, {
+    label: "Header",
+    value: s.hdr,
+    onChange: set('hdr'),
+    disabled: s.ctx !== 'landing',
+    options: [['bar', 'Bar'], ['pill', 'Pill']]
+  }), /*#__PURE__*/React.createElement(Group, {
+    label: "Width",
+    value: s.w,
+    onChange: set('w'),
+    options: [[1280, '1280'], [768, '768'], [560, '560'], [375, '375'], [320, '320']]
+  }), /*#__PURE__*/React.createElement(Group, {
+    label: "Seen",
+    value: s.seen,
+    onChange: set('seen'),
+    options: [['first', 'First visit'], ['partial', 'Up to 0.91.0'], ['all', 'All seen']]
+  }), /*#__PURE__*/React.createElement(Group, {
+    label: "Persona",
+    value: s.persona,
+    onChange: set('persona'),
+    disabled: s.ctx !== 'app',
+    options: [['student', 'Student'], ['instructor', 'Instructor'], ['preview', 'Preview'], ['schools', 'Two schools']]
+  }), /*#__PURE__*/React.createElement(Group, {
+    label: "Modal",
+    value: s.open,
+    onChange: set('open'),
+    options: [['0', 'Closed'], ['1', 'Open']]
+  })));
+}
+window.WhatsNewApp = params.has('stage') ? Stage : Shell;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/WhatsNewScreen.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/analyticsData.js
 try { (() => {
 /* Sample payloads for the Analytics UI kit — copies of
@@ -23908,6 +24935,8 @@ __ds_ns.MarkdownText = __ds_scope.MarkdownText;
 
 __ds_ns.Markdown = __ds_scope.Markdown;
 
+__ds_ns.NewDot = __ds_scope.NewDot;
+
 __ds_ns.ProgressBar = __ds_scope.ProgressBar;
 
 __ds_ns.StatCard = __ds_scope.StatCard;
@@ -23986,6 +25015,8 @@ __ds_ns.Menu = __ds_scope.Menu;
 
 __ds_ns.MenuItem = __ds_scope.MenuItem;
 
+__ds_ns.MenuGroup = __ds_scope.MenuGroup;
+
 __ds_ns.MenuSeparator = __ds_scope.MenuSeparator;
 
 __ds_ns.Modal = __ds_scope.Modal;
@@ -24052,6 +25083,8 @@ __ds_ns.Hero = __ds_scope.Hero;
 
 __ds_ns.LandingFooter = __ds_scope.LandingFooter;
 
+__ds_ns.WhatsNewTab = __ds_scope.WhatsNewTab;
+
 __ds_ns.LandingHeader = __ds_scope.LandingHeader;
 
 __ds_ns.Spotlight = __ds_scope.Spotlight;
@@ -24065,6 +25098,8 @@ __ds_ns.FilterChip = __ds_scope.FilterChip;
 __ds_ns.FilterChipGroup = __ds_scope.FilterChipGroup;
 
 __ds_ns.Pagination = __ds_scope.Pagination;
+
+__ds_ns.ProfileMenu = __ds_scope.ProfileMenu;
 
 __ds_ns.SegmentedControl = __ds_scope.SegmentedControl;
 
@@ -24111,6 +25146,16 @@ __ds_ns.Slider = __ds_scope.Slider;
 __ds_ns.Textarea = __ds_scope.Textarea;
 
 __ds_ns.Toggle = __ds_scope.Toggle;
+
+__ds_ns.ReleaseEntry = __ds_scope.ReleaseEntry;
+
+__ds_ns.ReleaseFeed = __ds_scope.ReleaseFeed;
+
+__ds_ns.RELEASE_GROUPS = __ds_scope.RELEASE_GROUPS;
+
+__ds_ns.ReleasesModel = __ds_scope.ReleasesModel;
+
+__ds_ns.WhatsNewModal = __ds_scope.WhatsNewModal;
 
 __ds_ns.ScheduleDayHeader = __ds_scope.ScheduleDayHeader;
 

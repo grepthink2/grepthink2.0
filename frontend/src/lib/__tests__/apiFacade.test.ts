@@ -57,7 +57,6 @@ const METHODS = [
   'confirmUnsubscribe',
   'createAssignment',
   'createClass',
-  'createClassProject',
   'createProject',
   'createProjectMeeting',
   'createProjectTsr',

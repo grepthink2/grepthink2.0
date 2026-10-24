@@ -1,4 +1,4 @@
-// Intentional addition: Menu, MenuItem, MenuSeparator — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
+// Intentional addition: Menu, MenuItem, MenuSeparator, MenuGroup — confirmed, no counterpart in the Figma kit; named after the codebase (readme.md → Intentional additions).
 import * as React from 'react';
 
 export interface MenuProps {
@@ -17,6 +17,8 @@ export interface MenuItemProps {
   children: React.ReactNode;
   /** Right-aligned mono shortcut hint (e.g. '⌘K'). */
   shortcut?: string;
+  /** Slot at the row's end for a marker (the profile menu's "New" Badge). Pass it `aria-hidden` and describe the row with `aria-describedby` when the words live elsewhere. */
+  trailing?: React.ReactNode;
   /** Error-pair styling for destructive actions. @default false */
   destructive?: boolean;
   disabled?: boolean;
@@ -34,3 +36,12 @@ export function Menu(props: MenuProps): React.JSX.Element;
 export function MenuItem(props: MenuItemProps): React.JSX.Element;
 /** Thin rule between item groups. */
 export function MenuSeparator(): React.JSX.Element;
+
+export interface MenuGroupProps {
+  /** The caps label over the rows ("School"); names the `role="group"`. */
+  label: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}
+/** A labelled run of rows: `role="group"` named by its label; the label is not a row. */
+export function MenuGroup(props: MenuGroupProps): React.JSX.Element;

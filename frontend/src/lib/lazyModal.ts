@@ -3,7 +3,9 @@ import { createElement, lazy, Suspense, useState, type Attributes, type Componen
 /**
  * A modal whose code loads the first time it opens, so heavy form pieces (the
  * date picker, for one) stay out of the initial bundle. After the first open it
- * stays mounted, so its close animation still plays.
+ * stays mounted, so its close animation still plays. Code that fails to load
+ * throws to the nearest error boundary: inside a page that is the page's own, and
+ * AppView gives its modals one each.
  *
  *   const CreateClassModal = lazyModal(() => import('./CreateClassModal'), (p) => p.isOpen);
  */

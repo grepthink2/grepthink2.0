@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, startTransition, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
+import { Copy, Check, X, Menu } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
-import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { apiRequest, type ApiProfile } from '@/lib/api';
-import SchoolSwitcher from './SchoolSwitcher';
+import ProfileMenu from './ProfileMenu';
 import { SearchTrigger } from '@features/search/components/SearchTrigger';
 import { buildBreadcrumbs } from './breadcrumbs';
 import './Header.scss';
@@ -68,14 +67,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSearch, onPrefetchSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
-  const { isPreviewing, enterPreview, exitPreview } = usePreview();
+  const { user } = useAuth();
   const { selectedClass, classes, setSelectedClass } = useClass();
   // Breadcrumbs and the class details follow your role in the selected class.
   const classRole = useSelectedClassRole();
 
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -93,8 +90,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
   );
 
   const notificationRef = useRef<HTMLDivElement>(null);
-  const profileRef = useRef<HTMLDivElement>(null);
-  const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -147,14 +142,14 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
         ? classes.find((c) => c.id === notification.entity_id)
         : undefined;
     const path = notificationPath(notification);
-    // The class and the page commit together (see handleViewAsStudent).
+    // The class and the page commit together: the router navigates in a transition, so a class
+    // committed on its own would meet the class route guard on the old page.
     startTransition(() => {
       if (target) setSelectedClass(target);
       if (path) navigate(path);
     });
   };
 
-  // Close dropdowns when clicking outside
   const handleCopyCode = () => {
     if (selectedClass?.course_code) {
       navigator.clipboard.writeText(selectedClass.course_code);
@@ -163,48 +158,17 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
     }
   };
 
+  // Close the notifications dropdown on a click outside it. The profile menu is a Popover, which closes itself.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
-      }
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setShowProfileMenu(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  // Closing the profile menu from one of its items: the item goes away with the menu, so focus
-  // returns to the profile button rather than falling back to the page.
-  const closeProfileMenu = () => {
-    setShowProfileMenu(false);
-    profileButtonRef.current?.focus();
-  };
-
-  const handleSettingsClick = () => {
-    closeProfileMenu();
-    onOpenSettings();
-  };
-
-  const handleViewAsStudent = () => {
-    closeProfileMenu();
-    // One transition for the preview and the page. The router navigates in a transition, so a
-    // preview committed on its own would meet the class route guard on the old page, which would
-    // redirect from there (the Dashboard to My Project, My Project to the Dashboard).
-    startTransition(() => {
-      if (isPreviewing) exitPreview();
-      else enterPreview();
-      navigate('/app/home');
-    });
-  };
 
   return (
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
@@ -376,58 +340,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
         {/* Global search (⌘K) — the palette itself is mounted in AppView. */}
         <SearchTrigger onOpen={onOpenSearch} onPrefetch={onPrefetchSearch} />
 
-        {/* Profile Dropdown */}
-        <div className="app-header__profile-container" ref={profileRef}>
-          <button
-            ref={profileButtonRef}
-            className="app-header__profile-button"
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            aria-label="Profile menu"
-          >
-            <div className="app-header__profile-icon">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="app-header__profile-avatar"
-                />
-              ) : (
-                <User size={20} />
-              )}
-            </div>
-            <ChevronDown size={16} className="app-header__chevron-icon" />
-          </button>
-
-          {showProfileMenu && (
-            <div className="app-header__dropdown app-header__profile-dropdown">
-              <SchoolSwitcher onPicked={closeProfileMenu} />
-              {/* Only in a class you own: the class's own role, which preview does not change. */}
-              {selectedClass?.my_role === 'instructor' && (
-                <button
-                  className="app-header__dropdown-item"
-                  onClick={handleViewAsStudent}
-                >
-                  <Eye size={18} />
-                  <span>{isPreviewing ? 'Instructor view' : 'View class as student'}</span>
-                </button>
-              )}
-              <button
-                className="app-header__dropdown-item"
-                onClick={handleSettingsClick}
-              >
-                <Settings size={18} />
-                <span>Settings</span>
-              </button>
-              <button
-                className="app-header__dropdown-item app-header__dropdown-item--logout"
-                onClick={handleLogout}
-              >
-                <LogOut size={18} />
-                <span>Log Out</span>
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Profile menu, with What's new */}
+        <ProfileMenu avatarUrl={avatarUrl} onOpenSettings={onOpenSettings} />
       </div>
     </header>
   );

@@ -1,4 +1,4 @@
-import { countableStudents, isBulkInviteCandidate } from '../rosterTypes';
+import { applySearch, countableStudents, isBulkInviteCandidate, rosterTas } from '../rosterTypes';
 import type { UiStudent } from '../rosterTypes';
 
 function makeStudent(overrides: Partial<UiStudent> = {}): UiStudent {
@@ -65,5 +65,32 @@ describe('isBulkInviteCandidate', () => {
         makeStudent({ grepthinkStatus: 'registered', classStatus: 'enrolled' }),
       ),
     ).toBe(false);
+  });
+});
+
+describe('rosterTas', () => {
+  it('keeps only the TAs', () => {
+    const students = [
+      makeStudent({ id: 'a' }),
+      makeStudent({ id: 'b', isTa: true }),
+      makeStudent({ id: 'c' }),
+    ];
+    expect(rosterTas(students).map((s) => s.id)).toEqual(['b']);
+  });
+});
+
+describe('applySearch', () => {
+  const students = [
+    makeStudent({ id: 'a', name: 'Ada Lovelace', email: 'ada@ucsc.edu' }),
+    makeStudent({ id: 'b', name: 'Tara Singh', email: 'tsingh@ucsc.edu' }),
+  ];
+
+  it('matches the name or the email, ignoring case', () => {
+    expect(applySearch(students, 'LOVE').map((s) => s.id)).toEqual(['a']);
+    expect(applySearch(students, 'tsingh@').map((s) => s.id)).toEqual(['b']);
+  });
+
+  it('keeps every row for a blank search', () => {
+    expect(applySearch(students, '   ')).toEqual(students);
   });
 });

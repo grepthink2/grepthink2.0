@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from app.config import settings
 from app.scrum import controller
 from app.scrum.ai_draft import snap_points
-from tests.scrum_support import PID, UID, scrum_db
+from tests.scrum_support import PID, UID, pin_today, scrum_db
 
 TODAY = date(2026, 9, 1)
 
@@ -34,7 +34,7 @@ def test_draft_429_over_quota(monkeypatch):
         monkeypatch,
         ai_draft_usage=[{"user_id": UID, "used_on": TODAY.isoformat(), "count": 10}],
     )
-    monkeypatch.setattr(controller, "_today_la", lambda: TODAY)
+    pin_today(monkeypatch, TODAY)
     monkeypatch.setattr(settings, "AI_API_KEY", "k")
     monkeypatch.setattr(settings, "AI_BASE_URL", "http://ai.test")  # the 503 gate checks both
     with pytest.raises(HTTPException) as e:

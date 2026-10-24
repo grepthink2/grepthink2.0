@@ -42,6 +42,7 @@ export const BADGE_STATUS = {
   'slot.free': ['success', 'Free'], 'slot.yours': ['info', 'Your team'], 'slot.past': ['neutral', 'Past'],
   'review.no_review_ta': ['warning', 'No Review TA'], 'review.no_product_owner': ['warning', 'No Product Owner'],
   live: ['info', 'Live'],
+  'release.new': ['info', 'New'],   /* What's new (2026-10-23): an entry newer than the version this browser last saw — informational, never the unread red */
 };
 
 /** Category labels are not statuses: outlined neutral + an icon, never a status colour. */
@@ -56,8 +57,11 @@ export const PROJECT_ROLES = {
   admin: ['key', 'Admin'], member: [null, 'Member'],
 };
 
-/** Status / category / role pill. `projectRole` replaces the old `role` prop, which shadowed the ARIA attribute. */
-export function Badge({ children, tone = 'neutral', status, category, projectRole, icon, solid = false, className = '', ...rest }) {
+/**
+ * Status / category / role pill. `projectRole` replaces the old `role` prop, which shadowed the ARIA attribute.
+ * `size="sm"` (2026-10-23) is the 11px marker that sits in a heading row or a 32px menu row (the "New" marker).
+ */
+export function Badge({ children, tone = 'neutral', status, category, projectRole, icon, solid = false, size = 'md', className = '', ...rest }) {
   let kind = tone; let label = children; let glyph = icon; let cat = false; let roleCls = '';
   if (status && BADGE_STATUS[status]) {
     [kind] = BADGE_STATUS[status];
@@ -74,7 +78,7 @@ export function Badge({ children, tone = 'neutral', status, category, projectRol
     if (glyph === undefined && ic) glyph = ICONS[ic];
     if (label == null) label = l;
   }
-  const cls = ['gt-badge', cat ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !cat ? 'gt-badge--solid' : '', roleCls, className].filter(Boolean).join(' ');
+  const cls = ['gt-badge', cat ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !cat ? 'gt-badge--solid' : '', size === 'sm' ? 'gt-badge--sm' : '', roleCls, className].filter(Boolean).join(' ');
   return (
     <span className={cls} {...rest}>
       {glyph && <span className="gt-badge__icon" aria-hidden="true">{glyph}</span>}

@@ -20,6 +20,9 @@
 .gt-badge--gold    { background-color: var(--gt-gold-soft);   color: var(--gt-gold-text); }
 .gt-badge--merged  { background-color: var(--gt-purple-soft); color: var(--gt-purple); }
 .gt-badge--category { padding: 3px 10px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background-color: var(--gt-surface); color: var(--gt-text-secondary); }
+/* sm (2026-10-23): the marker size — the "New" marker in a release entry's heading row and a 32px menu row */
+.gt-badge--sm { padding: 2px 8px; font-size: 11px; line-height: 1.4; }
+.gt-badge--sm.gt-badge--category { padding: 1px 7px; }
 .gt-badge__icon { display: inline-flex; flex-shrink: 0; }
 .gt-badge--solid.gt-badge--success { background-color: var(--gt-success); color: var(--gt-text-inverse); }
 .gt-badge--solid.gt-badge--warning { background-color: var(--gt-warning-text); color: var(--gt-text-inverse); }
@@ -38,6 +41,12 @@
 .gt-count { background: var(--gt-gray-100); color: var(--gt-text-secondary); font-weight: var(--gt-weight-semibold); }
 .gt-unread { padding: 0 6px; background: var(--gt-error); color: var(--gt-text-inverse); font-weight: var(--gt-weight-bold); }
 .gt-unread--dot { width: 8px; min-width: 8px; height: 8px; padding: 0; }
+
+/* ── NewDot (2026-10-23) — "something new to read" (release notes): blue, never the unread red. Decorative; the host carries
+   the words (a visually hidden "New release notes" its control is described by). `ring` separates it from an avatar or an
+   icon under it; the ring takes the surface behind (--gt-new-dot-ring, default --gt-surface; the landing header re-colours it to its dark from its own class). ── */
+.gt-new-dot { display: inline-block; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--gt-new-dot); vertical-align: middle; }
+.gt-new-dot--ring { box-shadow: 0 0 0 2px var(--gt-new-dot-ring, var(--gt-surface)); }
 
 /* ── Tag chip (skills, picked values) ───────────────────── */
 .gt-tag {

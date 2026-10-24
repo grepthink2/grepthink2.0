@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TEAM_MEETING_DEFAULT_DURATION,
   TEAM_MEETING_DURATIONS,
@@ -25,6 +25,16 @@ import {
 
 const LA = 'America/Los_Angeles';
 const IST = 'Asia/Kolkata';
+const ISTANBUL = 'Europe/Istanbul';
+
+/** Make `zone` the browser's own zone, which the model reads when it is not told one. */
+function viewerIn(zone: string) {
+  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: zone } as Intl.ResolvedDateTimeFormatOptions);
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 /** Tue Oct 20, 2026, 3:12 PM PT: the clock the design's demo is pinned to. */
 const NOW = new Date('2026-10-20T22:12:00Z');
@@ -180,10 +190,6 @@ describe('wall clock and instant', () => {
     expect(zonedToInstant('2026-10-21', '15:00', IST).toISOString()).toBe('2026-10-21T09:30:00.000Z');
   });
 
-  it('defaults to the school zone', () => {
-    expect(zonedToInstant('2026-10-27', '15:00').toISOString()).toBe('2026-10-27T22:00:00.000Z');
-  });
-
   it('turns an instant back into the date and time on that clock, with midnight as 00:00', () => {
     expect(instantToZoned('2026-11-03T23:00:00.000Z', LA)).toEqual({ date: '2026-11-03', time: '15:00' });
     expect(instantToZoned(new Date('2026-10-21T07:00:00Z'), LA)).toEqual({ date: '2026-10-21', time: '00:00' });
@@ -191,7 +197,7 @@ describe('wall clock and instant', () => {
   });
 
   it('round-trips a typed time in any zone', () => {
-    for (const zone of [LA, IST, 'Europe/Istanbul', 'Pacific/Auckland']) {
+    for (const zone of [LA, IST, ISTANBUL, 'Pacific/Auckland']) {
       for (const [date, time] of [['2026-10-21', '15:00'], ['2026-11-03', '00:00'], ['2026-03-09', '23:45']]) {
         expect(instantToZoned(zonedToInstant(date, time, zone), zone)).toEqual({ date, time });
       }
@@ -213,8 +219,11 @@ describe('campusTimeOf', () => {
     expect(campusTimeOf('2026-10-21', '', IST, LA)).toBeNull();
   });
 
-  it('defaults the campus to the school zone', () => {
-    expect(campusTimeOf('2026-10-21', '15:00', LA)).toBe('3:00 PM PT');
+  it('is the campus time of whatever school it is given, Pacific or not', () => {
+    // 3:00 PM on Wed Oct 21 in Santa Cruz is 22:00 UTC: 1:00 AM on Thu Oct 22 in Istanbul (UTC+3).
+    expect(campusTimeOf('2026-10-21', '15:00', LA, ISTANBUL)).toBe('1:00 AM GMT+3 · Thu');
+    // 3:00 PM in Kolkata (UTC+5:30) is 09:30 UTC: 12:30 PM the same day in Istanbul.
+    expect(campusTimeOf('2026-10-21', '15:00', IST, ISTANBUL)).toBe('12:30 PM GMT+3');
   });
 });
 
@@ -234,6 +243,24 @@ describe('fmtMeetingWhen', () => {
 
   it('adds the year when the meeting is not in the current one', () => {
     expect(fmtMeetingWhen(meeting(), LA, new Date('2027-01-05T20:00:00Z')).day).toBe('Tue, Oct 20, 2026');
+  });
+});
+
+describe('without a zone', () => {
+  // The viewer is in Istanbul (UTC+3 all year): 01:00 on Wed Oct 21 there is 22:00 UTC on Tue Oct 20,
+  // which is 3:00 PM in Santa Cruz. The model reads the viewer's clock, never the school's.
+  beforeEach(() => viewerIn(ISTANBUL));
+
+  it('reads and writes the wall clock on the viewer’s zone', () => {
+    expect(zonedToInstant('2026-10-21', '01:00').toISOString()).toBe('2026-10-20T22:00:00.000Z');
+    expect(instantToZoned('2026-10-20T22:00:00Z')).toEqual({ date: '2026-10-21', time: '01:00' });
+  });
+
+  it('shows a meeting, fills the form from it and validates what is typed, all on the viewer’s clock', () => {
+    expect(fmtMeetingWhen(meeting(), undefined, NOW)).toEqual({ day: 'Wed, Oct 21', start: '1:00', end: '2:00 AM', range: '1:00 – 2:00 AM' });
+    expect(draftFrom(meeting())).toMatchObject({ date: '2026-10-21', time: '01:00' });
+    const earlier = { now: new Date('2026-10-20T10:00:00Z') };
+    expect(validateTeamMeeting(draft({ date: '2026-10-21', time: '01:00' }), earlier).value?.startsAt).toBe('2026-10-20T22:00:00.000Z');
   });
 });
 
