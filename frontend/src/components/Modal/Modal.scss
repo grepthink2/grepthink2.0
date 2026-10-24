@@ -1,5 +1,5 @@
 // Modal — ported from design/components/feedback/feedback.css so the two stay diffable: the Modal
-// block, then its lines from the file's phone and reduced-motion blocks. The × is IconButton
+// block (with its dark tone), then its lines from the file's phone and reduced-motion blocks. The × is IconButton
 // (components/IconButton), which brings its own styles. The fades are named after the component
 // and defined once, here.
 
@@ -27,13 +27,32 @@
 .gt-modal__subtitle { margin: 4px 0 0; font-size: 13px; color: var(--gt-text-secondary); }
 .gt-modal__close { position: absolute; top: 12px; right: 12px; }
 .gt-modal__tabs { margin-top: 16px; }
-.gt-modal__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 24px 20px; font-size: var(--gt-text-body); }
+.gt-modal__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 24px 20px; font-size: var(--gt-text-body); } /* contain: reaching the end of a long body never scrolls the page */
 .gt-modal__footer { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: var(--gt-space-sm); padding: 14px 24px; border-top: 1px solid var(--gt-border-subtle); }
 .gt-modal--message .gt-modal__head { padding: 32px 48px 0; text-align: center; }
 .gt-modal--message .gt-modal__title { font-size: 1.75rem; }
 .gt-modal--message .gt-modal__subtitle { font-size: 0.875rem; }
 .gt-modal--message .gt-modal__body { padding: 16px 32px 8px; }
 .gt-modal--message .gt-modal__footer { padding: 16px 32px 28px; border-top: none; }
+
+/* ── Modal · dark (`tone="dark"`, 2026-10-23) — the landing page's What's new; the app stays light. One sheet, one text ramp
+   (tokens/colors.css --gt-dark-*). Covers the scrim, the head, the × and the kit pieces a body holds: .gt-md, Skeleton, the card
+   EmptyState and the info Badge (the "New" marker). Buttons keep their own colours. ── */
+.gt-modal-backdrop--dark { background-color: var(--gt-dark-scrim); }
+.gt-modal--dark { background: var(--gt-dark-surface); color: var(--gt-dark-text); box-shadow: var(--gt-dark-shadow-modal); color-scheme: dark; } /* color-scheme: the body's native scrollbar turns dark too */
+.gt-modal--dark .gt-modal__title { color: var(--gt-dark-text); }
+.gt-modal--dark .gt-modal__subtitle { color: var(--gt-dark-text-muted); }
+.gt-modal--dark .gt-modal__close { color: var(--gt-dark-text-muted); }
+.gt-modal--dark .gt-modal__close:hover:not(:disabled) { background: var(--gt-dark-fill-hover); color: var(--gt-dark-text); }
+.gt-modal--dark .gt-modal__footer { border-top-color: var(--gt-dark-hairline); }
+.gt-modal--dark .gt-md { color: var(--gt-dark-text); }
+.gt-modal--dark .gt-md__code { background: var(--gt-dark-fill); color: var(--gt-dark-text); }
+.gt-modal--dark .gt-md__link { color: var(--gt-dark-link); }
+.gt-modal--dark .gt-skeleton { background-color: var(--gt-dark-fill); background-image: linear-gradient(90deg, var(--gt-dark-fill) 25%, var(--gt-dark-fill-hover) 37%, var(--gt-dark-fill) 63%); }
+.gt-modal--dark .gt-empty .gt-empty__icon { background: var(--gt-dark-fill); color: var(--gt-dark-text-muted); }
+.gt-modal--dark .gt-empty .gt-empty__title { color: var(--gt-dark-text); }
+.gt-modal--dark .gt-empty .gt-empty__desc { color: var(--gt-dark-text-muted); }
+.gt-modal--dark .gt-badge--info { background-color: var(--gt-dark-accent-soft); color: var(--gt-dark-accent-text); }
 
 /* ── Phones + reduced motion ──────────────────────────────── */
 @media (max-width: 767px) {

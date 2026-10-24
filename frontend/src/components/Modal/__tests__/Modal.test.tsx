@@ -227,3 +227,35 @@ describe('Modal', () => {
     expect(closing.getPropertyValue('opacity')).toBe('0');
   });
 });
+
+describe('Modal tone', () => {
+  it('is light by default: neither the sheet nor the scrim carries the dark class', () => {
+    render(<Modal open title="What's new" />);
+    const dialog = screen.getByRole('dialog', { name: "What's new" });
+    expect(dialog).not.toHaveClass('gt-modal--dark');
+    expect(dialog.parentElement).not.toHaveClass('gt-modal-backdrop--dark');
+  });
+
+  it('tone="dark" puts the dark class on the sheet and on the scrim', () => {
+    render(<Modal open title="What's new" tone="dark" />);
+    const dialog = screen.getByRole('dialog', { name: "What's new" });
+    expect(dialog).toHaveClass('gt-modal', 'gt-modal--md', 'gt-modal--dark');
+    expect(dialog.parentElement).toHaveClass('gt-modal-backdrop', 'gt-modal-backdrop--dark');
+  });
+
+  it('draws the dark look from the --gt-dark-* ramp, the kit pieces a body holds included', () => {
+    render(<Modal open title="What's new" tone="dark" />);
+    expect(cssRules('.gt-modal-backdrop--dark')[0].getPropertyValue('background-color')).toBe('var(--gt-dark-scrim)');
+    const [sheet] = cssRules('.gt-modal--dark');
+    expect(sheet.getPropertyValue('background')).toBe('var(--gt-dark-surface)');
+    expect(sheet.getPropertyValue('color')).toBe('var(--gt-dark-text)');
+    expect(cssRules('.gt-modal--dark .gt-modal__subtitle')[0].getPropertyValue('color')).toBe('var(--gt-dark-text-muted)');
+    expect(cssRules('.gt-modal--dark .gt-md__link')[0].getPropertyValue('color')).toBe('var(--gt-dark-link)');
+    expect(cssRules('.gt-modal--dark .gt-badge--info')[0].getPropertyValue('color')).toBe('var(--gt-dark-accent-text)');
+  });
+
+  it('keeps a scroll that reaches the end of the body from moving the page', () => {
+    render(<Modal open title="What's new" />);
+    expect(cssRules('.gt-modal__body')[0].getPropertyValue('overscroll-behavior')).toBe('contain');
+  });
+});

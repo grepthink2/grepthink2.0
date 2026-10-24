@@ -19,6 +19,8 @@
   --gt-green-900: #013525;
 
   /* ---- Accent blue (links, selection, focus, info) ---- */
+  --gt-blue-200: #A3C2FF;
+  --gt-blue-300: #6D9BFF;
   --gt-blue-500: #2771FF;
   --gt-blue-600: #1B57D6;
   --gt-blue-700: #1543A8;
@@ -130,4 +132,20 @@
   --gt-avatar-4: var(--gt-purple);     /* 7.3:1 */
   --gt-avatar-5: var(--gt-green-700);  /* 7.0:1 */
   --gt-avatar-6: var(--gt-blue-700);   /* 8.6:1 */
+
+  /* ---- On-dark surfaces (What's new, 2026-10-23): Modal `tone="dark"` on the landing page. Nothing in the app renders on
+     these — the app stays light. The sheet sits a step above the landing header (#0c1f18) and the closing band (#0f2a20);
+     every text token is ≥ 4.5:1 on it, the link 5.7:1 (blue-500 would be 3.9:1), the focus ring 3.6:1. ---- */
+  --gt-dark-surface:      #14291F;
+  --gt-dark-fill:         rgba(255, 255, 255, 0.08);   /* code chips, skeleton bars, the empty state's disc */
+  --gt-dark-fill-hover:   rgba(255, 255, 255, 0.14);   /* × hover, the skeleton shine */
+  --gt-dark-hairline:     rgba(255, 255, 255, 0.12);   /* rules between entries */
+  --gt-dark-text:         #F4F7F5;                      /* 14.2:1 */
+  --gt-dark-text-muted:   rgba(255, 255, 255, 0.74);   /* subtitle, versions, descriptions, the ×: 9.0:1 */
+  --gt-dark-text-faint:   rgba(255, 255, 255, 0.62);   /* group labels (11px/600 caps): 6.8:1 */
+  --gt-dark-link:         var(--gt-blue-300);          /* links in the Markdown layer */
+  --gt-dark-accent-soft:  rgba(39, 113, 255, 0.24);    /* the "New" marker's fill on the sheet */
+  --gt-dark-accent-text:  var(--gt-blue-200);          /* its text: 6.6:1 on that fill */
+  --gt-dark-scrim:        rgba(5, 14, 10, 0.72);
+  --gt-dark-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
 }
