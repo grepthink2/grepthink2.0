@@ -2,6 +2,7 @@ import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type 
 import { Badge } from '@/components/Badge/Badge';
 import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { useNow } from '@/lib/useNow';
 import { ScheduleDayHeader } from '@features/schedule/components/ScheduleDayHeader';
 import { ScheduleIcon } from '@features/schedule/components/ScheduleIcon';
 import { ScheduleItem } from '@features/schedule/components/ScheduleItem';
@@ -9,7 +10,6 @@ import {
   SCHOOL_ZONE,
   fmtTimeRange,
   groupByDay,
-  useNow,
   viewerZone,
   zoneDiffers,
   zoneLabel,
