@@ -127,6 +127,24 @@ describe('ProjectView', () => {
     expect(screen.getByRole('button', { name: /1\/4 members/ })).toBeInTheDocument();
   });
 
+  it('shows the project logo beside the title, or the initials without one', () => {
+    const { container, unmount } = renderView({
+      project: { ...project, image_url: 'https://example.com/logo.png' },
+    });
+    const identity = container.querySelector('.project-view__identity')!;
+    const logo = identity.querySelector('img')!;
+    expect(logo).toHaveAttribute('src', 'https://example.com/logo.png');
+    // The name sits beside it, so the logo is not read out a second time.
+    expect(logo).toHaveAttribute('alt', '');
+    expect(within(identity as HTMLElement).getByRole('heading', { level: 1, name: 'Alpha' })).toBeInTheDocument();
+    unmount();
+
+    // An empty image_url is no logo.
+    const { container: noLogo } = renderView({ project: { ...project, image_url: '' } });
+    expect(noLogo.querySelector('.project-view__identity img')).toBeNull();
+    expect(noLogo.querySelector('.project-view__identity .gt-avatar')).toHaveTextContent('AL');
+  });
+
   it('hides the spots line without a team size', () => {
     const { unmount } = renderView({ members: [ana] });
     expect(screen.queryByText(/spot/i)).not.toBeInTheDocument();
