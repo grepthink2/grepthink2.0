@@ -181,6 +181,7 @@
 
 /* ── Phones (< 768px) ───────────────────────────────────── */
 @media (max-width: 767px) {
+  .gt-profile-menu__button { min-height: 44px; }
   .gt-tabs__tab, .gt-segmented__option { min-height: 44px; }
   /* the size rules have two classes and would win: repeat the 44px with their selectors */
   .gt-tabs--sm .gt-tabs__tab, .gt-segmented--md .gt-segmented__option, .gt-segmented--sm .gt-segmented__option { min-height: 44px; }
@@ -194,5 +195,18 @@
   .gt-stepper__compact { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gt-tabs__tab, .gt-segmented__option, .gt-filter-chip { transition: none; }
+  .gt-tabs__tab, .gt-segmented__option, .gt-filter-chip, .gt-profile-menu__button { transition: none; }
 }
+
+/* ── ProfileMenu (2026-10-23) — the app header's profile button over the kit's Popover + Menu (Layout/ProfileMenu.tsx).
+   The button is today's (.app-header__profile-button): white, the card shadow, radius 7, a 28px avatar and a chevron. ── */
+.gt-profile-menu { position: relative; display: inline-flex; font-family: var(--gt-font-sans); }
+.gt-profile-menu__button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: none; border-radius: var(--gt-radius-sm); background: var(--gt-surface); box-shadow: var(--gt-shadow-card); color: var(--gt-text-secondary); font-family: var(--gt-font-sans); cursor: pointer; transition: background-color var(--gt-transition-fast); }
+.gt-profile-menu__button:hover { background: var(--gt-canvas); }
+.gt-profile-menu__button:focus-visible { outline: none; box-shadow: var(--gt-focus-ring), var(--gt-shadow-card); }
+.gt-profile-menu__avatar { position: relative; display: inline-flex; flex-shrink: 0; }
+.gt-profile-menu__icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--gt-canvas); color: var(--gt-text-secondary); }
+.gt-profile-menu__dot { position: absolute; top: -1px; right: -1px; }
+.gt-profile-menu__chevron { display: inline-flex; color: var(--gt-text-secondary); }
+.gt-profile-menu .gt-menu { min-width: 228px; }
+.gt-profile-menu .gt-popover { margin-top: 2px; } /* 8px below the button, as the app's dropdown sits */

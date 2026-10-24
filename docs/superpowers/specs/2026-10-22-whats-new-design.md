@@ -215,14 +215,18 @@ The design round draws each of these, in both looks:
 The kit's `Modal` brings it, through `useDialog`:
 
 - `aria-modal`, named by its title and described by its subtitle;
-- focus moves in on open (to the sheet: the modal has no field), stays trapped, and returns to the opener on close;
+- focus stays trapped while it is open, and returns to the opener on close;
 - Esc, the scrim and the × close it;
 - the page behind it does not scroll.
 
-Two things are this feature's:
+Three things are this feature's:
 
 - **Opening marks the version seen** (section 3).
 - **The body scrolls inside the modal,** and reaching its end does not scroll the page.
+- **Focus starts on the feed.** The body is a focusable scroll region named "Release notes" (the kit `Modal`'s
+  `bodyLabel`, a codebase-side addition), and focus moves there on open, not to the sheet: the arrow keys, Page
+  Up/Down and Space scroll only the focused element and its ancestors, and the scroller is the body inside the
+  sheet. Tab moves between the region and the ×. The region shows an inset focus ring.
 
 ### Size
 

@@ -122,7 +122,8 @@ backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_su
 
 frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
-  features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version
+  features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
+                      # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
@@ -132,11 +133,11 @@ frontend/src/
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
   components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
-                      # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
-                      # (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip
-                      # (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs (+TabPanel),
-                      # SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton, ErrorBoundary,
-                      # Popover, Menu, Tooltip, Toast, Markdown; hooks/useRovingFocus)
+                      # Slider, Modal (+useDialog, tone="dark"), Drawer, ConfirmDialog (+InlineConfirm), Alert,
+                      # EmptyState (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, NewDot, Tag,
+                      # FilterChip (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs
+                      # (+TabPanel), SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton,
+                      # ErrorBoundary, Popover, Menu (+MenuGroup), Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -375,10 +376,12 @@ The full agent-facing action catalog (method, params, role) lives at
   tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
   the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
   SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
-  dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
-  InfoPopover, Badge, CountBadge, UnreadBadge, Tag, FilterChip with FilterChipGroup, Avatar with
-  AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
-  SortableHeader and `useTableSort`, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. Tabs switch
+  dialogs (Modal, with a dark tone for the landing page, Drawer, ConfirmDialog with InlineConfirm), Alert,
+  EmptyState with NoClassSelected, InfoPopover, Badge (with a small size), CountBadge, UnreadBadge, NewDot
+  (the blue "something new" dot, never the red unread count), Tag, FilterChip with FilterChipGroup, Avatar
+  with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
+  SortableHeader and `useTableSort`, Popover, Menu (with MenuGroup and a `trailing` slot on MenuItem),
+  Tooltip, Toast, Skeleton and Markdown. Tabs switch
   panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
   a list. A table row that opens something carries a link or button in its first cell (Table's
   `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
@@ -421,7 +424,11 @@ The full agent-facing action catalog (method, params, role) lives at
   `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
   shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
   they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
-  the `index-*.js` line of `npm run build` (about 180 kB minified, 51 kB gzipped).
+  every JS and CSS file `frontend/dist/index.html` loads (its scripts, stylesheets and modulepreload
+  links), not only the `index-*.js` line of `npm run build`: rolldown can split a shared module out of
+  `index-*.js` into a chunk that is still preloaded. Measured 2026-10-23: `index-*.js` 199 kB minified
+  (58 kB gzipped); all the files `index.html` loads, 817 kB of JS (238 kB gzipped, each file on its own)
+  and 132 kB of CSS (23 kB gzipped).
 - **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
   equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
   release adds both in a `release/<version>` pull request into `beta`. After the release merges into

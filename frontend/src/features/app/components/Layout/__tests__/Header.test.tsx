@@ -70,14 +70,11 @@ function renderAt(path: string) {
   );
 }
 
-/** Open the profile menu and return its items' labels, in order. */
+/** Open the profile menu and return its rows' labels, in order. */
 function openProfileMenu(): string[] {
   fireEvent.click(screen.getByRole('button', { name: 'Profile menu' }));
-  const menu = document.querySelector<HTMLElement>('.app-header__profile-dropdown');
-  if (!menu) throw new Error('profile menu did not open');
-  return within(menu)
-    .getAllByRole('button')
-    .map((button) => button.textContent ?? '');
+  const menu = screen.getByRole('menu', { name: 'Profile' });
+  return Array.from(menu.querySelectorAll('[role^="menuitem"] .gt-menu__label')).map((label) => label.textContent ?? '');
 }
 
 beforeEach(() => {
@@ -94,15 +91,19 @@ beforeEach(() => {
 });
 
 describe('Header', () => {
-  it('puts the school row first in the profile menu for an account at two or more schools', () => {
+  it('puts the School group first in the profile menu for an account at two or more schools', () => {
     state.ctx.showSchoolSwitcher = true;
     renderAt('/app/home');
     expect(openProfileMenu()).toEqual([
-      'School: İstinye University',
+      'İstinye University',
+      'UC Santa Cruz',
       'View class as student',
       'Settings',
+      "What's new",
       'Log Out',
     ]);
+    const menu = screen.getByRole('menu', { name: 'Profile' });
+    expect(menu.firstElementChild).toBe(within(menu).getByRole('group', { name: 'School' }));
   });
 
   it('returns focus to the profile button after a school is picked', () => {
@@ -110,10 +111,11 @@ describe('Header', () => {
     renderAt('/app/home');
     const profileButton = screen.getByRole('button', { name: 'Profile menu' });
     fireEvent.click(profileButton);
-    fireEvent.click(screen.getByRole('button', { name: /^School:/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'UC Santa Cruz' }));
+    const school = screen.getByRole('menuitemradio', { name: 'UC Santa Cruz' });
+    school.focus(); // a keyboard user on the row
+    fireEvent.click(school);
     expect(state.ctx.selectSchool).toHaveBeenCalledWith('ucsc');
-    expect(document.querySelector('.app-header__profile-dropdown')).not.toBeInTheDocument();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(profileButton).toHaveFocus();
   });
 
@@ -123,18 +125,18 @@ describe('Header', () => {
       renderAt('/app/dashboard');
       const profileButton = screen.getByRole('button', { name: 'Profile menu' });
       fireEvent.click(profileButton);
-      const option = screen.getByRole('button', { name: item });
+      const option = screen.getByRole('menuitem', { name: item });
       option.focus(); // a keyboard user on the item
       fireEvent.click(option);
-      expect(document.querySelector('.app-header__profile-dropdown')).not.toBeInTheDocument();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
       expect(profileButton).toHaveFocus();
     },
   );
 
   it('offers "View class as student" in a class you own and starts the preview from Home', () => {
     renderAt('/app/dashboard');
-    expect(openProfileMenu()).toEqual(['View class as student', 'Settings', 'Log Out']);
-    fireEvent.click(screen.getByRole('button', { name: 'View class as student' }));
+    expect(openProfileMenu()).toEqual(['View class as student', 'Settings', "What's new", 'Log Out']);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'View class as student' }));
     expect(state.preview.enterPreview).toHaveBeenCalled();
     expect(screen.getByTestId('path').textContent).toBe('/app/home');
   });
@@ -144,7 +146,7 @@ describe('Header', () => {
     state.ctx.selectedClass = assisted;
     state.ctx.currentSchool = UCSC;
     renderAt('/app/home');
-    expect(openProfileMenu()).toEqual(['Settings', 'Log Out']);
+    expect(openProfileMenu()).toEqual(['Settings', "What's new", 'Log Out']);
   });
 
   it('offers "Instructor view" while previewing your class', () => {
@@ -153,7 +155,7 @@ describe('Header', () => {
     state.preview.isPreviewing = true;
     renderAt('/app/my-project');
     openProfileMenu();
-    fireEvent.click(screen.getByRole('button', { name: 'Instructor view' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Instructor view' }));
     expect(state.preview.exitPreview).toHaveBeenCalled();
     expect(screen.getByTestId('path').textContent).toBe('/app/home');
   });

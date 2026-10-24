@@ -192,10 +192,12 @@ const XGlyph = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
  * lg 760. `role="dialog"` + `aria-modal` on the sheet, labelled by its title and described by the
  * subtitle (and by `aria-describedby`, which ConfirmDialog points at its message); `closeDisabled`
  * holds it open while saving. Portaled to <body> at --gt-z-modal; closes with a 0.15s fade.
+ * `tone="dark"` (2026-10-23) is the landing page's look — the What's new modal: the scrim, the sheet, the head, the ×
+ * and the kit pieces a body holds (.gt-md, Skeleton, EmptyState, the info Badge) take the --gt-dark-* ramp. The app stays light.
  */
 export function Modal({
   open = false, onClose, title, subtitle, children, footer, tabs, size = 'md', width, variant = 'form',
-  closeDisabled = false, initialFocusRef, hideClose = false, role = 'dialog', portal = true, className = '',
+  closeDisabled = false, initialFocusRef, hideClose = false, role = 'dialog', portal = true, className = '', tone = 'light',
   'aria-describedby': describedBy,
 }) {
   const sheetRef = React.useRef(null);
@@ -203,10 +205,10 @@ export function Modal({
   const { mounted, closing, onScrimDown } = useDialog({ open, onClose, closeDisabled, initialFocusRef, sheetRef, inPlace: !portal });
   if (!mounted) return null;
   return dialogPortal(
-    <div className={['gt-modal-backdrop', closing ? 'gt-modal-backdrop--closing' : '', portal ? '' : 'gt-modal-backdrop--inline'].filter(Boolean).join(' ')} onMouseDown={onScrimDown}>
+    <div className={['gt-modal-backdrop', closing ? 'gt-modal-backdrop--closing' : '', portal ? '' : 'gt-modal-backdrop--inline', tone === 'dark' ? 'gt-modal-backdrop--dark' : ''].filter(Boolean).join(' ')} onMouseDown={onScrimDown}>
       <div
         ref={sheetRef}
-        className={['gt-modal', `gt-modal--${size}`, `gt-modal--${variant}`, className].filter(Boolean).join(' ')}
+        className={['gt-modal', `gt-modal--${size}`, `gt-modal--${variant}`, tone === 'dark' ? 'gt-modal--dark' : '', className].filter(Boolean).join(' ')}
         role={role}
         aria-modal="true"
         aria-labelledby={title ? `${id}-title` : undefined}
