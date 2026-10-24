@@ -148,4 +148,8 @@
   --gt-dark-accent-text:  var(--gt-blue-200);          /* its text: 6.6:1 on that fill */
   --gt-dark-scrim:        rgba(5, 14, 10, 0.72);
   --gt-dark-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
+
+  /* The "new" dot (NewDot): blue = informational under the status rule, never the unread red. 4.3:1 on white, 4.0:1 on the landing's dark bar. */
+  --gt-new-dot:           var(--gt-info);
+  --gt-new-dot-ring:      var(--gt-surface);  /* @kind color */  /* the ring behind a dot over an avatar or an icon; the landing header re-colours it to its dark from its own class */
 }
