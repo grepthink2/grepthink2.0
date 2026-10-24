@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { api } from '@/lib/api';
 import type { SearchItem } from '../searchModel';
 
@@ -10,9 +10,36 @@ interface CacheEntry {
   fetchedAt: number;
 }
 
-/** Per user, for the life of the tab. The palette ranks this list locally (spec §3). */
+/**
+ * Per user, for the life of the tab. The palette ranks this list locally (spec §3).
+ *
+ * The cache is an external store: every write goes through writeCache or resetSearchIndexCache,
+ * which tell the subscribed hooks, and a render reads it with useSyncExternalStore. A render that
+ * read the Map directly would stay correct only while nothing memoizes it: a memoized render (the
+ * React Compiler's) would keep the entry it first saw for the same userId and show a stale list.
+ */
 const cache = new Map<string, CacheEntry>();
+const listeners = new Set<() => void>();
 const EMPTY: SearchItem[] = [];
+
+function notify(): void {
+  for (const listener of listeners) listener();
+}
+
+function writeCache(userId: string, entry: CacheEntry): void {
+  cache.set(userId, entry);
+  notify();
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** The server renders no list. */
+const getServerSnapshot = (): CacheEntry | undefined => undefined;
 
 export type IndexStatus = 'idle' | 'loading' | 'refetching' | 'ready' | 'error';
 
@@ -23,25 +50,27 @@ export interface SearchIndexState {
   refresh: (force?: boolean) => void;
 }
 
-/** Tests only. */
+/** Tests only. A mounted hook sees the change, as it would a fetched list. */
 export function resetSearchIndexCache(): void {
   cache.clear();
+  notify();
 }
 
-/** Tests only. */
+/** Tests only. A mounted hook sees the change, as it would a fetched list. */
 export function primeSearchIndexCache(userId: string, items: SearchItem[], fetchedAt: number): void {
-  cache.set(userId, { items, fetchedAt });
+  writeCache(userId, { items, fetchedAt });
 }
 
 export function useSearchIndex(userId: string | null): SearchIndexState {
   const [pendingFor, setPendingFor] = useState<string | null>(null); // user with a request in flight
   const [failedFor, setFailedFor] = useState<string | null>(null); // user whose last fetch failed
-  // Renders a new cache entry. An answer that settles in the same batch as refresh()'s own
-  // setPendingFor(userId) cancels that update out, and React would skip the render that reads it.
-  const [, bump] = useState(0);
   const inflight = useRef<AbortController | null>(null);
 
-  const entry = userId ? cache.get(userId) : undefined;
+  // The snapshot is the entry itself, the same object until the cache changes. A write re-renders
+  // the hook even when the answer settles in the same batch as refresh()'s own setPendingFor(userId):
+  // those two pending-state updates cancel out, and React bails out of a render only they asked for.
+  const getSnapshot = () => (userId ? cache.get(userId) : undefined);
+  const entry = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   let status: IndexStatus;
   if (entry) status = pendingFor === userId ? 'refetching' : 'ready';
   else if (pendingFor === userId && userId) status = 'loading';
@@ -61,8 +90,7 @@ export function useSearchIndex(userId: string | null): SearchIndexState {
       api.getSearchIndex(controller.signal).then(
         (res) => {
           if (controller.signal.aborted) return;
-          cache.set(userId, { items: res.items, fetchedAt: Date.now() });
-          bump((v) => v + 1);
+          writeCache(userId, { items: res.items, fetchedAt: Date.now() });
           inflight.current = null;
           setFailedFor(null);
           setPendingFor(null);
