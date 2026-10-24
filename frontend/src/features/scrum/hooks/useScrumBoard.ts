@@ -243,11 +243,18 @@ export function useScrumBoard(
 
   const patchTask = useCallback(async (taskId: string, body: ApiUpdateTaskBody) => {
     const current = boardRef.current;
-    const snapshot = current ? findTask(current.stories, taskId) : null;
+    // A task on a backlog story lives in `backlog`, not the sprint's `stories`.
+    const snapshot = current
+      ? findTask(current.stories, taskId) ?? findTask(current.backlog, taskId)
+      : null;
     if (!snapshot) return null;
 
     const local = (patch: Partial<ApiScrumTask>) =>
-      setBoard((prev) => (prev ? { ...prev, stories: applyTaskPatch(prev.stories, taskId, patch) } : prev));
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: applyTaskPatch(prev.stories, taskId, patch),
+        backlog: applyTaskPatch(prev.backlog, taskId, patch),
+      } : prev));
 
     const seq = nextWrite(taskId);
     local(body as Partial<ApiScrumTask>);
@@ -258,6 +265,7 @@ export function useScrumBoard(
       setBoard((prev) => (prev ? {
         ...prev,
         stories: mapTask(prev.stories, taskId, (t) => mergeTaskResponse(t, task)),
+        backlog: mapTask(prev.backlog, taskId, (t) => mergeTaskResponse(t, task)),
       } : prev));
       return task;
     } catch (err) {
