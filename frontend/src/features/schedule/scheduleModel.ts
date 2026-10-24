@@ -9,6 +9,7 @@
  * so a daylight-saving change never moves a day.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { SCHOOL_ZONE } from '@/lib/schoolZone';
 
 export type ScheduleKind = 'ta_meeting' | 'final_review' | 'meeting' | 'lecture' | 'office_hours' | 'deadline' | 'sprint';
 export type ScheduleStatus = 'upcoming' | 'live' | 'past' | 'cancelled' | 'tbd';
@@ -93,7 +94,6 @@ export interface ScheduleDayGroup {
 /** What the time formatters read from an item. */
 type TimeSpan = Pick<ScheduleItemData, 'startsAt' | 'endsAt' | 'allDay'>;
 
-export const SCHOOL_ZONE = 'America/Los_Angeles';
 /** "Join Zoom" is prominent from 10 minutes before start until the end. */
 export const JOIN_WINDOW_MS = 10 * 60 * 1000;
 /** Final reviews show a countdown once they are less than a week away. */
@@ -135,7 +135,7 @@ const partOf = (parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartT
   parts.find((p) => p.type === type)?.value ?? '';
 
 /* ── Day keys ('YYYY-MM-DD' in a zone): all calendar math happens on keys, so DST never moves a day ── */
-export function dayKey(when: string | Date, zone: string = SCHOOL_ZONE): string {
+export function dayKey(when: string | Date, zone: string = viewerZone()): string {
   const parts = fmt(zone, { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(toDate(when));
   return `${partOf(parts, 'year')}-${partOf(parts, 'month')}-${partOf(parts, 'day')}`;
 }
@@ -150,7 +150,7 @@ export function shiftKey(key: string, days: number): string {
 
 /* ── Status ──────────────────────────────────────────────────── */
 /** upcoming | live | past | cancelled | tbd. `cancelled`/`tbd` come from the data; the rest is derived from the clock. */
-export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: string = SCHOOL_ZONE): ScheduleStatus {
+export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): ScheduleStatus {
   if (item.status === 'cancelled' || item.status === 'tbd') return item.status;
   if (item.kind === 'sprint') return 'upcoming';
   const at = toDate(now);
@@ -172,7 +172,7 @@ export function isJoinable(item: ScheduleItemData, now: Date = new Date()): bool
 }
 
 /** "today" | "tomorrow" | "in 3 days" when the item starts within COUNTDOWN_DAYS; otherwise null. */
-export function countdown(item: ScheduleItemData, now: Date = new Date(), zone: string = SCHOOL_ZONE): string | null {
+export function countdown(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): string | null {
   const today = dayKey(now, zone);
   const day = dayKey(item.startsAt, zone);
   if (day < today) return null;
@@ -186,7 +186,7 @@ export function countdown(item: ScheduleItemData, now: Date = new Date(), zone: 
 const rank = (it: ScheduleItemData): number => (it.kind === 'sprint' ? 0 : it.status === 'tbd' ? 3 : it.allDay ? 1 : 2);
 
 /** Day, then: sprint edges → all-day → timed by start → Time TBD last. */
-export function sortItems(items: ScheduleItemData[], zone: string = SCHOOL_ZONE): ScheduleItemData[] {
+export function sortItems(items: ScheduleItemData[], zone: string = viewerZone()): ScheduleItemData[] {
   return [...items].sort((a, b) => {
     const ka = dayKey(a.startsAt, zone);
     const kb = dayKey(b.startsAt, zone);
@@ -200,7 +200,7 @@ export function sortItems(items: ScheduleItemData[], zone: string = SCHOOL_ZONE)
 }
 
 /** [{ key, isToday, dividers: sprint items, items: everything else }] in day order. */
-export function groupByDay(items: ScheduleItemData[], { zone = SCHOOL_ZONE, now = new Date() }: { zone?: string; now?: Date } = {}): ScheduleDayGroup[] {
+export function groupByDay(items: ScheduleItemData[], { zone = viewerZone(), now = new Date() }: { zone?: string; now?: Date } = {}): ScheduleDayGroup[] {
   const today = dayKey(now, zone);
   const groups = new Map<string, ScheduleDayGroup>();
   for (const it of sortItems(items, zone)) {
@@ -222,12 +222,12 @@ export function groupByDay(items: ScheduleItemData[], { zone = SCHOOL_ZONE, now 
  */
 const plainSpace = (s: string): string => s.replace(/[\u202f\u00a0]/g, ' ');
 
-export function fmtTime(when: string | Date, zone: string = SCHOOL_ZONE): string {
+export function fmtTime(when: string | Date, zone: string = viewerZone()): string {
   return plainSpace(fmt(zone, { hour: 'numeric', minute: '2-digit' }).format(toDate(when)));
 }
 
 /** "3:00 – 3:45 PM" (period shown once when both sides share it). */
-export function fmtTimeRange(item: TimeSpan, zone: string = SCHOOL_ZONE): string {
+export function fmtTimeRange(item: TimeSpan, zone: string = viewerZone()): string {
   const a = fmtTime(item.startsAt, zone);
   if (!item.endsAt) return a;
   const b = fmtTime(item.endsAt, zone);
@@ -256,7 +256,7 @@ export function isoDuration(item: TimeSpan): string | null {
 }
 
 /** { title: 'Today' | 'Tomorrow' | 'Yesterday' | 'Thursday', date: 'Tue, Oct 20' | 'Oct 22' } */
-export function fmtDayLabel(key: string, now: Date = new Date(), zone: string = SCHOOL_ZONE): { title: string; date: string; isToday: boolean } {
+export function fmtDayLabel(key: string, now: Date = new Date(), zone: string = viewerZone()): { title: string; date: string; isToday: boolean } {
   const today = dayKey(now, zone);
   const d = keyToDate(key);
   const rel = key === today ? 'Today' : key === shiftKey(today, 1) ? 'Tomorrow' : key === shiftKey(today, -1) ? 'Yesterday' : null;
@@ -281,7 +281,7 @@ export function zoneDiffers(zoneA: string, zoneB: string, when: string | Date = 
   return offset(zoneA) !== offset(zoneB);
 }
 
-/** The viewer's IANA zone. */
+/** The viewer's IANA zone: the browser's, else `SCHOOL_ZONE` when the browser cannot say. */
 export function viewerZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || SCHOOL_ZONE;

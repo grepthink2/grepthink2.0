@@ -15,6 +15,7 @@ import type { TeamMeeting } from '../teamMeetingsModel';
 
 const LA = 'America/Los_Angeles';
 const IST = 'Asia/Kolkata';
+const ISTANBUL = 'Europe/Istanbul';
 
 /** Tue Oct 20, 2026, 3:12 PM PT: the clock the design's demo is pinned to. */
 const NOW = new Date('2026-10-20T22:12:00Z');
@@ -531,6 +532,32 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
     expect(screen.getByText('2:30 AM PT on campus')).toBeInTheDocument();
     expect(timeInput()).toHaveAccessibleDescription('2:30 AM PT on campus');
+  });
+});
+
+describe('TeamMeetingsList — a school outside Pacific', () => {
+  // The viewer is in Santa Cruz and the campus is İstinye's, in Istanbul (UTC+3): the Thu Oct 22 meeting at
+  // 3:00 PM PT is 22:00 UTC, which is 1:00 AM on Fri Oct 23 there.
+  it('gives the campus time and zone of its school, in the Meetings tab and its form', async () => {
+    const user = userEvent.setup();
+    renderManage({ schoolZone: ISTANBUL, meetings: [meeting()] });
+
+    expect(screen.getByText('Times in PT · campus is GMT+3')).toBeInTheDocument();
+    const row = screen.getByText('Sprint 3 planning').closest('li')!;
+    expect(row.querySelector('.gt-tm-row__when')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
+
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
+    fireEvent.change(timeInput(), { target: { value: '15:00' } });
+    expect(timeInput()).toHaveAccessibleDescription('1:00 AM GMT+3 · Fri on campus');
+  });
+
+  it('gives it in the project-page card too', () => {
+    const { container } = render(
+      <TeamMeetingsList variant="card" now={NOW} zone={LA} schoolZone={ISTANBUL} meetings={[meeting()]} />,
+    );
+    expect(container.querySelector('.gt-sched__footer')).toHaveTextContent('Times in PT · campus is GMT+3');
+    expect(container.querySelector('.gt-sched-item__start')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
   });
 });
 

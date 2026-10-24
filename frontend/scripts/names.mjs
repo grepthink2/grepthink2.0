@@ -329,6 +329,16 @@ export const NAMES_ALLOWLIST = [
     keeps: 'KINDS',
     reason: 'scheduleModel.ts keeps the kind palette private as KINDS and hands it out through kindMeta().',
   },
+  {
+    design: 'SCHOOL_ZONE',
+    status: 'same name',
+    keeps: 'SCHOOL_ZONE',
+    reason:
+      'It lives in src/lib/schoolZone.ts: it is the last resort of useSchoolTimezone (lib/institutions.ts) as ' +
+      'well as of viewerZone() in scheduleModel.ts, and the lib layer does not import from a feature. The design ' +
+      "uses it as the default zone of every formatter; here they default to the viewer's zone, and each caller " +
+      "is handed its class's school zone.",
+  },
 
   // ── scrum ─────────────────────────────────────────────────────────────────────────────────────
   {

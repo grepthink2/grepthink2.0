@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { hashColor } from '@/components/Avatar/avatarHelpers';
 import { cssRules } from '@/test/cssRules';
@@ -10,6 +10,16 @@ import type { ScheduleItemData } from '../scheduleModel';
 
 const LA = 'America/Los_Angeles';
 const IST = 'Asia/Kolkata';
+const ISTANBUL = 'Europe/Istanbul';
+
+/** Make `zone` the browser's own zone, which a component reads when it is not told one. */
+function viewerIn(zone: string) {
+  vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: zone } as Intl.ResolvedDateTimeFormatOptions);
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 /** Tue Oct 20, 2026, 2:30 PM PT: half an hour before the 3:00 PM meeting. */
 const NOW = new Date('2026-10-20T21:30:00Z');
@@ -152,6 +162,18 @@ describe('ScheduleItem (compact row)', () => {
     renderRow(<ScheduleItem item={meeting()} now={NOW} zone={IST} schoolZone={LA} showSchoolTime />);
     const start = screen.getByText('3:30 AM');
     expect(start).toHaveAttribute('title', '3:00 – 4:00 PM PT');
+  });
+
+  it('keeps the campus time of a school outside Pacific in the title', () => {
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} schoolZone={ISTANBUL} showSchoolTime />);
+    // 3:00 – 4:00 PM in Santa Cruz is 22:00 – 23:00 UTC: 1:00 – 2:00 AM on Wed Oct 21 in Istanbul.
+    expect(screen.getByText('3:00 PM')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
+  });
+
+  it('reads times on the viewer’s clock when it is not given a zone', () => {
+    viewerIn(ISTANBUL);
+    renderRow(<ScheduleItem item={meeting()} now={NOW} />);
+    expect(screen.getByText('1:00 AM')).toHaveAttribute('datetime', '2026-10-20T22:00:00Z');
   });
 
   it('leaves the campus time out of the title unless asked', () => {
@@ -368,6 +390,13 @@ describe('ScheduleDayHeader', () => {
     expect(screen.getByRole('heading', { name: 'Thursday' })).toBeInTheDocument();
     expect(screen.getByText('Oct 22')).toBeInTheDocument();
     expect(container.firstChild).not.toHaveClass('gt-sched-day--today');
+  });
+
+  it('counts today on the viewer’s clock when it is not given a zone', () => {
+    viewerIn(ISTANBUL);
+    // NOW is 2:30 PM on the 20th in Santa Cruz and already 00:30 on the 21st in Istanbul.
+    render(<ScheduleDayHeader dayKey="2026-10-21" now={NOW} />);
+    expect(screen.getByRole('heading', { level: 3, name: 'Today' })).toBeInTheDocument();
   });
 
   it('can be forced to the today treatment', () => {
