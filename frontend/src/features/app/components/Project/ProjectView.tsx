@@ -21,6 +21,8 @@ import MarkdownText from '@/components/Markdown/MarkdownText';
 import { Menu, MenuItem } from '@/components/Menu/Menu';
 import { Popover } from '@/components/Popover/Popover';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { Avatar } from '@/components/Avatar/Avatar';
+import { AVATAR_PX } from '@/components/Avatar/avatarHelpers';
 import ProjectMembersPopover from './ProjectMembersPopover';
 import SprintProgressCard from './SprintProgressCard';
 import type { ProjectMember } from './projectMembers';
@@ -50,14 +52,19 @@ export const ProjectViewSkeleton: React.FC = () => (
     <div className="project-view__card project-view__header">
       <div className="project-view__header-content">
         <div className="project-view__header-left">
-          <div className="project-view__title">
-            <Skeleton width={260} height={28} />
-          </div>
-          <div className="project-view__class-name">
-            <Skeleton width={120} height={14} />
-          </div>
-          <div className="project-view__stats">
-            <Skeleton width={110} height={20} />
+          <div className="project-view__identity">
+            <Skeleton width={AVATAR_PX.xl} height={AVATAR_PX.xl} radius="var(--gt-radius-sm)" />
+            <div className="project-view__identity-text">
+              <div className="project-view__title">
+                <Skeleton width={260} height={28} />
+              </div>
+              <div className="project-view__class-name">
+                <Skeleton width={120} height={14} />
+              </div>
+              <div className="project-view__stats">
+                <Skeleton width={110} height={20} />
+              </div>
+            </div>
           </div>
           <div className="project-view__divider" />
           <div className="project-view__skills-list">
@@ -364,17 +371,23 @@ const ProjectView: React.FC<ProjectViewProps> = ({
       <header className="project-view__card project-view__header">
         <div className="project-view__header-content">
           <div className="project-view__header-left">
-            <h1 className="project-view__title">{displayTitle}</h1>
-            {className && <p className="project-view__class-name">{className}</p>}
-            <div className="project-view__stats">
-              <ProjectMembersPopover
-                members={members}
-                tas={tas}
-                teamSize={hasValidTeamSize ? totalMembers : null}
-                copyEmails={copyEmails}
-                currentUserId={user?.id}
-              />
-              {spotsAvailable !== null && <span className="project-view__stat">{spotsText(spotsAvailable)}</span>}
+            {/* The project's logo, or its initials when it has none (or the image fails to load). */}
+            <div className="project-view__identity">
+              <Avatar name={displayTitle} src={project?.image_url || undefined} size="xl" square decorative />
+              <div className="project-view__identity-text">
+                <h1 className="project-view__title">{displayTitle}</h1>
+                {className && <p className="project-view__class-name">{className}</p>}
+                <div className="project-view__stats">
+                  <ProjectMembersPopover
+                    members={members}
+                    tas={tas}
+                    teamSize={hasValidTeamSize ? totalMembers : null}
+                    copyEmails={copyEmails}
+                    currentUserId={user?.id}
+                  />
+                  {spotsAvailable !== null && <span className="project-view__stat">{spotsText(spotsAvailable)}</span>}
+                </div>
+              </div>
             </div>
             {skills.length > 0 && (
               <>
