@@ -22,8 +22,55 @@ permissions:
   id-token: write # Codecov authenticates the upload with the job's OIDC token; no secret needed
 
 jobs:
+  changes:
+    # Decides which suites a change needs, so a frontend-only pull request into beta does not
+    # run pytest and vice versa. Anything into or on main runs both: releases stay fully gated.
+    # A skipped job counts as passing for a required check.
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.diff.outputs.frontend }}
+      backend: ${{ steps.diff.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ github.base_ref || github.ref_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          both() { echo "frontend=true" >> "$GITHUB_OUTPUT"; echo "backend=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          [ "$TARGET" = main ] && both
+          if [ "$EVENT" = pull_request ]; then
+            range="origin/${TARGET}...HEAD"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] \
+               && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..$SHA"
+          else
+            both
+          fi
+          # Markdown never changes what a suite tests.
+          files=$(git diff --name-only "$range" | grep -v '\.md$' || true)
+          printf 'Changed files:\n%s\n' "$files"
+          if printf '%s\n' "$files" | grep -qE '^\.github/workflows/test\.yml$'; then both; fi
+          fe=false; be=false
+          printf '%s\n' "$files" | grep -qE '^(frontend/|design/_ds_manifest\.json$|\.nvmrc$)' && fe=true
+          printf '%s\n' "$files" | grep -qE '^(backend/|supabase/|frontend/public/\.well-known/|frontend/src/lib/api/)' && be=true
+          # The backend job's API drift check reads every request in frontend/src, so a frontend
+          # change that adds, removes or edits an API call needs it too.
+          if [ "$be" = false ] && [ -n "$(git diff --name-only -G 'apiRequest|apiUpload|/api/' "$range" -- frontend/src)" ]; then
+            be=true
+          fi
+          echo "frontend=$fe" >> "$GITHUB_OUTPUT"; echo "backend=$be" >> "$GITHUB_OUTPUT"
+          echo "frontend=$fe backend=$be"
+
   frontend:
     name: Frontend (Vitest)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -70,6 +117,8 @@ jobs:
 
   backend:
     name: Backend (pytest)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
