@@ -229,6 +229,10 @@
     h2 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--gt-text-primary); }
     p { margin: 0; font-size: 12.5px; color: var(--gt-text-tertiary); }
   }
+
+  &__empty-action {
+    margin-top: 14px;
+  }
 }
 
 // Emitted once here rather than per component sheet: the scrum feature is the
