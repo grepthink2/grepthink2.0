@@ -1,4 +1,5 @@
 import type { ElementType, ReactNode } from 'react';
+import { useNow } from '@/lib/useNow';
 import { fmtDayLabel, viewerZone } from '../scheduleModel';
 import '../schedule.scss';
 
@@ -29,9 +30,8 @@ export interface ScheduleDayHeaderProps {
 export function ScheduleDayHeader({
   dayKey, now, zone = viewerZone(), title, date, isToday, aside, id, as: Tag = 'h3', className = '',
 }: ScheduleDayHeaderProps) {
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const derived = dayKey ? fmtDayLabel(dayKey, now ?? new Date(), zone) : null;
+  const nowD = useNow(30000, now);
+  const derived = dayKey ? fmtDayLabel(dayKey, nowD, zone) : null;
   const heading: ReactNode = title !== undefined ? title : derived?.title;
   const when: ReactNode = date !== undefined ? date : derived?.date;
   const today = isToday !== undefined ? isToday : (derived?.isToday ?? false);

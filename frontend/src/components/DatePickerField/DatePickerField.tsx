@@ -10,6 +10,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/Button/Button';
 import { FieldShell } from '@/components/FieldShell/FieldShell';
 import { Input } from '@/components/Input/Input';
+import { useNow } from '@/lib/useNow';
 import { onCalendarEscape } from './calendarEscape';
 import { DATE_ONLY_FORMAT, formatClock, parseDateValue } from './dateFormats';
 import './DatePickerField.scss';
@@ -74,9 +75,8 @@ export function DatePickerField({
   optional = false, error, helperText, placeholder, className = '', ref,
 }: DatePickerFieldProps) {
   const parsed = parseDateValue(value);
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const today = startOfDay(new Date());
+  const now = useNow(60000);
+  const today = startOfDay(now);
   const [open, setOpen] = useState(false);
   const [focusDay, setFocusDay] = useState<Date>(() => parsed?.date ?? today);
   const [pendingTime, setPendingTime] = useState(DEFAULT_TIME);

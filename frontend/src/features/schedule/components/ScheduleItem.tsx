@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Avatar } from '@/components/Avatar/Avatar';
 import { Badge } from '@/components/Badge/Badge';
 import type { BadgeStatus } from '@/components/Badge/badgeStatus';
+import { useNow } from '@/lib/useNow';
 import {
   countdown,
   fmtDuration,
@@ -32,7 +33,7 @@ export interface ScheduleItemProps {
   item: ScheduleItemData;
   /** Only changes which actions render (Mark attendance / Set time for staff). @default 'student' */
   lens?: ScheduleLens;
-  /** Clock used for status + the Join window; defaults to new Date(). */
+  /** Clock used for status + the Join window; defaults to one that ticks every 30 s (useNow). */
   now?: Date;
   /** Viewer's IANA zone (times render in it). @default the browser's zone */
   zone?: string;
@@ -62,9 +63,7 @@ export function ScheduleItem({
   item, lens = 'student', now, zone = viewerZone(), schoolZone, showSchoolTime = false,
   overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const nowD = now ?? new Date();
+  const nowD = useNow(30000, now);
   const meta = kindMeta(item.kind);
   const status = statusOf(item, nowD, zone);
   const joinable = isJoinable(item, nowD);

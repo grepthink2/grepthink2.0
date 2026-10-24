@@ -4,6 +4,7 @@ import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
 import { pickerTextToIso } from '@/lib/dateUtils';
+import { useNow } from '@/lib/useNow';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
 
@@ -87,9 +88,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   // A published assignment's deadline is fixed once it passes (the backend refuses a moved due date
   // or an unpublish), so a late-submission window takes the due date's place. A draft can always be
   // rescheduled, so it is never frozen.
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const now = new Date();
+  const now = useNow(30000);
   const deadlinePassed =
     assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= now;
 

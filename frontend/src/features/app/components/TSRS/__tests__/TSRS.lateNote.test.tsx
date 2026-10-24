@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiAssignmentTsrEntry } from '@/lib/api';
@@ -149,5 +149,19 @@ describe('TSRS submission window', () => {
     expect(await screen.findByText('Submitted after the deadline')).toBeInTheDocument();
     expect(screen.queryByText(/^This assignment (is closed|opens)/)).not.toBeInTheDocument();
     expect(await submitButton()).toBeEnabled();
+  });
+
+  it('turns to closed when the deadline passes while the form is open', async () => {
+    // The form's clock ticks on an interval: fake that too, so the test can step past due_at.
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date('2026-10-03T20:59:45Z')); // 15 s before due_at
+    renderForm(ASSIGNMENT, onTime);
+    await screen.findByText(/You are editing your previous submission/);
+    expect(screen.queryByText('This assignment is closed')).not.toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(30_000); // the next tick lands after due_at
+    });
+    expect(screen.getByText('This assignment is closed')).toBeInTheDocument();
+    expect(await submitButton()).toBeDisabled();
   });
 });

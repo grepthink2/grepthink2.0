@@ -1,14 +1,13 @@
 /**
  * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping and the
- * formatters, plus the ticking clock. Port of design/components/schedule/ScheduleModel.jsx (the
- * handoff in design/design_handoff_schedule/), the subset the compact row and the team-meetings
- * card use. Left for the schedule endpoint: the week helpers (weekKeys, fmtWeekLabel),
- * findOverlaps, nowIndex, nextUp, todayOrPeek and the ScheduleModel bundle object.
+ * formatters. Port of design/components/schedule/ScheduleModel.jsx (the handoff in
+ * design/design_handoff_schedule/), the subset the compact row and the team-meetings card use. Left
+ * for the schedule endpoint: the week helpers (weekKeys, fmtWeekLabel), findOverlaps, nowIndex,
+ * nextUp, todayOrPeek and the ScheduleModel bundle object.
  *
  * Times render in the viewer's zone; every calendar-day computation happens on 'YYYY-MM-DD' keys,
  * so a daylight-saving change never moves a day.
  */
-import { useEffect, useMemo, useState } from 'react';
 import { SCHOOL_ZONE } from '@/lib/schoolZone';
 
 export type ScheduleKind = 'ta_meeting' | 'final_review' | 'meeting' | 'lecture' | 'office_hours' | 'deadline' | 'sprint';
@@ -288,22 +287,4 @@ export function viewerZone(): string {
   } catch {
     return SCHOOL_ZONE;
   }
-}
-
-/**
- * Ticking clock (30 s by default) so Live / Join / the Now line move without a reload. Pass `fixed`
- * to pin it (the design's demo clock, a test); nothing ticks then, and unpinning shows the last tick
- * until the next one. The same Date comes back until the clock moves, so it is safe in a dependency
- * list.
- */
-export function useNow(ms = 30000, fixed?: Date): Date {
-  const fixedMs = fixed ? toDate(fixed).getTime() : null;
-  const [tick, setTick] = useState(() => Date.now());
-  useEffect(() => {
-    if (fixedMs != null) return undefined;
-    const timer = setInterval(() => setTick(Date.now()), ms);
-    return () => clearInterval(timer);
-  }, [ms, fixedMs]);
-  const nowMs = fixedMs ?? tick;
-  return useMemo(() => new Date(nowMs), [nowMs]);
 }

@@ -404,7 +404,8 @@ The full agent-facing action catalog (method, params, role) lives at
   the output prints the classic hooks rules as `react-hooks(...)`). The React rules are native ports
   of `eslint-plugin-react-hooks`, the React Compiler rules included; they run on every TypeScript
   file, tests too, and find more than the ESLint plugin did (a clock read during render, a ref
-  written during render). A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
+  written during render). A component reads the clock through `lib/useNow.ts`, never with
+  `new Date()` in render. A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
   hides one finding; a reason that wraps needs a block comment, because the directive covers the
   line after the comment ends. Never suppress `react/exhaustive-deps` or `react/rules-of-hooks`
   inside a component: in oxlint 1.89 such a directive also hides every React Compiler finding in
