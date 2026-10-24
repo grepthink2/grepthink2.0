@@ -6,6 +6,9 @@ import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import { SortableHeader } from '@/components/Table/SortableHeader';
 import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
+import { Pagination } from '@/components/Pagination/Pagination';
+import { PAGE_SIZE_OPTIONS, usePagination } from '@/components/Pagination/usePagination';
+import { Select } from '@/components/Select/Select';
 import './RosterList.scss';
 
 interface RosterListProps {
@@ -20,7 +23,14 @@ interface RosterListProps {
   onDeleteManual?: (student: UiStudent) => void;
   /** Which part of the roster this lists. The TA list has no Course Status column. */
   group?: 'students' | 'tas';
+  /**
+   * The student list pages; the TA list always shows in full. A change of this key (the search or
+   * the filter) goes back to page 1, as a change of sort does.
+   */
+  pageResetKey?: string;
 }
+
+const PAGE_SIZE_SELECT_OPTIONS = PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }));
 
 /** Manually added rows can be right-clicked to delete them entirely from the roster. */
 function isManualDeletable(student: UiStudent): boolean {
@@ -69,6 +79,7 @@ const RosterList: React.FC<RosterListProps> = ({
   onAddStudent,
   onDeleteManual,
   group = 'students',
+  pageResetKey = '',
 }) => {
   const isTaList = group === 'tas';
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
@@ -76,6 +87,10 @@ const RosterList: React.FC<RosterListProps> = ({
     SORT_ACCESSORS,
     { key: 'name', direction: 'asc' },
   );
+  const paging = usePagination(sortedStudents, {
+    resetKey: `${pageResetKey}|${sort.key}|${sort.direction}`,
+  });
+  const visibleStudents = isTaList ? sortedStudents : paging.pageRows;
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; student: UiStudent } | null>(null);
 
@@ -185,7 +200,7 @@ const RosterList: React.FC<RosterListProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {sortedStudents.map((student) => (
+                {visibleStudents.map((student) => (
                   <tr
                     key={`${student.id}-${student.email}`}
                     onContextMenu={(e) => handleContextMenu(e, student)}
@@ -258,7 +273,7 @@ const RosterList: React.FC<RosterListProps> = ({
         {students.length === 0 ? (
           <div className="roster-list__empty-state">No students match the current filter.</div>
         ) : (
-          sortedStudents.map((student) => (
+          visibleStudents.map((student) => (
             <div
               key={`mobile-${student.id}-${student.email}`}
               className="roster-list__mobile-card"
@@ -316,6 +331,32 @@ const RosterList: React.FC<RosterListProps> = ({
           ))
         )}
       </div>
+
+      {!isTaList && paging.total > 0 && (
+        <div className="roster-list__pager">
+          <p className="roster-list__pager-range" aria-live="polite">
+            Showing {paging.from}–{paging.to} of {paging.total}
+          </p>
+          <div className="roster-list__pager-size">
+            <span className="roster-list__pager-size-label" aria-hidden="true">Rows per page</span>
+            <Select
+              label="Rows per page"
+              hideLabel
+              compact
+              value={String(paging.pageSize)}
+              options={PAGE_SIZE_SELECT_OPTIONS}
+              onChange={(e) => paging.setPageSize(Number(e.target.value))}
+            />
+          </div>
+          <Pagination
+            className="roster-list__pager-pages"
+            ariaLabel="Student pages"
+            page={paging.page}
+            pageCount={paging.pageCount}
+            onChange={paging.setPage}
+          />
+        </div>
+      )}
 
       {contextMenu && (
         <div

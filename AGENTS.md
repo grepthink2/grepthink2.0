@@ -136,7 +136,7 @@ frontend/src/
                       # Slider, Modal (+useDialog, tone="dark"), Drawer, ConfirmDialog (+InlineConfirm), Alert,
                       # EmptyState (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, NewDot, Tag,
                       # FilterChip (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs
-                      # (+TabPanel), SegmentedControl, Table (+SortableHeader, useTableSort), Skeleton,
+                      # (+TabPanel), SegmentedControl, Pagination (+usePagination), Table (+SortableHeader, useTableSort), Skeleton,
                       # ErrorBoundary, Popover, Menu (+MenuGroup), Tooltip, Toast, Markdown; hooks/useRovingFocus)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
@@ -379,7 +379,8 @@ The full agent-facing action catalog (method, params, role) lives at
   dialogs (Modal, with a dark tone for the landing page, Drawer, ConfirmDialog with InlineConfirm), Alert,
   EmptyState with NoClassSelected, InfoPopover, Badge (with a small size), CountBadge, UnreadBadge, NewDot
   (the blue "something new" dot, never the red unread count), Tag, FilterChip with FilterChipGroup, Avatar
-  with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl, Table with
+  with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl,
+  Pagination with `usePagination`, Table with
   SortableHeader and `useTableSort`, Popover, Menu (with MenuGroup and a `trailing` slot on MenuItem),
   Tooltip, Toast, Skeleton and Markdown. Tabs switch
   panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows

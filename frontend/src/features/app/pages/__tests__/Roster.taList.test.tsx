@@ -96,17 +96,20 @@ describe('Roster — the TA list', () => {
     expect(tasTable()).not.toBeInTheDocument();
   });
 
-  it('narrows the TA list with the search, and leaves it out when no TA matches', async () => {
+  it('searches the students only: the TA list always shows in full', async () => {
     const user = await openRoster();
-    const search = screen.getByPlaceholderText('Search by name or email...');
+    const search = screen.getByRole('textbox', { name: 'Search students by name or email' });
+    expect(search).toHaveAttribute('placeholder', 'Search students…');
 
-    await user.type(search, 'singh');
+    await user.type(search, 'ada');
+    expect(within(studentsTable()).getByText('Ada Lovelace')).toBeInTheDocument();
+    expect(within(studentsTable()).queryByText('Ben Okafor')).not.toBeInTheDocument();
     expect(within(tasTable()!).getByText('Tara Singh')).toBeInTheDocument();
 
     await user.clear(search);
-    await user.type(search, 'ada');
-    expect(within(studentsTable()).getByText('Ada Lovelace')).toBeInTheDocument();
-    expect(tasTable()).not.toBeInTheDocument();
+    await user.type(search, 'singh');
+    expect(screen.queryByRole('table', { name: 'Students' })).not.toBeInTheDocument();
+    expect(within(tasTable()!).getByText('Tara Singh')).toBeInTheDocument();
   });
 
   it('lists TAs apart in the read-only roster too', async () => {

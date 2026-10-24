@@ -106,11 +106,6 @@ export const NAMES_ALLOWLIST = [
       'their own pickers, file inputs and Markdown editors, and the TSR flow its TsrsStepper.',
   },
   {
-    design: 'Pagination',
-    status: 'design-only',
-    reason: 'No screen pages through numbered pages; search has its own pager, SearchPagination.',
-  },
-  {
     design: 'Markdown',
     status: 'design-only',
     reason:

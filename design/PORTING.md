@@ -68,7 +68,7 @@ When a feature needs something the kit lacks, the kit grows it first (a design r
 | Toast, Popover, Menu | already ported — `components/Toast/`, `components/Popover/`, `components/Menu/` |
 | Tabs (+TabPanel), SegmentedControl | `components/Tabs/`, `components/SegmentedControl/` |
 | FilterChip (+FilterChipGroup), Stepper | `components/FilterChip/`, `components/Stepper/` |
-| Pagination | **not ported** — no screen uses numbered pages (search has its own pager) |
+| Pagination | `components/Pagination/` (+ `usePagination.ts`, the client-side slice and page-size state); the Roster's student list pages with it, and search keeps its own pager |
 | SidebarNavItem (+SidebarSectionTitle) | **the app's sidebar** (layout code), its one consumer; its badge renders UnreadBadge |
 
 Feature layers keep their folders and feature SCSS, as before:
