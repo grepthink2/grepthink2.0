@@ -34,6 +34,7 @@
   --gt-z-base:     1;    /* @kind other */
   --gt-z-dropdown: 10;   /* @kind other */
   --gt-z-modal:    100;  /* @kind other */
+  --gt-z-sidebar:  99;   /* @kind other */ /* app sidebar + header, and the landing header; modals sit above */
   --gt-z-tooltip:  1000; /* @kind other */
   --gt-z-picker:   1100; /* @kind other */ /* DatePickerField calendar, portaled above modals */
   --gt-z-palette:  2100; /* @kind other */ /* above every app layer, including the legacy 2000 modals and the 1100 preview banner */

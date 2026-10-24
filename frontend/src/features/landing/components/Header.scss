@@ -10,7 +10,9 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 .landing-header {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: $z-index-tooltip;
+  // The chrome layer: above the page, below the What's new modal (--gt-z-modal, 100). At
+  // $z-index-tooltip (1000) the header sat on top of the modal.
+  z-index: var(--gt-z-sidebar);
   padding: 0;
   // Full-bleed dark bar lives here at the top, then cross-fades to transparent
   // as the inner morphs into a floating pill.
@@ -81,6 +83,52 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
       // dead outline removed (global !important ring); radius rounds the ring
       border-radius: 4px;
     }
+  }
+
+  // The "What's new" tab (WhatsNewTab.tsx): a button in the link's clothes, with the dot on the icon's
+  // corner while unseen. The visible tab keeps the links' height; ::after is a centred 44×44 hit area
+  // that may reach past its edge.
+  &__tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    line-height: 1.5;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  &__tab-icon {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .gt-new-dot {
+      position: absolute;
+      top: -3px;
+      right: -4px;
+    }
+
+    // The ring takes the bar's dark (the pill is 82% of the same dark).
+    .gt-new-dot--ring {
+      box-shadow: 0 0 0 2px $header-dark;
+    }
+  }
+
+  &__tab-text {
+    white-space: nowrap;
   }
 
   &__btn {
@@ -216,12 +264,70 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
       padding-right: 13px;
     }
   }
+
+  // The tab's label does not fit beside the three essentials at 11px: the icon stands alone, and the
+  // name stays "What's new" (aria-label).
+  .landing-header__tab {
+    padding: 6px 5px;
+  }
+
+  .landing-header__tab-text {
+    display: none;
+  }
+
+  // The pill: thinner margins, so the four items and the logo fit inside it at 375px.
+  .landing-header--scrolled {
+    padding: 10px 8px;
+  }
+
+  .landing-header--scrolled .landing-header__inner {
+    padding: 6px 10px;
+  }
 }
 
-// Phones scroll into the bands anyway; the nav keeps its three essentials.
+// Phones scroll into the bands anyway; the nav keeps its three essentials, and the "What's new" tab
+// becomes its first item.
 @media (max-width: 560px) {
   .landing-header__link--features {
     display: none;
+  }
+}
+
+// 320px with no horizontal scroll, in the bar and in the pill: a smaller logo, tighter gaps and
+// buttons; nothing hides.
+@media (max-width: 360px) {
+  .landing-header__inner {
+    padding: 12px 10px;
+  }
+
+  .landing-header__logo img,
+  .landing-header--scrolled .landing-header__logo img {
+    height: 22px;
+  }
+
+  .landing-header__nav {
+    gap: 1px;
+  }
+
+  .landing-header__link {
+    padding: 6px 5px;
+  }
+
+  .landing-header__btn {
+    padding: 7px 5px;
+
+    &--primary {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+  }
+
+  .landing-header--scrolled {
+    padding: 10px 6px;
+  }
+
+  .landing-header--scrolled .landing-header__inner {
+    padding: 6px 8px;
   }
 }
 
