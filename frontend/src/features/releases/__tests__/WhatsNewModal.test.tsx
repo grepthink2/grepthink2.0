@@ -61,7 +61,10 @@ describe('WhatsNewModal', () => {
     const dialog = screen.getByRole('dialog', { name: "What's new" });
     const busy = dialog.querySelector('[aria-busy="true"]');
     expect(busy).toHaveClass('gt-release-feed', 'gt-release-feed--loading');
-    expect(within(dialog).getByRole('status')).toHaveTextContent('Loading release notes');
+    const status = within(dialog).getByRole('status');
+    expect(status).toHaveTextContent('Loading release notes');
+    // Outside the busy region, which assistive tech may hold back until it settles.
+    expect(busy?.contains(status)).toBe(false);
 
     await act(async () => feed.resolve({ default: FakeFeed }));
     expect(await screen.findByText('Feed since 0.90.0, light')).toBeInTheDocument();

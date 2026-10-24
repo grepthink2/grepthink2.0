@@ -15,24 +15,28 @@ const feedClass = (state: string, tone: StateProps['tone']) =>
 /**
  * The feed's loading state, ported from design/components/releases/ReleaseFeed.jsx: two ghost entries of
  * Skeleton rows while the feed's chunk loads (usually a blink). It ships with WhatsNewModal, not the chunk.
+ * The "Loading release notes" status sits outside the `aria-busy` region, which assistive tech may hold
+ * back until it settles.
  */
 export function ReleaseFeedLoading({ tone }: StateProps) {
   return (
-    <div className={feedClass('loading', tone)} aria-busy="true">
+    <>
       <span className="gt-visually-hidden" role="status">Loading release notes</span>
-      {[0, 1].map((i) => (
-        <div key={i} className="gt-release-feed__ghost">
-          <div className="gt-release-feed__ghost-head">
-            <Skeleton width={148} height={14} />
-            <Skeleton width={46} height={11} />
+      <div className={feedClass('loading', tone)} aria-busy="true">
+        {[0, 1].map((i) => (
+          <div key={i} className="gt-release-feed__ghost">
+            <div className="gt-release-feed__ghost-head">
+              <Skeleton width={148} height={14} />
+              <Skeleton width={46} height={11} />
+            </div>
+            <Skeleton width={56} height={9} />
+            <Skeleton width="92%" height={11} />
+            <Skeleton width="78%" height={11} />
+            <Skeleton width="64%" height={11} />
           </div>
-          <Skeleton width={56} height={9} />
-          <Skeleton width="92%" height={11} />
-          <Skeleton width="78%" height={11} />
-          <Skeleton width="64%" height={11} />
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 

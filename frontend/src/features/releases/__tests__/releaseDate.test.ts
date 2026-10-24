@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // The test pool cannot move the process's time zone (a TZ set at run time does not reach Intl here), so the
-// viewer's zone is simulated: every formatter made without a zone of its own gets the one under test. A
-// formatter that fell back on the viewer's zone would show the day before west of UTC, and after east of it.
+// viewer's zone is simulated: every formatter made without a zone of its own gets the one under test. What it
+// catches: a formatter that drops `timeZone: 'UTC'` reads the date's UTC midnight in the viewer's zone, which
+// west of UTC is still the previous day. East of UTC the date stays the same; that case checks it holds there.
 function inZone(timeZone: string) {
   const Real = Intl.DateTimeFormat;
   // A class: the code under test calls it with `new`.
