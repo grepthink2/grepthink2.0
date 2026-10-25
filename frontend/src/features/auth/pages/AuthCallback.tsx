@@ -9,7 +9,8 @@
  *
  *   - to /select (role selection) if this is their first login and no
  *     profile row exists yet.
- *   - to /app/home if they already have a profile.
+ *   - to /app/home if they already have a profile, or back to the connected-app consent page
+ *     that sent them to log in (lib/returnTo.ts).
  *   - back to /login with an error message on any failure.
  *
  * We also check getSession() immediately on mount in case the SDK already
@@ -17,6 +18,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { takeReturnTo } from '@/lib/returnTo';
 import { supabase } from '@/lib/supabaseClient';
 import { api, apiRequest, type ApiProfile } from '@/lib/api';
 
@@ -81,7 +83,8 @@ const AuthCallback: React.FC = () => {
           // Profile fetch failed — fall through to the app rather than block.
         }
 
-        navigate('/app/home', { replace: true });
+        // A connected app's consent page (OAuthConsent) that sent them to log in, else home.
+        navigate(takeReturnTo() ?? '/app/home', { replace: true });
       } catch (err) {
         console.error('[AuthCallback] loginCheck failed:', err);
         // Signed in but backend unreachable — send them to the app
