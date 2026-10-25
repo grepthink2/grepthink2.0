@@ -175,6 +175,10 @@ class Settings:
     # the List-Unsubscribe header. Unset: emails carry only the frontend unsubscribe page link.
     PUBLIC_API_URL: str = (os.environ.get("PUBLIC_API_URL") or "").strip().rstrip("/")
 
+    # The scrum board MCP connector's address, as apps reach it: its OAuth resource identifier.
+    # Follows PUBLIC_API_URL; a local server when that is unset.
+    MCP_RESOURCE_URL: str = (PUBLIC_API_URL or "http://localhost:5001") + "/mcp"
+
     # Public frontend URL for links in transactional emails (signup, class join).
     # Falls back to the first CORS origin when unset.
     FRONTEND_URL: str = (os.environ.get("FRONTEND_URL") or "").strip().rstrip("/")

@@ -11,5 +11,6 @@ supabase==2.33.0
 httpx==0.28.1              # scrum PR/MR state fetch (app/scrum/pr_links.py); supabase also pulls it in
 PyJWT[crypto]==2.15.1      # [crypto] pulls `cryptography`, needed to verify RS256/ES256 tokens
 slowapi==0.1.10
+mcp==2.3.0                 # the scrum board MCP connector (app/mcp): server, auth middleware, metadata
 sentry-sdk[fastapi]==2.72.0   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)
 tzdata==2026.5            # zoneinfo data (America/Los_Angeles) on hosts without a system tz database
