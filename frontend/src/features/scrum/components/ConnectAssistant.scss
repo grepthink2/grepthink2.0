@@ -1,0 +1,26 @@
+@use '@styles/index.scss' as *;
+
+.connect-assistant {
+  p {
+    margin: 0 0 $spacing-sm;
+  }
+
+  &__url {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+
+    code {
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: $font-size-sm;
+    }
+  }
+
+  &__steps {
+    margin: 0;
+    padding-left: $spacing-md;
+  }
+}
