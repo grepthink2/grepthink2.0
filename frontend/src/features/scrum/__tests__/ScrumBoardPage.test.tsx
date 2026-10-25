@@ -31,6 +31,7 @@ vi.mock('@/lib/api', () => ({
     addScrumRepo: vi.fn(),
     deleteScrumRepo: vi.fn(),
     updateScrumSettings: vi.fn(),
+    createSprint: vi.fn(),
     addTaskDependency: vi.fn(),
     removeTaskDependency: vi.fn(),
   },
@@ -95,6 +96,7 @@ beforeEach(() => {
   vi.mocked(api.updateStory).mockReset();
   vi.mocked(api.createScrumTask).mockReset();
   vi.mocked(api.createStory).mockReset();
+  vi.mocked(api.createSprint).mockReset();
   vi.mocked(api.deleteScrumStory).mockReset();
   vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
   vi.mocked(api.createScrumComment).mockReset();
@@ -359,7 +361,8 @@ describe('ScrumBoardPage states', () => {
   });
 
   describe('a team with no sprints: the class has no sprint schedule yet', () => {
-    const MEMBER_LINE = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings.';
+    const MEMBER_LINE = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings, or your team can create a sprint now.Create a sprint';
+    const STAFF_LINE = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings.';
     const INSTRUCTOR_LINE = "Set the sprint schedule in Class Settings to create this team's sprints.";
     const noSprints = (access: ApiScrumBoard['access']) =>
       makeBoard({ sprints: [], sprint_id: null, stories: [], access });
@@ -376,12 +379,12 @@ describe('ScrumBoardPage states', () => {
       vi.mocked(api.getScrumBoard).mockResolvedValue(noSprints('staff'));
       viewer.classRole = 'ta';
       const { unmount } = renderAt();
-      expect(await emptyBoardText()).toBe(`No sprints yet${MEMBER_LINE}`);
+      expect(await emptyBoardText()).toBe(`No sprints yet${STAFF_LINE}`);
       unmount();
 
       viewer.classRole = 'student';   // previewing: the selected class reads as a student's
       renderAt();
-      expect(await emptyBoardText()).toBe(`No sprints yet${MEMBER_LINE}`);
+      expect(await emptyBoardText()).toBe(`No sprints yet${STAFF_LINE}`);
     });
 
     it("tells the class's instructor to set it in Class Settings", async () => {
@@ -414,6 +417,66 @@ describe('ScrumBoardPage states', () => {
     expect(screen.getByRole('button', { name: 'New Story' })).toBeDisabled();
     // Switching sprints is a read: staff keep the picker.
     expect(screen.getByRole('button', { name: 'Sprint: Sprint 1' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Sprint: Sprint 1' }));
+    expect(screen.queryByRole('menuitem', { name: 'New sprint' })).not.toBeInTheDocument();
+  });
+});
+
+describe('ScrumBoardPage new sprint', () => {
+  const NO_SPRINTS = () => boardFixture({ sprints: [], sprint_id: null, stories: [] });
+  const SPRINT_1 = makeSprint({ id: 'sp-new', status: 'planned' });
+
+  it('creates the first sprint from the empty board and shows it', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(async (_p: string, sprintId?: string) =>
+      sprintId === 'sp-new' || vi.mocked(api.createSprint).mock.calls.length > 0
+        ? boardFixture({ sprints: [SPRINT_1], sprint_id: 'sp-new', stories: [] })
+        : NO_SPRINTS());
+    vi.mocked(api.createSprint).mockResolvedValue(SPRINT_1);
+    renderAt();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Create a sprint' }));
+    const dialog = screen.getByRole('dialog', { name: 'New sprint' });
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('Sprint 1');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create sprint' }));
+
+    expect(api.createSprint).toHaveBeenCalledWith('p1', expect.objectContaining({ name: 'Sprint 1' }));
+    const [, body] = vi.mocked(api.createSprint).mock.calls[0];
+    expect(body.starts_at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(body.ends_at > body.starts_at).toBe(true);
+    await waitFor(() => expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp-new', undefined));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New sprint' })).not.toBeInTheDocument());
+    expect(screen.queryByText('No sprints yet')).not.toBeInTheDocument();
+  });
+
+  it("opens from the sprint picker's menu and refuses a blank name", async () => {
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New sprint' }));
+    const dialog = screen.getByRole('dialog', { name: 'New sprint' });
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('Sprint 2');   // after the board's one sprint
+    await userEvent.clear(within(dialog).getByLabelText('Name'));
+
+    expect(within(dialog).getByText('Give the sprint a name.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Create sprint' })).toBeDisabled();
+    expect(api.createSprint).not.toHaveBeenCalled();
+  });
+
+  it('keeps the form open when the sprint is refused', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(NO_SPRINTS());
+    vi.mocked(api.createSprint).mockRejectedValue(new Error('A sprint ends on or after it starts'));
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Create a sprint' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create sprint' }));
+
+    expect(await screen.findByText('A sprint ends on or after it starts')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'New sprint' })).toBeInTheDocument();
+  });
+
+  it('offers staff no way to create a sprint on an empty board', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue({ ...NO_SPRINTS(), access: 'staff' });
+    renderAt();
+    expect(await screen.findByText('No sprints yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create a sprint' })).not.toBeInTheDocument();
   });
 });
 

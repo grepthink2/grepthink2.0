@@ -3,6 +3,7 @@ import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe } from 'lucide-react';
 import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
+import { useNow } from '@/lib/useNow';
 import './CreateAssignmentModal.scss';
 
 type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form' | 'Post Feedback';
@@ -39,6 +40,8 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
   const [isClosing, setIsClosing]       = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The reference date the open date is parsed against (a hook, so it sits above the early return).
+  const now = useNow(60000);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -98,9 +101,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
 
   if (!isOpen && !isClosing) return null;
 
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
+  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, now) : undefined;
 
   return (
     <div

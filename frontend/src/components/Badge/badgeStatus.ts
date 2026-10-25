@@ -19,7 +19,9 @@ export type BadgeStatus =
   | 'sentiment.positive' | 'sentiment.neutral' | 'sentiment.negative'
   /** Final reviews: the sign-ups switch, slot states, and the two staff gaps. */
   | 'signups.open' | 'signups.closed' | 'slot.free' | 'slot.yours' | 'slot.past' | 'review.no_review_ta' | 'review.no_product_owner'
-  | 'live';
+  | 'live'
+  /** What's new: the "New" marker on a release newer than the one this browser last saw, and on the menu row. */
+  | 'release.new';
 
 export type BadgeCategory = 'ta' | 'instructor' | 'team' | 'sponsored' | 'manual' | 'members';
 
@@ -55,6 +57,8 @@ export const BADGE_STATUS: Record<BadgeStatus, readonly [tone: BadgeTone, label:
   'slot.free': ['success', 'Free'], 'slot.yours': ['info', 'Your team'], 'slot.past': ['neutral', 'Past'],
   'review.no_review_ta': ['warning', 'No Review TA'], 'review.no_product_owner': ['warning', 'No Product Owner'],
   live: ['info', 'Live'],
+  // An entry newer than the release this browser last saw: informational, never the unread red.
+  'release.new': ['info', 'New'],
 };
 
 /**

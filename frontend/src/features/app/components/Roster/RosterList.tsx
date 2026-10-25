@@ -6,6 +6,9 @@ import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import { SortableHeader } from '@/components/Table/SortableHeader';
 import { useTableSort, type SortAccessors } from '@/components/Table/useTableSort';
+import { Pagination } from '@/components/Pagination/Pagination';
+import { PAGE_SIZE_OPTIONS, usePagination } from '@/components/Pagination/usePagination';
+import { Select } from '@/components/Select/Select';
 import './RosterList.scss';
 
 interface RosterListProps {
@@ -18,7 +21,16 @@ interface RosterListProps {
   invitingEmails?: Set<string>;
   onAddStudent?: () => void;
   onDeleteManual?: (student: UiStudent) => void;
+  /** Which part of the roster this lists. The TA list has no Course Status column. */
+  group?: 'students' | 'tas';
+  /**
+   * The student list pages; the TA list always shows in full. A change of this key (the search or
+   * the filter) goes back to page 1, as a change of sort does.
+   */
+  pageResetKey?: string;
 }
+
+const PAGE_SIZE_SELECT_OPTIONS = PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }));
 
 /** Manually added rows can be right-clicked to delete them entirely from the roster. */
 function isManualDeletable(student: UiStudent): boolean {
@@ -66,12 +78,19 @@ const RosterList: React.FC<RosterListProps> = ({
   invitingEmails = NO_INVITING_EMAILS,
   onAddStudent,
   onDeleteManual,
+  group = 'students',
+  pageResetKey = '',
 }) => {
+  const isTaList = group === 'tas';
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
     students,
     SORT_ACCESSORS,
     { key: 'name', direction: 'asc' },
   );
+  const paging = usePagination(sortedStudents, {
+    resetKey: `${pageResetKey}|${sort.key}|${sort.direction}`,
+  });
+  const visibleStudents = isTaList ? sortedStudents : paging.pageRows;
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; student: UiStudent } | null>(null);
 
@@ -100,8 +119,15 @@ const RosterList: React.FC<RosterListProps> = ({
     setContextMenu(null);
   };
 
-  // TAs and dropped students don't count toward the roster total.
-  const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
+  // The roster total leaves out TAs and dropped students; the TA list counts its rows.
+  const count = isTaList
+    ? students.length
+    : countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
+  const title = isTaList ? (
+    'TAs'
+  ) : (
+    <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+  );
 
   if (loading) {
     const headers = ['Name', 'Email', 'Course Status', 'GrepThink Status', 'Projects'];
@@ -121,9 +147,7 @@ const RosterList: React.FC<RosterListProps> = ({
     return (
       <div className="roster-list">
         <div className="roster-list__header">
-          <h2 className="roster-list__title">
-            <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
-          </h2>
+          <h2 className="roster-list__title">{title}</h2>
         </div>
         <div className="roster-list__table-card">
           <div className="roster-list__table-wrapper">
@@ -137,10 +161,8 @@ const RosterList: React.FC<RosterListProps> = ({
   return (
     <div className="roster-list">
       <div className="roster-list__header">
-        <h2 className="roster-list__title">
-          <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
-        </h2>
-        <span className="roster-list__count-badge">{studentCount}</span>
+        <h2 className="roster-list__title">{title}</h2>
+        <span className="roster-list__count-badge">{count}</span>
         {onAddStudent && (
           <button
             className="roster-list__add-student-btn"
@@ -163,38 +185,40 @@ const RosterList: React.FC<RosterListProps> = ({
           ) : (
             <table
               className={`roster-list__table${showActions ? '' : ' roster-list__table--no-actions'}`}
+              aria-label={isTaList ? 'TAs' : 'Students'}
             >
               <thead>
                 <tr>
                   <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Email" sortKey="email" currentSort={sort} onSort={toggleSort} />
-                  <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  {!isTaList && (
+                    <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  )}
                   <SortableHeader label="GrepThink Status" sortKey="grepthinkStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Projects" sortKey="projects" currentSort={sort} onSort={toggleSort} />
                   {showActions && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {sortedStudents.map((student) => (
+                {visibleStudents.map((student) => (
                   <tr
                     key={`${student.id}-${student.email}`}
                     onContextMenu={(e) => handleContextMenu(e, student)}
                     className={isManualDeletable(student) ? 'roster-list__tr--deletable' : undefined}
                   >
-                    <td className="roster-list__td-name">
-                      {student.name}
-                      {student.isTa && <span className="roster-list__ta-badge">TA</span>}
-                    </td>
+                    <td className="roster-list__td-name">{student.name}</td>
                     <td className="roster-list__td-email">
                       <a href={`mailto:${student.email}`} className="roster-list__email-link">
                         {student.email}
                       </a>
                     </td>
-                    <td>
-                      <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
-                        {CLASS_STATUS_LABELS[student.classStatus]}
-                      </span>
-                    </td>
+                    {!isTaList && (
+                      <td>
+                        <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
+                          {CLASS_STATUS_LABELS[student.classStatus]}
+                        </span>
+                      </td>
+                    )}
                     <td>
                       <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
                         {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
@@ -249,7 +273,7 @@ const RosterList: React.FC<RosterListProps> = ({
         {students.length === 0 ? (
           <div className="roster-list__empty-state">No students match the current filter.</div>
         ) : (
-          sortedStudents.map((student) => (
+          visibleStudents.map((student) => (
             <div
               key={`mobile-${student.id}-${student.email}`}
               className="roster-list__mobile-card"
@@ -257,18 +281,17 @@ const RosterList: React.FC<RosterListProps> = ({
             >
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
-                  <span className="roster-list__td-name">
-                    {student.name}
-                    {student.isTa && <span className="roster-list__ta-badge">TA</span>}
-                  </span>
+                  <span className="roster-list__td-name">{student.name}</span>
                   <a href={`mailto:${student.email}`} className="roster-list__email-link">
                     {student.email}
                   </a>
                 </div>
                 <div className="roster-list__mobile-card-badges">
-                  <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
-                    {CLASS_STATUS_LABELS[student.classStatus]}
-                  </span>
+                  {!isTaList && (
+                    <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
+                      {CLASS_STATUS_LABELS[student.classStatus]}
+                    </span>
+                  )}
                   <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
                     {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
                   </span>
@@ -308,6 +331,32 @@ const RosterList: React.FC<RosterListProps> = ({
           ))
         )}
       </div>
+
+      {!isTaList && paging.total > 0 && (
+        <div className="roster-list__pager">
+          <p className="roster-list__pager-range" aria-live="polite">
+            Showing {paging.from}–{paging.to} of {paging.total}
+          </p>
+          <div className="roster-list__pager-size">
+            <span className="roster-list__pager-size-label" aria-hidden="true">Rows per page</span>
+            <Select
+              label="Rows per page"
+              hideLabel
+              compact
+              value={String(paging.pageSize)}
+              options={PAGE_SIZE_SELECT_OPTIONS}
+              onChange={(e) => paging.setPageSize(Number(e.target.value))}
+            />
+          </div>
+          <Pagination
+            className="roster-list__pager-pages"
+            ariaLabel="Student pages"
+            page={paging.page}
+            pageCount={paging.pageCount}
+            onChange={paging.setPage}
+          />
+        </div>
+      )}
 
       {contextMenu && (
         <div

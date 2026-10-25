@@ -55,6 +55,20 @@ export function countableStudents(students: UiStudent[]): UiStudent[] {
   return students.filter((s) => !s.isTa);
 }
 
+/** The class's TAs. The roster lists them apart from the students: they have no course status. */
+export function rosterTas(students: UiStudent[]): UiStudent[] {
+  return students.filter((s) => s.isTa);
+}
+
+/** Rows whose name or email contains `search`, ignoring case; every row when it is blank. */
+export function applySearch(students: UiStudent[], search: string): UiStudent[] {
+  if (!search.trim()) return students;
+  const q = search.toLowerCase();
+  return students.filter(
+    (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+  );
+}
+
 /** Not on GrepThink yet and not dropped from the official roster, excluding TAs. */
 export function isBulkInviteCandidate(student: UiStudent): boolean {
   return (

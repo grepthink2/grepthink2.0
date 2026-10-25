@@ -17,7 +17,9 @@ export type BadgeStatus =
   | 'sentiment.positive' | 'sentiment.neutral' | 'sentiment.negative'
   /** Final reviews (C2, 2026-10-20): the sign-ups switch, slot states, and the two staff gaps. */
   | 'signups.open' | 'signups.closed' | 'slot.free' | 'slot.yours' | 'slot.past' | 'review.no_review_ta' | 'review.no_product_owner'
-  | 'live';
+  | 'live'
+  /** What's new (2026-10-23): the "New" marker on an entry newer than the version this browser last saw, and on the menu row. */
+  | 'release.new';
 
 export type BadgeCategory = 'ta' | 'instructor' | 'team' | 'sponsored' | 'manual' | 'members';
 export type ProjectRole = 'owner' | 'product_owner' | 'scrum_master' | 'admin' | 'member';
@@ -37,6 +39,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   icon?: React.ReactNode;
   /** Solid fill (status tones only). @default false */
   solid?: boolean;
+  /** 'sm': the 11px marker for heading rows and 32px menu rows (the "New" marker). @default 'md' */
+  size?: 'sm' | 'md';
 }
 
 /** Status / category / role pill. */

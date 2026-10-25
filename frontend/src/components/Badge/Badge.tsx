@@ -23,6 +23,8 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   icon?: ReactNode;
   /** Solid fill, for status tones only. @default false */
   solid?: boolean;
+  /** 'sm' is the 11px marker that sits in a heading row or a 32px menu row (the "New" marker). @default 'md' */
+  size?: 'sm' | 'md';
   ref?: Ref<HTMLSpanElement>;
 }
 
@@ -38,10 +40,11 @@ const presetIcon = (Icon: LucideIcon | null) => (Icon ? <Icon size={12} strokeWi
  *
  * It never sets an ARIA role: `projectRole` replaced the design's old `role` prop, so a `role` passed
  * here reaches the DOM like any other attribute. Native props and `ref` reach the span; each
- * projectRole also adds a `gt-badge--role-{key}` class.
+ * projectRole also adds a `gt-badge--role-{key}` class. `size="sm"` is the small marker (the "New"
+ * marker in a release entry's heading row and on a menu row).
  */
 export function Badge({
-  children, tone = 'neutral', status, category, projectRole, icon, solid = false, className = '', ref, ...rest
+  children, tone = 'neutral', status, category, projectRole, icon, solid = false, size = 'md', className = '', ref, ...rest
 }: BadgeProps) {
   let kind = tone;
   let label = children;
@@ -66,7 +69,8 @@ export function Badge({
     label ??= presetLabel;
   }
   const cls = [
-    'gt-badge', outlined ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !outlined ? 'gt-badge--solid' : '', roleClass, className,
+    'gt-badge', outlined ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !outlined ? 'gt-badge--solid' : '',
+    size === 'sm' ? 'gt-badge--sm' : '', roleClass, className,
   ].filter(Boolean).join(' ');
   return (
     <span {...rest} ref={ref} className={cls}>

@@ -137,14 +137,14 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `components/primitives/` — Button, IconButton, FieldShell, Input, Textarea, Select, SearchField, PasswordField, CodeInput,
   Combobox (+comboFilter), Checkbox, RadioGroup (list + card), Toggle, DatePickerField (+parseDateValue), FileUpload
   (+formatFileSize), MarkdownEditor (+renderMarkdownLite), Slider; galleries `primitives` (buttons), `fields`, `choice`, `upload`, `slider`
-- `components/display/` — Badge (+BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES), CountBadge, UnreadBadge, Tag, Avatar
+- `components/display/` — Badge (+BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES; `size="sm"` and `release.new` since 2026-10-23), CountBadge, UnreadBadge, NewDot (the blue "something new to read" dot, 2026-10-23), Tag, Avatar
   (+AvatarGroup, AVATAR_COLORS, hashColor, initialsOf), Card, Table (+SortableHeader, useTableSort), StatCard, ProgressBar, Tooltip, InfoPopover,
   Markdown (MarkdownText — moved from `scrum/` 2026-10-22); galleries `display`, `cards`
-- `components/feedback/` — Modal (+useDialog), ConfirmDialog (+InlineConfirm), Drawer, Alert, Toast (+ToastStack), Popover,
-  Menu (+MenuItem, MenuSeparator), Spinner, EmptyState (+NoClassSelected, Skeleton); galleries `feedback`, `dialogs`,
+- `components/feedback/` — Modal (+useDialog; `tone="dark"` since 2026-10-23), ConfirmDialog (+InlineConfirm), Drawer, Alert, Toast (+ToastStack), Popover,
+  Menu (+MenuItem, MenuSeparator, MenuGroup; `trailing` slot), Spinner, EmptyState (+NoClassSelected, Skeleton); galleries `feedback`, `dialogs`,
   `toast`, `popover`
 - `components/navigation/` — Tabs (+TabPanel), SegmentedControl, FilterChip (+FilterChipGroup), Stepper, Pagination,
-  SidebarNavItem (+SidebarSectionTitle)
+  SidebarNavItem (+SidebarSectionTitle), ProfileMenu (the app header's profile button + Popover + Menu, 2026-10-23)
 - `components/gallery.css` — chrome for the component cards (forced hover / focus, phone frame); not ported
 - `components/domain/` — RosterRow, ProjectCard, TeamMemberCard, JoinRequestCard,
   AssignmentCard, TSRForm, TSRSummaryCard, RankedProjectSlot, ConversationListItem
@@ -193,7 +193,13 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `components/assistant/` — Project assistant layer (2026-09): AssistantIcon (+AssistantMark),
   AssistantSuggestionCard, StalledFlag, ReportCheckCard, UnlinkedPRChip — each in `surface="app"`
   (flat) and `surface="landing"` (floating shell)
-- `components/marketing/` — grepthink2.com landing family: LandingHeader, Eyebrow (+MarketingBadge),
+- `components/releases/` — What's new (2026-10-23 feature design, see `design_handoff_whats_new/`): WhatsNewModal (the kit's Modal, dark on the
+  landing page, light in the app), ReleaseFeed (the list and its loading / failed / empty states), ReleaseEntry (date heading, version, the "New"
+  marker, New · Improved · Fixed), ReleasesModel (+RELEASE_GROUPS: versions, the seen rules, the calendar date, the notes-file reader);
+  `releasesData.js` (the brief's sample notes), `releases.css`, gallery `releases.card.html`
+- `ui_kits/grepthink/whats-new.html` — the landing page and the app shell with the modal, the header's ⓘ tab and the profile menu; demo bar for
+  context, header state, width, seen state, persona and the modal
+- `components/marketing/` — grepthink2.com landing family: LandingHeader (+WhatsNewTab, the "ⓘ What's new" tab, 2026-10-23), Eyebrow (+MarketingBadge),
   AnnouncementPill, Hero, FloatCard (+FloatingCards), Spotlight, Stage (+StageCard), ClosingBand,
   FeatureColumn (+PreviewWindow), LandingFooter, ContactCard
 - `ui_kits/grepthink-landing/` — the public site: `index.html` (landing with three spotlight bands +
@@ -214,6 +220,8 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   data contract, PO gating and table questions in `NOTES.md`)
 - `design_handoff_final_review_signup/` — implementation handoff for the C2 slot sign-up (board, Your team's review, posting,
   instructor tools, workspace header; §12 answers, status keys, the §10 file list and port questions in `NOTES.md`)
+- `design_handoff_whats_new/` — implementation handoff for What's new (the modal in both looks, the landing tab, the profile menu on the kit,
+  the kit additions; §12 answers, the dark ramp's contrast, the checkout disagreements and port questions in `NOTES.md`)
 - `frontend/` — reference copies from the real codebase (read-only): `src/styles/**` (token CSS + SCSS bridge),
   `src/index.css`, app-shell SCSS, the ported `features/analytics/analytics.scss` + `features/scrum/scrum.scss`
   (the `lint:design` script stays in the repo at `frontend/scripts/design-adherence.mjs`)
@@ -221,7 +229,7 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-Every component (182 exports) is an intentional addition —
+Every component (191 exports) is an intentional addition —
 confirmed, not a naming slip. The Figma file's own component sets were generic UI-kit library artifacts (Scrollbar, Monitor,
 Thumb, Grid…) — materialized once in `components/figma-reference/`, unused by any screen, and removed 2026-10-20 — so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
@@ -274,6 +282,16 @@ relative to the .fig's vocabulary, named after the codebase feature it mirrors:
 - `PieChartCard` — intentional addition; token-themed SVG stand-in for recharts pie
 - `BarChartCard` — intentional addition; token-themed SVG stand-in for recharts bar
 - `CHART_COLORS` — intentional addition; shared chart palette for recharts fills in production
+
+What's new (`components/releases/` + the kit additions, 2026-10-23 — designed from `uploads/2026-10-22-whats-new/`; all intentional additions, named after the spec's provisional names where they fit):
+- `WhatsNewModal` — the release notes in the kit's Modal (`tone="dark"` on the landing page, light in the app)
+- `ReleaseFeed` — the modal's body: entries newest first with the "New" markers, or loading / failed / empty
+- `ReleaseEntry` — one release: date heading, version, marker, New · Improved · Fixed as labels over lists
+- `ReleasesModel` (+`RELEASE_GROUPS`) — versions, the seen rules, the calendar date, the notes-file reader
+- `WhatsNewTab` — the landing header's "ⓘ What's new" button (`marketing/LandingHeader.jsx`)
+- `ProfileMenu` — the app header's profile button over Popover + Menu (`navigation/`)
+- `NewDot` — the blue "something new to read" dot (never the red UnreadBadge)
+- `MenuGroup` — a caps label over a run of Menu rows (`role="group"`)
 
 Popover/Menu family + Toast (2026-08, `components/feedback/`) — intentional additions filling
 the scrum Part 2 gaps flagged ⚑1/⚑2 (maintainer prompt): Popover is the anchored floating-surface

@@ -36,6 +36,18 @@
     flex-shrink: 0;
   }
 
+  // The project's icon beside its name, class and members, the three lines centred on it.
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: var(--gt-space-md);
+  }
+
+  &__identity-text {
+    flex: 1;
+    min-width: 0;
+  }
+
   &__title {
     font-size: var(--gt-text-h2);
     font-weight: var(--gt-weight-semibold);

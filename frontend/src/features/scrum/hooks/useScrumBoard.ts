@@ -276,11 +276,18 @@ export function useScrumBoard(
 
   const patchTask = useCallback(async (taskId: string, body: ApiUpdateTaskBody) => {
     const current = boardRef.current;
-    const snapshot = current ? findTask(current.stories, taskId) : null;
+    // A task on a backlog story lives in `backlog`, not the sprint's `stories`.
+    const snapshot = current
+      ? findTask(current.stories, taskId) ?? findTask(current.backlog, taskId)
+      : null;
     if (!snapshot) return null;
 
     const local = (patch: Partial<ApiScrumTask>) =>
-      setBoard((prev) => (prev ? { ...prev, stories: applyTaskPatch(prev.stories, taskId, patch) } : prev));
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: applyTaskPatch(prev.stories, taskId, patch),
+        backlog: applyTaskPatch(prev.backlog, taskId, patch),
+      } : prev));
 
     const seq = nextWrite(taskId);
     local(body as Partial<ApiScrumTask>);
@@ -291,6 +298,7 @@ export function useScrumBoard(
       setBoard((prev) => (prev ? {
         ...prev,
         stories: mapTask(prev.stories, taskId, (t) => mergeTaskResponse(t, task)),
+        backlog: mapTask(prev.backlog, taskId, (t) => mergeTaskResponse(t, task)),
       } : prev));
       // Points and hours feed what only the board load computes: the burnup and its unit, the points
       // nudge and the sprint picker's progress. Reload behind the patch, without the skeleton.
@@ -371,6 +379,11 @@ export function useScrumBoard(
     [mutate],
   );
   // No sprint writes: a team's sprints come from its class's sprint schedule (spec 2026-10-22, Part 0).
+  const createSprint = useCallback(
+    (body: { name: string; starts_at: string; ends_at: string }) =>
+      projectId ? mutate(() => api.createSprint(projectId, body), 'Couldn’t create the sprint', 'Sprint created') : Promise.resolve(null),
+    [mutate, projectId],
+  );
   const updateSettings = useCallback(
     (scale: ApiEstimateScale) =>
       projectId ? mutate(() => api.updateScrumSettings(projectId, scale), 'Couldn’t change the estimate scale') : Promise.resolve(null),
@@ -397,6 +410,7 @@ export function useScrumBoard(
     deleteTask,
     addDependency,
     removeDependency,
+    createSprint,
     updateSettings,
   };
 }

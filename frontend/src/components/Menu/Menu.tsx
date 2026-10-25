@@ -1,4 +1,4 @@
-import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import './Menu.scss';
 
@@ -64,6 +64,12 @@ export function Menu({ children, onClose, ariaLabel, autoFocus = false, classNam
 export interface MenuItemProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'onSelect'> {
   icon?: ReactNode;
   shortcut?: string;
+  /**
+   * A slot at the row's end for a marker (the profile menu's "New" Badge on "What's new"). Pass it
+   * `aria-hidden` and describe the row with `aria-describedby` when the words live elsewhere, so the
+   * row's name stays its label.
+   */
+  trailing?: ReactNode;
   destructive?: boolean;
   disabled?: boolean;
   /**
@@ -82,7 +88,7 @@ export interface MenuItemProps extends Omit<HTMLAttributes<HTMLButtonElement>, '
 
 /** Single row: an action, or with `checked` a checkbox or radio row. */
 export function MenuItem({
-  icon, children, shortcut, destructive = false, disabled = false, checked, radio = false, onSelect,
+  icon, children, shortcut, trailing, destructive = false, disabled = false, checked, radio = false, onSelect,
   className = '', ...rest
 }: MenuItemProps) {
   const checkable = checked !== undefined;
@@ -108,8 +114,31 @@ export function MenuItem({
         checkable && <span className="gt-menu__check">{checked ? <Check size={14} strokeWidth={2.4} aria-hidden="true" /> : null}</span>
       )}
       <span className="gt-menu__label">{children}</span>
+      {trailing && <span className="gt-menu__trailing">{trailing}</span>}
       {shortcut && <span className="gt-menu__shortcut">{shortcut}</span>}
     </button>
+  );
+}
+
+export interface MenuGroupProps {
+  /** The caps label over the rows ("School"); it names the `role="group"`. */
+  label: ReactNode;
+  children: ReactNode;
+  className?: string;
+}
+
+/**
+ * A labelled run of rows: `role="group"` named by a caps label ("School" over the profile menu's
+ * radio rows). The label is not a row, so the arrow keys skip it.
+ */
+export function MenuGroup({ label, children, className = '' }: MenuGroupProps) {
+  const id = useId();
+  const headingId = `${id}-heading`;
+  return (
+    <div role="group" aria-labelledby={headingId} className={['gt-menu__group', className].filter(Boolean).join(' ')}>
+      <div id={headingId} className="gt-menu__heading" role="presentation">{label}</div>
+      {children}
+    </div>
   );
 }
 

@@ -82,6 +82,7 @@ export const FEATURE_HOMES = {
   domain: ['src/features'],
   finalreviews: ['src/features/finalReviews'],
   marketing: ['src/features/landing'],
+  releases: ['src/features/releases'],
   schedule: ['src/features/schedule'],
   scrum: ['src/features/scrum'],
   search: ['src/features/search'],
@@ -105,11 +106,6 @@ export const NAMES_ALLOWLIST = [
       'their own pickers, file inputs and Markdown editors, and the TSR flow its TsrsStepper.',
   },
   {
-    design: 'Pagination',
-    status: 'design-only',
-    reason: 'No screen pages through numbered pages; search has its own pager, SearchPagination.',
-  },
-  {
     design: 'Markdown',
     status: 'design-only',
     reason:
@@ -123,6 +119,19 @@ export const NAMES_ALLOWLIST = [
     reason:
       "The app's sidebar is their one consumer and renders its rows (.sidebar-item) and section " +
       'titles (.section-title) itself.',
+  },
+  {
+    design: 'ProfileMenu',
+    status: 'same name',
+    keeps: 'ProfileMenu',
+    reason:
+      "The app header's profile menu is a composition of the kit (Popover, Menu, Avatar, NewDot) with the app's " +
+      'auth, class and preview state, so it lives with the header it belongs to, in ' +
+      'features/app/components/Layout/ProfileMenu.tsx, as design_handoff_whats_new/NOTES.md places it.',
+  },
+  {
+    path: 'src/features/app/components/Layout/ProfileMenu.tsx',
+    reason: "ProfileMenu's home beside the app header (see the ProfileMenu entry).",
   },
   {
     path: 'src/components/ErrorBoundary',
@@ -313,6 +322,17 @@ export const NAMES_ALLOWLIST = [
     reason:
       "The landing page's footer is features/landing/components/Footer.tsx (.landing-footer). Kept for good, " +
       'with LandingHeader.',
+  },
+
+  // ── releases ──────────────────────────────────────────────────────────────────────────────────
+  {
+    design: 'ReleasesModel',
+    status: 'different name',
+    keeps: 'version',
+    reason:
+      "The design's one file for the release rules. The codebase splits them by job: version.ts (parseVersion, " +
+      'compareVersions), releaseNotes.ts (the notes parser), releaseDate.ts (formatReleaseDate) and seenStore.ts ' +
+      '(isUnseen, isReleaseNew, the seen state).',
   },
 
   // ── schedule ──────────────────────────────────────────────────────────────────────────────────

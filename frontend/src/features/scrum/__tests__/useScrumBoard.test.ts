@@ -237,6 +237,36 @@ describe('useScrumBoard', () => {
     expect(api.getScrumBoard).not.toHaveBeenCalled();
   });
 
+  it('saves an edit to a task on a backlog story', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({
+      stories: [],
+      backlog: [makeStory({ id: 's9', sprint_id: null, tasks: [makeTask({ id: 't9', story_id: 's9', title: 'Old' })] })],
+    }));
+    vi.mocked(api.updateScrumTask).mockResolvedValue(makeTask({ id: 't9', story_id: 's9', title: 'New' }));
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.updateTask('t9', { title: 'New' }); });
+    expect(api.updateScrumTask).toHaveBeenCalledWith('t9', { title: 'New' });
+    expect(findTask(result.current.board!.backlog, 't9')?.title).toBe('New');
+  });
+
+  it('rolls a backlog task back and says so when its save fails', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({
+      stories: [],
+      backlog: [makeStory({ id: 's9', sprint_id: null, tasks: [makeTask({ id: 't9', key: 'GT-9', story_id: 's9', title: 'Old' })] })],
+    }));
+    vi.mocked(api.updateScrumTask).mockRejectedValue(new Error('boom'));
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.updateTask('t9', { title: 'New' }); });
+    expect(findTask(result.current.board!.backlog, 't9')?.title).toBe('Old');
+    expect(result.current.notice).toEqual({ kind: 'error', message: 'boom' });
+  });
+
   it('a story points change keeps the story sum', async () => {
     vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
     // A single-row story response: no tasks, and so no hours.

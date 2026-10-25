@@ -1,0 +1,8 @@
+// NewDot — ported from design/components/display/display.css so the two stay diffable: the NewDot
+// block.
+
+/* ── NewDot (2026-10-23) — "something new to read" (release notes): blue, never the unread red. Decorative; the host carries
+   the words (a visually hidden "New release notes" its control is described by). `ring` separates it from an avatar or an
+   icon under it; the ring takes the surface behind (--gt-new-dot-ring, default --gt-surface; the landing header re-colours it to its dark from its own class). ── */
+.gt-new-dot { display: inline-block; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--gt-new-dot); vertical-align: middle; }
+.gt-new-dot--ring { box-shadow: 0 0 0 2px var(--gt-new-dot-ring, var(--gt-surface)); }

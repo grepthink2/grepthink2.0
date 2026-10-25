@@ -68,7 +68,7 @@ When a feature needs something the kit lacks, the kit grows it first (a design r
 | Toast, Popover, Menu | already ported — `components/Toast/`, `components/Popover/`, `components/Menu/` |
 | Tabs (+TabPanel), SegmentedControl | `components/Tabs/`, `components/SegmentedControl/` |
 | FilterChip (+FilterChipGroup), Stepper | `components/FilterChip/`, `components/Stepper/` |
-| Pagination | **not ported** — no screen uses numbered pages (search has its own pager) |
+| Pagination | `components/Pagination/` (+ `usePagination.ts`, the client-side slice and page-size state); the Roster's student list pages with it, and search keeps its own pager |
 | SidebarNavItem (+SidebarSectionTitle) | **the app's sidebar** (layout code), its one consumer; its badge renders UnreadBadge |
 
 Feature layers keep their folders and feature SCSS, as before:
@@ -83,6 +83,7 @@ Feature layers keep their folders and feature SCSS, as before:
 | `components/schedule/*` | `features/schedule/` per `design_handoff_schedule/`; kind chips → FilterChip `sm` |
 | `components/domain/TeamMeetings*` | `features/app/components/TeamMeetings/` (`TeamMeetingForm.tsx`, `TeamMeetingsList.tsx`, `teamMeetingsModel.ts`) per `design_handoff_team_meetings/`; its fields, buttons and alert are the shared components (drop the copies) |
 | `components/finalreviews/*` | `features/finalReviews/` per `design_handoff_final_review_signup/` (`finalReviews.scss` is a 1:1 port of `finalreviews.css`); SlotBoard replaces `pages/FinalReviews.tsx`'s body, ReviewWorkspaceHeader replaces `FinalReviewDetail.tsx`'s topbar + meta, TeamReview `card` goes in `ProjectView.tsx`'s aside; the seven status keys join the Badge status map |
+| `components/releases/*` | `features/releases/components/` per `design_handoff_whats_new/` (`releases.scss` is a 1:1 port of `releases.css`): WhatsNewModal (the frame, rendered by the landing page and the app shell), ReleaseFeed (the lazy chunk: the list and its states), ReleaseEntry; `ReleasesModel` mirrors `version.ts` / `releaseNotes.ts` / `releaseDate.ts` and the seen rules; `releasesData.js` is gallery data. The landing tab is `WhatsNewTab` in `components/marketing/LandingHeader.jsx` → `features/landing/components/WhatsNewTab.tsx` (+ `Header.tsx` / `Header.scss`); the profile menu is `components/navigation/ProfileMenu` → `features/app/components/Layout/ProfileMenu.tsx` (replaces the dropdown in `Header.tsx` and `SchoolSwitcher.tsx`) |
 | `components/domain/*` (others) | the feature that owns each card (roster, projects, requests, messaging) |
 | `components/gallery.css`, `*.card.html` | not ported (design-side galleries) |
 
@@ -112,6 +113,9 @@ there first, then the component reads it. The design's component CSS carries **n
 
 ### Tokens the codebase layer does not have yet (add on first use)
 
+- What's new round (2026-10-23): the on-dark ramp for `Modal tone="dark"` — `--gt-dark-surface` (#14291F), `--gt-dark-fill`, `--gt-dark-fill-hover`,
+  `--gt-dark-hairline`, `--gt-dark-text`, `--gt-dark-text-muted`, `--gt-dark-text-faint`, `--gt-dark-link`, `--gt-dark-accent-soft`,
+  `--gt-dark-accent-text`, `--gt-dark-scrim`, `--gt-dark-shadow-modal` (the landing page only; the app stays light) · `--gt-new-dot`, `--gt-new-dot-ring`.
 - Alignment round: `--gt-border-control` (#858585 — field, checkbox, radio and toggle boundaries at ≥ 3:1),
   `--gt-border-control-hover`, `--gt-opacity-disabled` (0.45), `--gt-avatar-1…6`, `--gt-gold-soft`, `--gt-purple-soft`,
   `--gt-info-soft-hover`, `--gt-warning-soft-hover`, `--gt-skeleton-shine`, `--gt-black`, `--gt-sidebar-text`,
@@ -133,6 +137,12 @@ there first, then the component reads it. The design's component CSS carries **n
 
 ## Known deltas (deliberate, don't "fix" silently)
 
+- **What's new round, 2026-10-23** (`design_handoff_whats_new/`, brief and spec in `uploads/2026-10-22-whats-new/`): the kit grew Modal `tone="dark"`,
+  `MenuGroup`, `MenuItem trailing`, `NewDot`, Badge `size="sm"` + `release.new`, and `.gt-modal__body { overscroll-behavior: contain }`; the
+  releases family, the landing tab and the ProfileMenu are new feature layers (table above). **Two things to port with them:** the landing header's
+  layer moves from `--gt-z-tooltip` (1000) to `--gt-z-sidebar` (99) — at 1000 it sat on top of the modal — and the header's 560px Features rule is
+  now in the design (`.gt-landing-header__link--features`), with the ≤ 400 / ≤ 360 rules that fit the tab at 320px. The app's hand-built profile
+  dropdown and `SchoolSwitcher` go.
 - **Fold-back round, 2026-10-22** (the core kit ported in PRs #259, #261, #263, #265, #266, #268 and compared element by element) — now in
   the design, so the next re-port is a no-op. Brief and naming audit: `uploads/2026-10-22-design-foldback/`.
   1. **Galleries render like the app.** Every `*.card.html` loads the reference `frontend/src/index.css` after `styles.css` (border-box,
@@ -228,7 +238,11 @@ there first, then the component reads it. The design's component CSS carries **n
 When tokens change in the repo first: update `tokens/*.css` here to match `frontend/src/styles/tokens/` + the SCSS bridge (that
 layer is the source of truth), and refresh the reference copies under `frontend/` in this folder.
 
-**Last parity check: 2026-10-22** — the fold-back brief (`docs/superpowers/handoffs/2026-10-22-design-foldback/README.md` on `beta`) and the naming audit
+**Last parity check: 2026-10-23** — the What's new brief (`docs/superpowers/handoffs/2026-10-22-whats-new/README.md`, revised 2026-10-23) and its spec
+(`docs/superpowers/specs/2026-10-22-whats-new-design.md`) from the `gifted-williams-2c8524` worktree (the docs branch onto `beta` at `4376d1dd`), copied to
+`uploads/2026-10-22-whats-new/`; that checkout's `features/landing/components/Header.{tsx,scss}` and `features/app/components/Layout/{Header.tsx,Header.scss,SchoolSwitcher.tsx}`
+read for the tab, the 560px rule and the profile button; disagreements in `design_handoff_whats_new/NOTES.md` §5.
+Before that, 2026-10-22 — the fold-back brief (`docs/superpowers/handoffs/2026-10-22-design-foldback/README.md` on `beta`) and the naming audit
 (`docs/superpowers/handoffs/2026-10-22-naming-alignment/REPORT.md`), copied to `uploads/2026-10-22-design-foldback/`; the codebase's
 `components/Modal/{useDialog.ts,dialogStack.ts,scrollLock.ts}`, `Table/{Table.tsx,SortableHeader.tsx,useTableSort.ts}`, `Card/Card.{tsx,scss}`,
 `CodeInput/CodeInput.tsx`, `ConfirmDialog/ConfirmDialog.tsx`, `FieldShell/FieldShell.tsx` and the kit SCSS (Avatar, Badge, Slider, Tabs, Table) read for the mirrors.

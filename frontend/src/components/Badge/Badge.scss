@@ -17,6 +17,9 @@
 .gt-badge--gold    { background-color: var(--gt-gold-soft);   color: var(--gt-gold-text); }
 .gt-badge--merged  { background-color: var(--gt-purple-soft); color: var(--gt-purple); }
 .gt-badge--category { padding: 3px 10px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background-color: var(--gt-surface); color: var(--gt-text-secondary); }
+/* sm (2026-10-23): the marker size — the "New" marker in a release entry's heading row and a 32px menu row */
+.gt-badge--sm { padding: 2px 8px; font-size: 11px; line-height: 1.4; }
+.gt-badge--sm.gt-badge--category { padding: 1px 7px; }
 .gt-badge__icon { display: inline-flex; flex-shrink: 0; }
 .gt-badge--solid.gt-badge--success { background-color: var(--gt-success); color: var(--gt-text-inverse); }
 .gt-badge--solid.gt-badge--warning { background-color: var(--gt-warning-text); color: var(--gt-text-inverse); }

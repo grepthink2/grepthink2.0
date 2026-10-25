@@ -20,3 +20,18 @@ Adopted from the codebase: `checked` rows (`menuitemcheckbox`, multi-select list
   {sprints.map((s) => <MenuItem key={s.id} radio checked={s.id === current} onSelect={() => pick(s.id)}>{s.name}</MenuItem>)}
 </Menu>
 ```
+
+Added for the profile menu (What's new, 2026-10-23): **`MenuGroup`** — a caps label over a run of rows (`role="group"` named by it; the arrow keys skip the label) — and **`trailing`** on `MenuItem`, a slot at the row's end for a marker. The "New" marker is `<Badge status="release.new" size="sm" aria-hidden />`; the row is described by a visually hidden "New release notes" (`aria-describedby`), so its name stays "What's new".
+
+```jsx
+<Menu ariaLabel="Profile" autoFocus onClose={close}>
+  <MenuGroup label="School">
+    {schools.map((s) => <MenuItem key={s.id} radio checked={s.id === current} onSelect={() => pickSchool(s.id)}>{s.name}</MenuItem>)}
+  </MenuGroup>
+  <MenuSeparator />
+  <MenuItem icon={<Settings size={16} />} onSelect={openSettings}>Settings</MenuItem>
+  <MenuItem icon={<Info size={16} />} trailing={unseen && <Badge status="release.new" size="sm" aria-hidden />} aria-describedby={unseen ? descId : undefined} onSelect={openWhatsNew}>What's new</MenuItem>
+  <MenuSeparator />
+  <MenuItem icon={<LogOut size={16} />} destructive onSelect={logOut}>Log Out</MenuItem>
+</Menu>
+```

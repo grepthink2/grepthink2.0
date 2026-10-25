@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Tag } from 'lucide-react';
 import { cssRules } from '@/test/cssRules';
 import { Popover } from '../Popover/Popover';
-import { Menu, MenuItem } from '../Menu/Menu';
+import { Menu, MenuGroup, MenuItem, MenuSeparator } from '../Menu/Menu';
 import { Tooltip } from '../Tooltip/Tooltip';
 
 describe('Popover', () => {
@@ -126,6 +126,59 @@ describe('Menu', () => {
       </Menu>,
     );
     expect(screen.getByRole('menuitemradio', { name: 'Sprint 1' })).toHaveFocus();
+  });
+});
+
+describe('MenuGroup', () => {
+  const schoolMenu = () =>
+    render(
+      <Menu ariaLabel="Profile" autoFocus>
+        <MenuGroup label="School">
+          <MenuItem radio checked>İstinye University</MenuItem>
+          <MenuItem radio checked={false}>UC Santa Cruz</MenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuItem>Settings</MenuItem>
+      </Menu>,
+    );
+
+  it('is a group named by its visible caps label, holding its radio rows', () => {
+    schoolMenu();
+    const group = screen.getByRole('group', { name: 'School' });
+    expect(group).toHaveClass('gt-menu__group');
+    expect(within(group).getAllByRole('menuitemradio').map((row) => row.textContent)).toEqual([
+      'İstinye University',
+      'UC Santa Cruz',
+    ]);
+    expect(within(group).getByText('School')).toHaveClass('gt-menu__heading');
+    expect(cssRules('.gt-menu__heading')[0].getPropertyValue('text-transform')).toBe('uppercase');
+  });
+
+  it('keeps its rows in the arrow-key path and skips the label', async () => {
+    schoolMenu();
+    expect(screen.getByRole('menuitemradio', { name: 'İstinye University' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'UC Santa Cruz' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}');
+    expect(screen.getByRole('menuitemradio', { name: 'İstinye University' })).toHaveFocus();
+  });
+});
+
+describe('MenuItem trailing', () => {
+  it('renders the marker after the label, in its own slot, and leaves the name alone when hidden', () => {
+    render(
+      <Menu ariaLabel="Profile">
+        <MenuItem trailing={<span aria-hidden="true">New</span>}>What&apos;s new</MenuItem>
+        <MenuItem>Settings</MenuItem>
+      </Menu>,
+    );
+    const row = screen.getByRole('menuitem', { name: "What's new" });
+    const slot = row.querySelector('.gt-menu__trailing');
+    expect(slot).toHaveTextContent('New');
+    expect(row.querySelector('.gt-menu__label')?.nextElementSibling).toBe(slot);
+    expect(screen.getByRole('menuitem', { name: 'Settings' }).querySelector('.gt-menu__trailing')).toBeNull();
   });
 });
 

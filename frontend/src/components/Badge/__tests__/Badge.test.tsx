@@ -28,17 +28,17 @@ describe('Badge', () => {
     expect(screen.getByText('Merged')).not.toHaveClass('gt-badge--success');
   });
 
-  it('carries the attendance map, the final-review keys and live', () => {
+  it('carries the attendance map, the final-review keys, live and the release marker', () => {
     const expected: [BadgeStatus, BadgeTone, string][] = [
       ['attendance.present', 'success', 'Present'], ['attendance.late', 'warning', 'Late'],
       ['attendance.absent', 'error', 'Absent'], ['attendance.unmarked', 'neutral', 'Not marked'],
       ['signups.open', 'success', 'Sign-ups open'], ['signups.closed', 'neutral', 'Sign-ups closed'],
       ['slot.free', 'success', 'Free'], ['slot.yours', 'info', 'Your team'], ['slot.past', 'neutral', 'Past'],
       ['review.no_review_ta', 'warning', 'No Review TA'], ['review.no_product_owner', 'warning', 'No Product Owner'],
-      ['live', 'info', 'Live'],
+      ['live', 'info', 'Live'], ['release.new', 'info', 'New'],
     ];
     for (const [key, tone, label] of expected) expect(BADGE_STATUS[key]).toEqual([tone, label]);
-    expect(Object.keys(BADGE_STATUS)).toHaveLength(55);
+    expect(Object.keys(BADGE_STATUS)).toHaveLength(56);
   });
 
   it('every status tone has its colours in the stylesheet', () => {
@@ -173,5 +173,17 @@ describe('Badge', () => {
     const token = (name: string) => root?.getPropertyValue(name).replace(/\s+/g, '');
     expect(token('--gt-gold-soft')).toBe('rgba(253,199,0,0.18)');
     expect(token('--gt-purple-soft')).toBe('rgba(125,60,152,0.12)');
+  });
+
+  it('is md by default; size="sm" is the 11px marker for heading rows and menu rows', () => {
+    const { rerender } = render(<Badge status="release.new" />);
+    expect(screen.getByText('New')).toHaveClass('gt-badge', 'gt-badge--info');
+    expect(screen.getByText('New')).not.toHaveClass('gt-badge--sm');
+    rerender(<Badge status="release.new" size="sm" />);
+    expect(screen.getByText('New')).toHaveClass('gt-badge', 'gt-badge--info', 'gt-badge--sm');
+    const [sm] = cssRules('.gt-badge--sm');
+    expect(sm.getPropertyValue('padding')).toBe('2px 8px');
+    expect(sm.getPropertyValue('font-size')).toBe('11px');
+    expect(cssRules('.gt-badge--sm.gt-badge--category')[0].getPropertyValue('padding')).toBe('1px 7px');
   });
 });

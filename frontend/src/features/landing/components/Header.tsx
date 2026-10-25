@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '@assets/grepthink l logo.svg?url';
 import SectionLink from './SectionLink';
+import WhatsNewTab from './WhatsNewTab';
 import { SECTION_IDS } from '../landing.config';
 import './Header.scss';
 
@@ -11,7 +12,8 @@ import './Header.scss';
  * Starts as a full-width dark bar pinned to the top of the page and, once the
  * user scrolls past `SCROLL_THRESHOLD`, collapses into a centered floating
  * pill. The morph is pure CSS (driven by the `--scrolled` modifier); this
- * component only owns the scroll-state boolean.
+ * component only owns the scroll-state boolean. The "What's new" tab sits
+ * between Features and Contact, in both states.
  */
 const SCROLL_THRESHOLD = 64;
 
@@ -51,6 +53,7 @@ const Header: React.FC = () => {
           >
             Features
           </SectionLink>
+          <WhatsNewTab />
           <Link to="/contact" className="landing-header__link">
             Contact
           </Link>

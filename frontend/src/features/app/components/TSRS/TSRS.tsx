@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import type { ApiAssignmentTsrEntry } from '@/lib/api';
 import { useUser } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
+import { useNow } from '@/lib/useNow';
 import { submissionWindowNotice } from '@/features/app/utils/assignmentState';
 import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
@@ -60,6 +61,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment, zone }) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { isPreviewing } = usePreview();
+  // Ticks, so the window notice changes when the assignment opens or closes.
+  const now = useNow(30000);
   const isPreviewMode = isPreviewing && !assignment.projectId;
 
   const projectId = assignment.projectId;
@@ -212,9 +215,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment, zone }) => {
     (e) => e.submitted_at && dueAt && new Date(e.submitted_at) >= dueAt,
   );
   // Outside the window the server refuses the submission (403): say so before anything is typed.
-  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
-     move it out of render before renders are memoized */
-  const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
+  const windowNotice = submissionWindowNotice(assignment, now, zone);
 
   const contributionsTotal = Object.values(contributions).reduce((s, v) => s + v, 0);
 

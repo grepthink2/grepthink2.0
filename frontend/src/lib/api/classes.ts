@@ -219,13 +219,6 @@ export const classesApi = {
   },
 
   // Projects
-  createClassProject: async (classId: string, data: { name: string; description?: string }) => {
-    return apiRequest<{ message: string; project: ApiProject }>(`/api/classes/${classId}/projects`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
   getClassProjects: async (classId: string) => {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },

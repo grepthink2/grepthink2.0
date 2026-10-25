@@ -268,8 +268,10 @@
       "method": "POST", "endpoint": "/api/tas/classes/{class_id}/promote", "params": {"user_id": "uuid!"}
     },
     {
-      "id": "assign_review_ta", "title": "Assign a TA to review a project's TSRs", "role": "instructor",
-      "method": "POST", "endpoint": "/api/tas/projects/{project_id}/assign", "params": {"user_id": "uuid!"}
+      "id": "set_final_review_ta", "title": "Appoint a team's second end-of-quarter reviewer", "role": "instructor|ta",
+      "method": "POST", "endpoint": "/api/tas/projects/{project_id}/review-tas",
+      "params": {"user_id": "uuid (the instructor names the TA; a TA omits it to appoint themselves)"},
+      "note": "The team's assigned TA is the first reviewer. A TA can self-appoint only while the class review window is open."
     },
     {
       "id": "list_review_slots", "title": "List a class's final-review slots and the teams that booked them", "role": "instructor|ta|student",
@@ -300,7 +302,7 @@
     {
       "id": "assign_meeting_ta", "title": "Assign the meeting TA for a project", "role": "instructor",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-ta",
-      "params": {"ta_id": "uuid (null to clear)"}, "note": "Sets projects.assigned_ta_id — who runs the weekly meeting + takes attendance."
+      "params": {"ta_id": "uuid (null to clear)"}, "note": "Sets projects.assigned_ta_id — who runs the weekly meeting, takes attendance and reviews the team's TSRs."
     },
     {
       "id": "set_project_meeting", "title": "Set a project's Zoom link + meeting slot", "role": "instructor|meeting-ta",
@@ -372,7 +374,7 @@
       "id": "create_sprint", "title": "Create a sprint", "role": "project-member",
       "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/sprints",
       "params": {"name": "string!", "starts_at": "date!", "ends_at": "date!"},
-      "note": "Sprints come from the class's sprint schedule (create_class, update_class_sprints): every team gets its Sprint 1 … N from it. This route stays for API callers; the web client no longer offers it. A sprint made here is outside the schedule, which leaves it alone."
+      "note": "Sprints come from the class's sprint schedule (create_class, update_class_sprints): every team gets its Sprint 1 … N from it. Team members also add their own sprints here (the board's New sprint); such a sprint has no sequence, and the schedule never touches it."
     },
     {
       "id": "update_sprint", "title": "Update a sprint (rename, dates)", "role": "project-member",

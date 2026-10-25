@@ -1,0 +1,111 @@
+<!-- @dsCard group="Components" viewport="760x2600" name="Releases — What's new" subtitle="WhatsNewModal · ReleaseFeed · ReleaseEntry: every state (loading, failed, one release, five, a long entry, code + links, New markers after a visit / first visit, empty) in the dark and the light look; live triggers; phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../../frontend/src/index.css"> <!-- the app's base styles (box-sizing, line-height, the global button rule), so the gallery renders like the app -->
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./releasesData.js"></script>
+<script src="./releasesSrcLoader.js"></script>
+<style>
+  /* gallery-only: the in-place modal fits its stage (the real sheet caps at 88vh) */
+  .stage .gt-modal { max-height: calc(100% - 32px); }
+  .stage--dark { background: var(--gt-mkt-hero-wash), var(--gt-canvas); }
+  .stage--tall { height: 520px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<!-- Starts once the page is parsed: the deferred script below must be in the DOM before runDeferredBabel looks for it
+     (with a bundle that already carries the round, the loader resolves at once). -->
+<script>document.addEventListener('DOMContentLoaded', () => window.loadReleasesSources('../..').then(window.runDeferredBabel));</script>
+<script type="text/babel-deferred">
+const { WhatsNewModal, ReleaseEntry, ReleasesModel, Button } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const SAMPLE = ReleasesModel.releasesFromNotes(window.GT_RELEASE_NOTES_SAMPLE); // 0.92.0 · 0.91.1 · 0.91.0
+const MORE = ReleasesModel.releasesFromNotes(window.GT_RELEASE_NOTES_MORE);     // + 0.93.0 · 0.92.1 (five)
+const CURRENT = SAMPLE[0].version;
+const noop = () => {};
+
+const Stage = ({ tone, height = 420, children, ...props }) => (
+  <div className={['stage', tone === 'dark' ? 'stage--dark' : ''].join(' ')} style={{ height }}>
+    <WhatsNewModal open portal={false} onClose={noop} tone={tone} currentVersion={CURRENT} lastSeen={null} releases={SAMPLE} {...props} />
+    {children}
+  </div>
+);
+
+function Pair({ title, height, ...props }) {
+  return (
+    <div className="sec">
+      <p className="lbl">{title}</p>
+      <div className="grid2">
+        <Stage tone="dark" height={height} {...props} />
+        <Stage tone="light" height={height} {...props} />
+      </div>
+    </div>
+  );
+}
+
+function Phone() {
+  const tone = new URLSearchParams(location.search).get('tone') || 'dark';
+  return (
+    <div className="stage" style={{ height: 740, borderRadius: 0 }}>
+      <WhatsNewModal open portal={false} onClose={noop} tone={tone} currentVersion={CURRENT} lastSeen="0.91.0" releases={MORE} />
+    </div>
+  );
+}
+
+function Demo() {
+  const [live, setLive] = React.useState('');
+  const [status, setStatus] = React.useState('ready');
+  const close = () => setLive('');
+  return (
+    <div>
+      <div className="sec">
+        <p className="lbl">Live — a real portal: focus moves to the sheet, Tab is trapped, Esc / the scrim / the × close it, focus returns to the trigger; the body scrolls alone</p>
+        <div className="row">
+          <Button variant="outline" onClick={() => { setStatus('ready'); setLive('dark'); }}>What's new · dark (landing)</Button>
+          <Button variant="outline" onClick={() => { setStatus('ready'); setLive('light'); }}>What's new · light (app)</Button>
+          <Button variant="outline" onClick={() => { setStatus('loading'); setLive('dark'); window.setTimeout(() => setStatus('ready'), 1600); }}>Loading → ready</Button>
+          <Button variant="outline" onClick={() => { setStatus('failed'); setLive('light'); }}>Failed</Button>
+        </div>
+      </div>
+      <WhatsNewModal open={!!live} onClose={close} tone={live || 'light'} status={status} currentVersion={MORE[0].version} lastSeen="0.91.0" releases={MORE} onReload={close} />
+
+      <Pair title="Ready, after an earlier visit (seen up to 0.91.0) — entries newer than it carry the New marker; dark (landing) · light (app)" lastSeen="0.91.0" />
+      <Pair title="A first visit (lastSeen null) — only the newest entry carries New" lastSeen={null} />
+      <Pair title="One release" releases={[SAMPLE[2]]} height={360} />
+      <Pair title="Five releases — the body scrolls inside the modal; the head stays" releases={MORE} lastSeen="0.92.0" />
+      <Pair title="A long entry (0.93.0: three groups, twelve lines) · inline code and a link" releases={[MORE[0]]} lastSeen="0.92.1" height={520} />
+      <Pair title="Loading — two ghost entries of Skeleton rows, aria-busy" status="loading" height={340} />
+      <Pair title="Failed — one line and Reload (reloads the page: a retry would ask for the same missing file)" status="failed" height={340} onReload={noop} />
+      <Pair title="Empty — cannot ship (the test requires a notes file), but it has a look" releases={[]} height={340} />
+
+      <div className="sec">
+        <p className="lbl">The entry on its own (ReleaseEntry) — date heading, version, the marker; New · Improved · Fixed as labels over their lists; a fixed-only entry leaves no gap</p>
+        <div className="grid2">
+          <div className="panel"><ReleaseEntry release={SAMPLE[2]} isNew /></div>
+          <div className="panel"><ReleaseEntry release={SAMPLE[1]} /></div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width — 12px margins, the head pinned over a scrolling feed; dark · light</p>
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <iframe className="phone" src="releases.card.html?phone&tone=dark" height="620" title="What's new at phone width, dark" />
+          <iframe className="phone" src="releases.card.html?phone&tone=light" height="620" title="What's new at phone width, light" />
+        </div>
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>

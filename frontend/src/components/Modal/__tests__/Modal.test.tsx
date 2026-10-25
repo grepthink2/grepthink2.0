@@ -227,3 +227,73 @@ describe('Modal', () => {
     expect(closing.getPropertyValue('opacity')).toBe('0');
   });
 });
+
+describe('Modal tone', () => {
+  it('is light by default: neither the sheet nor the scrim carries the dark class', () => {
+    render(<Modal open title="What's new" />);
+    const dialog = screen.getByRole('dialog', { name: "What's new" });
+    expect(dialog).not.toHaveClass('gt-modal--dark');
+    expect(dialog.parentElement).not.toHaveClass('gt-modal-backdrop--dark');
+  });
+
+  it('tone="dark" puts the dark class on the sheet and on the scrim', () => {
+    render(<Modal open title="What's new" tone="dark" />);
+    const dialog = screen.getByRole('dialog', { name: "What's new" });
+    expect(dialog).toHaveClass('gt-modal', 'gt-modal--md', 'gt-modal--dark');
+    expect(dialog.parentElement).toHaveClass('gt-modal-backdrop', 'gt-modal-backdrop--dark');
+  });
+
+  it('draws the dark look from the --gt-dark-* ramp, the kit pieces a body holds included', () => {
+    render(<Modal open title="What's new" tone="dark" />);
+    expect(cssRules('.gt-modal-backdrop--dark')[0].getPropertyValue('background-color')).toBe('var(--gt-dark-scrim)');
+    const [sheet] = cssRules('.gt-modal--dark');
+    expect(sheet.getPropertyValue('background')).toBe('var(--gt-dark-surface)');
+    expect(sheet.getPropertyValue('color')).toBe('var(--gt-dark-text)');
+    expect(cssRules('.gt-modal--dark .gt-modal__subtitle')[0].getPropertyValue('color')).toBe('var(--gt-dark-text-muted)');
+    expect(cssRules('.gt-modal--dark .gt-md__link')[0].getPropertyValue('color')).toBe('var(--gt-dark-link)');
+    expect(cssRules('.gt-modal--dark .gt-badge--info')[0].getPropertyValue('color')).toBe('var(--gt-dark-accent-text)');
+  });
+
+  it('keeps a scroll that reaches the end of the body from moving the page', () => {
+    render(<Modal open title="What's new" />);
+    expect(cssRules('.gt-modal__body')[0].getPropertyValue('overscroll-behavior')).toBe('contain');
+  });
+});
+
+describe('Modal bodyLabel', () => {
+  it('leaves the body a plain box without a label', () => {
+    render(<Modal open title="Edit project"><p>Body</p></Modal>);
+    const body = screen.getByText('Body').parentElement;
+    expect(body).toHaveClass('gt-modal__body');
+    expect(body).not.toHaveAttribute('tabindex');
+    expect(body).not.toHaveAttribute('role');
+  });
+
+  it('makes the body a named, focusable scroll region with a visible ring, and hands it to bodyRef', () => {
+    const bodyRef = createRef<HTMLDivElement>();
+    render(<Modal open title="What's new" bodyLabel="Release notes" bodyRef={bodyRef}><p>Body</p></Modal>);
+    const region = screen.getByRole('region', { name: 'Release notes' });
+    expect(region).toHaveClass('gt-modal__body');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(bodyRef.current).toBe(region);
+    const [ring] = cssRules('.gt-modal__body:focus-visible');
+    expect(ring.getPropertyValue('box-shadow')).toBe('inset var(--gt-focus-ring-tight)');
+  });
+
+  it('takes focus on open through initialFocusRef, and Tab cycles between it and the ×', async () => {
+    const user = userEvent.setup();
+    const bodyRef = createRef<HTMLDivElement>();
+    render(
+      <Modal open onClose={() => {}} title="What's new" bodyLabel="Release notes" bodyRef={bodyRef} initialFocusRef={bodyRef}>
+        <p>Body</p>
+      </Modal>,
+    );
+    await settle();
+    const region = screen.getByRole('region', { name: 'Release notes' });
+    expect(region).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    await user.tab();
+    expect(region).toHaveFocus();
+  });
+});
