@@ -1367,23 +1367,35 @@ ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."conversation_deletes" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_deletes" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+CREATE POLICY "app_tokens_denied" ON "public"."conversation_deletes" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
+CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_deletes" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."conversation_reads" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conversation_reads_select_own" ON "public"."conversation_reads" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+CREATE POLICY "app_tokens_denied" ON "public"."conversation_reads" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
+CREATE POLICY "conversation_reads_select_own" ON "public"."conversation_reads" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "app_tokens_denied" ON "public"."conversations" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
 CREATE POLICY "conversations_select_participant" ON "public"."conversations" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM "public"."conversation_participants" "cp"
-  WHERE (("cp"."conversation_id" = "conversations"."id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+  WHERE (("cp"."conversation_id" = "conversations"."id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
 
 
@@ -1405,27 +1417,39 @@ ALTER TABLE "public"."meetings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "app_tokens_denied" ON "public"."messages" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
 CREATE POLICY "messages_select_participant" ON "public"."messages" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM "public"."conversation_participants" "cp"
-  WHERE (("cp"."conversation_id" = "messages"."conversation_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+  WHERE (("cp"."conversation_id" = "messages"."conversation_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
 
 
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+CREATE POLICY "app_tokens_denied" ON "public"."notifications" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
+CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "app_tokens_denied" ON "public"."profiles" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
+
+
+
 CREATE POLICY "profiles_insert_own" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
 
 
 
-CREATE POLICY "profiles_select_own" ON "public"."profiles" FOR SELECT USING (((( SELECT "auth"."uid"() AS "uid") = "id") AND (SELECT "public"."is_first_party_session"() AS "is_first_party_session")));
+CREATE POLICY "profiles_select_own" ON "public"."profiles" FOR SELECT USING (((( SELECT "auth"."uid"() AS "uid") = "id")));
 
 
 
@@ -1892,7 +1916,7 @@ DECLARE
   v_story_id uuid;
   v_sprint_id uuid;
 BEGIN
-  SELECT coalesce(sum(jsonb_array_length(coalesce(e -> 'tasks', '[]'::jsonb))), 0)
+  SELECT coalesce(sum(jsonb_array_length(coalesce(nullif(e -> 'tasks', 'null'::jsonb), '[]'::jsonb))), 0)
     INTO n_tasks
     FROM jsonb_array_elements(p_stories) AS e;
 
@@ -1911,7 +1935,20 @@ BEGIN
   END LOOP;
 
   FOR st IN SELECT e FROM jsonb_array_elements(p_stories) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
-    v_sprint_id := coalesce((sprint_ids ->> (st ->> 'sprint_ref'))::uuid, (st ->> 'sprint_id')::uuid);
+    IF st ->> 'sprint_ref' IS NOT NULL THEN
+      v_sprint_id := (sprint_ids ->> (st ->> 'sprint_ref'))::uuid;
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint_ref % names no sprint in this batch', st ->> 'sprint_ref';
+      END IF;
+    ELSIF st ->> 'sprint_id' IS NOT NULL THEN
+      SELECT id INTO v_sprint_id FROM sprints
+       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id AND status <> 'completed';
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint % is not an open sprint of this project', st ->> 'sprint_id';
+      END IF;
+    ELSE
+      v_sprint_id := NULL;
+    END IF;
     story_no := story_no + 1;
     INSERT INTO user_stories (project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id)
     VALUES (
@@ -1922,7 +1959,7 @@ BEGIN
 
     out_tasks := '[]'::jsonb;
     FOR tk IN
-      SELECT e FROM jsonb_array_elements(coalesce(st -> 'tasks', '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
+      SELECT e FROM jsonb_array_elements(coalesce(nullif(st -> 'tasks', 'null'::jsonb), '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
     LOOP
       task_no := task_no + 1;
       INSERT INTO tasks (
@@ -1931,7 +1968,7 @@ BEGIN
       VALUES (
         v_story_id, p_project_id, 'GT-' || task_no, tk ->> 'title', tk ->> 'description_md',
         (tk ->> 'points')::integer, (tk ->> 'estimate_hours')::integer, (tk ->> 'assignee_id')::uuid,
-        ARRAY(SELECT jsonb_array_elements_text(coalesce(tk -> 'tags', '[]'::jsonb))), p_reporter_id
+        ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(tk -> 'tags', 'null'::jsonb), '[]'::jsonb))), p_reporter_id
       )
       RETURNING id INTO v_id;
       out_tasks := out_tasks || jsonb_build_object('id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title');

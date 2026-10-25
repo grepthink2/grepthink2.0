@@ -40,3 +40,11 @@ create policy "project_insert_authenticated" on storage.objects
   for insert to authenticated with check (bucket_id = 'project');
 create policy "project_update_authenticated" on storage.objects
   for update to authenticated using (bucket_id = 'project');
+
+-- Connected apps (an access token with a `client_id`, from Supabase's OAuth server) reach no
+-- object: a restrictive policy ANDed into every policy above
+-- (backend/database/migrations/2026-10/2026-10-25_app_token_rls_fence.sql).
+create policy "app_tokens_denied" on storage.objects as restrictive
+  for all to public
+  using ((select public.is_first_party_session()))
+  with check ((select public.is_first_party_session()));

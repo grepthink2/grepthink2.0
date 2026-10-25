@@ -12,7 +12,10 @@
 --     consecutive numbers, `US-<n>` and `GT-<n>`, in input order. It takes the same row lock
 --     `scrum_next_key` does, so a concurrent single add waits and then numbers after the batch.
 --   * Sprints are created `planned` (the column default). A story names its sprint by `sprint_ref`
---     (a new sprint in this batch) or `sprint_id` (an existing one), or neither (backlog).
+--     (a new sprint in this batch) or `sprint_id` (an existing one), or neither (backlog). A ref
+--     that names no sprint of the batch, or an id that is not a planned or active sprint of this
+--     project, raises: the backend checked both, so either means the board changed in between.
+--   * A JSON null `tasks` or `tags` counts as an empty list.
 --   * Returns `{"sprints": [{ref, id, name}], "stories": [{id, key, title, sprint_id,
 --     tasks: [{id, key, title}]}]}`.
 --   * Executable by service_role only: the browser roles get nothing (2026-09-21 lock-down).
@@ -52,7 +55,7 @@ DECLARE
   v_story_id uuid;
   v_sprint_id uuid;
 BEGIN
-  SELECT coalesce(sum(jsonb_array_length(coalesce(e -> 'tasks', '[]'::jsonb))), 0)
+  SELECT coalesce(sum(jsonb_array_length(coalesce(nullif(e -> 'tasks', 'null'::jsonb), '[]'::jsonb))), 0)
     INTO n_tasks
     FROM jsonb_array_elements(p_stories) AS e;
 
@@ -71,7 +74,20 @@ BEGIN
   END LOOP;
 
   FOR st IN SELECT e FROM jsonb_array_elements(p_stories) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
-    v_sprint_id := coalesce((sprint_ids ->> (st ->> 'sprint_ref'))::uuid, (st ->> 'sprint_id')::uuid);
+    IF st ->> 'sprint_ref' IS NOT NULL THEN
+      v_sprint_id := (sprint_ids ->> (st ->> 'sprint_ref'))::uuid;
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint_ref % names no sprint in this batch', st ->> 'sprint_ref';
+      END IF;
+    ELSIF st ->> 'sprint_id' IS NOT NULL THEN
+      SELECT id INTO v_sprint_id FROM sprints
+       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id AND status <> 'completed';
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint % is not an open sprint of this project', st ->> 'sprint_id';
+      END IF;
+    ELSE
+      v_sprint_id := NULL;
+    END IF;
     story_no := story_no + 1;
     INSERT INTO user_stories (project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id)
     VALUES (
@@ -82,7 +98,7 @@ BEGIN
 
     out_tasks := '[]'::jsonb;
     FOR tk IN
-      SELECT e FROM jsonb_array_elements(coalesce(st -> 'tasks', '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
+      SELECT e FROM jsonb_array_elements(coalesce(nullif(st -> 'tasks', 'null'::jsonb), '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
     LOOP
       task_no := task_no + 1;
       INSERT INTO tasks (
@@ -91,7 +107,7 @@ BEGIN
       VALUES (
         v_story_id, p_project_id, 'GT-' || task_no, tk ->> 'title', tk ->> 'description_md',
         (tk ->> 'points')::integer, (tk ->> 'estimate_hours')::integer, (tk ->> 'assignee_id')::uuid,
-        ARRAY(SELECT jsonb_array_elements_text(coalesce(tk -> 'tags', '[]'::jsonb))), p_reporter_id
+        ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(tk -> 'tags', 'null'::jsonb), '[]'::jsonb))), p_reporter_id
       )
       RETURNING id INTO v_id;
       out_tasks := out_tasks || jsonb_build_object('id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title');
