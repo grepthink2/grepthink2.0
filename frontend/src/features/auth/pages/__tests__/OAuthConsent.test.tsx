@@ -67,6 +67,16 @@ describe('OAuthConsent', () => {
     expect(sessionStorage.getItem('gt:returnTo')).toBe('/oauth/consent?authorization_id=auth-1');
   });
 
+  it('forgets the saved return path once signed in here', async () => {
+    sessionStorage.setItem('gt:returnTo', '/oauth/consent?authorization_id=auth-1');
+    oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
+
+    renderAt('/oauth/consent?authorization_id=auth-1');
+
+    await screen.findByRole('heading', { name: 'Connect Claude to GrepThink?' });
+    expect(sessionStorage.getItem('gt:returnTo')).toBeNull();
+  });
+
   it('names the app asking for access', async () => {
     oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
 

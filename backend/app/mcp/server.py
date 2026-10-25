@@ -10,6 +10,7 @@ reads to learn the board's model and the confirm-first rule: they are product co
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -24,6 +25,7 @@ from mcp_types import ToolAnnotations
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 
+from app.config import settings
 from app.mcp import controller
 from app.mcp.auth import SupabaseAppTokenVerifier, auth_settings
 from app.mcp.controller import FillRejected
@@ -43,6 +45,8 @@ Workflow:
    call fill_board with confirmed=true. Then report the keys created and repeat the warnings.
 
 The connector only adds items. It never edits, moves or deletes what is on the board."""
+
+logger = logging.getLogger(__name__)
 
 mcp = MCPServer(
     "grepthink",
@@ -173,7 +177,18 @@ class MCPEndpoint:
 
     @asynccontextmanager
     async def running(self) -> AsyncIterator[None]:
-        app = build_mcp_app()
+        """Serve /mcp for as long as the API runs. Without a public address, or when the MCP app
+        cannot start, /mcp answers 503 and the rest of the API starts as usual."""
+        if not settings.MCP_RESOURCE_URL:
+            logger.error("mcp: PUBLIC_API_URL is not set, so /mcp has no address to give apps")
+            yield
+            return
+        try:
+            app = build_mcp_app()
+        except Exception:
+            logger.exception("mcp: the MCP app could not start")
+            yield
+            return
         async with app.router.lifespan_context(app):
             self._app = app
             try:

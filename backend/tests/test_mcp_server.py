@@ -140,3 +140,31 @@ def test_outside_the_app_lifespan_mcp_answers_503(client):
     r = _rpc(client, "tools/list", token=_app_token())
 
     assert r.status_code == 503
+
+
+def test_without_a_public_address_mcp_answers_503_and_the_api_stays_up(monkeypatch):
+    # On Vercel with no PUBLIC_API_URL there is no address to tell apps: better closed than
+    # pointing them at localhost.
+    monkeypatch.setattr(settings, "MCP_RESOURCE_URL", None)
+    with TestClient(app) as c:
+        assert _rpc(c, "tools/list", token=_app_token()).status_code == 503
+        assert c.get("/health").status_code == 200
+
+
+def test_a_failing_mcp_start_leaves_the_api_up(monkeypatch):
+    def broken():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("app.mcp.server.build_mcp_app", broken)
+    with TestClient(app) as c:
+        assert _rpc(c, "tools/list", token=_app_token()).status_code == 503
+        assert c.get("/health").status_code == 200
+
+
+def test_a_project_name_instead_of_an_id_is_a_readable_tool_error(mcp_client, monkeypatch):
+    _db(monkeypatch)
+
+    result = _call(mcp_client, "get_board_context", {"project_id": "Trailhead"}, token=_app_token())
+
+    assert result["isError"] is True
+    assert "list_my_projects" in result["content"][0]["text"]

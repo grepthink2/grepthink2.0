@@ -14,6 +14,9 @@ project's scale, and assignees on the team.
 from __future__ import annotations
 
 import logging
+import uuid
+
+from fastapi import HTTPException
 
 from app.core import authz, events
 from app.core.db import fan_out, get_client
@@ -46,6 +49,8 @@ NOT_CONFIRMED = (
     "confirmed must be true: show the student the full plan and wait for an explicit yes"
 )
 NOTHING_TO_ADD = "nothing to add: send at least one sprint or story"
+#: 422: an assistant passed a project's name, or anything else that is not an id.
+BAD_PROJECT_ID = "project_id must be a project's id from list_my_projects"
 
 
 class FillRejected(Exception):
@@ -54,6 +59,15 @@ class FillRejected(Exception):
     def __init__(self, errors: list[str]):
         super().__init__("; ".join(errors))
         self.errors = errors
+
+
+def _project_id(value: str) -> str:
+    """``value`` as a project id, or 422 :data:`BAD_PROJECT_ID` before any query: PostgREST
+    answers a malformed uuid with an error the app could not act on."""
+    try:
+        return str(uuid.UUID(str(value)))
+    except ValueError:
+        raise HTTPException(status_code=422, detail=BAD_PROJECT_ID) from None
 
 
 # ------------------------------------------------------------------------- reads ----
@@ -120,8 +134,8 @@ def board_context(*, project_id: str, user_id: str) -> dict:
     """Everything an app needs to draft a batch: the board's rules, the team, the sprints, and
     the items already on the board (keys and titles only, to avoid duplicates). Readable by
     whoever can read the board; ``can_write`` says whether the caller can add to it."""
+    pid = _project_id(project_id)
     client = get_client()
-    pid = str(project_id)
     access, institution_id = _board_access(client, project_id=pid, user_id=user_id)
     reads = fan_out(
         {
@@ -228,10 +242,12 @@ class _Checker:
             return {"sprint_ref": value, "sprint_id": None}
         sprint = self.sprints.get(value)
         if sprint is None:
-            self._err(f"{path}.sprint: {value!r} is not a sprint of this project or of this batch")
+            self._err(
+                f"{path}.sprint: no sprint of this project or of this batch has that id or ref"
+            )
         elif sprint.get("status") not in OPEN_SPRINT_STATUSES:
             self._err(
-                f"{path}.sprint: {sprint['name']!r} is {sprint.get('status')}; add stories to a "
+                f"{path}.sprint: {sprint['id']} is {sprint.get('status')}; add stories to a "
                 "planned or active sprint"
             )
         return {"sprint_ref": None, "sprint_id": value}
@@ -325,8 +341,8 @@ def fill_board(*, project_id: str, user_id: str, client_id: str, request: FillBo
     """
     if not request.confirmed:
         raise FillRejected([NOT_CONFIRMED])
+    pid = _project_id(project_id)
     client = get_client()
-    pid = str(project_id)
     institution_id = _require_writer(client, project_id=pid, user_id=user_id)
     reads = fan_out(
         {

@@ -12,7 +12,7 @@ import { Button } from '@components/Button/Button';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import { useAuth } from '@/lib/auth';
 import { leaveSiteTo } from '@/lib/leaveSite';
-import { rememberReturnTo } from '@/lib/returnTo';
+import { rememberReturnTo, takeReturnTo } from '@/lib/returnTo';
 import { supabase } from '@/lib/supabaseClient';
 import './OAuthConsent.scss';
 
@@ -100,9 +100,16 @@ const OAuthConsent: React.FC = () => {
   const authorizationId = searchParams.get('authorization_id');
   const here = location.pathname + location.search;
 
-  if (authorizationId && !loading && !user) {
-    // Google sign-in leaves the site and comes back through /auth/callback, which reads this.
-    rememberReturnTo(here);
+  const signedOut = Boolean(authorizationId) && !loading && !user;
+  React.useEffect(() => {
+    if (loading) return;
+    // Google sign-in leaves the site and comes back through /auth/callback, which reads this;
+    // once signed in here it is spent, so a later Google sign-in in this tab goes home.
+    if (!user) rememberReturnTo(here);
+    else takeReturnTo();
+  }, [loading, user, here]);
+
+  if (signedOut) {
     return <Navigate to="/login" replace state={{ from: here }} />;
   }
 
