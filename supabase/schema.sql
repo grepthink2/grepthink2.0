@@ -1866,6 +1866,90 @@ BEGIN
   RETURN v;
 END; $$ LANGUAGE plpgsql;
 
+-- One transaction for a batch of sprints, stories and tasks (app/mcp, the scrum board connector).
+CREATE OR REPLACE FUNCTION public.scrum_fill_board(
+  p_project_id uuid,
+  p_reporter_id uuid,
+  p_sprints jsonb,
+  p_stories jsonb
+) RETURNS jsonb
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+  n_stories integer := jsonb_array_length(p_stories);
+  n_tasks integer;
+  story_no integer;
+  task_no integer;
+  sprint_ids jsonb := '{}'::jsonb;
+  out_sprints jsonb := '[]'::jsonb;
+  out_stories jsonb := '[]'::jsonb;
+  out_tasks jsonb;
+  sp jsonb;
+  st jsonb;
+  tk jsonb;
+  v_id uuid;
+  v_story_id uuid;
+  v_sprint_id uuid;
+BEGIN
+  SELECT coalesce(sum(jsonb_array_length(coalesce(e -> 'tasks', '[]'::jsonb))), 0)
+    INTO n_tasks
+    FROM jsonb_array_elements(p_stories) AS e;
+
+  INSERT INTO scrum_counters (project_id) VALUES (p_project_id) ON CONFLICT (project_id) DO NOTHING;
+  UPDATE scrum_counters
+     SET story_seq = story_seq + n_stories, task_seq = task_seq + n_tasks
+   WHERE project_id = p_project_id
+  RETURNING story_seq - n_stories, task_seq - n_tasks INTO story_no, task_no;
+
+  FOR sp IN SELECT e FROM jsonb_array_elements(p_sprints) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
+    INSERT INTO sprints (project_id, name, starts_at, ends_at)
+    VALUES (p_project_id, sp ->> 'name', (sp ->> 'starts_at')::date, (sp ->> 'ends_at')::date)
+    RETURNING id INTO v_id;
+    sprint_ids := sprint_ids || jsonb_build_object(sp ->> 'ref', v_id);
+    out_sprints := out_sprints || jsonb_build_object('ref', sp ->> 'ref', 'id', v_id, 'name', sp ->> 'name');
+  END LOOP;
+
+  FOR st IN SELECT e FROM jsonb_array_elements(p_stories) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
+    v_sprint_id := coalesce((sprint_ids ->> (st ->> 'sprint_ref'))::uuid, (st ->> 'sprint_id')::uuid);
+    story_no := story_no + 1;
+    INSERT INTO user_stories (project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id)
+    VALUES (
+      p_project_id, 'US-' || story_no, st ->> 'title', st ->> 'description_md', (st ->> 'points')::integer,
+      (st ->> 'assignee_id')::uuid, v_sprint_id, p_reporter_id
+    )
+    RETURNING id INTO v_story_id;
+
+    out_tasks := '[]'::jsonb;
+    FOR tk IN
+      SELECT e FROM jsonb_array_elements(coalesce(st -> 'tasks', '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
+    LOOP
+      task_no := task_no + 1;
+      INSERT INTO tasks (
+        story_id, project_id, key, title, description_md, points, estimate_hours, assignee_id, tags, reporter_id
+      )
+      VALUES (
+        v_story_id, p_project_id, 'GT-' || task_no, tk ->> 'title', tk ->> 'description_md',
+        (tk ->> 'points')::integer, (tk ->> 'estimate_hours')::integer, (tk ->> 'assignee_id')::uuid,
+        ARRAY(SELECT jsonb_array_elements_text(coalesce(tk -> 'tags', '[]'::jsonb))), p_reporter_id
+      )
+      RETURNING id INTO v_id;
+      out_tasks := out_tasks || jsonb_build_object('id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title');
+    END LOOP;
+
+    out_stories := out_stories || jsonb_build_object(
+      'id', v_story_id, 'key', 'US-' || story_no, 'title', st ->> 'title', 'sprint_id', v_sprint_id,
+      'tasks', out_tasks
+    );
+  END LOOP;
+
+  RETURN jsonb_build_object('sprints', out_sprints, 'stories', out_stories);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb) TO service_role;
+
 -- ============ 8) burnup snapshots ============
 CREATE TABLE IF NOT EXISTS sprint_burnup_days (
   sprint_id        uuid NOT NULL REFERENCES sprints(id) ON DELETE CASCADE,
