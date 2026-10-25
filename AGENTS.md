@@ -102,13 +102,14 @@ review shape below, not the skill's own.
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search
+  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search mcp
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
   core/events.py     # record(kind, ...) → events table; DB failures never raise; ids and enums only in meta
   analytics/         # per-institution dashboard: SQL functions (RPC) + nightly analytics_daily rollup
+  mcp/               # scrum board MCP connector at /mcp (mcp SDK): tools, app-token verifier, fill controller
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
   utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
@@ -256,7 +257,8 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
 `/api/projects/{id}/scrum` (scrum board), `/api/projects/{project_id}/meetings` (a team's one-off
-meetings), `/api/search` (`index`), plus attendance routes under `/api`.
+meetings), `/api/search` (`index`), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
+board MCP connector, `app/mcp`) and its OAuth metadata at `/.well-known/oauth-protected-resource/mcp`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
@@ -296,6 +298,13 @@ The full agent-facing action catalog (method, params, role) lives at
   `app/institutions/controller.py` `is_school_email` — not just `.edu`), and the role is written
   once by `create_user`. A login email change goes through Supabase Auth (Settings → Change),
   and `GET /api/profiles/me` re-mirrors the token's email afterwards. See `AUTH.md`.
+- **Connected-app tokens are denied by default.** Supabase's OAuth server issues access tokens to apps
+  that act for a user (Claude, ChatGPT through `/mcp`): ordinary Supabase JWTs plus a `client_id` claim
+  (`app.dependencies.is_app_token`). `verify_supabase_token` answers 401 for them on every API route, and
+  `/mcp` takes only them. In the database, a RESTRICTIVE `app_tokens_denied` policy
+  (`public.is_first_party_session()`) sits on every table that has policies, in `public` and on
+  `storage.objects` (`2026-10/2026-10-25_app_token_rls_fence.sql`): a new table that gets a policy needs
+  one too. Opening a surface to an app is a deliberate change of its own.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).

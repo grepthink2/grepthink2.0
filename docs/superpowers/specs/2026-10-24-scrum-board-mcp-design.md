@@ -105,10 +105,10 @@ and GrepThink hosts only the consent UI. The maintainer chose this over writing 
   later). Outbound integrations, where GrepThink signs in to Jira, never involve these tokens.
   - **Database:** app tokens get nothing.
     - A migration adds `public.is_first_party_session()`, true when `auth.jwt() ->> 'client_id'` is null, and
-      ANDs it into each client-facing policy as it stands on PROD today: `messages_select_participant`,
-      `conversations_select_participant`, `conversation_participants_select_own`,
-      `notifications_select_own` and `profiles_select_own`. Re-list them from the live DEV database before
-      writing the migration, because `supabase/schema.sql` is behind (see Constraints).
+      a RESTRICTIVE policy `app_tokens_denied` using it on every table that has policies, in `public` and on
+      `storage.objects` (Storage's upload policies would otherwise let an app replace avatars and logos).
+      Restrictive policies AND into every permissive one, so existing policies keep their names, which
+      differ between DEV and PROD on Storage, and later policies are fenced too.
     - This migration is an authorization change, reviewed on its own.
   - **Backend:** every existing route refuses app tokens with 401. The check goes in the shared token
     dependency, so a new route is fenced without doing anything.
@@ -196,7 +196,7 @@ them carefully and test them on Claude and ChatGPT.
 ### The all-or-nothing write (my call)
 
 Keys come one at a time from `scrum_next_key` today, so a Python loop would cost dozens of round trips and could
-fail halfway. Instead, add one SQL function, `scrum_fill_board(p_project_id uuid, p_user_id uuid, p_payload jsonb)`.
+fail halfway. Instead, add one SQL function, `scrum_fill_board(p_project_id uuid, p_reporter_id uuid, p_sprints jsonb, p_stories jsonb)`.
 In a single transaction it:
 
 - inserts the sprints;
@@ -217,7 +217,7 @@ Python still does all authorization and validation before calling it. The functi
 
 ### Events
 
-Add `scrum.agent_fill` to `KINDS` in `app/core/events.py`, recorded once per successful fill. Its `meta` holds
+Add `board_agent_fill` to `KINDS` (event kinds must match `^[a-z][a-z0-9_]{1,39}$`) in `app/core/events.py`, recorded once per successful fill. Its `meta` holds
 the project id, the counts of sprints, stories and tasks, the warning count and the `client_id`. There is no
 text.
 
@@ -287,7 +287,7 @@ the entry chunk (the board is already a lazy route).
 - The batch write is one SQL function in one transaction.
 - Batch caps: 10 sprints, 60 stories, 300 tasks.
 - `get_board_context` is readable by staff too. Only `fill_board` needs membership.
-- The `scrum.agent_fill` event, with `client_id` in `meta`.
+- The `board_agent_fill` event, with `client_id` in `meta`.
 - The connector-URL note on the board page.
 - Connector validation is stricter than the board's routes (scale and membership), with the routes untouched.
 - Stories may join planned or active sprints, never completed ones.
