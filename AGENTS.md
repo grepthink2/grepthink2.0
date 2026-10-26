@@ -361,6 +361,25 @@ The full agent-facing action catalog (method, params, role) lives at
     (`lib/schoolZone.ts`, Pacific) is only that hook's last resort, when no school's zone is known, and
     `viewerZone()`'s when the browser cannot say where it is.
   - Known exception, still to fix: the Final Reviews page shows the browser's zone with no campus time.
+- **Sprints come from the class.** `classes.sprint_count` (1–20), `sprint_frequency` (`weekly`,
+  `biweekly`, `monthly`) and `sprints_start_on` are the class's sprint schedule, all three or none,
+  and `scrum.controller.ensure_project_sprints` makes each team's "Sprint 1" to "Sprint N" from it,
+  numbered by `sprints.sequence`: when the team is created, and for every team on
+  `PATCH /api/classes/{class_id}/sprints`. Team members can still add a sprint of their own (the
+  board's "New sprint", `POST /api/projects/{project_id}/scrum/sprints`); it has `sequence NULL`,
+  and the schedule never touches it. A sprint's dates must fit the class, and a class with a
+  schedule caps a team at its `sprint_count` sprints (`create_sprint` answers 409 past it).
+- **Sprint status is derived from dates.** `scrum.schedule.sprint_status` makes a sprint `planned`,
+  `active` (from `starts_at` through `ends_at`) or `completed` by the day at the project's school
+  (`_today`, as the burnup day is), and the board opens on today's sprint, else the latest one
+  that has started, else the first (`_select_sprint`).
+  Nothing writes or reads the stored `sprints.status` column: `update_sprint` drops a `status`.
+- **The burnup counts tasks in hours or points.** Scope is the sum of the sprint's task estimates
+  (`tasks.points` or `tasks.estimate_hours`) and completed the same sum over its done tasks; story
+  points count nowhere, and points are drawn only when every task in the sprint has them
+  (`scrum.burnup.units_available`), else hours. Every write that moves either line takes a
+  `sprint_burnup_days` snapshot in both units (`_snapshot_burnup_safe`), a task estimate edit or
+  delete included; a story points edit takes none.
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids

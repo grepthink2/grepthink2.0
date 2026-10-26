@@ -3,16 +3,18 @@
 Every ``.execute()`` on the Supabase client is one HTTP round trip to
 PostgREST. Controllers therefore batch related reads (``.in_()``, embedded
 selects over foreign keys, bulk ``insert``/``upsert``) and fan independent
-reads out through ``query_pool``. This module is the single place that decides
-which client a controller talks through, the boundary where a failed
-database request becomes a typed ``app.core.errors.DatabaseError``, and the
-place where ids and instants become values supabase-py can send as JSON.
+requests out through ``query_pool`` (``fan_out``). This module is the single
+place that decides which client a controller talks through, the boundary
+where a failed database request becomes a typed
+``app.core.errors.DatabaseError``, and the place where ids and instants
+become values supabase-py can send as JSON.
 """
 
 from __future__ import annotations
 
 import threading
 from collections.abc import Callable, Mapping
+from concurrent.futures import Future, wait
 from datetime import date, time
 from typing import Any, TypeVar
 from uuid import UUID
@@ -281,10 +283,20 @@ def get_client() -> DatabaseClient:
     return DatabaseClient(service_client if service_client is not None else supabase)
 
 
-def fan_out(jobs: Mapping[str, Callable[[], T]]) -> dict[str, T]:
-    """Run independent reads concurrently on ``query_pool``; return results by key.
+def _run_inline(job: Callable[[], T]) -> Future[T]:
+    """``job``'s result or failure, held as a finished future."""
+    future: Future[T] = Future()
+    try:
+        future.set_result(job())
+    except Exception as exc:
+        future.set_exception(exc)
+    return future
 
-    Every PostgREST call is a network round trip, so N reads that do not depend
+
+def fan_out(jobs: Mapping[str, Callable[[], T]]) -> dict[str, T]:
+    """Run independent jobs concurrently on ``query_pool``; return results by key.
+
+    Every PostgREST call is a network round trip, so N requests that do not depend
     on each other cost N round trips of latency when issued one after another
     and roughly one when fanned out::
 
@@ -293,15 +305,22 @@ def fan_out(jobs: Mapping[str, Callable[[], T]]) -> dict[str, T]:
             "members": lambda: client.table("project_members").select(...).execute().data,
         })
 
-    * Results come back under the same keys. If a job raises, the exception
-      propagates unchanged, so a ``DatabaseError`` keeps its type and
+    * Results come back under the same keys.
+    * Jobs may read or write, as long as none needs another's result or writes
+      another's rows: the class sprint schedule change writes each team's
+      sprints in a job of its own.
+    * Every job runs to its end before anything is raised, so no write is still
+      in flight once the caller answers. When jobs fail, the first failure in
+      key order propagates unchanged: a ``DatabaseError`` keeps its type and
       ``@retry_on_disconnect`` still sees a retryable outage.
     * Zero or one job runs inline. So does a call made from inside a pool worker
       (a job that fans out again): queueing behind itself on a saturated pool
-      would deadlock.
-    * Keep jobs to reads. Writes should stay sequential and explicit.
+      would deadlock. Inline jobs run one after another in key order, under the
+      same rule.
     """
     if len(jobs) <= 1 or threading.current_thread().name.startswith(_POOL_THREAD_PREFIX):
-        return {key: job() for key, job in jobs.items()}
-    futures = {key: query_pool.submit(job) for key, job in jobs.items()}
+        futures = {key: _run_inline(job) for key, job in jobs.items()}
+    else:
+        futures = {key: query_pool.submit(job) for key, job in jobs.items()}
+        wait(futures.values())
     return {key: future.result() for key, future in futures.items()}

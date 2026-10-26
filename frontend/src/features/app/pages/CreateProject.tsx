@@ -212,7 +212,7 @@ const CreateProject: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const { project } = await api.createProject({
+      const project = await api.createProject({
         class_id: selectedClass.id,
         name,
         description: description || undefined,

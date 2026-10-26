@@ -72,9 +72,10 @@ def _board_of(monkeypatch, school, *, task=TASK, **tables):
 @pytest.mark.parametrize(
     ("school", "snapshot_day", "scope"),
     [
-        pytest.param(None, "2026-09-10", [0, 5], id="no school: the default zone"),
-        pytest.param(UCSC_INSTITUTION["id"], "2026-09-10", [0, 5], id="Santa Cruz"),
-        pytest.param(ISTINYE, "2026-09-11", [0, 0, 5], id="Istanbul"),
+        # The scope is the sprint's task points (3), not its story's (5).
+        pytest.param(None, "2026-09-10", [0, 3], id="no school: the default zone"),
+        pytest.param(UCSC_INSTITUTION["id"], "2026-09-10", [0, 3], id="Santa Cruz"),
+        pytest.param(ISTINYE, "2026-09-11", [0, 0, 3], id="Istanbul"),
     ],
 )
 def test_the_board_files_its_burnup_under_the_schools_day(
@@ -131,13 +132,16 @@ WRITES = {
     "create_story": lambda: controller.create_story(
         project_id=PID, user_id=UID, fields={"title": "New", "sprint_id": "sp1"}
     ),
+    # A story edit moves the burnup only when the story changes sprint: here, to the backlog.
     "update_story": lambda: controller.update_story(
-        story_id="st1", user_id=UID, fields={"points": 8}
+        story_id="st1", user_id=UID, fields={"sprint_id": None}
     ),
     "create_task": lambda: controller.create_task(
         story_id="st1", user_id=UID, fields={"title": "New"}
     ),
     "move_task": lambda: controller.move_task(task_id="t1", user_id=UID, to_status="done"),
+    "update_task": lambda: controller.update_task(task_id="t1", user_id=UID, fields={"points": 5}),
+    "delete_task": lambda: controller.delete_task(task_id="t1", user_id=UID),
 }
 
 

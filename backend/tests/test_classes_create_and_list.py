@@ -26,6 +26,9 @@ C1, C2, C3 = "class-1", "class-2", "class-3"
 BANNER = "https://cdn.example/class-banner.svg"
 UCSC_ID = UCSC_INSTITUTION["id"]
 IST_ID = ISTINYE_INSTITUTION["id"]
+#: Every class is created with a sprint schedule (tests/test_class_sprint_schedule.py): five
+#: biweekly sprints from its first week of term.
+SCHEDULE = {"sprint_count": 5, "sprint_frequency": "biweekly"}
 
 
 def _trace(db) -> list[str]:
@@ -58,7 +61,7 @@ def test_create_class_takes_the_first_free_code_in_one_probe(create_db, monkeypa
     # The probe is case-insensitive: "taken002" on file blocks "TAKEN002".
     _codes(monkeypatch, ["TAKEN001", "TAKEN002", "FREE0003", "FREE0004", "FREE0005"])
     created = classes.create_class(
-        "CSE 115C", "Software engineering", "Fall", datetime.date(2026, 9, 24), INSTR
+        "CSE 115C", "Software engineering", "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
     )
     assert {k: created[k] for k in created if k != "id"} == {
         "name": "CSE 115C",
@@ -69,6 +72,9 @@ def test_create_class_takes_the_first_free_code_in_one_probe(create_db, monkeypa
         "term": "Fall",
         "start_date": "2026-09-24",
         "status": "active",
+        "sprint_count": 5,
+        "sprint_frequency": "biweekly",
+        "sprints_start_on": "2026-09-24",
         "image_url": BANNER,
     }
     tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
@@ -87,7 +93,9 @@ def test_create_class_gives_up_when_every_candidate_is_taken(create_db, monkeypa
         )
     _codes(monkeypatch, [f"TAKEN00{n}" for n in range(1, 6)])
     with pytest.raises(HTTPException) as exc:
-        classes.create_class("CSE 115C", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+        classes.create_class(
+            "CSE 115C", None, "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
+        )
     assert (exc.value.status_code, exc.value.detail) == (
         500,
         "Failed to generate unique course code",
@@ -100,7 +108,13 @@ def test_create_class_records_a_known_institution(create_db, monkeypatch):
     # one free code so the generator isn't exhausted (dict.fromkeys collapses the duplicates).
     _codes(monkeypatch, ["FREE0001"] * 5)
     created = classes.create_class(
-        "SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR, institution_id=UCSC_ID
+        "SE 301",
+        None,
+        "Fall",
+        datetime.date(2026, 9, 24),
+        INSTR,
+        institution_id=UCSC_ID,
+        **SCHEDULE,
     )
     assert created["institution_id"] == UCSC_ID
     assert create_db.executes <= 4, _trace(create_db)
@@ -116,6 +130,7 @@ def test_create_class_refuses_an_unknown_institution_before_writing(create_db, m
             datetime.date(2026, 9, 24),
             INSTR,
             institution_id="99999999-9999-4999-8999-999999999999",
+            **SCHEDULE,
         )
     assert (exc.value.status_code, exc.value.detail) == (400, "Unknown institution")
     assert create_db.executes == 0
@@ -123,7 +138,9 @@ def test_create_class_refuses_an_unknown_institution_before_writing(create_db, m
 
 def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypatch):
     _codes(monkeypatch, ["FREE0001"] * 5)
-    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    created = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
+    )
     assert "institution_id" not in created
 
 
@@ -136,6 +153,7 @@ def test_create_class_records_its_tasks_link(create_db, monkeypatch):
         datetime.date(2026, 9, 21),
         INSTR,
         external_tasks_url="https://job191.yeterly.ai/",
+        **SCHEDULE,
     )
     assert created["external_tasks_url"] == "https://job191.yeterly.ai/"
     assert create_db.executes <= 4, _trace(create_db)
@@ -144,7 +162,9 @@ def test_create_class_records_its_tasks_link(create_db, monkeypatch):
 def test_create_class_without_a_tasks_link_leaves_the_column_out(create_db, monkeypatch):
     # Not written at all, so creating a class without a link never depends on the column.
     _codes(monkeypatch, ["FREE0001"] * 5)
-    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    created = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
+    )
     assert "external_tasks_url" not in created
 
 
@@ -157,6 +177,7 @@ def test_create_class_records_its_last_day(create_db, monkeypatch):
         datetime.date(2026, 9, 24),
         INSTR,
         end_date=datetime.date(2026, 12, 4),
+        **SCHEDULE,
     )
     assert created["end_date"] == "2026-12-04"
     assert create_db.executes <= 4, _trace(create_db)
@@ -165,7 +186,9 @@ def test_create_class_records_its_last_day(create_db, monkeypatch):
 def test_create_class_without_a_last_day_leaves_the_column_out(create_db, monkeypatch):
     # Not written at all, so a client that names no last day never depends on the column.
     _codes(monkeypatch, ["FREE0001"] * 5)
-    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    created = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
+    )
     assert "end_date" not in created
 
 
@@ -174,10 +197,18 @@ def test_auto_created_tsrs_carry_their_deadline_in_the_schools_zone(
 ):
     _codes(monkeypatch, ["FREE0001"] * 5)
     istanbul = classes.create_class(
-        "SE 301", None, "Fall", datetime.date(2026, 9, 21), INSTR, institution_id=IST_ID
+        "SE 301",
+        None,
+        "Fall",
+        datetime.date(2026, 9, 21),
+        INSTR,
+        institution_id=IST_ID,
+        **SCHEDULE,
     )
     _codes(monkeypatch, ["FREE0002"] * 5)
-    santa_cruz = classes.create_class("CSE 115A", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    santa_cruz = classes.create_class(
+        "CSE 115A", None, "Fall", datetime.date(2026, 9, 24), INSTR, **SCHEDULE
+    )
     for created, zone in ((istanbul, "Europe/Istanbul"), (santa_cruz, "America/Los_Angeles")):
         tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
         assert tsrs
@@ -195,7 +226,9 @@ def test_auto_created_tsrs_whose_deadline_has_passed_start_as_drafts(create_db, 
         deadlines, "now_utc", lambda: datetime.datetime(2026, 10, 1, 7, 0, tzinfo=datetime.UTC)
     )
     _codes(monkeypatch, ["FREE0001"] * 5)
-    created = classes.create_class("CSE 115C", None, "Fall", datetime.date(2026, 9, 1), INSTR)
+    created = classes.create_class(
+        "CSE 115C", None, "Fall", datetime.date(2026, 9, 1), INSTR, **SCHEDULE
+    )
     tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
     assert [(a["Title"], a["due_at"], a["status"]) for a in tsrs] == [
         ("TSR 1", "2026-09-17T07:00:00+00:00", "draft"),
@@ -209,7 +242,13 @@ def test_auto_created_tsrs_whose_deadline_has_passed_start_as_drafts(create_db, 
 # --------------------------------------------------- the create route (view)
 
 ROUTE_INSTR = "instr-route"
-ROUTE_BODY = {"name": "SE 301", "term": "Fall", "start_date": "2026-09-24"}
+ROUTE_BODY = {
+    "name": "SE 301",
+    "term": "Fall",
+    "start_date": "2026-09-24",
+    "sprint_count": 5,
+    "sprint_frequency": "biweekly",
+}
 
 
 @pytest.fixture

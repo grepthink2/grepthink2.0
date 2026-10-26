@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
-    result = controller.create_project(
+    """Create a project in a class; answers the project row."""
+    return controller.create_project(
         data.class_id,
         data.name,
         data.description,
@@ -37,7 +38,6 @@ def create_project(data: CreateProjectRequest, user_id: str = Depends(require_us
         sponsor_website=data.sponsor_website,
         sponsor_description=data.sponsor_description,
     )
-    return {"message": "Project created successfully", "project": result}
 
 
 def get_projects(

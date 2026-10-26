@@ -1,12 +1,15 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
+import { SegmentedControl, type SegmentedOption } from '@components/SegmentedControl/SegmentedControl';
 import Skeleton from '@components/Skeleton/Skeleton';
 import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
+import { useSelectedClassRole } from '@/lib/classContext';
 import type {
-  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiTaskRef, ApiUpdateTaskBody,
+  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumBurnupUnit, ApiScrumStory, ApiScrumTask, ApiTaskRef,
+  ApiUpdateTaskBody,
 } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
@@ -37,6 +40,24 @@ const VIEW_LABELS: Record<BoardView, string> = {
 
 function parseView(raw: string | null): BoardView {
   return BOARD_VIEWS.includes(raw as BoardView) ? (raw as BoardView) : 'board';
+}
+
+/** A team with no sprints: its class has no sprint schedule, which only the class's instructor sets. */
+const NO_SCHEDULE = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings.';
+const NO_SCHEDULE_TEAM = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings, or your team can create a sprint now.';
+const SET_SCHEDULE = "Set the sprint schedule in Class Settings to create this team's sprints.";
+
+const UNIT_OPTIONS: SegmentedOption<ApiScrumBurnupUnit>[] = [
+  { value: 'points', label: 'Points' },
+  { value: 'hours', label: 'Hours' },
+];
+
+/** Why a sprint's burnup is in hours: it has a task without points, or no task yet (spec D21). */
+function hoursNote(withoutPoints: number): string {
+  const count = withoutPoints > 0
+    ? ` (${withoutPoints} ${withoutPoints === 1 ? 'task' : 'tasks'} without points)`
+    : '';
+  return `Burnup in hours · Add points to tasks for a points burnup${count}`;
 }
 
 /** Loading shell — mirrors the real layout so there is no shift on data arrival. */
@@ -74,10 +95,13 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
+    selectSprint, setBurnupUnit, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
     deleteTask, addDependency, removeDependency, updateSettings, refresh, createSprint,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
+  // Your role in the selected class. The board's payload names no class, and a team's board is
+  // normally opened from its own class, so the selected class stands in for the board's.
+  const classRole = useSelectedClassRole();
 
   const view = parseView(searchParams.get('view'));
   const openTaskId = searchParams.get('task');
@@ -159,20 +183,29 @@ export default function ScrumBoardPage() {
     }, { replace: true });
   }, [board, sprintParam, selectSprint, setSearchParams]);
 
-  // A switch from the picker shows the skeleton in place of the whole board, picker included, so the
-  // trigger the picker handed focus to is gone. Give focus to the new one once the switched board is
-  // on screen (a failed switch shows the error block: no picker, nothing to focus). Not after a
-  // ?sprint= deep link, which calls selectSprint itself: nothing had focus then.
+  // A switch from the picker, or a unit from the burnup's toggle, shows the skeleton in place of the
+  // whole board, so the control that had focus is gone. Give focus to the new one once the reloaded
+  // board is on screen: the picker's trigger, or the toggle's checked option (a failed reload shows
+  // the error block, and a toggle the reloaded sprint no longer offers is gone: nothing to focus).
+  // Not after a ?sprint= deep link, which calls selectSprint itself: nothing had focus then.
   const pickerRef = useRef<HTMLButtonElement>(null);
-  const refocusPicker = useRef(false);
+  const unitToggleRef = useRef<HTMLDivElement>(null);
+  const refocus = useRef<'picker' | 'unit' | null>(null);
   const pickSprint = (id: string) => {
-    refocusPicker.current = true;
+    refocus.current = 'picker';
     void selectSprint(id);
   };
+  const pickUnit = (unit: ApiScrumBurnupUnit) => {
+    refocus.current = 'unit';
+    void setBurnupUnit(unit);
+  };
   useEffect(() => {
-    if (loading || !refocusPicker.current) return;
-    refocusPicker.current = false;
-    pickerRef.current?.focus({ preventScroll: true });
+    if (loading || !refocus.current) return;
+    const target = refocus.current === 'picker'
+      ? pickerRef.current
+      : unitToggleRef.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    refocus.current = null;
+    target?.focus({ preventScroll: true });
   }, [loading]);
 
   /**
@@ -273,6 +306,9 @@ export default function ScrumBoardPage() {
 
   // The defaults read the clock, so they are worked out on the click, not during render.
   const openSprintEditor = () => setSprintDraft(newSprintDraft(board?.sprints ?? [], new Date()));
+  // A class with a sprint schedule caps a team's sprints at its count; the API refuses one more.
+  const sprintLimit = board?.project.sprint_limit ?? null;
+  const canAddSprint = canWrite && (sprintLimit == null || (board?.sprints.length ?? 0) < sprintLimit);
 
   /** A new sprint is the one the board then shows, so a backlog story can move straight into it. */
   const handleCreateSprint = async (body: SprintDraft) => {
@@ -281,7 +317,7 @@ export default function ScrumBoardPage() {
     setSavingSprint(false);
     if (!created) return;              // the hook already raised the error toast
     setSprintDraft(null);
-    pickSprint(created.sprint.id);
+    pickSprint(created.id);
   };
 
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
@@ -313,6 +349,18 @@ export default function ScrumBoardPage() {
 
   const sprint = board.sprints.find((s) => s.id === board.sprint_id) ?? null;
   const hasSprint = Boolean(sprint);
+  // A backend older than this client sends no unit fields, and its burnup is in points.
+  const burnupUnit = board.burnup.unit ?? 'points';
+  const unitsAvailable = board.burnup.units_available ?? [burnupUnit];
+  // A sprint that draws in either unit offers both. One in hours that can't draw points says why
+  // instead; one in hours by the viewer's choice needs no note, as the toggle already says it.
+  const offersUnits = unitsAvailable.includes('points') && unitsAvailable.includes('hours');
+  const unitNote = burnupUnit === 'hours' && !unitsAvailable.includes('points')
+    ? hoursNote(board.burnup.tasks_without_points ?? 0)
+    : null;
+  // Only the class's instructor sets the sprint schedule. Staff access also covers the class's TAs
+  // and the team's meeting TA, so the instructor's role in the class is needed as well.
+  const setsSchedule = board.access === 'staff' && classRole === 'instructor';
 
   return (
     <div className="scrum-board">
@@ -336,7 +384,8 @@ export default function ScrumBoardPage() {
               sprints={board.sprints}
               selectedId={board.sprint_id}
               onSelect={pickSprint}
-              onNewSprint={canWrite ? openSprintEditor : undefined}
+              unit={burnupUnit}
+              onNewSprint={canAddSprint ? openSprintEditor : undefined}
             />
           )}
           <button
@@ -408,7 +457,7 @@ export default function ScrumBoardPage() {
           ) : (
             <div className="scrum-board__empty-state">
               <h2>No sprints yet</h2>
-              <p>Create a sprint to start planning stories and tasks.</p>
+              <p>{setsSchedule ? SET_SCHEDULE : canWrite ? NO_SCHEDULE_TEAM : NO_SCHEDULE}</p>
               {canWrite && (
                 <Button size="sm" className="scrum-board__empty-action" onClick={openSprintEditor}>
                   Create a sprint
@@ -444,28 +493,47 @@ export default function ScrumBoardPage() {
 
         {view === 'burnup' && (
           hasSprint ? (
-            <div className="scrum-board__charts">
-              {board.burnup.sprint && (
-                <div className="scrum-board__chart-panel">
-                  <BurnupChart
-                    labels={board.burnup.sprint.labels}
-                    scope={board.burnup.sprint.scope}
-                    completed={board.burnup.sprint.completed}
-                    title={`${sprint!.name} burnup`}
-                    subtitle={board.burnup.sprint.subtitle}
-                  />
+            <>
+              {(offersUnits || unitNote) && (
+                <div className="scrum-board__burnup-unit">
+                  {offersUnits && (
+                    <SegmentedControl
+                      ref={unitToggleRef}
+                      options={UNIT_OPTIONS}
+                      value={burnupUnit}
+                      onChange={pickUnit}
+                      ariaLabel="Burnup unit"
+                      size="sm"
+                    />
+                  )}
+                  {unitNote && <p className="scrum-board__burnup-note">{unitNote}</p>}
                 </div>
               )}
-              <div className="scrum-board__chart-panel">
-                <BurnupChart
-                  labels={board.burnup.cumulative.labels}
-                  scope={board.burnup.cumulative.scope}
-                  completed={board.burnup.cumulative.completed}
-                  title="Cumulative burnup"
-                  subtitle={board.burnup.cumulative.subtitle}
-                />
+              <div className="scrum-board__charts">
+                {board.burnup.sprint && (
+                  <div className="scrum-board__chart-panel">
+                    <BurnupChart
+                      labels={board.burnup.sprint.labels}
+                      scope={board.burnup.sprint.scope}
+                      completed={board.burnup.sprint.completed}
+                      unit={burnupUnit}
+                      title={`${sprint!.name} burnup`}
+                      subtitle={board.burnup.sprint.subtitle}
+                    />
+                  </div>
+                )}
+                <div className="scrum-board__chart-panel">
+                  <BurnupChart
+                    labels={board.burnup.cumulative.labels}
+                    scope={board.burnup.cumulative.scope}
+                    completed={board.burnup.cumulative.completed}
+                    unit={burnupUnit}
+                    title="Cumulative burnup"
+                    subtitle={board.burnup.cumulative.subtitle}
+                  />
+                </div>
               </div>
-            </div>
+            </>
           ) : (
             <div className="scrum-board__empty-state">
               <h2>Nothing to chart yet</h2>

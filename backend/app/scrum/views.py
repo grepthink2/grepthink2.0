@@ -25,7 +25,6 @@ from app.scrum.models import (
     ScrumRepoResponse,
     ScrumReposListResponse,
     SprintOut,
-    SprintResponse,
     StoryOut,
     StoryResponse,
     SummaryCounts,
@@ -57,9 +56,14 @@ def _story_out(row: dict) -> StoryOut:
 
 
 def get_board(
-    project_id: str, sprint_id: str | None = None, user_id: str = Depends(require_user)
+    project_id: str,
+    sprint_id: str | None = None,
+    unit: str | None = None,
+    user_id: str = Depends(require_user),
 ) -> BoardResponse:
-    board = controller.get_board(project_id=project_id, user_id=user_id, sprint_id=sprint_id)
+    board = controller.get_board(
+        project_id=project_id, user_id=user_id, sprint_id=sprint_id, unit=unit
+    )
     return BoardResponse(**board)
 
 
@@ -86,7 +90,7 @@ def update_settings(
 
 def create_sprint(
     project_id: str, body: CreateSprintRequest, user_id: str = Depends(require_user)
-) -> SprintResponse:
+) -> SprintOut:
     row = controller.create_sprint(
         project_id=project_id,
         user_id=user_id,
@@ -94,22 +98,16 @@ def create_sprint(
         starts_at=body.starts_at,
         ends_at=body.ends_at,
     )
-    return SprintResponse(
-        message="Sprint created successfully",
-        sprint=SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")}),
-    )
+    return SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")})
 
 
 def update_sprint(
     sprint_id: str, body: UpdateSprintRequest, user_id: str = Depends(require_user)
-) -> SprintResponse:
+) -> SprintOut:
     row = controller.update_sprint(
         sprint_id=sprint_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return SprintResponse(
-        message="Sprint updated successfully",
-        sprint=SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")}),
-    )
+    return SprintOut(**{k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")})
 
 
 def create_story(
@@ -123,11 +121,12 @@ def create_story(
 
 def update_story(
     story_id: str, body: UpdateStoryRequest, user_id: str = Depends(require_user)
-) -> StoryResponse:
+) -> StoryOut:
+    """Edit or move a story. Answers the story as saved, without its tasks."""
     row = controller.update_story(
         story_id=story_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return StoryResponse(message="Story updated successfully", story=_story_out(row))
+    return _story_out(row)
 
 
 def delete_story(story_id: str, user_id: str = Depends(require_user)) -> Response:
@@ -146,11 +145,12 @@ def create_task(
 
 def update_task(
     task_id: str, body: UpdateTaskRequest, user_id: str = Depends(require_user)
-) -> TaskResponse:
+) -> TaskOut:
+    """Edit a task. Answers the task as saved."""
     row = controller.update_task(
         task_id=task_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return TaskResponse(message="Task updated successfully", task=_task_out(row))
+    return _task_out(row)
 
 
 def delete_task(task_id: str, user_id: str = Depends(require_user)) -> Response:
