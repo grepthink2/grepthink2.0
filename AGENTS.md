@@ -367,7 +367,8 @@ The full agent-facing action catalog (method, params, role) lives at
   numbered by `sprints.sequence`: when the team is created, and for every team on
   `PATCH /api/classes/{class_id}/sprints`. Team members can still add a sprint of their own (the
   board's "New sprint", `POST /api/projects/{project_id}/scrum/sprints`); it has `sequence NULL`,
-  and the schedule never touches it.
+  and the schedule never touches it. A sprint's dates must fit the class, and a class with a
+  schedule caps a team at its `sprint_count` sprints (`create_sprint` answers 409 past it).
 - **Sprint status is derived from dates.** `scrum.schedule.sprint_status` makes a sprint `planned`,
   `active` (from `starts_at` through `ends_at`) or `completed` by the day at the project's school
   (`_today`, as the burnup day is), and the board opens on today's sprint, else the latest one

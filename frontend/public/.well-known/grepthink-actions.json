@@ -374,7 +374,7 @@
       "id": "create_sprint", "title": "Create a sprint", "role": "project-member",
       "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/sprints",
       "params": {"name": "string!", "starts_at": "date!", "ends_at": "date!"},
-      "note": "Sprints come from the class's sprint schedule (create_class, update_class_sprints): every team gets its Sprint 1 … N from it. Team members also add their own sprints here (the board's New sprint); such a sprint has no sequence, and the schedule never touches it."
+      "note": "Sprints come from the class's sprint schedule (create_class, update_class_sprints): every team gets its Sprint 1 … N from it. Team members also add their own sprints here (the board's New sprint); such a sprint has no sequence, and the schedule never touches it. The sprint must run within the class (its first day to the Sunday of the last day's week; 422 otherwise), and in a class with a sprint schedule a team holds at most that many sprints (409 once it has them all)."
     },
     {
       "id": "update_sprint", "title": "Update a sprint (rename, dates)", "role": "project-member",

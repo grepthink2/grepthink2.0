@@ -306,6 +306,9 @@ export default function ScrumBoardPage() {
 
   // The defaults read the clock, so they are worked out on the click, not during render.
   const openSprintEditor = () => setSprintDraft(newSprintDraft(board?.sprints ?? [], new Date()));
+  // A class with a sprint schedule caps a team's sprints at its count; the API refuses one more.
+  const sprintLimit = board?.project.sprint_limit ?? null;
+  const canAddSprint = canWrite && (sprintLimit == null || (board?.sprints.length ?? 0) < sprintLimit);
 
   /** A new sprint is the one the board then shows, so a backlog story can move straight into it. */
   const handleCreateSprint = async (body: SprintDraft) => {
@@ -382,7 +385,7 @@ export default function ScrumBoardPage() {
               selectedId={board.sprint_id}
               onSelect={pickSprint}
               unit={burnupUnit}
-              onNewSprint={canWrite ? openSprintEditor : undefined}
+              onNewSprint={canAddSprint ? openSprintEditor : undefined}
             />
           )}
           <button

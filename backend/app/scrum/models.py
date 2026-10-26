@@ -235,6 +235,8 @@ class BoardProject(BaseModel):
     id: str
     name: str
     estimate_scale: EstimateScale
+    #: The class's sprint count when it has a sprint schedule: the team may hold no more sprints.
+    sprint_limit: int | None = None
 
 
 class BurnupOut(BaseModel):

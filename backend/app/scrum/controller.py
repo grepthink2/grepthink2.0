@@ -40,7 +40,13 @@ from app.scrum.burnup import (
 )
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
-from app.scrum.schedule import SPRINT_NAME, Schedule, sprint_status, sprint_windows
+from app.scrum.schedule import (
+    SPRINT_NAME,
+    Schedule,
+    latest_sprint_end,
+    sprint_status,
+    sprint_windows,
+)
 from app.utils.mentions import extract_mention_ids
 from app.utils.profiles import profile_display_name
 
@@ -59,6 +65,11 @@ TASK_NOT_FOUND = "Task not found"
 REPO_NOT_FOUND = "Repo not found"
 #: 422s raised from more than one place.
 BAD_DATE_RANGE = "ends_at must be on or after starts_at"
+#: 409: a class with a sprint schedule runs that many sprints, and a team adds none past it.
+SPRINT_LIMIT = "This class runs {count} sprints, and your team has all of them"
+#: 422: a sprint runs within its class, from the first day of term to the Sunday of the week that
+#: holds the last day of classes (the latest day the class's own last sprint may end).
+SPRINT_OUTSIDE_CLASS = "A sprint must run between {first} and {last}"
 TITLE_REQUIRED = "title cannot be null"
 #: 422: the board's ``?unit=`` is not a unit the selected sprint's burnup can draw (spec D21):
 #: points while one of its tasks has none, or a value that is neither points nor hours.
@@ -196,16 +207,65 @@ def _with_status(row: dict, today: date) -> dict:
     return {**row, "status": sprint_status(*_sprint_days(row), today)}
 
 
+def _day_label(day: date) -> str:
+    """A day as sprint refusals name it: "Dec 4, 2026" (the class routes' wording)."""
+    return f"{day:%b} {day.day}, {day.year}"
+
+
+def _as_date(value) -> date:
+    return value if isinstance(value, date) else date.fromisoformat(str(value))
+
+
+def _check_class_dates(klass: dict | None, starts_at: date, ends_at: date) -> None:
+    """422 :data:`SPRINT_OUTSIDE_CLASS` when the sprint starts before the class's first day or ends
+    after the Sunday of its last day's week. A class without one of the two days leaves that side
+    open."""
+    klass = klass or {}
+    first = _as_date(klass["start_date"]) if klass.get("start_date") else None
+    last = latest_sprint_end(_as_date(klass["end_date"])) if klass.get("end_date") else None
+    if (first and starts_at < first) or (last and ends_at > last):
+        raise HTTPException(
+            status_code=422,
+            detail=SPRINT_OUTSIDE_CLASS.format(
+                first=_day_label(first) if first else "the start of term",
+                last=_day_label(last) if last else "the end of term",
+            ),
+        )
+
+
 def create_sprint(*, project_id: str, user_id: str, name: str, starts_at, ends_at) -> dict:
+    """A team's own sprint, beside the ones its class's schedule makes (``sequence`` stays NULL, so
+    the schedule never touches it). It must fit the class's dates, and a class with a schedule caps
+    the team's sprints at the schedule's count: 409 :data:`SPRINT_LIMIT` once the team has them."""
     client = get_client()
     institution_id = _require_writer(client, project_id=project_id, user_id=user_id)
+    starts_at, ends_at = _as_date(starts_at), _as_date(ends_at)
     if ends_at < starts_at:
         raise HTTPException(status_code=422, detail=BAD_DATE_RANGE)
+    pid = str(project_id)
+    found = fan_out(
+        {
+            "project": lambda: authz.load_project(
+                client,
+                pid,
+                columns="id, class_id",
+                class_columns="sprint_count, start_date, end_date",
+            ),
+            "sprints": lambda: (
+                client.table("sprints").select("id").eq("project_id", pid).execute().data or []
+            ),
+        }
+    )
+    klass = found["project"].get("classes") or {}
+    limit = klass.get("sprint_count")
+    if limit and len(found["sprints"]) >= limit:
+        raise HTTPException(status_code=409, detail=SPRINT_LIMIT.format(count=limit))
+    _check_class_dates(klass, starts_at, ends_at)
     res = (
         client.table("sprints")
         .insert(
             {
-                "project_id": str(project_id),
+                "project_id": pid,
                 "name": name,
                 "starts_at": str(starts_at),
                 "ends_at": str(ends_at),
@@ -256,6 +316,14 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     eff_end = date.fromisoformat(allowed.get("ends_at", str(sprint["ends_at"])))
     if eff_end < eff_start:
         raise HTTPException(status_code=422, detail=BAD_DATE_RANGE)
+    if "starts_at" in allowed or "ends_at" in allowed:
+        project = authz.load_project(
+            client,
+            sprint["project_id"],
+            columns="id, class_id",
+            class_columns="start_date, end_date",
+        )
+        _check_class_dates(project.get("classes"), eff_start, eff_end)
     res = client.table("sprints").update(allowed).eq("id", str(sprint_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update sprint")
@@ -1001,7 +1069,10 @@ def get_board(
     first = fan_out(
         {
             "project": lambda: authz.load_project(
-                client, pid, columns="id, name, estimate_scale, class_id"
+                client,
+                pid,
+                columns="id, name, estimate_scale, class_id",
+                class_columns="sprint_count",
             ),
             "sprints": lambda: rows(
                 client.table("sprints")
@@ -1222,7 +1293,11 @@ def get_board(
         project_id=pid,
     )
     return {
-        "project": project,
+        "project": {
+            **project,
+            # A class with a sprint schedule caps a team's sprints at its count (create_sprint).
+            "sprint_limit": (project.get("classes") or {}).get("sprint_count"),
+        },
         "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),
         "sprints": [{**s, "progress": progress[s["id"]]} for s in sprints],
         "sprint_id": sel_id,

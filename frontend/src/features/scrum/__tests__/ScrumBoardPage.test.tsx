@@ -448,6 +448,26 @@ describe('ScrumBoardPage new sprint', () => {
     expect(screen.queryByText('No sprints yet')).not.toBeInTheDocument();
   });
 
+  it("offers no New sprint once the team holds all of its class's sprints", async () => {
+    const atLimit = boardFixture();
+    vi.mocked(api.getScrumBoard).mockResolvedValue({
+      ...atLimit, project: { ...atLimit.project, sprint_limit: atLimit.sprints.length },
+    });
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));
+    expect(screen.queryByRole('menuitem', { name: 'New sprint' })).not.toBeInTheDocument();
+  });
+
+  it('still offers New sprint below the class limit', async () => {
+    const belowLimit = boardFixture();
+    vi.mocked(api.getScrumBoard).mockResolvedValue({
+      ...belowLimit, project: { ...belowLimit.project, sprint_limit: belowLimit.sprints.length + 1 },
+    });
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));
+    expect(screen.getByRole('menuitem', { name: 'New sprint' })).toBeInTheDocument();
+  });
+
   it("opens from the sprint picker's menu and refuses a blank name", async () => {
     renderAt();
     await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));

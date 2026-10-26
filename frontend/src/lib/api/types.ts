@@ -982,7 +982,13 @@ export interface ApiScrumBurnup {
 }
 
 export interface ApiScrumBoard {
-  project: { id: string; name: string; estimate_scale: ApiEstimateScale };
+  project: {
+    id: string;
+    name: string;
+    estimate_scale: ApiEstimateScale;
+    /** The class's sprint count when it has a sprint schedule: the team may hold no more sprints. */
+    sprint_limit?: number | null;
+  };
   ai_enabled: boolean;
   sprints: ApiScrumBoardSprint[];
   /** Sprint being viewed (null = no sprints yet / backlog only). */
