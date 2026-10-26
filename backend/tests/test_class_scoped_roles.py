@@ -65,6 +65,21 @@ ROUTES = [
         id="class-end-date",
     ),
     pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/sprints",
+        {
+            "json": {
+                "sprint_count": 4,
+                "sprint_frequency": "weekly",
+                "sprints_start_on": "2026-09-28",
+            }
+        },
+        f"{CLASSES}.update_class_sprints",
+        {"class": {"id": CLASS}, "teams": 0, "created": 0, "updated": 0, "deleted": 0},
+        ("instructor_id", "class_id"),
+        id="class-sprints",
+    ),
+    pytest.param(
         "post",
         f"/api/classes/{CLASS}/invite",
         {"json": {"student_email": "ann@ucsc.edu"}},
@@ -261,7 +276,13 @@ def test_creating_a_class_still_needs_the_instructor_role(client: TestClient, mo
     res = client.post(
         "/api/classes",
         headers=_as(OWNER),
-        json={"name": "CSE 115A", "term": "Fall", "start_date": "2026-09-24"},
+        json={
+            "name": "CSE 115A",
+            "term": "Fall",
+            "start_date": "2026-09-24",
+            "sprint_count": 5,
+            "sprint_frequency": "biweekly",
+        },
     )
     assert (res.status_code, res.json()["detail"]) == (403, "Instructor role required")
 

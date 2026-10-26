@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type {
   ApiBoardStatus, ApiCreateStoryBody, ApiCreateTaskBody, ApiEstimateScale,
-  ApiScrumBoard, ApiScrumStory, ApiScrumTask, ApiUpdateSprintBody, ApiUpdateStoryBody,
+  ApiScrumBoard, ApiScrumBurnupUnit, ApiScrumStory, ApiScrumTask, ApiUpdateStoryBody,
   ApiUpdateTaskBody,
 } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
@@ -24,6 +24,12 @@ function noticeFor(err: unknown, fallback: string): BoardNotice {
   // owned by ReadOnlyPreviewError so it can't drift from the rest of the app.
   if (err instanceof ReadOnlyPreviewError) return { kind: 'info', message: err.message };
   return { kind: 'error', message: err instanceof Error ? err.message : fallback };
+}
+
+/** Whether a task edit changes what the burnup counts: its points or its hours, sent and different. */
+function changesEstimate(task: ApiScrumTask, body: ApiUpdateTaskBody): boolean {
+  return (body.points !== undefined && body.points !== task.points)
+    || (body.estimate_hours !== undefined && body.estimate_hours !== task.estimate_hours);
 }
 
 /**
@@ -77,9 +83,15 @@ export function useScrumBoard(
   const prRefreshedFor = useRef<string | null>(null);
   /** Sprint currently being viewed; null = let the server pick the active one. */
   const sprintRef = useRef<string | null>(null);
+  /**
+   * The burnup unit asked for; null = the server's default (points when every task in the sprint has
+   * them, else hours). A ref like `sprintRef`, not state: `load` reads it, and a `load` that changed
+   * with it would rerun the mount effect below.
+   */
+  const unitRef = useRef<ApiScrumBurnupUnit | null>(null);
 
-  /** Fetch the board. It never raises the spinner itself: the initial state and
-   *  `selectSprint` do, so the mount effect below sets no state synchronously. */
+  /** Fetch the board. It never raises the spinner itself: the initial state,
+   *  `selectSprint` and `setBurnupUnit` do, so the mount effect below sets no state synchronously. */
   const load = useCallback(
     (sprintId: string | null): Promise<void> => {
       if (!projectId) return Promise.resolve();
@@ -88,7 +100,7 @@ export function useScrumBoard(
       // callbacks, which react-hooks/set-state-in-effect accepts for the mount
       // effect below (it does not for an async function's catch/finally).
       return api
-        .getScrumBoard(projectId, sprintId ?? undefined)
+        .getScrumBoard(projectId, sprintId ?? undefined, unitRef.current ?? undefined)
         .then((next) => {
           if (seq < committedSeq.current) return; // a newer load already won
           committedSeq.current = seq;
@@ -110,7 +122,9 @@ export function useScrumBoard(
   );
 
   useEffect(() => {
-    // `loading` is already true here: the initial state, or the reset above.
+    // `loading` is already true here: the initial state, or the reset above. Another project opens
+    // in its default unit, as another sprint does.
+    unitRef.current = null;
     void load(null);
   }, [load]);
 
@@ -148,8 +162,27 @@ export function useScrumBoard(
 
   const selectSprint = useCallback(
     (sprintId: string) => {
+      // Each sprint opens in its own default unit (points when every one of its tasks has them), not
+      // in the one picked for the last sprint.
+      unitRef.current = null;
       setLoading(true); // a sprint switch shows the spinner; background refreshes don't
       return load(sprintId);
+    },
+    [load],
+  );
+
+  /**
+   * Redraw the burnup in `unit`: the shown sprint reloads as on a sprint switch, skeleton included.
+   * Points goes as the server's default, not by name. It is the default whenever the sprint can draw
+   * it, which is the only time the board offers it, and a named unit the sprint can no longer draw
+   * (a teammate has just added a task without points) would fail the whole load with a 422. Hours can
+   * always be drawn.
+   */
+  const setBurnupUnit = useCallback(
+    (unit: ApiScrumBurnupUnit) => {
+      unitRef.current = unit === 'hours' ? 'hours' : null;
+      setLoading(true);
+      return load(sprintRef.current);
     },
     [load],
   );
@@ -226,7 +259,7 @@ export function useScrumBoard(
     const seq = nextWrite(storyId);
     local(body as Partial<ApiScrumStory>);
     try {
-      const { story } = await api.updateStory(storyId, body);
+      const story = await api.updateStory(storyId, body);
       // A newer edit is already on screen and in flight — its response wins.
       if (writeSeq.current.get(storyId) !== seq) return story;
       // The PATCH response carries no children — keep the ones already loaded.
@@ -243,22 +276,33 @@ export function useScrumBoard(
 
   const patchTask = useCallback(async (taskId: string, body: ApiUpdateTaskBody) => {
     const current = boardRef.current;
-    const snapshot = current ? findTask(current.stories, taskId) : null;
+    // A task on a backlog story lives in `backlog`, not the sprint's `stories`.
+    const snapshot = current
+      ? findTask(current.stories, taskId) ?? findTask(current.backlog, taskId)
+      : null;
     if (!snapshot) return null;
 
     const local = (patch: Partial<ApiScrumTask>) =>
-      setBoard((prev) => (prev ? { ...prev, stories: applyTaskPatch(prev.stories, taskId, patch) } : prev));
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: applyTaskPatch(prev.stories, taskId, patch),
+        backlog: applyTaskPatch(prev.backlog, taskId, patch),
+      } : prev));
 
     const seq = nextWrite(taskId);
     local(body as Partial<ApiScrumTask>);
     try {
-      const { task } = await api.updateScrumTask(taskId, body);
+      const task = await api.updateScrumTask(taskId, body);
       if (writeSeq.current.get(taskId) !== seq) return task;   // superseded
       // The response has no dependency lists, comment count or mover's name: the board's stay.
       setBoard((prev) => (prev ? {
         ...prev,
         stories: mapTask(prev.stories, taskId, (t) => mergeTaskResponse(t, task)),
+        backlog: mapTask(prev.backlog, taskId, (t) => mergeTaskResponse(t, task)),
       } : prev));
+      // Points and hours feed what only the board load computes: the burnup and its unit, the points
+      // nudge and the sprint picker's progress. Reload behind the patch, without the skeleton.
+      if (changesEstimate(snapshot, body)) void refresh();
       return task;
     } catch (err) {
       if (writeSeq.current.get(taskId) !== seq) return null;   // superseded
@@ -266,7 +310,7 @@ export function useScrumBoard(
       setNotice(noticeFor(err, `Couldn’t save ${snapshot.key}`));
       return null;
     }
-  }, []);
+  }, [refresh]);
 
   /** Run a write, refresh on success, and turn any failure into a notice. */
   const mutate = useCallback(
@@ -334,15 +378,11 @@ export function useScrumBoard(
       mutate(() => api.removeTaskDependency(taskId, dependsOnTaskId), 'Couldn’t remove the dependency'),
     [mutate],
   );
+  // No sprint writes: a team's sprints come from its class's sprint schedule (spec 2026-10-22, Part 0).
   const createSprint = useCallback(
     (body: { name: string; starts_at: string; ends_at: string }) =>
       projectId ? mutate(() => api.createSprint(projectId, body), 'Couldn’t create the sprint', 'Sprint created') : Promise.resolve(null),
     [mutate, projectId],
-  );
-  const updateSprint = useCallback(
-    (sprintId: string, body: ApiUpdateSprintBody) =>
-      mutate(() => api.updateSprint(sprintId, body), 'Couldn’t save the sprint'),
-    [mutate],
   );
   const updateSettings = useCallback(
     (scale: ApiEstimateScale) =>
@@ -360,6 +400,7 @@ export function useScrumBoard(
     canWrite: board?.access === 'member',
     refresh,
     selectSprint,
+    setBurnupUnit,
     moveTask,
     createStory,
     updateStory,
@@ -370,7 +411,6 @@ export function useScrumBoard(
     addDependency,
     removeDependency,
     createSprint,
-    updateSprint,
     updateSettings,
   };
 }

@@ -59,7 +59,8 @@ const ControlBar: React.FC<ControlBarProps> = ({
         <Search size={15} className="roster-control-bar__search-icon" />
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="Search students…"
+          aria-label="Search students by name or email"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="roster-control-bar__search-input"

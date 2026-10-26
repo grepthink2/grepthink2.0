@@ -1,27 +1,37 @@
+import type { ApiScrumBurnupUnit } from '@/lib/api';
 import { H, W, seriesPoints } from '../utils/burnupGeometry';
+
+/** How the chart names its unit: in the stat ("13/18 pts", "13/18 h") and the plot's accessible name. */
+const UNIT_NAMES: Record<ApiScrumBurnupUnit, { short: string; long: string }> = {
+  points: { short: 'pts', long: 'points' },
+  hours: { short: 'h', long: 'hours' },
+};
 
 interface Props {
   /** X labels — days within a sprint, or S1…Sn cumulatively. */
   labels: string[];
-  /** Total scope at each step (steps up when scope grows). */
+  /** Total scope at each step (steps up when scope grows), in `unit`. */
   scope: number[];
-  /** Completed points at each step. */
+  /** Completed at each step, in `unit`. */
   completed: number[];
+  /** What the series count: the tasks' points or their whole-hour estimates (spec D21). */
+  unit: ApiScrumBurnupUnit;
   height?: number;
   title?: string;
   subtitle?: string | null;
 }
 
 /**
- * Burnup — completed points (green line over a soft area) climbing toward
+ * Burnup — completed work (green line over a soft area) climbing toward
  * scope (dashed gray). Hand-rolled SVG per D13: token-driven, no chart lib.
  */
-export default function BurnupChart({ labels, scope, completed, height = 150, title, subtitle }: Props) {
+export default function BurnupChart({ labels, scope, completed, unit, height = 150, title, subtitle }: Props) {
   const steps = Math.max(labels.length, scope.length, completed.length);
   const maxY = Math.max(...scope, ...completed, 1);
   const done = completed[completed.length - 1] ?? 0;
   const total = scope[scope.length - 1] ?? 0;
   const lastX = completed.length > 1 ? ((completed.length - 1) / (steps - 1)) * W : 0;
+  const names = UNIT_NAMES[unit];
 
   return (
     <div className="gt-burnup">
@@ -32,7 +42,7 @@ export default function BurnupChart({ labels, scope, completed, height = 150, ti
             {subtitle && <span className="gt-burnup__subtitle">{subtitle}</span>}
           </div>
           <span className="gt-burnup__stat">
-            <strong>{done}</strong>/{total} pts
+            <strong>{done}</strong>/{total} {names.short}
           </span>
         </div>
       )}
@@ -43,7 +53,7 @@ export default function BurnupChart({ labels, scope, completed, height = 150, ti
         preserveAspectRatio="none"
         style={{ height }}
         role="img"
-        aria-label={`Burnup: ${done} of ${total} points complete`}
+        aria-label={`Burnup: ${done} of ${total} ${names.long} complete`}
       >
         {[0.25, 0.5, 0.75].map((g) => (
           <line key={g} x1="0" x2={W} y1={H * g} y2={H * g} className="gt-burnup__grid" vectorEffect="non-scaling-stroke" />

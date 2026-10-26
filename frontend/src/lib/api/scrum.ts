@@ -7,6 +7,7 @@ import type {
   ApiCreateTaskBody,
   ApiEstimateScale,
   ApiScrumBoard,
+  ApiScrumBurnupUnit,
   ApiScrumComment,
   ApiScrumRepo,
   ApiScrumSprint,
@@ -23,9 +24,17 @@ export const scrumApi = {
 
   // ----- Scrum board (app/scrum backend) ----------------------------------
 
-  getScrumBoard: async (projectId: string, sprintId?: string) => {
-    const query = sprintId ? `?sprint_id=${sprintId}` : '';
-    return apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${query}`);
+  /**
+   * The board on `sprintId`, else on today's sprint (else the latest one that has started, else the
+   * first), with its burnup in `unit`, else in points when every task in the sprint has them and in
+   * hours otherwise. A unit the sprint can't draw is refused with a 422.
+   */
+  getScrumBoard: async (projectId: string, sprintId?: string, unit?: ApiScrumBurnupUnit) => {
+    const params = new URLSearchParams();
+    if (sprintId) params.set('sprint_id', sprintId);
+    if (unit) params.set('unit', unit);
+    const query = params.toString();
+    return apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${query ? `?${query}` : ''}`);
   },
 
   /** The sprint card's counts. Unlike the board, it records no board view. */
@@ -42,21 +51,25 @@ export const scrumApi = {
   createSprint: async (
     projectId: string,
     body: { name: string; starts_at: string; ends_at: string },
-  ) => {
-    return apiRequest<{ message: string; sprint: ApiScrumSprint }>(
+  ): Promise<ApiScrumSprint> => {
+    const res = await apiRequest<ApiScrumSprint | { message: string; sprint: ApiScrumSprint }>(
       `/api/projects/${projectId}/scrum/sprints`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, sprint}.
+    return 'sprint' in res ? res.sprint : res;
   },
 
   updateSprint: async (
     sprintId: string,
     body: ApiUpdateSprintBody,
-  ) => {
-    return apiRequest<{ message: string; sprint: ApiScrumSprint }>(
+  ): Promise<ApiScrumSprint> => {
+    const res = await apiRequest<ApiScrumSprint | { message: string; sprint: ApiScrumSprint }>(
       `/api/scrum/sprints/${sprintId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, sprint}.
+    return 'sprint' in res ? res.sprint : res;
   },
 
   createStory: async (projectId: string, body: ApiCreateStoryBody) => {
@@ -66,11 +79,14 @@ export const scrumApi = {
     );
   },
 
-  updateStory: async (storyId: string, body: ApiUpdateStoryBody) => {
-    return apiRequest<{ message: string; story: ApiScrumStory }>(
+  /** The story as saved, without its tasks. */
+  updateStory: async (storyId: string, body: ApiUpdateStoryBody): Promise<ApiScrumStory> => {
+    const res = await apiRequest<ApiScrumStory | { message: string; story: ApiScrumStory }>(
       `/api/scrum/stories/${storyId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, story}.
+    return 'story' in res ? res.story : res;
   },
 
   /** A backlog story and its tasks; 409 for a story in a sprint (move it to the backlog first). */
@@ -85,11 +101,14 @@ export const scrumApi = {
     );
   },
 
-  updateScrumTask: async (taskId: string, body: ApiUpdateTaskBody) => {
-    return apiRequest<{ message: string; task: ApiScrumTask }>(
+  /** The task as saved. */
+  updateScrumTask: async (taskId: string, body: ApiUpdateTaskBody): Promise<ApiScrumTask> => {
+    const res = await apiRequest<ApiScrumTask | { message: string; task: ApiScrumTask }>(
       `/api/scrum/tasks/${taskId}`,
       { method: 'PATCH', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, task}.
+    return 'task' in res ? res.task : res;
   },
 
   deleteScrumTask: async (taskId: string) => {

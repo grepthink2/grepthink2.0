@@ -109,6 +109,18 @@ describe('TaskEditorModal', () => {
     expect(screen.getByText('3 of 8 pts available in US-1')).toBeInTheDocument();
   });
 
+  it('says the points feed the burnup, as the description of the points picker', () => {
+    const p = props();
+    const { unmount } = render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={vi.fn()} />);
+    expect(screen.getByRole('radiogroup', { name: 'Points' }))
+      .toHaveAccessibleDescription('Used by the burnup 6 of 8 pts available in US-1');
+    unmount();
+
+    // A story with no estimate puts no budget on its tasks: the burnup line alone.
+    render(<TaskEditorModal {...props({ points: null })} />);
+    expect(screen.getByRole('radiogroup', { name: 'Points' })).toHaveAccessibleDescription('Used by the burnup');
+  });
+
   it('says so plainly when the story is fully assigned', () => {
     render(<TaskEditorModal {...props({ points: 5 })} />);
     expect(screen.getByText(/fully assigned — raise the story to add more/)).toBeInTheDocument();

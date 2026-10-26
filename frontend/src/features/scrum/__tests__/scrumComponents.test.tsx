@@ -9,11 +9,45 @@ import TaskCard from '../components/TaskCard';
 import BurnupChart from '../components/BurnupChart';
 import { seriesPoints } from '../utils/burnupGeometry';
 import { PointPicker } from '../components/ScalePicker';
-import { UserPair } from '../components/Chips';
+import { PointsChip, UserPair } from '../components/Chips';
 import { buildMemberMap, personOf, UNKNOWN_PERSON } from '../scrumTypes';
+import { cssRules } from '@/test/cssRules';
 import { makeMembers, makeRef, makeStory, makeTask } from './fixtures';
+// The chips' look lives in the scrum layer, which the board page loads.
+import '../scrum.scss';
 
 const members = buildMemberMap(makeMembers());
+
+describe('PointsChip', () => {
+  it('shows a task with no points as "– pts", named for screen readers', () => {
+    render(<PointsChip missing size="sm" />);
+    const chip = screen.getByRole('img', { name: 'No points yet' });
+    expect(chip).toHaveAttribute('aria-label', 'No points yet');
+    // No title: Chromium exposes one as a description, which would repeat the name.
+    expect(chip).not.toHaveAttribute('title');
+    // An en dash (U+2013), not a hyphen.
+    expect(chip.textContent).toBe(`${String.fromCharCode(0x2013)} pts`);
+    expect(chip).toHaveClass('gt-points', 'gt-points--sm', 'gt-points--missing');
+  });
+
+  it('draws the missing chip with the tokens only: a dashed muted border and no fill', () => {
+    render(<PointsChip missing />);
+    const [missing] = cssRules('.gt-points--missing');
+    expect(missing.getPropertyValue('border')).toBe('1px dashed var(--gt-border-subtle)');
+    expect(missing.getPropertyValue('background')).toBe('transparent');
+    expect(missing.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
+    // The rule wins over .gt-points, whose green text and fill it replaces (jsdom resolves the colour,
+    // not a background given with var()).
+    expect(getComputedStyle(screen.getByRole('img')).color).toBe('var(--gt-text-tertiary)');
+  });
+
+  it('shows the points of a task that has them, with no accessible-name override', () => {
+    render(<PointsChip points={5} size="sm" />);
+    const chip = screen.getByText('5');
+    expect(chip).not.toHaveAttribute('aria-label');
+    expect(chip).not.toHaveClass('gt-points--missing');
+  });
+});
 
 describe('TagBadge', () => {
   it('applies the preset modifier class, slashes stripped', () => {
@@ -75,6 +109,19 @@ describe('TaskCard', () => {
   it('shows its hours', () => {
     render(<TaskCard task={makeTask({ estimate_hours: 4 })} members={members} />);
     expect(screen.getByText('4h')).toBeInTheDocument();
+  });
+
+  it('shows the dashed "– pts" chip on a task without points, and the card names it', () => {
+    render(<TaskCard task={makeTask({ points: null })} members={members} onOpen={vi.fn()} />);
+    expect(screen.getByRole('img', { name: 'No points yet' })).toHaveTextContent('pts');
+    // The card is the control: the chip's name is part of what it announces.
+    expect(screen.getByRole('button')).toHaveAccessibleName(/No points yet/);
+  });
+
+  it('shows the points, not the dashed chip, on a task that has them', () => {
+    const { container } = render(<TaskCard task={makeTask({ points: 3 })} members={members} />);
+    expect(container.querySelector('.gt-points')).toHaveTextContent('3');
+    expect(screen.queryByRole('img', { name: 'No points yet' })).toBeNull();
   });
 
   it('renders without a chip for a task row from an older backend (no estimate_hours key)', () => {
@@ -190,10 +237,21 @@ describe('BurnupChart', () => {
     expect(seriesPoints([0, 5, 10], 3, 10)).toBe('0,100 50,50 100,0');
   });
   it('renders the head stat from the series ends', () => {
-    render(<BurnupChart labels={['M', 'T', 'W']} scope={[10, 10, 18]} completed={[0, 5, 13]} title="Sprint 3 burnup" />);
+    render(
+      <BurnupChart labels={['M', 'T', 'W']} scope={[10, 10, 18]} completed={[0, 5, 13]} title="Sprint 3 burnup" unit="points" />,
+    );
     expect(screen.getByText('13')).toBeInTheDocument();
     expect(screen.getByText(/\/18 pts/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Burnup: 13 of 18 points complete');
+  });
+
+  it('names its unit, hours, in the stat and the plot', () => {
+    const { container } = render(
+      <BurnupChart labels={['M', 'T', 'W']} scope={[20, 20, 24]} completed={[0, 6, 9]} title="Sprint 3 burnup" unit="hours" />,
+    );
+    expect(container.querySelector('.gt-burnup__stat')).toHaveTextContent(/^9\/24 h$/);
+    expect(container).not.toHaveTextContent(/pts|points/);
+    expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Burnup: 9 of 24 hours complete');
   });
 });
 

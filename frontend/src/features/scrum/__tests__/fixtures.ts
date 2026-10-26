@@ -1,6 +1,6 @@
 import type {
-  ApiScrumBoard, ApiScrumBoardSprint, ApiScrumMember, ApiScrumStory, ApiScrumSummary, ApiScrumTask,
-  ApiTaskRef,
+  ApiScrumBoard, ApiScrumBoardSprint, ApiScrumBurnup, ApiScrumMember, ApiScrumStory, ApiScrumSummary,
+  ApiScrumTask, ApiTaskRef,
 } from '@/lib/api';
 
 /**
@@ -35,7 +35,21 @@ export const makeMembers = (): ApiScrumMember[] => [
 /** Sprint 1 under way, with makeBoard()'s progress: one 8-point story, one task to do. */
 export const makeSprint = (over: Partial<ApiScrumBoardSprint> = {}): ApiScrumBoardSprint => ({
   id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active',
-  progress: { tasks_done: 0, tasks_total: 1, points_done: 0, points_total: 8 },
+  progress: { tasks_done: 0, tasks_total: 1, points_done: 0, points_total: 8, hours_done: 0, hours_total: 0 },
+  ...over,
+});
+
+/**
+ * makeBoard()'s burnup: its one task has no points, so the sprint draws in hours only (spec D21).
+ * A board whose tasks all have points passes `{ ...makeBurnup(), unit: 'points', units_available:
+ * ['points', 'hours'], tasks_without_points: 0 }`.
+ */
+export const makeBurnup = (over: Partial<ApiScrumBurnup> = {}): ApiScrumBurnup => ({
+  unit: 'hours',
+  units_available: ['hours'],
+  tasks_without_points: 1,
+  sprint: null,
+  cumulative: { labels: [], scope: [], completed: [], subtitle: null },
   ...over,
 });
 
@@ -46,7 +60,7 @@ export const makeBoard = (over: Partial<ApiScrumBoard> = {}): ApiScrumBoard => (
   sprint_id: 'sp1',
   stories: [makeStory({ points: 8, tasks: [makeTask()] })],
   backlog: [],
-  burnup: { sprint: null, cumulative: { labels: [], scope: [], completed: [], subtitle: null } },
+  burnup: makeBurnup(),
   members: makeMembers(),
   access: 'member',
   task_index: [],

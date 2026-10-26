@@ -17,7 +17,10 @@ interface Props {
   onOpen?: () => void;
 }
 
-/** The draggable unit on the board: key row (with a Blocked chip), title, tags, people, PR, audit line. */
+/**
+ * The draggable unit on the board: key row (with a Blocked chip, the hours, and the points or a dashed
+ * "– pts"), title, tags, people, PR, audit line.
+ */
 export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
   const reporter = personOf(members, task.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, task.assignee_id);
@@ -41,7 +44,10 @@ export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
         )}
         <span className="gt-task__meta">
           {task.estimate_hours != null && <EstimateChip estimate={`${task.estimate_hours}h`} />}
-          {task.points != null && <PointsChip points={task.points} size="sm" />}
+          {/* A task without points keeps its sprint's burnup in hours (spec D21): say so on the card. */}
+          {task.points != null
+            ? <PointsChip points={task.points} size="sm" />
+            : <PointsChip missing size="sm" />}
         </span>
       </div>
 

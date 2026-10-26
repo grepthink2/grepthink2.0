@@ -18,6 +18,8 @@
 //     (the gt-spinner mixin, hence the @use above) before "Posting…", and a progress cursor
 //   * .gt-backlog-row__archived is dropped: the archive is gone (spec 2026-10-15 A), and a
 //     legacy archived story is an ordinary backlog row
+//   * .gt-points--missing is added: a task with no points shows a faint dashed "– pts" chip
+//     (spec 2026-10-22 D21) — the subtle border token, no fill, tertiary text
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -74,6 +76,12 @@
 }
 .gt-points--md { min-width: 26px; height: 22px; padding: 0 6px; font-size: 12px; }
 .gt-points--sm { min-width: 22px; height: 18px; padding: 0 5px; font-size: 10.5px; }
+/* After .gt-points, whose fill it replaces: equal specificity, so source order decides. */
+.gt-points--missing {
+  border: 1px dashed var(--gt-border-subtle);
+  background: transparent;
+  color: var(--gt-text-tertiary);
+}
 .gt-estimate {
   display: inline-flex;
   align-items: center;
