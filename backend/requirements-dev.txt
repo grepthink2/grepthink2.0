@@ -4,5 +4,5 @@
 watchfiles==1.3.0   # run.py's reloader (uvicorn reload=True, reload_dirs); Vercel and Docker serve without one
 pytest==9.1.1
 pytest-cov==7.1.0   # python -m pytest --cov (CI runs it; settings live in .coveragerc)
-httpx2==2.13.1   # starlette.testclient's preferred transport (plain httpx is deprecated there)
-ruff==0.17.1
+httpx2==2.16.0   # starlette.testclient's preferred transport (plain httpx is deprecated there)
+ruff==0.17.2
