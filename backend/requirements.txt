@@ -1,8 +1,8 @@
 # Runtime dependencies — pinned so Vercel/Docker/CI builds are reproducible.
 # Upgrade deliberately: bump here, run `pip install -r requirements-dev.txt`,
 # then `python -m pytest`. Dev/test-only tools live in requirements-dev.txt.
-fastapi==0.143.2
-starlette==1.8.0
+fastapi==0.161.1
+starlette==1.9.0
 pydantic==2.14.1
 uvicorn==0.54.0
 python-multipart==0.0.32   # UploadFile (roster CSV upload)
@@ -11,5 +11,5 @@ supabase==2.33.0
 httpx==0.28.1              # scrum PR/MR state fetch (app/scrum/pr_links.py); supabase also pulls it in
 PyJWT[crypto]==2.15.1      # [crypto] pulls `cryptography`, needed to verify RS256/ES256 tokens
 slowapi==0.1.10
-sentry-sdk[fastapi]==2.72.0   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)
+sentry-sdk[fastapi]==2.73.0   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)
 tzdata==2026.5            # zoneinfo data (America/Los_Angeles) on hosts without a system tz database
