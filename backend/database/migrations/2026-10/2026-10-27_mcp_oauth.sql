@@ -11,6 +11,7 @@
 --   * mcp_authorizations: a pending authorization request, from /authorize until the student answers
 --     on the consent page and the app redeems its code. `id` is the opaque reference in the consent
 --     page's URL; the code is stored only as its SHA-256 hash and redeemed once (`used_at`).
+--     `grant_id` is the grant the code made, ended if the code is ever presented again.
 --   * mcp_grants: one per Allow: the student, the app, and when it ends (90 days after the Allow,
 --     however often the app refreshes). Revoking a grant (Settings → Connected apps, or reuse of a
 --     rotated refresh token) ends every token in it.
@@ -66,6 +67,15 @@ CREATE TABLE IF NOT EXISTS public.mcp_tokens (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS mcp_tokens_grant_idx ON public.mcp_tokens (grant_id);
+
+-- Added after the first DEV apply (2026-10-27); idempotent, so the whole file re-applies.
+ALTER TABLE public.mcp_authorizations
+  ADD COLUMN IF NOT EXISTS grant_id uuid REFERENCES public.mcp_grants(id) ON DELETE SET NULL;
+-- Registration's cleanup and the cascades it sets off.
+CREATE INDEX IF NOT EXISTS mcp_clients_unused_idx ON public.mcp_clients (registered_at)
+  WHERE last_used_at IS NULL;
+CREATE INDEX IF NOT EXISTS mcp_authorizations_client_idx ON public.mcp_authorizations (client_id);
+CREATE INDEX IF NOT EXISTS mcp_grants_client_idx ON public.mcp_grants (client_id);
 
 ALTER TABLE public.mcp_clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mcp_authorizations ENABLE ROW LEVEL SECURITY;

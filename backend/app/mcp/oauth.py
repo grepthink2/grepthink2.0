@@ -59,7 +59,12 @@ LAST_USED_EVERY = timedelta(hours=1)
 #: Registration metadata larger than this (JSON bytes) is refused; the column holds 8 kB.
 MAX_CLIENT_INFO = 4096
 
+#: Redirect URI schemes that would run in, or read from, the page that follows them: the consent
+#: page sends the browser there, so one of these would run the registrant's code on the site.
+BLOCKED_SCHEMES = frozenset({"javascript", "data", "vbscript", "file", "blob", "about"})
+
 AUTHORIZATION_NOT_FOUND = "This request has expired or was already answered"
+UNSAFE_REDIRECT = "This app's return address is not allowed"
 CONNECTION_NOT_FOUND = "Connected app not found"
 
 
@@ -109,6 +114,11 @@ def _get_client_info(client_id: str) -> dict | None:
     return row["info"] if row else None
 
 
+def _safe_redirect(uri: str) -> bool:
+    scheme = urlparse(str(uri)).scheme.lower()
+    return bool(scheme) and scheme not in BLOCKED_SCHEMES
+
+
 def _register(info: dict) -> None:
     """Store a registration, after deleting apps never used within a day and expired requests,
     so open registration cannot grow the tables for long.
@@ -116,6 +126,10 @@ def _register(info: dict) -> None:
     ⚠️ Safety issue to revisit: any redirect URI is accepted, so anyone can register an app named
     "Claude" with their own redirect URI and ask a student to allow it (the consent page shows the
     redirect host). An allowlist of known callbacks is the likely fix."""
+    if not all(_safe_redirect(u) for u in info.get("redirect_uris") or []):
+        raise RegistrationError(
+            "invalid_redirect_uri", "redirect_uris must not use a script or file scheme"
+        )
     if len(json.dumps(info)) > MAX_CLIENT_INFO:
         raise RegistrationError("invalid_client_metadata", "Client metadata is too large")
     client = get_client()
@@ -181,6 +195,8 @@ def answer_authorization(*, request_id: str, user_id: str, approve: bool) -> dic
     redirect URI with a one-time code, or with ``error=access_denied``. Answered once; 404 after."""
     row = _open_request(request_id)
     params = row["params"]
+    if not _safe_redirect(params["redirect_uri"]):  # a request stored before registration checked
+        raise HTTPException(status_code=400, detail=UNSAFE_REDIRECT)
     table = get_client().table("mcp_authorizations")
     if approve:
         code = secrets.token_urlsafe(32)
@@ -210,12 +226,20 @@ def _load_code(client_id: str, code: str) -> GrantCode | None:
     row = _first(
         get_client()
         .table("mcp_authorizations")
-        .select("id, client_id, params, user_id, used_at, expires_at")
+        .select("id, client_id, params, user_id, used_at, expires_at, grant_id")
         .eq("code_hash", _hash(code))
         .limit(1)
         .execute()
     )
-    if not row or row["client_id"] != client_id or row.get("used_at") or not row.get("user_id"):
+    if not row or row["client_id"] != client_id:
+        return None
+    if row.get("used_at"):
+        # A code presented twice was intercepted, or the app is broken: end what it gave.
+        if row.get("grant_id"):
+            logger.warning("mcp: an authorization code was replayed; ending its grant")
+            _revoke_grant(row["grant_id"])
+        return None
+    if not row.get("user_id"):
         return None
     params = row["params"]
     return GrantCode(
@@ -246,6 +270,10 @@ def _redeem_code(code: GrantCode) -> OAuthToken:
     if not used.data:
         raise TokenError("invalid_grant", "authorization code has already been used")
     now = _now()
+    # Before the grant exists: registration's cleanup deletes apps never used, with their grants.
+    client.table("mcp_clients").update({"last_used_at": now.isoformat()}).eq(
+        "client_id", code.client_id
+    ).execute()
     grant = _first(
         client.table("mcp_grants")
         .insert(
@@ -260,8 +288,8 @@ def _redeem_code(code: GrantCode) -> OAuthToken:
         )
         .execute()
     )
-    client.table("mcp_clients").update({"last_used_at": now.isoformat()}).eq(
-        "client_id", code.client_id
+    client.table("mcp_authorizations").update({"grant_id": grant["id"]}).eq(
+        "id", code.request_id
     ).execute()
     return _issue(grant)
 
@@ -365,6 +393,10 @@ def _rotate(token: GrantRefreshToken) -> OAuthToken:
     )
     if not grant or not _grant_live(grant):
         raise TokenError("invalid_grant", "the connection has ended")
+    # The access tokens issued before this refresh end with it.
+    client.table("mcp_tokens").update({"revoked_at": _now().isoformat()}).eq(
+        "grant_id", grant["id"]
+    ).eq("kind", "access").is_("revoked_at", "null").execute()
     return _issue(grant)
 
 

