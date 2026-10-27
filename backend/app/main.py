@@ -33,6 +33,7 @@ from app.issues.url import router as issues_router
 from app.jobs.email_dispatch import run_forever as run_email_dispatch
 from app.limiter import limiter
 from app.mcp.server import MCP_PATHS, mcp_endpoint
+from app.mcp.url import router as mcp_router
 from app.messages.url import router as messages_router
 from app.middleware import SecurityHeadersMiddleware
 from app.notifications.url import router as notifications_router
@@ -135,6 +136,7 @@ for router in (
     email_router,
     scrum_router,
     search_router,
+    mcp_router,
 ):
     app.include_router(router)
 

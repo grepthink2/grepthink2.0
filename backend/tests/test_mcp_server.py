@@ -4,6 +4,7 @@ and the tools it serves. The tools' rules are in test_mcp_controller.py."""
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -35,8 +36,36 @@ def _rpc(client: TestClient, method: str, params: dict | None = None, *, token: 
     return client.post("/mcp", headers=headers, content=json.dumps(body))
 
 
+@pytest.fixture(autouse=True)
+def _board(monkeypatch):
+    return _db(monkeypatch)
+
+
 def _app_token(sub: str = UID) -> str:
-    return make_token(sub=sub, client_id="client-claude")
+    """An access token the connector's authorization server issued to "client-claude" for ``sub``,
+    in whichever fake database is installed now."""
+    from app.core import db as core_db
+    from app.mcp import oauth
+
+    fake = core_db.service_client
+    if not any(r["client_id"] == "client-claude" for r in fake.rows("mcp_clients")):
+        fake.rows("mcp_clients").append(
+            {
+                "client_id": "client-claude",
+                "info": {"client_id": "client-claude", "client_name": "Claude"},
+            }
+        )
+    grant = {
+        "id": f"grant-{sub}",
+        "user_id": sub,
+        "client_id": "client-claude",
+        "scopes": ["scrum"],
+        "expires_at": (datetime.now(UTC) + timedelta(days=90)).isoformat(),
+        "revoked_at": None,
+        "last_used_at": datetime.now(UTC).isoformat(),
+    }
+    fake.rows("mcp_grants").append(grant)
+    return oauth._issue(grant).access_token
 
 
 def _call(client: TestClient, name: str, arguments: dict, *, token: str) -> dict:
@@ -58,13 +87,13 @@ def test_a_site_session_token_is_refused(mcp_client):
     assert r.status_code == 401
 
 
-def test_resource_metadata_names_supabase_as_the_authorization_server(mcp_client):
+def test_resource_metadata_names_this_api_as_the_authorization_server(mcp_client):
     r = mcp_client.get("/.well-known/oauth-protected-resource/mcp")
 
     assert r.status_code == 200
     body = r.json()
     assert body["resource"] == settings.MCP_RESOURCE_URL
-    assert body["authorization_servers"] == [f"{settings.SUPABASE_URL}/auth/v1"]
+    assert body["authorization_servers"] == [settings.MCP_ISSUER_URL]
 
 
 def test_app_token_lists_the_three_tools(mcp_client):

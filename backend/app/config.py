@@ -175,16 +175,13 @@ class Settings:
     # the List-Unsubscribe header. Unset: emails carry only the frontend unsubscribe page link.
     PUBLIC_API_URL: str = (os.environ.get("PUBLIC_API_URL") or "").strip().rstrip("/")
 
-    # The scrum board MCP connector's address, as apps reach it: its OAuth resource identifier.
-    # Follows PUBLIC_API_URL; a local server when that is unset, except on Vercel, where there is
-    # then no address to give and /mcp answers 503 (app/mcp/server.py).
-    MCP_RESOURCE_URL: str | None = (
-        f"{PUBLIC_API_URL}/mcp"
-        if PUBLIC_API_URL
-        else None
-        if os.environ.get("VERCEL_ENV")
-        else "http://localhost:5001/mcp"
+    # The scrum board MCP connector: this API is its OAuth authorization server (issuer) and /mcp its
+    # resource. Follows PUBLIC_API_URL; a local server when that is unset, except on Vercel, where
+    # there is then no address to give and /mcp answers 503 (app/mcp/server.py).
+    MCP_ISSUER_URL: str | None = PUBLIC_API_URL or (
+        None if os.environ.get("VERCEL_ENV") else "http://localhost:5001"
     )
+    MCP_RESOURCE_URL: str | None = f"{MCP_ISSUER_URL}/mcp" if MCP_ISSUER_URL else None
 
     # Public frontend URL for links in transactional emails (signup, class join).
     # Falls back to the first CORS origin when unset.

@@ -32,6 +32,10 @@ SPRINT_OTHER = "sprint-other"
 MCP_RELATIONS = {
     **RELATIONS,
     ("project_members", "profiles!project_members_user_id_fkey"): ("user_id", "id", False),
+    # the connector's authorization server (app/mcp/oauth.py)
+    ("mcp_tokens", "mcp_grants"): ("grant_id", "id", False),
+    ("mcp_grants", "mcp_clients"): ("client_id", "client_id", False),
+    ("mcp_authorizations", "mcp_clients"): ("client_id", "client_id", False),
 }
 
 
@@ -110,6 +114,10 @@ def _db(monkeypatch, *, fill=None, **tables):
         ],
         "sprint_burnup_days": [],
         "institutions": [],
+        "mcp_clients": [],
+        "mcp_authorizations": [],
+        "mcp_grants": [],
+        "mcp_tokens": [],
     }
     seed.update(tables)
     fake = scrum_db(monkeypatch, **seed)

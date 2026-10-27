@@ -43,3 +43,9 @@ class FillBoardRequest(BaseModel):
     confirmed: bool
     sprints: list[NewSprint] = Field(default_factory=list)
     stories: list[NewStory] = Field(default_factory=list)
+
+
+class AuthorizationAnswer(BaseModel):
+    """The student's answer on the consent page."""
+
+    approve: bool

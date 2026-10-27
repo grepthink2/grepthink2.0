@@ -27,9 +27,10 @@ from starlette.responses import JSONResponse
 
 from app.config import settings
 from app.mcp import controller
-from app.mcp.auth import SupabaseAppTokenVerifier, auth_settings
+from app.mcp.auth import auth_settings
 from app.mcp.controller import FillRejected
 from app.mcp.models import FillBoardRequest, NewSprint, NewStory
+from app.mcp.oauth import OAuthProvider
 
 INSTRUCTIONS = """GrepThink is where UCSC CSE 115 teams run their projects. These tools fill a team's
 scrum board from the plan the student gives you (a scrum doc, backlog, sprint plan or notes,
@@ -53,7 +54,7 @@ mcp = MCPServer(
     title="GrepThink scrum board",
     instructions=INSTRUCTIONS,
     website_url="https://grepthink2.com",
-    token_verifier=SupabaseAppTokenVerifier(),
+    auth_server_provider=OAuthProvider(),
     auth=auth_settings(),
 )
 
@@ -150,8 +151,17 @@ async def fill_board(
     )
 
 
-#: The paths the MCP app answers: the endpoint, and its OAuth protected-resource metadata.
-MCP_PATHS = ("/mcp", "/.well-known/oauth-protected-resource/mcp")
+#: The paths the MCP app answers: the endpoint, its OAuth metadata and the authorization server.
+MCP_PATHS = (
+    "/mcp",
+    "/.well-known/oauth-protected-resource/mcp",
+    # The authorization server (the MCP SDK's, on app/mcp/oauth.py).
+    "/.well-known/oauth-authorization-server",
+    "/register",
+    "/authorize",
+    "/token",
+    "/revoke",
+)
 
 
 def build_mcp_app() -> Starlette:

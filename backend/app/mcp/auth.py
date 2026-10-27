@@ -1,51 +1,28 @@
-"""Who may use /mcp: a connected app holding a token Supabase's OAuth server issued for a user.
-
-The token is an ordinary Supabase access token plus the app's ``client_id``, verified exactly
-like a site session (:func:`app.dependencies.decode_supabase_jwt`). It is the mirror of the
-API's rule: /mcp takes only app tokens, and every API route refuses them.
-"""
+"""The MCP connector's OAuth settings: this API is both the authorization server (the MCP SDK's
+endpoints on :class:`app.mcp.oauth.OAuthProvider`) and the resource server for /mcp."""
 
 from __future__ import annotations
 
-import logging
-
-from mcp.server.auth.provider import AccessToken
-from mcp.server.auth.settings import AuthSettings
+from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions, RevocationOptions
 
 from app.config import settings
-from app.dependencies import decode_supabase_jwt, is_app_token
+from app.mcp.oauth import SCOPE
 
-logger = logging.getLogger(__name__)
-
-
-class SupabaseAppTokenVerifier:
-    """The MCP SDK's ``TokenVerifier``: an :class:`AccessToken` for a valid app token, else None
-    (the SDK answers 401 with a pointer to the resource metadata)."""
-
-    async def verify_token(self, token: str) -> AccessToken | None:
-        try:
-            claims = decode_supabase_jwt(token)
-        except Exception:
-            logger.info("mcp: token verification failed", exc_info=True)
-            return None
-        if not is_app_token(claims) or not claims.get("sub"):
-            logger.info("mcp: refused a token that is not a connected app's")
-            return None
-        return AccessToken(
-            token=token,
-            client_id=str(claims["client_id"]),
-            scopes=[],
-            expires_at=claims.get("exp"),
-            subject=str(claims["sub"]),
-        )
+#: Only for building the app when the API has no public address: /mcp then answers 503
+#: (app/mcp/server.py) and nothing reads this.
+_UNCONFIGURED = "http://localhost:5001"
 
 
 def auth_settings() -> AuthSettings:
-    """Supabase Auth is the authorization server; this API is the resource server."""
+    issuer = settings.MCP_ISSUER_URL or _UNCONFIGURED
     return AuthSettings(
-        issuer_url=f"{settings.SUPABASE_URL}/auth/v1",
-        resource_server_url=settings.MCP_RESOURCE_URL,
-        # Supabase does not bind its tokens to a resource (they carry aud "authenticated"),
-        # so there is no resource claim to compare.
+        issuer_url=issuer,
+        resource_server_url=settings.MCP_RESOURCE_URL or f"{_UNCONFIGURED}/mcp",
+        client_registration_options=ClientRegistrationOptions(
+            enabled=True, valid_scopes=[SCOPE], default_scopes=[SCOPE]
+        ),
+        revocation_options=RevocationOptions(enabled=True),
+        required_scopes=[SCOPE],
+        # Our tokens are opaque and only ever issued for /mcp: there is no other resource.
         validate_token_resource=False,
     )
