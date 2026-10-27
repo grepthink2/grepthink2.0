@@ -323,6 +323,19 @@ A real OAuth flow on DEV (throwaway user and client, both deleted) showed:
   ignores the token's `aud` (a token with another audience was accepted too), so the access-token hook
   cannot fence it. This blocks PROD until the maintainer decides how to close it.
 
+### End to end with GrepThink's own tokens (2026-10-27)
+
+Local backend against DEV, a throwaway student made a member of one DEV project for the run, everything
+it created deleted afterwards:
+
+- The SDK client's flow worked: register, authorize, consent (`/api/mcp/authorizations`), token, refresh.
+- The tools listed the project, read its board (Fibonacci scale, 4 members, 2 sprints, 10 stories), refused
+  a batch with off-scale points, and added a new sprint with two stories and two tasks (US-11, US-12,
+  GT-23, GT-24) with warnings for the empty fields and the new sprint's burnup snapshot.
+- Our token is refused by Supabase Auth (`/user` and the password change: 403 `bad_jwt`), by PostgREST
+  (401) and by `/api` (401).
+- Disconnect in Settings ended the token at once (`/mcp` 401).
+
 ## Later
 
 - **Rate limiting on `/mcp` and the MCP authorization endpoints.** Left out of v1 on the maintainer's
