@@ -26,7 +26,7 @@
 --
 -- Idempotent (CREATE OR REPLACE). Nothing calls it until the backend that does is deployed.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-10-27 (by Claude, via psql)   PROD — pending
 
 BEGIN;
 

@@ -23,7 +23,7 @@
 -- One transaction, idempotent. Safe to apply before or after the code: site sessions carry no
 -- `client_id`, so nothing they see or do changes.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-10-27 (by Claude, via psql)   PROD — pending
 
 BEGIN;
 

@@ -293,3 +293,21 @@ the entry chunk (the board is already a lazy route).
 - Stories may join planned or active sprints, never completed ones.
 - Task-points vs story-points mismatches warn rather than refuse.
 - The end-to-end test runs through a local backend and a temporary tunnel against DEV Supabase.
+
+## Found on DEV (2026-10-27)
+
+A real OAuth flow on DEV (throwaway user and client, both deleted) showed:
+
+- **The fences hold.** The app token read nothing from PostgREST (`[]`) and its Storage upload was refused
+  by `app_tokens_denied`. Every `/api` route refused it with 401. `/mcp` took it and refused a site session.
+- **Supabase Auth's own account endpoint does not.** With the app token, `GET /auth/v1/user`, a metadata
+  update and **a password change** (`PUT /auth/v1/user`) all answered 200, and the new password signed in.
+  Email change uses the same endpoint. `POST /logout?scope=global` also answered 204. Supabase Auth
+  ignores the token's `aud` (a token with another audience was accepted too), so the access-token hook
+  cannot fence it. This blocks PROD until the maintainer decides how to close it.
+
+## Later
+
+- **Rate limiting on `/mcp`.** Left out of v1 on the maintainer's decision, against the AGENTS.md rule for
+  abuse-prone endpoints. Revisit when the connector has users: a per-user limit keyed by the token's
+  `sub`, like the search index's.
