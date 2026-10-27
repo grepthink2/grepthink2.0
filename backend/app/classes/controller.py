@@ -14,7 +14,7 @@ from fastapi import HTTPException
 
 from app.assignments import deadlines
 from app.classes import terms
-from app.classes.models import END_BEFORE_START, END_TOO_LATE
+from app.classes.models import END_BEFORE_START, END_TOO_LATE, UpdateClassSprintsRequest
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
@@ -26,6 +26,8 @@ from app.institutions.controller import (
 )
 from app.outbox import controller as outbox
 from app.outbox import invite_jobs
+from app.scrum.controller import SPRINTS_IN_USE, ensure_project_sprints
+from app.scrum.schedule import Schedule, latest_sprint_end, schedule_end, schedule_problem
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -549,6 +551,59 @@ def _pick_course_code(client) -> str | None:
     return next((code for code in candidates if code not in taken), None)
 
 
+def _day_label(day: datetime.date) -> str:
+    """A day as the class routes' refusals name it: "Dec 4, 2026"."""
+    return f"{day:%b} {day.day}, {day.year}"
+
+
+#: 422: a class's sprint schedule (spec D20) must fit the class's dates. Its first sprint can't
+#: start before the class's first week of term, nor after the latest last day of classes the class
+#: allows (the end of week 53, as ``END_TOO_LATE`` bounds the last day itself), and its last one
+#: can't end after the Sunday of the week that holds the last day of classes, ``end``. Days are
+#: named as :func:`_day_label` names them ("Dec 4, 2026"), as the attendance refusal does.
+SPRINTS_BEFORE_START = "The first sprint starts before the class does"
+SPRINTS_START_TOO_LATE = "The first sprint must start within a year of the first week of term"
+SPRINTS_PAST_END = "The sprints run past the last day of classes ({end})"
+#: 409: a last day of classes whose week ends before the class's last sprint does (spec D20). ``k``
+#: is the sprint count and ``end`` the last sprint's last day ("Dec 6, 2026").
+END_DATE_BEFORE_SPRINTS = "Sprint {k} ends {end}; change the sprint schedule first"
+
+
+def _require_schedule_fits(
+    schedule: Schedule,
+    *,
+    class_start: datetime.date | None,
+    class_end: datetime.date | None,
+) -> None:
+    """422 when ``schedule`` does not fit the class's dates, with the sentence for the first
+    problem :func:`~app.scrum.schedule.schedule_problem` finds:
+
+    - :data:`SPRINTS_BEFORE_START`: it starts before ``class_start``;
+    - :data:`SPRINTS_START_TOO_LATE`: it starts after the latest last day of classes
+      ``class_start`` allows, or so late that its days would pass the end of the calendar, which
+      bounds a class with no dates too (a day that late can only be a typo, so the same sentence);
+    - :data:`SPRINTS_PAST_END`: its last sprint ends after the Sunday of the week (Monday to
+      Sunday) that holds ``class_end`` (:func:`~app.scrum.schedule.latest_sprint_end`).
+
+    A class date that is not set allows any day on its side. No first day makes this raise anything
+    else, so a stored schedule's days can always be worked out. Reads nothing."""
+    problem = schedule_problem(
+        start_on=schedule.start_on,
+        count=schedule.count,
+        frequency=schedule.frequency,
+        class_start=class_start,
+        class_end=class_end,
+    )
+    if problem == "SPRINTS_BEFORE_START":
+        raise HTTPException(status_code=422, detail=SPRINTS_BEFORE_START)
+    if problem == "SPRINTS_START_TOO_LATE":
+        raise HTTPException(status_code=422, detail=SPRINTS_START_TOO_LATE)
+    if problem == "SPRINTS_PAST_END":
+        raise HTTPException(
+            status_code=422, detail=SPRINTS_PAST_END.format(end=_day_label(class_end))
+        )
+
+
 def create_class(
     name: str,
     description: str | None,
@@ -559,6 +614,10 @@ def create_class(
     institution_id: UUID | str | None = None,
     external_tasks_url: str | None = None,
     end_date: datetime.date | None = None,
+    *,
+    sprint_count: int,
+    sprint_frequency: str,
+    sprints_start_on: datetime.date | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -571,8 +630,17 @@ def create_class(
     sidebar link; omitted, the class has none. ``end_date`` (the request model refuses one before
     ``start_date``) is the class's last day of classes; omitted, none is stored and the class
     keeps its term's fixed length.
+
+    ``sprint_count``, ``sprint_frequency`` and ``sprints_start_on`` (``start_date`` when omitted)
+    are the class's sprint schedule (spec D20). It must start on or after ``start_date``, within a
+    year of it, and end by the Sunday of the week that holds ``end_date`` when there is one: 422
+    otherwise (:func:`_require_schedule_fits`), before anything is read or written.
+
+    Returns the class row.
     """
+    schedule = Schedule(sprints_start_on or start_date, sprint_count, sprint_frequency)
     try:
+        _require_schedule_fits(schedule, class_start=start_date, class_end=end_date)
         if institution_id is not None and not is_known_institution(institution_id):
             raise HTTPException(status_code=400, detail="Unknown institution")
 
@@ -593,6 +661,9 @@ def create_class(
             "term": term,
             "start_date": start_date.isoformat(),
             "status": "active",
+            "sprint_count": schedule.count,
+            "sprint_frequency": schedule.frequency,
+            "sprints_start_on": schedule.start_on.isoformat(),
         }
         if description is not None:
             class_data["description"] = description
@@ -862,10 +933,7 @@ def _refuse_hiding_attendance(
         earliest = start + datetime.timedelta(weeks=week - 1)
         raise HTTPException(
             status_code=409,
-            detail=(
-                f"Week {week} already has attendance. "
-                f"Pick {earliest:%b} {earliest.day}, {earliest.year} or later."
-            ),
+            detail=f"Week {week} already has attendance. Pick {_day_label(earliest)} or later.",
         )
 
 
@@ -880,12 +948,17 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
       earliest day that does). TA Meetings counts its weeks from the last day, so a week past it
       could no longer be opened.
 
-    Nothing is written when a day is refused. A class with no ``start_date`` has nothing to count
-    from or to fall before, so any day goes: its weeks stay the term's fixed length.
+    A class with no ``start_date`` has nothing to count from or to fall before, so any day goes
+    there: its weeks stay the term's fixed length. A class with a sprint schedule, with or without
+    a ``start_date``, also needs the day in the week (Monday to Sunday) its last sprint ends in, or
+    later (:func:`~app.scrum.schedule.latest_sprint_end`; 409 :data:`END_DATE_BEFORE_SPRINTS`,
+    naming that sprint and its last day): the instructor shortens the schedule first. Nothing is
+    written when a day is refused.
 
-    Round trips: the owner check (it reads ``term`` and ``start_date`` with the class) runs beside
-    the class's team ids; then one attendance read, only for a class with a start date and teams;
-    then the update. At most 4 queries in 3 waves. Returns the updated class row.
+    Round trips: the owner check (it reads ``term``, ``start_date`` and the sprint schedule with the
+    class) runs beside the class's team ids; then one attendance read, only for a class with a
+    start date and teams; then the update. At most 4 queries in 3 waves. Returns the updated class
+    row.
     """
     try:
         client = get_client()
@@ -894,7 +967,13 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
         reads = fan_out(
             {
                 "class": lambda: _require_owner(
-                    client, instructor_id, cid, columns="id, created_by, term, start_date"
+                    client,
+                    instructor_id,
+                    cid,
+                    columns=(
+                        "id, created_by, term, start_date, "
+                        "sprint_count, sprint_frequency, sprints_start_on"
+                    ),
                 ),
                 "project_ids": lambda: _class_project_ids(client, cid),
             }
@@ -909,6 +988,16 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
             _refuse_hiding_attendance(
                 client, reads["project_ids"], class_row.get("term"), start, end_date
             )
+        schedule = Schedule.from_class(class_row)
+        if schedule is not None:
+            last_day = schedule_end(schedule.start_on, schedule.count, schedule.frequency)
+            if last_day > latest_sprint_end(end_date):
+                raise HTTPException(
+                    status_code=409,
+                    detail=END_DATE_BEFORE_SPRINTS.format(
+                        k=schedule.count, end=_day_label(last_day)
+                    ),
+                )
 
         update_result = (
             client.table("classes")
@@ -931,6 +1020,157 @@ def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id
     except Exception:
         logger.exception("Error updating class end date | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to update the last day of classes")
+
+
+def _class_day(class_row: dict, column: str) -> datetime.date | None:
+    """A date column of a class row (ISO text from PostgREST), or None when it is not set."""
+    value = class_row.get(column)
+    return None if value is None else datetime.date.fromisoformat(str(value))
+
+
+def _class_teams(client, class_id: str) -> list[dict]:
+    """The ``id`` and ``name`` of every team in the class, by name and then id. One read."""
+    rows = client.table("projects").select("id, name").eq("class_id", class_id).execute().data or []
+    return sorted(rows, key=lambda team: (team["name"], str(team["id"])))
+
+
+def _refuse_sprints_in_use(client, teams: list[dict], count: int) -> None:
+    """409 :data:`~app.scrum.controller.SPRINTS_IN_USE` when a story is in a team's sprint beyond
+    ``count``, which a schedule of ``count`` sprints deletes; archived stories count, as in
+    :func:`~app.scrum.controller.ensure_project_sprints`.
+
+    The first such team in ``teams``' order is named, with its lowest such sprint. One read: the
+    teams' sprints whose ``sequence`` is above ``count``, each with its stories' ids. None without
+    teams. Sprints with no ``sequence`` are never deleted, so never read.
+    """
+    if not teams:
+        return
+    beyond = (
+        client.table("sprints")
+        .select("project_id, sequence, user_stories(id)")
+        .in_("project_id", [team["id"] for team in teams])
+        .gt("sequence", count)
+        .execute()
+    ).data or []
+    lowest: dict[str, int] = {}
+    for sprint in beyond:
+        if sprint.get("user_stories"):
+            team_id, k = str(sprint["project_id"]), sprint["sequence"]
+            lowest[team_id] = min(k, lowest.get(team_id, k))
+    for team in teams:
+        k = lowest.get(str(team["id"]))
+        if k is not None:
+            raise HTTPException(
+                status_code=409, detail=SPRINTS_IN_USE.format(team=team["name"], k=k)
+            )
+
+
+def update_class_sprints(
+    class_id: UUID, instructor_id: str, data: UpdateClassSprintsRequest
+) -> dict:
+    """Set or change the class's sprint schedule, and make every team's sprints follow it (spec
+    D20).
+
+    Who can call: the class instructor (404 for a missing class, 403 for anyone else).
+
+    Raises, before anything is written:
+
+    - 422 when the schedule does not fit the class's dates (:func:`_require_schedule_fits`, the
+      rules a new class's schedule follows);
+    - 409 :data:`~app.scrum.controller.SPRINTS_IN_USE` when a team has a story in a sprint the new
+      count would delete. Teams are taken by name, then id: the first such team is named, with its
+      lowest such sprint.
+
+    Then it writes the class row, and each team's sprints follow the schedule
+    (:func:`~app.scrum.controller.ensure_project_sprints`: the missing ones made, the changed ones
+    rewritten in place, the ones beyond the count deleted), the teams fanned out. A team whose
+    sprints already follow it costs one read and writes nothing, so the same schedule sent again
+    changes no sprint.
+
+    The class row goes first so it stays the source of truth: should a team's sprints fail to
+    follow (an outage, or a story moved after the check into a sprint the change deletes), the
+    request fails with the class and possibly other teams already changed. The same request again
+    finishes the rest, and a team created meanwhile takes its sprints from the class row.
+
+    Returns ``{"class": <the updated row>, "teams", "created", "updated", "deleted"}``: the number of
+    teams and the sprints written, summed over them. Round trips: the owner check (the class's
+    dates) beside the class's teams; their sprints beyond the count with their stories, when there
+    are teams; the class update; then per team one read and at most a delete, an insert and an
+    upsert.
+    """
+    schedule = Schedule(data.sprints_start_on, data.sprint_count, data.sprint_frequency)
+    try:
+        client = get_client()
+        cid = str(class_id)
+
+        reads = fan_out(
+            {
+                "class": lambda: _require_owner(
+                    client, instructor_id, cid, columns="id, created_by, start_date, end_date"
+                ),
+                "teams": lambda: _class_teams(client, cid),
+            }
+        )
+        class_row, teams = reads["class"], reads["teams"]
+        _require_schedule_fits(
+            schedule,
+            class_start=_class_day(class_row, "start_date"),
+            class_end=_class_day(class_row, "end_date"),
+        )
+        _refuse_sprints_in_use(client, teams, schedule.count)
+
+        update_result = (
+            client.table("classes")
+            .update(
+                {
+                    "sprint_count": schedule.count,
+                    "sprint_frequency": schedule.frequency,
+                    "sprints_start_on": schedule.start_on.isoformat(),
+                }
+            )
+            .eq("id", cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update the sprint schedule")
+
+        # Each job writes only its own team's sprints, so the teams' writes are independent.
+        written = fan_out(
+            {
+                str(team["id"]): (
+                    lambda team=team: ensure_project_sprints(
+                        client,
+                        project_id=str(team["id"]),
+                        project_name=team["name"],
+                        schedule=schedule,
+                    )
+                )
+                for team in teams
+            }
+        )
+        totals = {
+            change: sum(counts[change] for counts in written.values())
+            for change in ("created", "updated", "deleted")
+        }
+        logger.info(
+            "Class sprint schedule set | class_id=%s count=%s frequency=%s start=%s teams=%s "
+            "created=%s updated=%s deleted=%s updated_by=%s",
+            class_id,
+            schedule.count,
+            schedule.frequency,
+            schedule.start_on,
+            len(teams),
+            totals["created"],
+            totals["updated"],
+            totals["deleted"],
+            instructor_id,
+        )
+        return {"class": update_result.data[0], "teams": len(teams), **totals}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating class sprint schedule | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update the sprint schedule")
 
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:

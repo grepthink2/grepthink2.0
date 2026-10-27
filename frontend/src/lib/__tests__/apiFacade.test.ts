@@ -177,6 +177,7 @@ const METHODS = [
   'updateAssignmentTsr',
   'updateClassEndDate',
   'updateClassExternalTasksUrl',
+  'updateClassSprints',
   'updateClassStatus',
   'updateEmailPreferences',
   'updateProject',

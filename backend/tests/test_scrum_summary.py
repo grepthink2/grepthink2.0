@@ -3,11 +3,13 @@ FakeSupabase.
 
 The summary answers the same people as the board, but it is a pure read: loading the
 project page records no board_viewed event (the board_views metric counts board loads) and
-takes no burnup snapshot.
+takes no burnup snapshot. Its sprint is the one the board opens on, with the status from its
+dates (tests/test_scrum_sprint_status.py covers the choice and the status).
 """
 
+from datetime import date
+
 import pytest
-from fastapi import HTTPException
 
 from app.core import authz
 from app.scrum import controller
@@ -16,16 +18,19 @@ from tests.scrum_support import INSTR, MEETING_TA, OUTSIDER, PID, STUDENT, TA, U
 
 URL = f"/api/projects/{PID}/scrum/summary"
 NO_TASKS = {"todo": 0, "in_progress": 0, "done": 0}
+#: A day inside Sprint 2.
+TODAY = date(2026, 9, 10)
 
 
-def _sprint(sid, name, starts, ends, status):
+def _sprint(sid, name, starts, ends):
+    """Stored ``planned``, the column's default: the status comes from the dates."""
     return {
         "id": sid,
         "project_id": PID,
         "name": name,
         "starts_at": starts,
         "ends_at": ends,
-        "status": status,
+        "status": "planned",
     }
 
 
@@ -54,15 +59,16 @@ def _task(tid, story, status):
     }
 
 
-S1 = _sprint("S1", "Sprint 1", "2026-08-10", "2026-08-23", "completed")
-S2 = _sprint("S2", "Sprint 2", "2026-09-07", "2026-09-20", "active")
-S3 = _sprint("S3", "Sprint 3", "2026-09-21", "2026-10-04", "planned")
+S1 = _sprint("S1", "Sprint 1", "2026-08-10", "2026-08-23")
+S2 = _sprint("S2", "Sprint 2", "2026-09-07", "2026-09-20")
+S3 = _sprint("S3", "Sprint 3", "2026-09-21", "2026-10-04")
 
 
 def _seed(monkeypatch):
-    """Sprint 2 is under way and Sprint 3 is planned after it. Sprint 2's two live stories
-    hold 1 task to do, 2 in progress and 3 done. D has no sprint and E is archived, so the
-    backlog holds two stories; their tasks, and those of the other sprints, do not count."""
+    """On TODAY Sprint 2 is under way and Sprint 3 is planned after it. Sprint 2's two live
+    stories hold 1 task to do, 2 in progress and 3 done. D has no sprint and E is archived, so
+    the backlog holds two stories; their tasks, and those of the other sprints, do not count."""
+    monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     return scrum_db(
         monkeypatch,
         sprints=[S1, S2, S3],
@@ -168,16 +174,3 @@ def test_the_summary_records_nothing_and_writes_nothing(monkeypatch, client):
     assert {q["op"] for q in db.queries} == {"select"}
     # access 1 + sprints and stories 2 (concurrent) + the live stories' tasks 1
     assert db.executes <= 4
-
-
-def test_select_sprint_names_one_else_the_latest_active_else_the_latest():
-    sprints = [S1, S2, S3]  # by starts_at, as both callers query them
-    assert controller._select_sprint(sprints, "S1") is S1  # a named sprint, even a finished one
-    assert controller._select_sprint(sprints, None) is S2  # active beats the later planned one
-    later_active = {**S3, "status": "active"}
-    assert controller._select_sprint([S1, S2, later_active], None) is later_active
-    assert controller._select_sprint([S1, S3], None) is S3  # none active: the latest
-    assert controller._select_sprint([], None) is None
-    with pytest.raises(HTTPException) as refused:
-        controller._select_sprint(sprints, "nope")
-    assert (refused.value.status_code, refused.value.detail) == (404, controller.SPRINT_NOT_FOUND)

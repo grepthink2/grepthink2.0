@@ -138,15 +138,18 @@ const Roster: React.FC = () => {
   }, []);
 
   // TAs have their own list, without a course status. The filters narrow the student list, so the
-  // TA list shows under All Students only; the search narrows both.
+  // TA list shows under All Students only. The search narrows the students alone: the TA list
+  // always shows in full.
   const filteredStudents = useMemo(
     () => applySearch(applyFilter(countableStudents(students), filter), search),
     [students, filter, search],
   );
   const filteredTas = useMemo(
-    () => (filter === 'all' ? applySearch(rosterTas(students), search) : []),
-    [students, filter, search],
+    () => (filter === 'all' ? rosterTas(students) : []),
+    [students, filter],
   );
+  // A new search or filter takes the student list back to its first page.
+  const pageResetKey = `${filter}|${search}`;
   // While another class loads, `students` still holds the last class's rows.
   const showTaList = !loading && filteredTas.length > 0;
 
@@ -309,7 +312,14 @@ const Roster: React.FC = () => {
           onFilterChange={setFilter}
         />
         <div className="roster__lists">
-          <RosterList key={selectedClass.id} students={filteredStudents} loading={loading} error={error} showActions={false} />
+          <RosterList
+            key={selectedClass.id}
+            students={filteredStudents}
+            loading={loading}
+            error={error}
+            showActions={false}
+            pageResetKey={pageResetKey}
+          />
           {showTaList && (
             <RosterList
               key={`${selectedClass.id}-tas`}
@@ -374,6 +384,7 @@ const Roster: React.FC = () => {
             loading={loading}
             error={error}
             showActions
+            pageResetKey={pageResetKey}
             onInvite={handleInvite}
             onRemove={handleRemove}
             onDeleteManual={handleDeleteManual}

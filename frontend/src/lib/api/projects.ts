@@ -126,12 +126,14 @@ export const projectsApi = {
     return apiRequest<{ invites: ApiProjectPendingInvite[] }>(`/api/projects/${projectId}/pending-invites`);
   },
 
-  /** Create a project (full form: POST /api/projects) */
-  createProject: async (data: CreateProjectPayload) => {
-    return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
+  /** Create a project (full form: POST /api/projects); answers the project created. */
+  createProject: async (data: CreateProjectPayload): Promise<ApiProject> => {
+    const res = await apiRequest<ApiProject | { message: string; project: ApiProject }>('/api/projects', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    // An older backend answers {message, project}.
+    return 'project' in res ? res.project : res;
   },
 
   /** Add a member to a project (instructor or authorized role). */

@@ -29,10 +29,11 @@ export function ScalePicker({ value, onChange }: { value: EstimateScale; onChang
  * `disabledBelow` / `disabledAbove` enforce the story-points budget: a story
  * cannot drop below what its tasks already claim, and a task cannot exceed what
  * the story has left (maintainer 2026-08-29). `disabledReason` is announced on
- * the blocked chips so the rule explains itself rather than just refusing.
+ * the blocked chips so the rule explains itself rather than just refusing. `describedBy` names the
+ * hints that describe the group.
  */
 export function PointPicker({
-  scale, value, onChange, disabledBelow, disabledAbove, disabledReason,
+  scale, value, onChange, disabledBelow, disabledAbove, disabledReason, describedBy,
 }: {
   scale: EstimateScale;
   value?: number | null;
@@ -40,9 +41,10 @@ export function PointPicker({
   disabledBelow?: number | null;
   disabledAbove?: number | null;
   disabledReason?: string;
+  describedBy?: string;
 }) {
   return (
-    <div className="gt-pointpicker" role="radiogroup" aria-label="Points">
+    <div className="gt-pointpicker" role="radiogroup" aria-label="Points" aria-describedby={describedBy}>
       {ESTIMATE_SCALES[scale].map((v) => {
         const blocked = v !== value && (
           (disabledBelow != null && v < disabledBelow) ||

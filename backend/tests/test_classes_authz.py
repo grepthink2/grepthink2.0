@@ -33,6 +33,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.classes import controller as classes
+from app.classes.models import UpdateClassSprintsRequest
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
@@ -191,6 +192,13 @@ INSTRUCTOR_ONLY = {
     ),
     "update_class_end_date": lambda caller, cid: classes.update_class_end_date(
         cid, datetime.date(2026, 12, 4), caller
+    ),
+    "update_class_sprints": lambda caller, cid: classes.update_class_sprints(
+        cid,
+        caller,
+        UpdateClassSprintsRequest(
+            sprint_count=4, sprint_frequency="weekly", sprints_start_on=datetime.date(2026, 9, 28)
+        ),
     ),
     "invite_student_to_class": lambda caller, cid: classes.invite_student_to_class(
         cid, "s1@ucsc.edu", caller
