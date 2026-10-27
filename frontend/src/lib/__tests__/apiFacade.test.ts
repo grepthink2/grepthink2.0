@@ -10,6 +10,7 @@ import { classesApi } from '../api/classes';
 import { emailApi } from '../api/email';
 import { institutionsApi } from '../api/institutions';
 import { interestApi } from '../api/interest';
+import { mcpApi } from '../api/mcp';
 import { messagesApi } from '../api/messages';
 import { notificationsApi } from '../api/notifications';
 import { projectsApi } from '../api/projects';
@@ -27,6 +28,7 @@ const DOMAINS: Record<string, object> = {
   emailApi,
   institutionsApi,
   interestApi,
+  mcpApi,
   messagesApi,
   notificationsApi,
   projectsApi,
@@ -44,6 +46,7 @@ const METHODS = [
   'addScrumRepo',
   'addTaskDependency',
   'aiDraftScrum',
+  'answerMcpAuthorization',
   'assignAdmin',
   'assignProductOwner',
   'assignProjectTA',
@@ -76,6 +79,7 @@ const METHODS = [
   'deleteScrumStory',
   'deleteScrumTask',
   'demoteTA',
+  'disconnectMcpConnection',
   'dismissJoinRequest',
   'getAnalyticsDashboard',
   'getAnalyticsScope',
@@ -99,6 +103,8 @@ const METHODS = [
   'getFinalReviewSchedule',
   'getIncomingJoinRequests',
   'getInstitutions',
+  'getMcpAuthorization',
+  'getMcpConnections',
   'getMessages',
   'getMyAssignedTeams',
   'getMyAssignmentTsrs',

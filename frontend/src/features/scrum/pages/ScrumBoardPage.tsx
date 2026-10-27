@@ -18,6 +18,7 @@ import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
+import ConnectAssistant from '../components/ConnectAssistant';
 import { Button } from '@components/Button/Button';
 import SprintPicker from '../components/SprintPicker';
 import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorModal';
@@ -388,6 +389,7 @@ export default function ScrumBoardPage() {
               onNewSprint={canAddSprint ? openSprintEditor : undefined}
             />
           )}
+          {canWrite && <ConnectAssistant />}
           <button
             type="button"
             className="scrum-board__icon-button"

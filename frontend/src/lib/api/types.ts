@@ -1267,3 +1267,18 @@ export interface ApiSearchIndex {
   items: ApiSearchItem[];
   generated_at: string;
 }
+
+/** A connected app's sign-in request, as the consent page shows it (GET /api/mcp/authorizations/{id}). */
+export interface ApiMcpAuthorization {
+  app_name: string;
+  /** Where the app sends the student back: the only hint of who registered it. */
+  redirect_host: string;
+}
+
+/** An app the student allowed to use their scrum boards (GET /api/mcp/connections). */
+export interface ApiMcpConnection {
+  client_id: string;
+  app_name: string;
+  connected_at: string;
+  last_used_at: string | null;
+}

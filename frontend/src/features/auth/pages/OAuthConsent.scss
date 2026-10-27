@@ -1,0 +1,47 @@
+@use '@styles/index.scss' as *;
+
+// The same card as Unsubscribe and AuthConfirm, the other single-purpose public pages.
+.oauth-consent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+
+  &__card {
+    background-color: $background;
+    border-radius: $border-radius-lg;
+    padding: ($spacing-xl + $spacing-md) $spacing-xxl;
+    width: min(480px, calc(100vw - 2rem));
+    box-sizing: border-box;
+    text-align: center;
+
+    @media (max-width: 600px) {
+      padding: $spacing-xl $spacing-lg;
+    }
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: $font-size-header;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: 0 0 12px;
+  }
+
+  &__text,
+  &__account {
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-secondary;
+    margin: 0 0 $spacing-md;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+  }
+}
