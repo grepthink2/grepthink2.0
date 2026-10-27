@@ -37,9 +37,6 @@ from app.core import authz
 
 logger = logging.getLogger(__name__)
 
-#: 401 for a connected app's token on a route that does not take one.
-APP_TOKEN_REFUSED = "This sign-in belongs to a connected app and can't be used here"
-
 # Initialize JWK client for RS256/ES256 algorithms
 _static_jwk: PyJWK | None = None
 if settings.SUPABASE_JWK_JSON:
@@ -109,19 +106,13 @@ def verify_supabase_token(request: Request) -> dict:
             exc_info=True,
         )
         raise HTTPException(status_code=401, detail="Invalid authentication token")
-    if is_app_token(payload):
-        # A token Supabase's OAuth server issued to a connected app (Claude, ChatGPT): it
-        # acts for the user only where a surface opts in (``/mcp``), never on the API.
-        logger.info("App token refused on %s %s", request.method, request.url.path)
-        raise HTTPException(status_code=401, detail=APP_TOKEN_REFUSED)
     return payload
 
 
 def decode_supabase_jwt(token: str) -> dict:
     """Verify a Supabase access token's signature and expiry and return its claims.
 
-    Raises on anything invalid; callers turn that into their own refusal. Says nothing about
-    who may use the token: see :func:`is_app_token`.
+    Raises on anything invalid; callers turn that into their own refusal.
     """
     header = jwt.get_unverified_header(token)
     alg = header.get("alg")
@@ -161,12 +152,6 @@ def decode_supabase_jwt(token: str) -> dict:
         return payload
 
     raise Exception(f"Unsupported JWT alg: {alg}")
-
-
-def is_app_token(payload: dict) -> bool:
-    """Whether verified claims belong to a connected app's token: Supabase's OAuth server puts
-    the app's ``client_id`` in the tokens it issues, and a site session has none."""
-    return bool(payload.get("client_id"))
 
 
 def require_user_payload(payload: dict = Depends(verify_supabase_token)) -> dict:

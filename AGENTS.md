@@ -305,10 +305,8 @@ The full agent-facing action catalog (method, params, role) lives at
   app gets opaque tokens (hashed in `mcp_tokens`) that only `/mcp` accepts. A Supabase token in an app's
   hands could change the student's password through Supabase Auth, which nothing on our side can fence.
   Students end a grant in Settings → Connected apps. ⚠️ `/register` accepts any redirect URI for now: a
-  known safety issue to revisit. In case Supabase's own OAuth server is on, its tokens (a `client_id`
-  claim, `app.dependencies.is_app_token`) are refused by every API route, and a RESTRICTIVE
-  `app_tokens_denied` policy sits on every table with policies, in `public` and on `storage.objects`
-  (`2026-10/2026-10-25_app_token_rls_fence.sql`): a new table that gets a policy needs one too.
+  known safety issue to revisit. Supabase's own OAuth server stays off on every project: a token it
+  issued would carry the student's whole account, and nothing on our side can fence Supabase Auth.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).

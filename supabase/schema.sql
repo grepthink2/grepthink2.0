@@ -200,17 +200,6 @@ $$;
 ALTER FUNCTION "public"."handle_auth_sync"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."is_first_party_session"() RETURNS boolean
-    LANGUAGE "sql" STABLE
-    SET "search_path" TO ''
-    AS $$
-  SELECT coalesce(auth.jwt() ->> 'client_id', '') = ''
-$$;
-
-
-ALTER FUNCTION "public"."is_first_party_session"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -1367,10 +1356,6 @@ ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."conversation_deletes" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "app_tokens_denied" ON "public"."conversation_deletes" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
-
-
 CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_deletes" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
@@ -1378,19 +1363,11 @@ CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_delete
 ALTER TABLE "public"."conversation_reads" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "app_tokens_denied" ON "public"."conversation_reads" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
-
-
 CREATE POLICY "conversation_reads_select_own" ON "public"."conversation_reads" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "app_tokens_denied" ON "public"."conversations" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
 
 
 CREATE POLICY "conversations_select_participant" ON "public"."conversations" FOR SELECT USING (((EXISTS ( SELECT 1
@@ -1417,10 +1394,6 @@ ALTER TABLE "public"."meetings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "app_tokens_denied" ON "public"."messages" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
-
-
 CREATE POLICY "messages_select_participant" ON "public"."messages" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM "public"."conversation_participants" "cp"
   WHERE (("cp"."conversation_id" = "messages"."conversation_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
@@ -1430,19 +1403,11 @@ CREATE POLICY "messages_select_participant" ON "public"."messages" FOR SELECT US
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "app_tokens_denied" ON "public"."notifications" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
-
-
 CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "app_tokens_denied" ON "public"."profiles" AS RESTRICTIVE TO PUBLIC USING (( SELECT "public"."is_first_party_session"() AS "is_first_party_session")) WITH CHECK (( SELECT "public"."is_first_party_session"() AS "is_first_party_session"));
-
 
 
 CREATE POLICY "profiles_insert_own" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
