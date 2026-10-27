@@ -1,48 +1,35 @@
 /**
- * The consent page Supabase's OAuth server sends a connected app's sign-in to
- * (`/oauth/consent?authorization_id=...`): an AI assistant such as Claude or ChatGPT asks to act
- * for the student on their scrum boards (the MCP connector, backend `app/mcp`). A signed-out
- * visitor logs in first and comes back here; the answer goes to Supabase, which sends the browser
- * back to the app.
+ * The consent page for the scrum board MCP connector (`/oauth/consent?request=...`). An AI assistant
+ * such as Claude or ChatGPT asks to act for the student on their scrum boards; the backend's
+ * authorization server (`app/mcp/oauth.py`) sends the browser here. A signed-out visitor logs in
+ * first and comes back. The answer goes to the backend, which says where the browser goes next:
+ * back to the app, with a one-time code or with a refusal.
  */
 import React from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Alert } from '@components/Alert/Alert';
 import { Button } from '@components/Button/Button';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
+import { api, type ApiMcpAuthorization } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { leaveSiteTo } from '@/lib/leaveSite';
 import { rememberReturnTo, takeReturnTo } from '@/lib/returnTo';
-import { supabase } from '@/lib/supabaseClient';
 import './OAuthConsent.scss';
 
 const INCOMPLETE = "This sign-in link isn't complete. Start connecting again from your AI assistant.";
 const EXPIRED = 'This request has expired or was already used. Start connecting again from your AI assistant.';
 const ANSWER_FAILED = "We couldn't send your answer. Try again.";
 
-interface Request {
-  appName: string;
-  email: string;
-}
-
-const ConsentCard: React.FC<{ authorizationId: string }> = ({ authorizationId }) => {
-  const [request, setRequest] = React.useState<Request | null>(null);
+const ConsentCard: React.FC<{ requestId: string; email: string | undefined }> = ({ requestId, email }) => {
+  const [request, setRequest] = React.useState<ApiMcpAuthorization | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [answering, setAnswering] = React.useState<'allow' | 'deny' | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
-    supabase.auth.oauth.getAuthorizationDetails(authorizationId).then(
-      ({ data, error: lookupError }) => {
-        if (cancelled) return;
-        if (lookupError || !data) {
-          setError(EXPIRED);
-        } else if ('redirect_url' in data) {
-          // Consented before: Supabase answers with the way back to the app.
-          leaveSiteTo(data.redirect_url);
-        } else {
-          setRequest({ appName: data.client.name || 'An app', email: data.user.email });
-        }
+    api.getMcpAuthorization(requestId).then(
+      (details) => {
+        if (!cancelled) setRequest(details);
       },
       () => {
         if (!cancelled) setError(EXPIRED);
@@ -51,17 +38,15 @@ const ConsentCard: React.FC<{ authorizationId: string }> = ({ authorizationId })
     return () => {
       cancelled = true;
     };
-  }, [authorizationId]);
+  }, [requestId]);
 
-  // Approve and deny redirect the browser themselves; only a failure comes back here.
   const answer = async (choice: 'allow' | 'deny') => {
     setAnswering(choice);
     setError(null);
-    const { error: answerError } =
-      choice === 'allow'
-        ? await supabase.auth.oauth.approveAuthorization(authorizationId)
-        : await supabase.auth.oauth.denyAuthorization(authorizationId);
-    if (answerError) {
+    try {
+      const { redirect_url } = await api.answerMcpAuthorization(requestId, choice === 'allow');
+      leaveSiteTo(redirect_url);
+    } catch {
       setError(ANSWER_FAILED);
       setAnswering(null);
     }
@@ -72,13 +57,18 @@ const ConsentCard: React.FC<{ authorizationId: string }> = ({ authorizationId })
   }
   return (
     <>
-      <h1 className="oauth-consent__title">Connect {request.appName} to GrepThink?</h1>
+      <h1 className="oauth-consent__title">Connect {request.app_name} to GrepThink?</h1>
       <p className="oauth-consent__text">
-        {request.appName} will be able to read your teams' scrum boards and add items to them, as you. It can't
-        change or delete anything already there.
+        {request.app_name} will be able to read your teams' scrum boards and add items to them, as you. It can't
+        change or delete anything already there, and you can disconnect it in Settings.
       </p>
       <p className="oauth-consent__account">
-        Signed in as <strong>{request.email}</strong>
+        {email && (
+          <>
+            Signed in as <strong>{email}</strong>.{' '}
+          </>
+        )}
+        You'll go back to <strong>{request.redirect_host}</strong>.
       </p>
       {error && <Alert tone="error">{error}</Alert>}
       <div className="oauth-consent__actions">
@@ -97,10 +87,10 @@ const OAuthConsent: React.FC = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { user, loading } = useAuth();
-  const authorizationId = searchParams.get('authorization_id');
+  const requestId = searchParams.get('request');
   const here = location.pathname + location.search;
 
-  const signedOut = Boolean(authorizationId) && !loading && !user;
+  const signedOut = Boolean(requestId) && !loading && !user;
   React.useEffect(() => {
     if (loading) return;
     // Google sign-in leaves the site and comes back through /auth/callback, which reads this;
@@ -118,12 +108,12 @@ const OAuthConsent: React.FC = () => {
       <GradientBackgroundWrapper />
       <div className="oauth-consent">
         <div className="oauth-consent__card">
-          {!authorizationId ? (
+          {!requestId ? (
             <Alert tone="error">{INCOMPLETE}</Alert>
           ) : loading ? (
             <p className="oauth-consent__text">Checking your sign-in…</p>
           ) : (
-            <ConsentCard key={authorizationId} authorizationId={authorizationId} />
+            <ConsentCard key={requestId} requestId={requestId} email={user?.email} />
           )}
         </div>
       </div>

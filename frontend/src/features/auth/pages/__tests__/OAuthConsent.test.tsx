@@ -3,13 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const oauth = vi.hoisted(() => ({
-  getAuthorizationDetails: vi.fn(),
-  approveAuthorization: vi.fn(),
-  denyAuthorization: vi.fn(),
+const api = vi.hoisted(() => ({ getMcpAuthorization: vi.fn(), answerMcpAuthorization: vi.fn() }));
+vi.mock('@/lib/api', () => ({ api }));
+const auth = vi.hoisted(() => ({
+  value: { user: { id: 'u1', email: 'ana@ucsc.edu' } as unknown, loading: false },
 }));
-vi.mock('@/lib/supabaseClient', () => ({ supabase: { auth: { oauth } } }));
-const auth = vi.hoisted(() => ({ value: { user: { id: 'u1' } as unknown, loading: false } }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => auth.value }));
 vi.mock('@features/auth/components/GradientBackGroundWrapper', () => ({ default: () => null }));
 const leave = vi.hoisted(() => ({ leaveSiteTo: vi.fn() }));
@@ -17,16 +15,7 @@ vi.mock('@/lib/leaveSite', () => leave);
 
 import OAuthConsent from '../OAuthConsent';
 
-const DETAILS = {
-  data: {
-    authorization_id: 'auth-1',
-    redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
-    client: { id: 'c1', name: 'Claude', uri: 'https://claude.ai', logo_uri: '' },
-    user: { id: 'u1', email: 'ana@ucsc.edu' },
-    scope: 'openid email',
-  },
-  error: null,
-};
+const DETAILS = { app_name: 'Claude', redirect_host: 'claude.ai' };
 
 function LoginProbe() {
   const location = useLocation();
@@ -47,86 +36,86 @@ function renderAt(url: string) {
 beforeEach(() => {
   vi.resetAllMocks();
   sessionStorage.clear();
-  auth.value = { user: { id: 'u1' }, loading: false };
+  auth.value = { user: { id: 'u1', email: 'ana@ucsc.edu' }, loading: false };
 });
 
 describe('OAuthConsent', () => {
-  it('says the link is incomplete without an authorization id', () => {
+  it('says the link is incomplete without a request', () => {
     renderAt('/oauth/consent');
 
     expect(screen.getByRole('alert')).toHaveTextContent("This sign-in link isn't complete");
-    expect(oauth.getAuthorizationDetails).not.toHaveBeenCalled();
+    expect(api.getMcpAuthorization).not.toHaveBeenCalled();
   });
 
   it('sends a signed-out visitor to log in and back', () => {
     auth.value = { user: null, loading: false };
 
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    renderAt('/oauth/consent?request=req-1');
 
-    expect(screen.getByText('login page, back to /oauth/consent?authorization_id=auth-1')).toBeInTheDocument();
-    expect(sessionStorage.getItem('gt:returnTo')).toBe('/oauth/consent?authorization_id=auth-1');
+    expect(screen.getByText('login page, back to /oauth/consent?request=req-1')).toBeInTheDocument();
+    expect(sessionStorage.getItem('gt:returnTo')).toBe('/oauth/consent?request=req-1');
   });
 
   it('forgets the saved return path once signed in here', async () => {
-    sessionStorage.setItem('gt:returnTo', '/oauth/consent?authorization_id=auth-1');
-    oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
+    sessionStorage.setItem('gt:returnTo', '/oauth/consent?request=req-1');
+    api.getMcpAuthorization.mockResolvedValue(DETAILS);
 
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    renderAt('/oauth/consent?request=req-1');
 
     await screen.findByRole('heading', { name: 'Connect Claude to GrepThink?' });
     expect(sessionStorage.getItem('gt:returnTo')).toBeNull();
   });
 
-  it('names the app asking for access', async () => {
-    oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
+  it('names the app, the account and where the student goes back to', async () => {
+    api.getMcpAuthorization.mockResolvedValue(DETAILS);
 
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    renderAt('/oauth/consent?request=req-1');
 
     expect(await screen.findByRole('heading', { name: 'Connect Claude to GrepThink?' })).toBeInTheDocument();
     expect(screen.getByText(/read your teams' scrum boards and add items to them/)).toBeInTheDocument();
     expect(screen.getByText('ana@ucsc.edu')).toBeInTheDocument();
-    expect(oauth.getAuthorizationDetails).toHaveBeenCalledWith('auth-1');
+    expect(screen.getByText('claude.ai')).toBeInTheDocument();
+    expect(api.getMcpAuthorization).toHaveBeenCalledWith('req-1');
   });
 
-  it('approves', async () => {
-    oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
-    oauth.approveAuthorization.mockResolvedValue({ data: { redirect_url: 'x' }, error: null });
-    renderAt('/oauth/consent?authorization_id=auth-1');
+  it('approves and follows the answer back to the app', async () => {
+    api.getMcpAuthorization.mockResolvedValue(DETAILS);
+    api.answerMcpAuthorization.mockResolvedValue({ redirect_url: 'https://claude.ai/cb?code=c&state=s' });
+    renderAt('/oauth/consent?request=req-1');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Allow' }));
 
-    expect(oauth.approveAuthorization).toHaveBeenCalledWith('auth-1');
-    expect(oauth.denyAuthorization).not.toHaveBeenCalled();
+    expect(api.answerMcpAuthorization).toHaveBeenCalledWith('req-1', true);
+    expect(leave.leaveSiteTo).toHaveBeenCalledWith('https://claude.ai/cb?code=c&state=s');
   });
 
   it('denies', async () => {
-    oauth.getAuthorizationDetails.mockResolvedValue(DETAILS);
-    oauth.denyAuthorization.mockResolvedValue({ data: { redirect_url: 'x' }, error: null });
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    api.getMcpAuthorization.mockResolvedValue(DETAILS);
+    api.answerMcpAuthorization.mockResolvedValue({ redirect_url: 'https://claude.ai/cb?error=access_denied' });
+    renderAt('/oauth/consent?request=req-1');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Deny' }));
 
-    expect(oauth.denyAuthorization).toHaveBeenCalledWith('auth-1');
+    expect(api.answerMcpAuthorization).toHaveBeenCalledWith('req-1', false);
+    expect(leave.leaveSiteTo).toHaveBeenCalledWith('https://claude.ai/cb?error=access_denied');
   });
 
   it('shows an expired or unknown request as an error', async () => {
-    oauth.getAuthorizationDetails.mockResolvedValue({ data: null, error: new Error('not found') });
+    api.getMcpAuthorization.mockRejectedValue(new Error('404'));
 
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    renderAt('/oauth/consent?request=req-1');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('This request has expired or was already used');
   });
 
-  it('follows an earlier consent straight back to the app', async () => {
-    oauth.getAuthorizationDetails.mockResolvedValue({
-      data: { redirect_url: 'https://claude.ai/api/mcp/auth_callback?code=1' },
-      error: null,
-    });
+  it('keeps the student on the page when the answer fails', async () => {
+    api.getMcpAuthorization.mockResolvedValue(DETAILS);
+    api.answerMcpAuthorization.mockRejectedValue(new Error('500'));
+    renderAt('/oauth/consent?request=req-1');
 
-    renderAt('/oauth/consent?authorization_id=auth-1');
+    await userEvent.click(await screen.findByRole('button', { name: 'Allow' }));
 
-    await vi.waitFor(() =>
-      expect(leave.leaveSiteTo).toHaveBeenCalledWith('https://claude.ai/api/mcp/auth_callback?code=1'),
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't send your answer");
+    expect(leave.leaveSiteTo).not.toHaveBeenCalled();
   });
 });
