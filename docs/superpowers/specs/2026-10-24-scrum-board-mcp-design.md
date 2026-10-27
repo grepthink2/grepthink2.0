@@ -61,7 +61,7 @@ in one short conversation, and nothing reaches the board that the student didn't
 
 1. **Connect, once.** In Claude or ChatGPT, the student adds a custom connector with the URL
    `https://<api host>/mcp`. The assistant discovers the auth server, registers itself and opens a browser tab
-   at `https://grepthink2.com/oauth/consent?authorization_id=…`. If the student isn't signed in, the page
+   at `https://grepthink2.com/oauth/consent?request=…`. If the student isn't signed in, the page
    sends them through the normal login and back. It then shows "Allow **<client name>** to read your teams'
    scrum boards and add items to them?" with Allow and Deny buttons. After Allow they return to the chat.
 2. **Fill.** The student pastes their material and asks for the board to be filled. The agent:
@@ -75,60 +75,70 @@ in one short conversation, and nothing reaches the board that the student didn't
       titles) and repeats the warnings the tool returned.
 3. If the docs give no sprint dates, the agent asks rather than inventing them.
 
-## Sign-in (decided: option 1, Supabase's OAuth 2.1 server)
+## Sign-in (revised 2026-10-27: GrepThink's own authorization server for /mcp)
 
-GrepThink already authenticates with Supabase Auth. Supabase's OAuth 2.1 server feature makes the project's
-Auth an authorization server for MCP clients. It provides PKCE, dynamic client registration and discovery at
-`https://<project-ref>.supabase.co/.well-known/oauth-authorization-server/auth/v1`. Supabase issues the tokens,
-and GrepThink hosts only the consent UI. The maintainer chose this over writing an OAuth server in FastAPI.
+The first design let Supabase's OAuth server issue the apps' tokens. On DEV that token turned out to carry
+the student's whole account: it changed the password through Supabase Auth's `/user` endpoint, which
+nothing on our side sees or can fence (see "Found on DEV"). The maintainer chose to issue our own tokens
+instead. **Apps never hold a Supabase token.**
 
-- **Dashboard config (DEV first, then PROD with the maintainer's approval):** enable the OAuth server, enable
-  dynamic client registration, and set the authorization path to the site's `/oauth/consent`. This is a
-  project setting, not a migration. Note the steps in the pull request.
-- **Consent page:** a new public-shell route `/oauth/consent` in `frontend/src/App.tsx`, as a lazy route like
-  the other pages. It:
-  - reads `authorization_id`;
-  - sends a signed-out visitor to `/login` with a return path back to the consent URL (check how `Login`
-    handles a return path today, and add one if it has none);
-  - loads the request details through supabase-js's OAuth-server methods and shows the client's name;
-  - posts Approve or Deny through the same methods, then follows the redirect it returns.
+- **What the app sees** is unchanged: it adds `https://<api host>/mcp`, discovers the authorization server
+  from the protected-resource metadata, registers itself, sends the student to a browser page, and gets a
+  bearer token for `/mcp`. Only the issuer changes: the API itself instead of Supabase.
+- **The authorization server is the MCP SDK's** (`mcp.server.auth`): given an
+  `OAuthAuthorizationServerProvider`, it serves `/.well-known/oauth-authorization-server`, `/register`
+  (dynamic client registration), `/authorize` (PKCE S256 required), `/token` (authorization code and
+  refresh token) and `/revoke`, with the protocol checks done. We write the provider: storage and the
+  hand-off to the consent page. These paths join `MCP_PATHS` as exact routes on the API host.
+- **The student signs in with their normal GrepThink login.** `/authorize` stores the pending request and
+  redirects to `https://grepthink2.com/oauth/consent?request=<id>`. The consent page (already built; it
+  changes only where it sends the answer) uses the student's normal site session to call two new backend
+  routes:
+  - `GET /api/mcp/authorizations/{id}`: the app's name and redirect host, for the page;
+  - `POST /api/mcp/authorizations/{id}` with `{"approve": true|false}`: on approve it binds the request to
+    the caller's user id, issues the code and answers `{"redirect_url": …}`; on deny it answers the app's
+    redirect URI with `error=access_denied`. Either way the page follows the URL.
 
-  It is built from kit components (Card, Button, Alert). Error states: missing or expired `authorization_id`,
-  and a user with no profile row (send them to finish sign-up).
-- **Tokens:** OAuth access tokens are ordinary Supabase JWTs (`sub`, `aud: authenticated`) plus a non-null
-  `client_id` claim, so `verify_supabase_token` in `backend/app/dependencies.py` already verifies them.
-- **Signing keys (checked 2026-10-24):** DEV and PROD both sign with ES256, verified through JWKS. The
-  legacy HS256 secret only verifies old tokens. The OAuth server needs no key rotation. It is present and off
-  in both projects (`oauth_server_enabled=false`, dynamic registration off, no authorization path).
-- **App tokens: deny by default, open per surface (agreed with the maintainer).** A token that carries
-  `client_id` was issued to another app acting as the user (Claude and ChatGPT now, perhaps a Jira plugin
-  later). Outbound integrations, where GrepThink signs in to Jira, never involve these tokens.
-  - **Database:** app tokens get nothing.
-    - A migration adds `public.is_first_party_session()`, true when `auth.jwt() ->> 'client_id'` is null, and
-      a RESTRICTIVE policy `app_tokens_denied` using it on every table that has policies, in `public` and on
-      `storage.objects` (Storage's upload policies would otherwise let an app replace avatars and logos).
-      Restrictive policies AND into every permissive one, so existing policies keep their names, which
-      differ between DEV and PROD on Storage, and later policies are fenced too.
-    - This migration is an authorization change, reviewed on its own.
-  - **Backend:** every existing route refuses app tokens with 401. The check goes in the shared token
-    dependency, so a new route is fenced without doing anything.
-    - A surface opts in explicitly with a dependency such as `require_app_access("scrum:fill")`, backed by a
-      small in-code map from capability to allowed `client_id`s.
-    - Supabase's scopes cover only profile information, so capabilities stand in for scopes.
-    - Claude and ChatGPT register dynamically, so their `client_id`s aren't known in advance. Their entry is
-      "any client registered through the MCP flow", limited to `scrum:read` and `scrum:fill`. A future app
-      that needs more gets its own line.
-    - `/mcp` accepts only app tokens.
-    - Check first that nothing on the site itself gets a `client_id` token. Normal password and Google
-      sign-in don't.
-  - **Account endpoint:** the database fence can't cover Supabase Auth's own `/user` endpoint. Find out on DEV
-    what an app token can change there (email, password). If it can change either, raise it with the
-    maintainer before PROD.
-- **Protected-resource metadata:** the backend serves RFC 9728 metadata for `/mcp`, at
-  `/.well-known/oauth-protected-resource` (and the path-suffixed form). It names the Supabase issuer as its
-  authorization server. A request to `/mcp` without a valid token gets 401 with a `WWW-Authenticate` header
-  pointing at that metadata. The MCP Python SDK's auth helpers provide this, given a token verifier that
-  wraps `verify_supabase_token`.
+  Both need `require_user` and a request that is pending and not expired (10 minutes). These routes get web
+  client methods; they are not agent catalog actions.
+- **Tokens are opaque random strings** (256 bits), stored only as SHA-256 hashes. Each `/mcp` request looks
+  its token up: one round trip, cheap, and a revoked token stops at once. The token row carries the user id,
+  client id and expiry; `/mcp` acts as that user exactly as before.
+  - Access tokens last 1 hour. Refresh tokens last 30 days and rotate on use: the old one dies when the new
+    one is issued.
+- **Tables** (one migration, RLS on with no policies and no grants to `anon`/`authenticated`, like every new
+  table since the 2026-09-21 lock-down):
+  - `mcp_clients`: registered apps (id, name, redirect URIs, registered_at, last_used_at);
+  - `mcp_authorizations`: pending requests and their codes (client, PKCE challenge, redirect URI, state,
+    user once approved, code hash, expires_at, used_at);
+  - `mcp_tokens`: access and refresh tokens (hash, kind, user, client, expires_at, revoked_at, and the
+    refresh token's family, so reusing a rotated refresh token revokes the family).
+- **Deny by default comes from the token type.** Our tokens are not JWTs that Supabase, PostgREST or the
+  API's `verify_supabase_token` accept; only `/mcp`'s verifier knows them. A future integration (a Jira
+  plugin) gets its own capability in the same tables instead of a new token kind.
+- **Signing keys, `client_id` claims and Supabase's OAuth server are no longer involved.** Supabase's OAuth
+  server stays off on PROD, and is turned back off on DEV.
+
+### Settled by the builder (own authorization server)
+
+- **Issuer** = `PUBLIC_API_URL` with no path. The SDK serves its endpoints at fixed root paths, and nothing on
+  the API host collides (every existing route is under `/api`).
+- **All provider state is in Postgres.** `MCPServer` turns the provider into its token verifier, so `/mcp` and
+  the auth endpoints work on any serverless instance.
+- **Codes are single-use.** One conditional update marks a code used, because the SDK loads and exchanges it in
+  two calls. Reusing a rotated refresh token revokes its family, after a short grace window so an app that
+  refreshes twice at once keeps working.
+- **Client secrets are stored as registered**, because the SDK compares them directly. Claude and ChatGPT
+  register as public clients (PKCE, no secret).
+- **A grant has a fixed lifetime.** Every token of one Allow belongs to a family that ends 90 days (about one
+  term) after the Allow, however often it refreshes. After that the student connects again.
+
+### Open for the maintainer
+
+1. How a student cuts an app off. Today only the app can call `/revoke`.
+2. Which redirect URIs `/register` accepts. Today it accepts any, so anyone can register as "Claude".
+3. How the public `/register`, `/authorize` and `/token` endpoints are protected from abuse.
+4. Whether the Supabase app-token fence (the RLS migration, the API refusal, the AGENTS.md rule) stays or goes.
 
 ## MCP server
 
@@ -283,7 +293,6 @@ the entry chunk (the board is already a lazy route).
 
 ## Calls made without the maintainer (check these)
 
-- How the app-token fence is built: capability names and the "any MCP-registered client" entry.
 - The batch write is one SQL function in one transaction.
 - Batch caps: 10 sprints, 60 stories, 300 tasks.
 - `get_board_context` is readable by staff too. Only `fill_board` needs membership.
