@@ -43,8 +43,6 @@ in one short conversation, and nothing reaches the board that the student didn't
   history, and the board is shared by the team.
 - Dependencies between tasks. The team links them on the board afterwards.
 - Reading external sources (repos, Notion, Drive).
-- A GrepThink page for listing or revoking connected apps. Revoking happens from the assistant's own settings
-  in v1.
 - Anything for TAs or instructors.
 - Rate limiting. **The maintainer's explicit decision for v1**, as a deliberate exception to the AGENTS.md
   rule ("add one to any new public or abuse-prone endpoint"). Record it in the pull request.
@@ -133,12 +131,22 @@ instead. **Apps never hold a Supabase token.**
 - **A grant has a fixed lifetime.** Every token of one Allow belongs to a family that ends 90 days (about one
   term) after the Allow, however often it refreshes. After that the student connects again.
 
-### Open for the maintainer
+### Decided by the maintainer (2026-10-27)
 
-1. How a student cuts an app off. Today only the app can call `/revoke`.
-2. Which redirect URIs `/register` accepts. Today it accepts any, so anyone can register as "Claude".
-3. How the public `/register`, `/authorize` and `/token` endpoints are protected from abuse.
-4. Whether the Supabase app-token fence (the RLS migration, the API refusal, the AGENTS.md rule) stays or goes.
+1. **Students cut apps off from GrepThink.** Settings gets a "Connected apps" list: each app the student
+   allowed, when, and when it was last used, with a Disconnect button that revokes every token of that grant.
+   Routes: `GET /api/mcp/connections` and `DELETE /api/mcp/connections/{client_id}`, both for the caller only.
+   This replaces the non-goal "no GrepThink page for connected apps".
+2. **Registration accepts any redirect URI for now.** ⚠️ **Safety issue to revisit:** anyone can register
+   an app under any name (for example "Claude") with their own redirect URI, and one Allow click gives it
+   the student's boards. The consent page shows the redirect host as the only hint. The likely fix is an
+   allowlist (Claude's and ChatGPT's callbacks plus loopback addresses), or a warning for unknown hosts. The
+   code carries the same flag where registration is handled.
+3. **No rate limiting now.** A generic rules-based rate-limiting module is planned as its own later task
+   (`2026-10-27-rate-limiting-rules-design.md`). Until then, registration keeps the tables small itself
+   (builder's call): each registration deletes apps never used and registered more than 24 hours ago, and
+   authorization requests past their expiry. Registration metadata has size caps.
+4. Asked again; see the pull request.
 
 ## MCP server
 
@@ -317,6 +325,7 @@ A real OAuth flow on DEV (throwaway user and client, both deleted) showed:
 
 ## Later
 
-- **Rate limiting on `/mcp`.** Left out of v1 on the maintainer's decision, against the AGENTS.md rule for
-  abuse-prone endpoints. Revisit when the connector has users: a per-user limit keyed by the token's
-  `sub`, like the search index's.
+- **Rate limiting on `/mcp` and the MCP authorization endpoints.** Left out of v1 on the maintainer's
+  decision, against the AGENTS.md rule for abuse-prone endpoints. It comes with the generic rules-based
+  module (`2026-10-27-rate-limiting-rules-design.md`).
+- **Redirect URI allowlist for `/register`** (decision 2 above).
