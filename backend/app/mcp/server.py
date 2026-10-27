@@ -106,6 +106,8 @@ Tasks are the concrete work to deliver it, each small enough for one person in a
 - assignee: a user_id from members. Where the plan doesn't say, spread the work across the team
   by role.
 - sprints: existing sprints have an id and a status; stories can join planned or active ones.
+- sprint_rules: new sprints must fall between first_day and last_day, and a class with
+  max_sprints allows only new_sprints_allowed more.
 - existing: items already on the board. Don't add duplicates; list what you skipped.
 - today: the date at the student's school, for relative dates. Never invent sprint dates: ask.
 can_write is false for staff, who can read the board but not add to it.""",

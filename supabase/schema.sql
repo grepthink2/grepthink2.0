@@ -1942,9 +1942,9 @@ BEGIN
       END IF;
     ELSIF st ->> 'sprint_id' IS NOT NULL THEN
       SELECT id INTO v_sprint_id FROM sprints
-       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id AND status <> 'completed';
+       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id;
       IF v_sprint_id IS NULL THEN
-        RAISE EXCEPTION 'sprint % is not an open sprint of this project', st ->> 'sprint_id';
+        RAISE EXCEPTION 'sprint % is not a sprint of this project', st ->> 'sprint_id';
       END IF;
     ELSE
       v_sprint_id := NULL;

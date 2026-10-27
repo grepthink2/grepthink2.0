@@ -13,8 +13,10 @@
 --     `scrum_next_key` does, so a concurrent single add waits and then numbers after the batch.
 --   * Sprints are created `planned` (the column default). A story names its sprint by `sprint_ref`
 --     (a new sprint in this batch) or `sprint_id` (an existing one), or neither (backlog). A ref
---     that names no sprint of the batch, or an id that is not a planned or active sprint of this
---     project, raises: the backend checked both, so either means the board changed in between.
+--     that names no sprint of the batch, or an id that is not a sprint of this project, raises: the
+--     backend checked both, so either means the board changed in between. Whether a sprint has
+--     ended is the backend's to say (from its dates, in the school's zone): `sprints.status` is
+--     never read.
 --   * A JSON null `tasks` or `tags` counts as an empty list.
 --   * Returns `{"sprints": [{ref, id, name}], "stories": [{id, key, title, sprint_id,
 --     tasks: [{id, key, title}]}]}`.
@@ -81,9 +83,9 @@ BEGIN
       END IF;
     ELSIF st ->> 'sprint_id' IS NOT NULL THEN
       SELECT id INTO v_sprint_id FROM sprints
-       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id AND status <> 'completed';
+       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id;
       IF v_sprint_id IS NULL THEN
-        RAISE EXCEPTION 'sprint % is not an open sprint of this project', st ->> 'sprint_id';
+        RAISE EXCEPTION 'sprint % is not a sprint of this project', st ->> 'sprint_id';
       END IF;
     ELSE
       v_sprint_id := NULL;

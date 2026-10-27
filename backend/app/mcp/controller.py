@@ -23,14 +23,18 @@ from app.core.db import fan_out, get_client
 from app.institutions.controller import institution_timezone
 from app.mcp.models import FillBoardRequest, NewStory, NewTask
 from app.scrum.controller import (
+    _as_date,
     _board_access,
+    _check_class_dates,
     _in_backlog,
     _key_order,
     _require_writer,
     _snapshot_burnup_safe,
     _today,
+    _with_status,
 )
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
+from app.scrum.schedule import latest_sprint_end
 from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -120,14 +124,34 @@ def _members(client, project_id: str) -> list[dict]:
     ]
 
 
-def _sprints(client, project_id: str) -> list[dict]:
-    return (
+#: The class's columns that bound a team's sprints (app/scrum/controller.py ``create_sprint``).
+CLASS_SPRINT_COLUMNS = "sprint_count, start_date, end_date"
+
+
+def _sprints(client, project_id: str, today) -> list[dict]:
+    """The project's sprints, each with the status its dates give today (the stored one is never
+    read: nothing flips it for the sprints a class schedule creates)."""
+    rows = (
         client.table("sprints")
-        .select("id, name, starts_at, ends_at, status")
+        .select("id, name, starts_at, ends_at")
         .eq("project_id", project_id)
         .order("starts_at")
         .execute()
     ).data or []
+    return [_with_status(r, today) for r in rows]
+
+
+def _sprint_rules(klass: dict, sprint_count: int) -> dict:
+    """What the class allows a team's sprints: how many in all (None: no cap), how many more, and
+    the days they must fit in (None: open on that side)."""
+    cap = klass.get("sprint_count")
+    end = klass.get("end_date")
+    return {
+        "max_sprints": cap,
+        "new_sprints_allowed": max(cap - sprint_count, 0) if cap else None,
+        "first_day": str(klass["start_date"]) if klass.get("start_date") else None,
+        "last_day": latest_sprint_end(_as_date(end)).isoformat() if end else None,
+    }
 
 
 def board_context(*, project_id: str, user_id: str) -> dict:
@@ -137,11 +161,14 @@ def board_context(*, project_id: str, user_id: str) -> dict:
     pid = _project_id(project_id)
     client = get_client()
     access, institution_id = _board_access(client, project_id=pid, user_id=user_id)
+    today = _today(institution_timezone(institution_id))
     reads = fan_out(
         {
-            "project": lambda: authz.load_project(client, pid, columns="id, estimate_scale"),
+            "project": lambda: authz.load_project(
+                client, pid, columns="id, estimate_scale", class_columns=CLASS_SPRINT_COLUMNS
+            ),
             "members": lambda: _members(client, pid),
-            "sprints": lambda: _sprints(client, pid),
+            "sprints": lambda: _sprints(client, pid, today),
             "stories": lambda: (
                 (
                     client.table("user_stories")
@@ -171,6 +198,7 @@ def board_context(*, project_id: str, user_id: str) -> dict:
         },
         "members": reads["members"],
         "sprints": reads["sprints"],
+        "sprint_rules": _sprint_rules(reads["project"].get("classes") or {}, len(reads["sprints"])),
         "existing": [
             {
                 "key": s["key"],
@@ -183,7 +211,7 @@ def board_context(*, project_id: str, user_id: str) -> dict:
             }
             for s in reads["stories"]
         ],
-        "today": _today(institution_timezone(institution_id)).isoformat(),
+        "today": today.isoformat(),
     }
 
 
@@ -206,7 +234,16 @@ def _length_error(path: str, value: str | None, *, low: int, high: int) -> str |
 class _Checker:
     """Collects the errors and warnings of one batch against one project's rules."""
 
-    def __init__(self, *, scale: str, member_ids: set[str], sprints: list[dict], refs: set[str]):
+    def __init__(
+        self,
+        *,
+        scale: str,
+        member_ids: set[str],
+        sprints: list[dict],
+        refs: set[str],
+        klass: dict | None = None,
+    ):
+        self.klass = klass or {}
         self.scale = scale
         self.allowed = ESTIMATE_SCALES[scale]
         self.member_ids = member_ids
@@ -291,12 +328,24 @@ def _check(request: FillBoardRequest, checker: _Checker) -> list[dict]:
             checker.errors.append(f"at most {cap} {kind} per batch (got {n})")
     if not request.sprints and not request.stories:
         checker.errors.append(NOTHING_TO_ADD)
+    cap = checker.klass.get("sprint_count")
+    have = len(checker.sprints)
+    if cap and request.sprints and have + len(request.sprints) > cap:
+        allowed = max(cap - have, 0)
+        checker.errors.append(
+            f"at most {allowed} new sprint{'' if allowed == 1 else 's'}: this class runs {cap} "
+            f"sprints and the team has {have}"
+        )
 
     seen_refs: set[str] = set()
     for i, sp in enumerate(request.sprints):
         path = f"sprints[{i}]"
         if sp.ends_at < sp.starts_at:
             checker.errors.append(f"{path}: ends_at must be on or after starts_at")
+        try:
+            _check_class_dates(checker.klass, sp.starts_at, sp.ends_at)
+        except HTTPException as exc:
+            checker.errors.append(f"{path}: {exc.detail}")
         checker._err(_length_error(f"{path}.name", sp.name, low=1, high=SPRINT_NAME_MAX))
         if sp.ref in seen_refs:
             checker.errors.append(f"{path}.ref: {sp.ref!r} is used by another sprint in this batch")
@@ -344,10 +393,14 @@ def fill_board(*, project_id: str, user_id: str, client_id: str, request: FillBo
     pid = _project_id(project_id)
     client = get_client()
     institution_id = _require_writer(client, project_id=pid, user_id=user_id)
+    today = _today(institution_timezone(institution_id))
     reads = fan_out(
         {
             "project": lambda: authz.load_project(
-                client, pid, columns="id, class_id, estimate_scale"
+                client,
+                pid,
+                columns="id, class_id, estimate_scale",
+                class_columns=CLASS_SPRINT_COLUMNS,
             ),
             "members": lambda: (
                 (
@@ -358,10 +411,11 @@ def fill_board(*, project_id: str, user_id: str, client_id: str, request: FillBo
                 ).data
                 or []
             ),
-            "sprints": lambda: _sprints(client, pid),
+            "sprints": lambda: _sprints(client, pid, today),
         }
     )
     checker = _Checker(
+        klass=reads["project"].get("classes") or {},
         scale=reads["project"].get("estimate_scale") or "linear",
         member_ids={str(m["user_id"]) for m in reads["members"]},
         sprints=reads["sprints"],

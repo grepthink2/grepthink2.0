@@ -451,3 +451,76 @@ def test_fill_round_trips(monkeypatch):
     # access check, then the project + sprints + members reads fanned out, the rpc, and the
     # event insert. No sprint touched, so no snapshot.
     assert fake.executes - before == 6
+
+
+# ------------------------------------------------------------------ class rules ----
+
+
+def _scheduled_class(**over) -> list[dict]:
+    row = {
+        "id": CLASS,
+        "created_by": INSTR,
+        "name": "Software Engineering",
+        "course_code": "CSE 115A",
+        "term": "Fall",
+        "year": 2026,
+        "institution_id": None,
+        "sprint_count": 3,
+        "start_date": "2026-09-24",
+        "end_date": "2026-12-04",  # a Friday: sprints may end on Sunday Dec 6
+    }
+    row.update(over)
+    return [row]
+
+
+def test_a_sprint_ended_by_its_dates_is_completed_whatever_its_stored_status(monkeypatch):
+    # The stored status is never read: a class schedule's sprints keep "planned" for ever.
+    _db(monkeypatch)
+    pin_today(monkeypatch, date(2026, 11, 10))  # after Sprint 1 ends (Nov 6)
+
+    with pytest.raises(FillRejected) as exc:
+        _fill(_req(stories=[{"title": "late", "sprint": SPRINT_PLANNED}]))
+
+    assert exc.value.errors == [
+        "stories[0].sprint: sprint-planned is completed; add stories to a planned or active sprint"
+    ]
+
+
+def test_board_context_gives_statuses_from_dates_and_the_class_rules(monkeypatch):
+    _db(monkeypatch, classes=_scheduled_class())
+    pin_today(monkeypatch, date(2026, 10, 27))
+
+    ctx = controller.board_context(project_id=PID, user_id=UID)
+
+    assert {s["id"]: s["status"] for s in ctx["sprints"]} == {
+        SPRINT_DONE: "completed",
+        SPRINT_PLANNED: "active",
+    }
+    assert ctx["sprint_rules"] == {
+        "max_sprints": 3,
+        "new_sprints_allowed": 1,
+        "first_day": "2026-09-24",
+        "last_day": "2026-12-06",
+    }
+
+
+def test_new_sprints_stay_within_the_class(monkeypatch):
+    fake = _db(monkeypatch, classes=_scheduled_class())
+    pin_today(monkeypatch, date(2026, 10, 27))
+    req = _req(
+        sprints=[
+            {"ref": "a", "name": "Early", "starts_at": "2026-09-20", "ends_at": "2026-10-01"},
+            {"ref": "b", "name": "Late", "starts_at": "2026-12-01", "ends_at": "2026-12-07"},
+        ],
+        stories=[],
+    )
+
+    with pytest.raises(FillRejected) as exc:
+        _fill(req)
+
+    assert exc.value.errors == [
+        "at most 1 new sprint: this class runs 3 sprints and the team has 2",
+        "sprints[0]: A sprint must run between Sep 24, 2026 and Dec 6, 2026",
+        "sprints[1]: A sprint must run between Sep 24, 2026 and Dec 6, 2026",
+    ]
+    assert fake.fill_calls == []
