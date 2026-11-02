@@ -118,14 +118,24 @@ needs nothing: its chart begins when it does.
   new body is applied would quietly import done tasks as To do: the code must check that the function supports
   statuses, and refuse otherwise.
 
-## Open for the maintainer
+## Decided by the maintainer (2026-11-02)
 
-1. **Rewriting a sprint's chart history.** Imported work makes a started sprint's chart read as planned from
-   day one: scope flat, completed rising on the done days. That overwrites the sprint's saved daily snapshots.
-   For a team with 3 stories or fewer, those snapshots describe a nearly empty board, but they are the real
-   record. The alternative keeps them: the imported scope then shows as a jump on the import day, and past days
-   stay at whatever the saved snapshots say.
-2. **A done task with no date.** Its default could be the sprint's last day (or today, if the sprint is still
-   running), or the import is refused until the assistant asks the student.
-3. **Where the nudge ships.** The nudge PR (`feat/connector-import-nudge`, ready) could go out now with a prompt
-   that imports open work only, and switch to this once it lands. Or it waits for this.
+1. **Done work and backdating only while the team's board holds 3 stories or fewer**, the import nudge's
+   cut-off. Importing finished work is a one-time move-in, not a way to rework a chart later. While it is
+   allowed, the started sprints that receive imported work have their daily burnup rows rewritten (scope flat
+   from the first day, completed on the done days). That includes the rows after the sprint's last day, which
+   the cumulative chart reads. `board_agent_fill` records each import, with `done` and `in_progress` counts. Past
+   the cut-off, `fill_board` refuses a task that isn't To do and a story in a finished sprint, and says why.
+2. **Done work goes into the sprint that holds its done day.** The tool descriptions and the nudge's prompt tell
+   the assistant to put each done story into the sprint whose dates contain its `done_on`. The connector refuses
+   a done task in the backlog, or in a sprint that hasn't started, and names the fix. A `done_on` outside its
+   story's sprint is refused too, not moved, since the assistant can pick the right sprint.
+3. **Every story gets at least one task.** A single card from Jira, Trello or GitHub becomes a story with one
+   task carrying its points, hours and status. The assistant is told so, and the connector warns about a story
+   with no tasks, because the burnup counts only task estimates.
+4. **A done task with no date** takes its sprint's last day, or today if the sprint is still running, with a
+   warning that names the task.
+5. **The import nudge:** explained in the PR thread. Pending.
+6. **The two migrations missing on DEV** (`2026-10-22_class_sprint_schedule.sql`,
+   `2026-10-22_burnup_hours.sql`) were applied on DEV on 2026-11-02, after a rolled-back dry run. The steps for
+   PROD are in `DEPLOY.md`, "Due on PROD".

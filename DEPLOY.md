@@ -141,6 +141,37 @@ Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `stude
 signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
 cannot create a class. Applied to dev on 2026-09-23.
 
+**Due on PROD, not applied yet (checked 2026-11-02).** In this order, each after a dump (below), each pasted whole
+into the SQL editor (every file wraps itself in `BEGIN … COMMIT`):
+
+1. `2026-10/2026-10-22_class_sprint_schedule.sql` and `2026-10/2026-10-22_burnup_hours.sql`, in either order.
+   **Before `beta` next merges into `main`:** the code on `beta` reads the new columns, and without them no team
+   can be created and the scrum board fails. Both are additive and safe to apply early. The first has a
+   PREFLIGHT query in its header: run it first. Applied to DEV on 2026-11-02.
+2. `2026-10/2026-10-25_scrum_fill_board.sql`, then `2026-10/2026-10-27_mcp_oauth.sql`: the scrum board MCP
+   connector's batch write and its OAuth tables. Before the connector is announced. Until then `/mcp` sign-in
+   fails, and the import nudge stays hidden because the backend sees the connector as not ready. Both applied
+   to DEV on 2026-10-27.
+3. **Check, then mark:** three older files still say "PROD — pending" in their headers:
+   - `2026-10/2026-10-16_class_external_tasks_url.sql`
+   - `2026-10/2026-10-18_final_review_slots.sql`
+   - `2026-10/2026-10-18_team_meetings.sql`
+
+   PROD may have them already, since its schema has run ahead of these headers before. Check each with a
+   `SELECT` against the columns or tables it adds. Apply the ones missing, then record the date in the header.
+
+Also for PROD, outside SQL:
+- **`PUBLIC_API_URL`** on the backend project must be the API's host with no path (`https://api.grepthink2.com`),
+  the same host as the frontend's `VITE_API_URL`. It is the MCP connector's OAuth issuer, and without it `/mcp`
+  answers 503.
+- **Supabase's own OAuth server** stays off (Authentication → OAuth Server). The connector issues its own tokens;
+  a Supabase-issued one would carry the student's whole account. Turn it off on DEV too: it was switched on there
+  during the connector's work.
+
+After each file: verify with the `SELECT` in its header (or the advisors), record the date in its header,
+regenerate `supabase/schema.sql`, and remove the `needs-prod-sql` label from the PR that added it once all of its
+files are applied.
+
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. Take a
 dump before any PROD schema change. It needs Docker (Colima works), and the folder must stay
 outside the repo because the dump holds student data:
