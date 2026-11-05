@@ -32,6 +32,7 @@ SPRINT_OTHER = "sprint-other"
 MCP_RELATIONS = {
     **RELATIONS,
     ("project_members", "profiles!project_members_user_id_fkey"): ("user_id", "id", False),
+    ("tasks", "task_moves"): ("id", "task_id", True),  # the moves a rebuilt burnup replays
     # the connector's authorization server (app/mcp/oauth.py)
     ("mcp_tokens", "mcp_grants"): ("grant_id", "id", False),
     ("mcp_grants", "mcp_clients"): ("client_id", "client_id", False),
@@ -148,6 +149,25 @@ def _db(monkeypatch, *, fill=None, **tables):
     fake.rpcs["scrum_fill_board"] = fill_rpc
     fake.fill_calls = calls
     return fake
+
+
+def hand_made(n: int, **extra) -> list[dict]:
+    """``n`` stories in the backlog that weren't imported; 4 of them end a team's move-in."""
+    return [
+        {
+            "id": f"hand-{i}",
+            "project_id": PID,
+            "sprint_id": None,
+            "key": f"US-h{i}",
+            "title": f"Hand-made {i}",
+            "points": None,
+            "archived_at": None,
+            "imported_at": None,
+            "created_at": "2026-10-20T00:00:00Z",
+            **extra,
+        }
+        for i in range(n)
+    ]
 
 
 def _req(**over) -> FillBoardRequest:
@@ -271,7 +291,7 @@ def test_fill_staff_forbidden(monkeypatch):
 
 
 def test_fill_reports_every_error_and_writes_nothing(monkeypatch):
-    fake = _db(monkeypatch)
+    fake = _db(monkeypatch, user_stories=hand_made(4), tasks=[])
     req = _req(
         sprints=[
             {"ref": "s1", "name": "Sprint 2", "starts_at": "2026-11-10", "ends_at": "2026-11-01"},
@@ -302,7 +322,9 @@ def test_fill_reports_every_error_and_writes_nothing(monkeypatch):
         "stories[0].title: must be 1 to 200 characters",
         "stories[0].points: 7 is not on the fibonacci scale (1, 2, 3, 5, 8, 13)",
         f"stories[0].assignee_id: {TA} is not on the team",
-        "stories[0].sprint: sprint-done is completed; add stories to a planned or active sprint",
+        "stories[0].sprint: sprint-done is completed; add stories to a planned or active sprint. "
+        "A finished sprint takes stories only while a board holds 3 or fewer stories that weren't "
+        "imported, and this one holds more",
         "stories[1].title: must be 1 to 200 characters",
         "stories[1].sprint: no sprint of this project or of this batch has that id or ref",
         "stories[2].sprint: no sprint of this project or of this batch has that id or ref",
@@ -380,8 +402,8 @@ def test_fill_warnings(monkeypatch):
     ]
 
 
-def test_fill_calls_rpc_once_and_snapshots(monkeypatch):
-    fake = _db(monkeypatch)
+def test_fill_past_the_move_in_calls_rpc_once_and_snapshots(monkeypatch):
+    fake = _db(monkeypatch, user_stories=hand_made(4), tasks=[])
     pin_today(monkeypatch, date(2026, 10, 27))
     req = _req(
         sprints=[
@@ -425,6 +447,8 @@ def test_fill_calls_rpc_once_and_snapshots(monkeypatch):
         ("In planned", None, SPRINT_PLANNED),
         ("Backlog", None, None),
     ]
+    assert [s["imported_at"] for s in params["p_stories"]] == [None, None, None]
+    assert params["p_burnup"] == []
     assert [s["key"] for s in result["stories"]] == ["US-2", "US-3", "US-4"]
     assert sorted(r["sprint_id"] for r in fake.rows("sprint_burnup_days")) == [
         "new-s2",
@@ -437,7 +461,10 @@ def test_fill_calls_rpc_once_and_snapshots(monkeypatch):
         "sprints": 1,
         "stories": 3,
         "tasks": 0,
-        "warnings": 3,
+        "done": 0,
+        "in_progress": 0,
+        "imported": 0,
+        "warnings": 6,
         "client_id": "client-claude",
     }
 
@@ -448,9 +475,9 @@ def test_fill_round_trips(monkeypatch):
 
     _fill(_req())
 
-    # access check, then the project + sprints + members reads fanned out, the rpc, and the
-    # event insert. No sprint touched, so no snapshot.
-    assert fake.executes - before == 6
+    # access check, then the stories + project + sprints + members reads fanned out, the rpc,
+    # and the event insert. No sprint touched, so no snapshot.
+    assert fake.executes - before == 7
 
 
 # ------------------------------------------------------------------ class rules ----
@@ -475,14 +502,16 @@ def _scheduled_class(**over) -> list[dict]:
 
 def test_a_sprint_ended_by_its_dates_is_completed_whatever_its_stored_status(monkeypatch):
     # The stored status is never read: a class schedule's sprints keep "planned" for ever.
-    _db(monkeypatch)
+    _db(monkeypatch, user_stories=hand_made(4), tasks=[])
     pin_today(monkeypatch, date(2026, 11, 10))  # after Sprint 1 ends (Nov 6)
 
     with pytest.raises(FillRejected) as exc:
         _fill(_req(stories=[{"title": "late", "sprint": SPRINT_PLANNED}]))
 
     assert exc.value.errors == [
-        "stories[0].sprint: sprint-planned is completed; add stories to a planned or active sprint"
+        "stories[0].sprint: sprint-planned is completed; add stories to a planned or active "
+        "sprint. A finished sprint takes stories only while a board holds 3 or fewer stories that "
+        "weren't imported, and this one holds more"
     ]
 
 

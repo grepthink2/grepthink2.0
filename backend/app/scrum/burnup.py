@@ -71,6 +71,30 @@ def _label(d: date) -> str:
     return f"{d.month}/{d.day}"
 
 
+def replay_completed(
+    moves: list[tuple[str, str, date]],
+    task_values: dict[str, int],
+    first_day: date,
+    last_day: date,
+) -> dict[str, int]:
+    """Completed per day, ``first_day`` through ``last_day``, replayed from the task_moves audit.
+
+    ``moves`` are (task id, status moved to, day at the school), oldest first, for tasks in
+    ``task_values``, which holds each task's value in the burnup's unit.
+    """
+    status: dict[str, str] = {}
+    out: dict[str, int] = {}
+    i = 0
+    d = first_day
+    while d <= last_day:
+        while i < len(moves) and moves[i][2] <= d:
+            status[moves[i][0]] = moves[i][1]
+            i += 1
+        out[d.isoformat()] = sum(task_values[t] for t, st in status.items() if st == "done")
+        d += timedelta(days=1)
+    return out
+
+
 def build_sprint_series(
     *,
     snapshots: list[dict],

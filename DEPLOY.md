@@ -145,6 +145,11 @@ cannot create a class. Applied to dev on 2026-09-23.
 `2026-10/2026-10-22_burnup_hours.sql`, `2026-10/2026-10-25_scrum_fill_board.sql` and `2026-10/2026-10-27_mcp_oauth.sql`.
 That check covers what each file adds (columns, tables, constraint, index, function), not the function's body.
 
+**Due on PROD, not applied yet (2026-11-05):** `2026-11/2026-11-05_scrum_import.sql`, after a dump (below), pasted whole
+into the SQL editor. **Before the release that carries the connector's import**, because every `fill_board` call then
+needs the new column and the new `scrum_fill_board` signature. It is additive and leaves the old function in place, so
+it is safe to apply early. After that code is live, drop the old function (the file's header has the statement).
+
 **Check, then mark.** Three older files still say "PROD — pending" in their headers:
 - `2026-10/2026-10-16_class_external_tasks_url.sql`
 - `2026-10/2026-10-18_final_review_slots.sql`

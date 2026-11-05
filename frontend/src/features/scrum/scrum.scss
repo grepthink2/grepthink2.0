@@ -281,6 +281,7 @@
 .gt-burnup__subtitle { display: block; font-size: 10.5px; color: var(--gt-text-tertiary); }
 .gt-burnup__stat { font-size: 11px; color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
 .gt-burnup__stat strong { font-size: 15px; color: var(--gt-primary); font-weight: var(--gt-weight-semibold); }
+.gt-burnup__note { margin: 0; font-size: 11px; color: var(--gt-text-secondary); }
 .gt-burnup__plot { width: 100%; display: block; border-radius: 4px; }
 .gt-burnup__grid { stroke: var(--gt-gray-200); stroke-width: 1; }
 .gt-burnup__area { fill: rgba(1, 129, 86, 0.10); }

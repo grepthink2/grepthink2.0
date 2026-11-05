@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from app.scrum.burnup import build_cumulative_series, build_sprint_series
+from app.scrum.burnup import build_cumulative_series, build_sprint_series, replay_completed
 
 
 def test_carry_forward_fills_gaps_and_today_overrides():
@@ -18,6 +18,23 @@ def test_carry_forward_fills_gaps_and_today_overrides():
     assert out["labels"] == ["8/10", "8/11", "8/12", "8/13", "8/14"]
     assert out["scope"] == [10, 10, 13]  # truncated at today
     assert out["completed"] == [2, 2, 5]
+
+
+def test_replay_follows_each_tasks_latest_move_through_the_days():
+    moves = [
+        ("a", "done", date(2026, 8, 9)),  # before the first day: done from the start
+        ("b", "done", date(2026, 8, 10)),
+        ("b", "todo", date(2026, 8, 11)),  # reopened
+        ("c", "in_progress", date(2026, 8, 11)),  # under way counts for nothing
+        ("b", "done", date(2026, 8, 12)),
+    ]
+    assert replay_completed(
+        moves, {"a": 1, "b": 2, "c": 4}, date(2026, 8, 10), date(2026, 8, 12)
+    ) == {
+        "2026-08-10": 3,
+        "2026-08-11": 1,
+        "2026-08-12": 3,
+    }
 
 
 def test_series_empty_before_start():

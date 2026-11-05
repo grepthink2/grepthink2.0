@@ -13,7 +13,7 @@ from app.config import settings
 from app.main import app
 from tests.conftest import make_token
 from tests.scrum_support import PID, UID
-from tests.test_mcp_controller import _db
+from tests.test_mcp_controller import SPRINT_DONE, _db
 
 HEADERS = {
     "Accept": "application/json, text/event-stream",
@@ -160,9 +160,50 @@ def test_fill_board_writes_and_returns_keys(mcp_client, monkeypatch):
     assert not result.get("isError"), result
     out = result["structuredContent"]
     assert out["stories"][0]["key"] == "US-2"
-    assert out["warnings"] == ["stories[0] 'Sign in': no assignee, no description"]
+    assert out["warnings"] == [
+        "stories[0] 'Sign in': no assignee, no description",
+        "stories[0] 'Sign in': no tasks, and the burnup counts only task estimates",
+    ]
     assert len(fake.fill_calls) == 1
     assert fake.rows("events")[0]["meta"]["client_id"] == "client-claude"
+
+
+def test_fill_board_takes_a_status_and_a_done_day(mcp_client, monkeypatch):
+    fake = _db(monkeypatch)  # SPRINT_DONE ended in the past, and the done day falls inside it
+    task = {"title": "Form", "points": 3, "status": "done", "done_on": "2026-10-14"}
+
+    result = _call(
+        mcp_client,
+        "fill_board",
+        {
+            "project_id": PID,
+            "confirmed": True,
+            "stories": [{"title": "Sign in", "sprint": SPRINT_DONE, "tasks": [task]}],
+        },
+        token=_app_token(),
+    )
+
+    assert not result.get("isError"), result
+    (sent,) = fake.fill_calls[0]["p_stories"][0]["tasks"]
+    assert (sent["status"], sent["moved_at"]) == ("done", "2026-10-14T12:00:00-07:00")
+
+
+def test_a_status_the_board_has_not_is_a_tool_error(mcp_client, monkeypatch):
+    fake = _db(monkeypatch)
+
+    result = _call(
+        mcp_client,
+        "fill_board",
+        {
+            "project_id": PID,
+            "confirmed": True,
+            "stories": [{"title": "x", "tasks": [{"title": "t", "status": "shipped"}]}],
+        },
+        token=_app_token(),
+    )
+
+    assert result["isError"] is True
+    assert fake.fill_calls == []
 
 
 def test_outside_the_app_lifespan_mcp_answers_503(client):

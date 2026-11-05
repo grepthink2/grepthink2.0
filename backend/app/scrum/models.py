@@ -203,6 +203,8 @@ class BurnupSeries(BaseModel):
     scope: list[int]
     completed: list[int]
     subtitle: str | None = None
+    #: The chart was rebuilt by an import through the connector (the board shows a note).
+    imported: bool = False
 
 
 class CommentOut(BaseModel):

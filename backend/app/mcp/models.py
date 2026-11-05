@@ -8,6 +8,7 @@ instead of stopping at the first.
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,6 +20,10 @@ class NewTask(BaseModel):
     estimate_hours: int | None = None
     assignee_id: str | None = None
     tags: list[str] = Field(default_factory=list)
+    #: Where the task starts on the board. Anything but To do is only for a team's move-in.
+    status: Literal["todo", "in_progress", "done"] = "todo"
+    #: The day a done task was finished, at the school.
+    done_on: date | None = None
 
 
 class NewStory(BaseModel):

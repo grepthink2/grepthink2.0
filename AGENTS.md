@@ -307,6 +307,12 @@ The full agent-facing action catalog (method, params, role) lives at
   Students end a grant in Settings → Connected apps. ⚠️ `/register` accepts any redirect URI for now: a
   known safety issue to revisit. Supabase's own OAuth server stays off on every project: a token it
   issued would carry the student's whole account, and nothing on our side can fence Supabase Auth.
+- **A team's move-in goes through `fill_board`.** While a board holds 3 stories or fewer with
+  `user_stories.imported_at` NULL, the connector also takes done and in-progress tasks and stories in
+  finished sprints, and marks every story it writes. `scrum_fill_board` dates the tasks' `task_moves` rows and
+  replaces the saved `sprint_burnup_days` rows of each started sprint it adds to (`p_burnup`), all in one
+  transaction, and that chart then says "Includes imported work". This is the only writer that backdates a
+  move or rewrites past burnup rows; the board's own writes only snapshot today.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).

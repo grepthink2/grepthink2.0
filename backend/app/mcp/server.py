@@ -45,7 +45,13 @@ Workflow:
 4. Revise as the student asks. Only after the student explicitly approves the plan you showed,
    call fill_board with confirmed=true. Then report the keys created and repeat the warnings.
 
-The connector only adds items. It never edits, moves or deletes what is on the board."""
+Moving a board in: while get_board_context says import_window_open, a team can bring work from
+another tool across, finished work included. Map stories to the class's existing sprints first,
+finished ones too. Put each done story in the sprint whose dates contain its done day, and ask the
+student when the source doesn't say when work was finished. A large board can take several batches.
+
+The connector only adds items. It never edits, moves or deletes what is on the board. An import
+rebuilds the burnup of each started sprint it adds to, and the chart says it includes imported work."""
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +105,17 @@ The board's model: stories hold tasks. A story is a user-facing outcome; describ
 "As a <user>, I want <goal> so that <reason>" followed by acceptance criteria, in markdown.
 Tasks are the concrete work to deliver it, each small enough for one person in at most 15 hours.
 - points: only values in allowed_points (the project's estimate_scale). A story's points should
-  equal the sum of its tasks' points: the burnup chart counts scope from story points and
-  progress from done task points.
+  equal the sum of its tasks' points. The burnup chart counts its tasks' points or hours, never a
+  story's, so give every story at least one task: a single card from another tool becomes a story
+  with one task carrying its points, hours and status.
 - estimate_hours: tasks only, a whole number in hours_range.
 - tags: tasks only, from tags.
 - assignee: a user_id from members. Where the plan doesn't say, spread the work across the team
   by role.
-- sprints: existing sprints have an id and a status; stories can join planned or active ones.
+- sprints: existing sprints have an id and a status; stories can join planned or active ones,
+  and finished ones too while import_window_open is true.
+- import_window_open: true while the board holds 3 or fewer stories that weren't imported. Only
+  then can tasks arrive as in_progress or done. Stories imported earlier don't close it.
 - sprint_rules: new sprints must fall between first_day and last_day, and a class with
   max_sprints allows only new_sprints_allowed more.
 - existing: items already on the board. Don't add duplicates; list what you skipped.
@@ -129,12 +139,17 @@ approval of it; set confirmed=true only then. Calling it twice adds the items tw
 
 - sprints: new sprints, created as planned. Give each a ref (any short label) that stories in
   this batch use to join it.
-- stories[].sprint: a new sprint's ref, an existing planned or active sprint's id, or omitted
-  for the backlog.
+- stories[].sprint: a new sprint's ref, an existing sprint's id, or omitted for the backlog.
+  A finished sprint takes stories only while import_window_open is true.
+- stories[].tasks[].status: todo (the default), in_progress or done. Anything but todo needs
+  import_window_open. A done task must sit in a sprint that has started.
+- stories[].tasks[].done_on: the day a done task was finished. Without one it takes its sprint's
+  last day, or today if the sprint is still running. One outside its sprint moves to the nearest
+  day inside it. Both come back as warnings.
 - Only title is required. Leave a field out rather than guess, and tell the student.
 The whole batch is checked first. If anything is wrong nothing is added and every problem is
 listed with its path; fix them and call again. On success the created items come back with
-their keys (US-n, GT-n), plus warnings about empty fields to repeat to the student.""",
+their keys (US-n, GT-n), plus warnings about empty fields and chosen dates to repeat to the student.""",
 )
 async def fill_board(
     project_id: str,

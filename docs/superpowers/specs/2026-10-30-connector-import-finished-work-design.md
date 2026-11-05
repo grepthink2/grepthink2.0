@@ -71,7 +71,8 @@ the team had used the board all along, and that says it holds imported work.
 
 ### The write (one transaction, `scrum_fill_board`)
 
-The function gains a fifth argument, `p_burnup jsonb`, and each story object gains `imported_at`:
+The function gains three arguments, `p_burnup jsonb`, `p_expected_story_seq integer` and `p_expected_task_seq integer`,
+and each story object gains `imported_at`:
 
 - Tasks are inserted as now, at `todo`.
 - Each task not at `todo` gets one `task_moves` row (`todo` to its status), `moved_by` = the student. The existing
@@ -80,20 +81,24 @@ The function gains a fifth argument, `p_burnup jsonb`, and each story object gai
   - a done task: noon at the school on `done_on`, or now if that is earlier, so no move is dated in the future;
   - an in-progress task: now.
 - For each sprint named in `p_burnup` (`sprint_id`, or `sprint_ref` for a new one): delete its saved
-  `sprint_burnup_days` rows and insert the given ones. A failure rolls back the whole batch, so tasks and chart can
-  never disagree, and the window is not closed by a half-finished import. Like the rest of the function, this trusts
-  its caller.
+  `sprint_burnup_days` rows and insert the given ones. A failure rolls back the whole batch, and the window is not
+  closed by a half-finished import. Like the rest of the function, this trusts its caller.
+- With rows to write, the expected counters must match `scrum_counters` once the function holds that row's lock, or it
+  raises 23505. The rows are computed from a read made before the transaction, so without this two overlapping imports
+  into one sprint (an assistant's parallel tool calls, or two teammates) would overwrite each other's chart: the later
+  batch's rows would leave out the earlier batch's work, and a finished sprint's chart would stay wrong. `fill_board`
+  turns the conflict into a refusal that tells the assistant to read the board again.
 
-**The new argument makes this a new signature, which removes the silent-downgrade risk.** The backend calls by argument
-name, so a new backend against a database without the new function fails loudly instead of importing done tasks as
-To do. No separate version check is needed. Confirm the failure on DEV.
+**The new arguments make this a new signature, which removes the silent-downgrade risk.** The backend calls by argument
+name, so a new backend against a database without the new function fails loudly (`PGRST202`, confirmed on DEV) instead
+of importing done tasks as To do. No separate version check is needed.
 
 ### The burnup rows (computed before the write)
 
 While the window is open, for each sprint that receives stories and has started (its first day is today or earlier),
 `fill_board` builds the rows it passes as `p_burnup`:
 
-- it reads the sprint's live stories with their tasks, and those tasks' moves;
+- it reads the project's counters, then the sprint's live stories with their tasks and those tasks' moves;
 - for every day from the sprint's first day to the earlier of its last day and today, in both units (points and
   hours):
   - scope: the sprint's scope after the batch, every day;
@@ -102,8 +107,9 @@ While the window is open, for each sprint that receives stories and has started 
     both call it.
 
 Replacing the rows also removes those dated after the sprint's last day, so the cumulative chart, which reads a
-sprint's latest row, gets the final values. A real move made between the read and the write can leave today's row
-stale until the next snapshot corrects it; past days can't be affected, because a real move is dated now.
+sprint's latest row, gets the final values. A task moved on the board between the read and the write can leave today's
+row stale until the next snapshot corrects it. Past days can't be affected, because a move on the board is dated now and
+anything added moves the counters.
 
 A sprint that has not started gets no rows: its chart begins when it does. Outside the window `fill_board` keeps
 today's best-effort snapshot.
@@ -134,8 +140,8 @@ The data is per story; what people see is one note. The board response gains `bu
 
 ## Applying it
 
-One new migration adds the column and the five-argument function, labelled `needs-prod-sql`. Apply it on DEV and then
-on PROD before the code deploys. `CREATE OR REPLACE` with a new argument leaves the old four-argument function in place,
+One new migration, `2026-11/2026-11-05_scrum_import.sql`, adds the column and the new function, labelled `needs-prod-sql`. Apply it on DEV and then
+on PROD before the code deploys. `CREATE OR REPLACE` with new arguments leaves the old four-argument function in place,
 so the deployed backend keeps working; drop the old one once the new code is live.
 
 ## Testing
@@ -146,11 +152,12 @@ so the deployed backend keeps working; drop the old one once the new code is liv
   - finished sprints accepted in the window and refused past it, unfinished work there warned about;
   - the payload carries `imported_at`, status and `moved_at`, with no move dated in the future;
   - `p_burnup` covers started sprints only, in both units, flat scope, completed by day, new sprints by ref;
+  - the expected counters are sent, and a conflict becomes a refusal the assistant can act on;
   - the label on rebuilt charts only;
   - round-trip budget.
 - **SQL on DEV** (rolled back, reviewed on its own as AGENTS.md asks for SQL functions): moves inserted, task statuses
-  and `moved_at` set by the trigger, keys unchanged, burnup rows replaced, and a bad row rolling back everything
-  including the burnup rows.
+  and `moved_at` set by the trigger, keys unchanged, burnup rows replaced, moved counters refused, and a bad row
+  rolling back everything including the burnup rows.
 - **End to end on DEV:** import a finished sprint and an active one, read both charts through `GET /scrum/board`, send a
   second batch, then clean up.
 

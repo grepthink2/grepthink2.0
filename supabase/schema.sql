@@ -1729,6 +1729,7 @@ CREATE TABLE IF NOT EXISTS user_stories (
   reporter_id    uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   assignee_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
   archived_at    timestamptz,                                     -- set ⇒ archive view
+  imported_at    timestamptz,                                     -- written during a move-in (app/mcp)
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT user_stories_key_uq UNIQUE (project_id, key)
@@ -1860,7 +1861,10 @@ CREATE OR REPLACE FUNCTION public.scrum_fill_board(
   p_project_id uuid,
   p_reporter_id uuid,
   p_sprints jsonb,
-  p_stories jsonb
+  p_stories jsonb,
+  p_burnup jsonb,
+  p_expected_story_seq integer,
+  p_expected_task_seq integer
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SET search_path = public
@@ -1880,6 +1884,8 @@ DECLARE
   v_id uuid;
   v_story_id uuid;
   v_sprint_id uuid;
+  v_status text;
+  burnup_sprints uuid[];
 BEGIN
   SELECT coalesce(sum(jsonb_array_length(coalesce(nullif(e -> 'tasks', 'null'::jsonb), '[]'::jsonb))), 0)
     INTO n_tasks
@@ -1890,6 +1896,11 @@ BEGIN
      SET story_seq = story_seq + n_stories, task_seq = task_seq + n_tasks
    WHERE project_id = p_project_id
   RETURNING story_seq - n_stories, task_seq - n_tasks INTO story_no, task_no;
+
+  IF jsonb_array_length(p_burnup) > 0
+     AND (story_no, task_no) IS DISTINCT FROM (p_expected_story_seq, p_expected_task_seq) THEN
+    RAISE EXCEPTION 'the board changed while this batch was being prepared' USING ERRCODE = '23505';
+  END IF;
 
   FOR sp IN SELECT e FROM jsonb_array_elements(p_sprints) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
     INSERT INTO sprints (project_id, name, starts_at, ends_at)
@@ -1915,10 +1926,12 @@ BEGIN
       v_sprint_id := NULL;
     END IF;
     story_no := story_no + 1;
-    INSERT INTO user_stories (project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id)
+    INSERT INTO user_stories (
+      project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id, imported_at
+    )
     VALUES (
       p_project_id, 'US-' || story_no, st ->> 'title', st ->> 'description_md', (st ->> 'points')::integer,
-      (st ->> 'assignee_id')::uuid, v_sprint_id, p_reporter_id
+      (st ->> 'assignee_id')::uuid, v_sprint_id, p_reporter_id, (st ->> 'imported_at')::timestamptz
     )
     RETURNING id INTO v_story_id;
 
@@ -1936,7 +1949,14 @@ BEGIN
         ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(tk -> 'tags', 'null'::jsonb), '[]'::jsonb))), p_reporter_id
       )
       RETURNING id INTO v_id;
-      out_tasks := out_tasks || jsonb_build_object('id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title');
+      v_status := coalesce(tk ->> 'status', 'todo');
+      IF v_status <> 'todo' THEN
+        INSERT INTO task_moves (task_id, to_status, moved_by, moved_at)
+        VALUES (v_id, v_status, p_reporter_id, (tk ->> 'moved_at')::timestamptz);
+      END IF;
+      out_tasks := out_tasks || jsonb_build_object(
+        'id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title', 'status', v_status
+      );
     END LOOP;
 
     out_stories := out_stories || jsonb_build_object(
@@ -1945,12 +1965,34 @@ BEGIN
     );
   END LOOP;
 
+  SELECT array_agg(DISTINCT coalesce((e ->> 'sprint_id')::uuid, (sprint_ids ->> (e ->> 'sprint_ref'))::uuid))
+    INTO burnup_sprints
+    FROM jsonb_array_elements(p_burnup) AS e;
+  IF EXISTS (
+    SELECT 1 FROM unnest(burnup_sprints) AS u(id)
+     WHERE u.id IS NULL
+        OR NOT EXISTS (SELECT 1 FROM sprints s WHERE s.id = u.id AND s.project_id = p_project_id)
+  ) THEN
+    RAISE EXCEPTION 'p_burnup names a sprint that is not in this project or this batch';
+  END IF;
+  DELETE FROM sprint_burnup_days WHERE sprint_id = ANY(burnup_sprints);
+  INSERT INTO sprint_burnup_days (sprint_id, day, scope_points, completed_points, scope_hours, completed_hours)
+  SELECT coalesce((e ->> 'sprint_id')::uuid, (sprint_ids ->> (e ->> 'sprint_ref'))::uuid),
+         (e ->> 'day')::date,
+         (e ->> 'scope_points')::integer, (e ->> 'completed_points')::integer,
+         (e ->> 'scope_hours')::integer, (e ->> 'completed_hours')::integer
+    FROM jsonb_array_elements(p_burnup) AS e
+  -- A board opened just now can snapshot today between the delete and this insert.
+  ON CONFLICT (sprint_id, day) DO UPDATE
+    SET scope_points = EXCLUDED.scope_points, completed_points = EXCLUDED.completed_points,
+        scope_hours = EXCLUDED.scope_hours, completed_hours = EXCLUDED.completed_hours;
+
   RETURN jsonb_build_object('sprints', out_sprints, 'stories', out_stories);
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb) FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) TO service_role;
 
 -- ============ 8) burnup snapshots ============
 CREATE TABLE IF NOT EXISTS sprint_burnup_days (
@@ -1958,6 +2000,8 @@ CREATE TABLE IF NOT EXISTS sprint_burnup_days (
   day              date NOT NULL,          -- America/Los_Angeles calendar day
   scope_points     integer NOT NULL,
   completed_points integer NOT NULL,
+  scope_hours      integer NOT NULL DEFAULT 0,
+  completed_hours  integer NOT NULL DEFAULT 0,
   PRIMARY KEY (sprint_id, day)
 );
 ALTER TABLE sprint_burnup_days ENABLE ROW LEVEL SECURITY;
