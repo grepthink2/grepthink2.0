@@ -1,6 +1,7 @@
 # Connector: import finished work as done, with a true burnup — design
 
-Date: 2026-10-30, decisions 2026-11-02 and 2026-11-05. Status: agreed with the maintainer. No code yet.
+Date: 2026-10-30, decisions 2026-11-02 and 2026-11-05. Status: agreed with the maintainer, and built, in the pull request
+that adds this file. The import nudge at the end is planned, not built.
 
 ## Why
 
@@ -99,15 +100,16 @@ While the window is open, for each sprint that receives stories and has started 
 `fill_board` builds the rows it passes as `p_burnup`:
 
 - it reads the project's counters, then the sprint's live stories with their tasks and those tasks' moves;
-- for every day from the sprint's first day to the earlier of its last day and today, in both units (points and
-  hours):
+- for every day from the sprint's first day to the earlier of its last day and today, and for today if the sprint has
+  ended, in both units (points and hours):
   - scope: the sprint's scope after the batch, every day;
   - completed: replayed from the existing moves plus the batch's moves. The replay in
     `_completed_by_day_from_moves` moves into `app/scrum/burnup.py` as a pure function, and the board and the import
     both call it.
 
-Replacing the rows also removes those dated after the sprint's last day, so the cumulative chart, which reads a
-sprint's latest row, gets the final values. A task moved on the board between the read and the write can leave today's
+Replacing the rows also removes those dated after the sprint's last day. The row dated today takes their place, so the
+cumulative chart, which reads a sprint's latest row, gets the final values, work finished on the board since the sprint
+ended included. The sprint's own chart stops at its last day. A task moved on the board between the read and the write can leave today's
 row stale until the next snapshot corrects it. Past days can't be affected, because a move on the board is dated now and
 anything added moves the counters.
 
@@ -195,8 +197,16 @@ so the deployed backend keeps working; drop the old one once the new code is liv
 10. A `done_on` outside its sprint moves to the nearest day inside it, with a warning.
 11. The import nudge is planned before the next release (below).
 
-Decided by the builder, for the maintainer to veto: every story written in the window is marked, not only those with
-done work; the window has no time limit; no move is dated in the future.
+Decided by the builder, for the maintainer to veto:
+
+- Every story written in the window is marked, not only those with done work.
+- The window has no time limit.
+- No move is dated in the future.
+- With rows to write, `scrum_fill_board` refuses a batch if the board's counters moved since they were read, and the
+  assistant is told to read the board again.
+- An ended sprint keeps a row dated today, so the cumulative chart counts work finished on the board since it ended.
+- The consent page no longer says the app "can't change or delete anything already there": it says stories and tasks,
+  and that moving a board in rebuilds the burnup charts of the sprints it adds to.
 
 ## The import nudge: plan
 

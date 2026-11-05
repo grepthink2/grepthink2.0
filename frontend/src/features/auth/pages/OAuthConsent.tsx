@@ -60,7 +60,8 @@ const ConsentCard: React.FC<{ requestId: string; email: string | undefined }> = 
       <h1 className="oauth-consent__title">Connect {request.app_name} to GrepThink?</h1>
       <p className="oauth-consent__text">
         {request.app_name} will be able to read your teams' scrum boards and add items to them, as you. It can't
-        change or delete anything already there, and you can disconnect it in Settings.
+        change or delete the stories and tasks already there, though moving a board in rebuilds the burnup charts
+        of the sprints it adds to. You can disconnect it in Settings.
       </p>
       <p className="oauth-consent__account">
         {email && (

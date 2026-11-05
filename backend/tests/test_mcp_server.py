@@ -4,13 +4,15 @@ and the tools it serves. The tools' rules are in test_mcp_controller.py."""
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
 from app.main import app
+from app.mcp import controller as mcp_controller
 from tests.conftest import make_token
 from tests.scrum_support import PID, UID
 from tests.test_mcp_controller import SPRINT_DONE, _db
@@ -169,7 +171,9 @@ def test_fill_board_writes_and_returns_keys(mcp_client, monkeypatch):
 
 
 def test_fill_board_takes_a_status_and_a_done_day(mcp_client, monkeypatch):
-    fake = _db(monkeypatch)  # SPRINT_DONE ended in the past, and the done day falls inside it
+    fake = _db(monkeypatch)
+    # The app's own token check reads the real clock, so only the board's "today" is pinned.
+    monkeypatch.setattr(mcp_controller, "_today", lambda zone: date(2026, 10, 27))
     task = {"title": "Form", "points": 3, "status": "done", "done_on": "2026-10-14"}
 
     result = _call(
@@ -185,7 +189,10 @@ def test_fill_board_takes_a_status_and_a_done_day(mcp_client, monkeypatch):
 
     assert not result.get("isError"), result
     (sent,) = fake.fill_calls[0]["p_stories"][0]["tasks"]
-    assert (sent["status"], sent["moved_at"]) == ("done", "2026-10-14T12:00:00-07:00")
+    assert sent["status"] == "done"
+    assert datetime.fromisoformat(sent["moved_at"]) == datetime(
+        2026, 10, 14, 12, tzinfo=ZoneInfo("America/Los_Angeles")
+    )
 
 
 def test_a_status_the_board_has_not_is_a_tool_error(mcp_client, monkeypatch):

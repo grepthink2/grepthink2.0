@@ -444,6 +444,8 @@ def _check(request: FillBoardRequest, checker: _Checker) -> list[dict]:
         except HTTPException as exc:
             checker.errors.append(f"{path}: {exc.detail}")
         checker._err(_length_error(f"{path}.name", sp.name, low=1, high=SPRINT_NAME_MAX))
+        if not sp.ref:
+            checker.errors.append(f"{path}.ref: must not be empty")
         if sp.ref in seen_refs:
             checker.errors.append(f"{path}.ref: {sp.ref!r} is used by another sprint in this batch")
         seen_refs.add(sp.ref)
@@ -541,12 +543,19 @@ def _burnup_rows(
         replay = [(task, to, _school_day(at, checker.zone)) for at, task, to in moves]
 
         first, last = checker.sprint_days(sprint)
-        last = min(last, checker.today)
         scope, completed = {}, {}
         for unit, column in _UNIT_COLUMN.items():
             values = {t["id"]: t.get(column) or 0 for t in tasks}
             scope[unit] = sum(values.values())
-            completed[unit] = replay_completed(replay, values, first, last)
+            completed[unit] = replay_completed(replay, values, first, checker.today)
+        # Each day of the sprint so far, and today's row for one that has ended: its own chart stops
+        # at its last day, and the cumulative chart reads its latest row, which must count work
+        # finished on the board since.
+        days = [
+            day
+            for day in completed["points"]
+            if day <= last.isoformat() or day == checker.today.isoformat()
+        ]
         key = {"sprint_ref": sprint} if sprint in checker.new_sprints else {"sprint_id": sprint}
         rows += [
             {
@@ -557,7 +566,7 @@ def _burnup_rows(
                 "scope_hours": scope["hours"],
                 "completed_hours": completed["hours"][day],
             }
-            for day in completed["points"]
+            for day in days
         ]
     return rows, {
         "p_expected_story_seq": counters[0].get("story_seq", 0),

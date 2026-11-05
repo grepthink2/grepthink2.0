@@ -8,7 +8,7 @@ because the test double runs no SQL.
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -173,7 +173,11 @@ def test_tasks_arrive_with_their_status_and_the_day_their_move_is_dated(monkeypa
         ("too late", "done", _noon(23)),
         ("too early", "done", _noon(12)),
         ("open", "todo", None),
-        ("under way", "in_progress", datetime(2026, 10, 27, 19).isoformat() + "+00:00"),
+        (
+            "under way",
+            "in_progress",
+            datetime(2026, 10, 27, 12, tzinfo=SCHOOL).astimezone(UTC).isoformat(),
+        ),
     ]
     assert _dates_and_open_work(result["warnings"]) == [
         "stories[0].tasks[1] 'no day': no done day given, so it's dated 2026-10-23",
@@ -341,22 +345,23 @@ def test_a_finished_sprint_is_rebuilt_flat_with_completed_on_the_done_days(monke
     )
 
     rows = fake.fill_calls[-1]["p_burnup"]
-    assert [r["day"] for r in rows] == [f"2026-10-{d}" for d in range(12, 24)]  # its whole length
+    # Its whole length, and today's row, which the cumulative chart reads.
+    assert [r["day"] for r in rows] == [f"2026-10-{d}" for d in (*range(12, 24), 27)]
     assert {(r["sprint_id"], r["scope_points"], r["scope_hours"]) for r in rows} == {
         (SPRINT_DONE, 11, 10)
     }
     points = [r["completed_points"] for r in rows]
     hours = [r["completed_hours"] for r in rows]
-    # Oct:      12  13  14  15  16 ... 23
-    assert points == [0, 2, 0, 5, *[7] * 8]
-    assert hours == [0, 1, 0, 4, *[5] * 8]
+    # Oct:      12  13  14  15  16 ... 23  27
+    assert points == [0, 2, 0, 5, *[7] * 8, 7]
+    assert hours == [0, 1, 0, 4, *[5] * 8, 5]
     assert fake.rows("sprint_burnup_days") == []  # replaced in the rpc, not snapshotted after it
     # access, four fanned-out reads, the counters, the work to replay, the rpc, the event: two more
     # reads than a batch with no sprint to rebuild.
     assert fake.executes - before == 9
 
 
-def test_rows_are_written_only_if_the_counters_have_not_moved(monkeypatch):
+def test_rows_carry_the_counters_they_were_computed_from(monkeypatch):
     counters = [{"project_id": PID, "story_seq": 7, "task_seq": 21}]
     fake = _db(monkeypatch, scrum_counters=counters)
     pin_today(monkeypatch, TODAY)
@@ -398,6 +403,53 @@ def test_another_batch_reaching_the_board_first_is_a_refusal_the_assistant_can_a
         _fill(_req(**_stories({"title": "Now", "sprint": SPRINT_PLANNED})))
 
     assert exc.value.errors == [BOARD_CHANGED]
+
+
+def test_work_finished_after_a_sprint_ended_counts_only_on_todays_row(monkeypatch):
+    work = _existing_work()
+    work["task_moves"] = [
+        {"task_id": "t2", "to_status": "done", "moved_at": "2026-10-25T19:00:00Z"}  # after its end
+    ]
+    fake = _db(monkeypatch, **work)
+    pin_today(monkeypatch, TODAY)
+
+    _fill(_req(**_stories({"title": "Imported", "sprint": SPRINT_DONE})))
+
+    rows = {r["day"]: r["completed_points"] for r in fake.fill_calls[-1]["p_burnup"]}
+    assert rows["2026-10-23"] == 0
+    assert rows["2026-10-27"] == 3
+    assert "2026-10-25" not in rows
+
+
+def test_one_batch_rebuilds_a_started_sprint_and_snapshots_one_that_has_not(monkeypatch):
+    fake = _db(monkeypatch)
+    pin_today(
+        monkeypatch, date(2026, 10, 20)
+    )  # Sprint 0 is running, and Sprint 1 starts on the 26th
+
+    _fill(
+        _req(
+            **_stories(
+                {"title": "Running", "sprint": SPRINT_DONE},
+                {"title": "Ahead", "sprint": SPRINT_PLANNED},
+            )
+        )
+    )
+
+    assert {r["sprint_id"] for r in fake.fill_calls[-1]["p_burnup"]} == {SPRINT_DONE}
+    assert [r["sprint_id"] for r in fake.rows("sprint_burnup_days")] == [SPRINT_PLANNED]
+
+
+def test_a_new_sprint_needs_a_ref(monkeypatch):
+    fake = _db(monkeypatch)
+    pin_today(monkeypatch, TODAY)
+    sprint = {"ref": "", "name": "Past", "starts_at": "2026-10-01", "ends_at": "2026-10-02"}
+
+    with pytest.raises(FillRejected) as exc:
+        _fill(_req(sprints=[sprint], stories=[]))
+
+    assert exc.value.errors == ["sprints[0].ref: must not be empty"]
+    assert fake.fill_calls == []
 
 
 def test_a_running_sprint_is_rebuilt_up_to_today(monkeypatch):
@@ -460,7 +512,7 @@ def test_a_new_finished_sprint_is_rebuilt_by_its_ref(monkeypatch):
             "scope_hours": 2,
             "completed_hours": done,
         }
-        for day, done in (("2026-10-01", 0), ("2026-10-02", 2))
+        for day, done in (("2026-10-01", 0), ("2026-10-02", 2), ("2026-10-27", 2))
     ]
     assert fake.rows("sprint_burnup_days") == []
 

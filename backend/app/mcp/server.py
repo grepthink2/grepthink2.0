@@ -40,8 +40,9 @@ Workflow:
 1. list_my_projects; if there is more than one, ask which project.
 2. get_board_context for it: the board's rules, the team, the sprints, and what is already there.
 3. Draft the plan and show ALL of it to the student as readable text: sprints, then each story
-   with its tasks, each with points, hours, tags, assignee and a short description. End with a
-   list of warnings: fields left empty, and items you skipped as duplicates of existing ones.
+   with its tasks, each with points, hours, tags, assignee, status, done day and a short
+   description. End with a list of warnings: fields left empty, and items you skipped as
+   duplicates of existing ones.
 4. Revise as the student asks. Only after the student explicitly approves the plan you showed,
    call fill_board with confirmed=true. Then report the keys created and repeat the warnings.
 
@@ -137,15 +138,16 @@ async def get_board_context(project_id: str) -> dict[str, Any]:
 Only call this after showing the student the complete plan and receiving their explicit
 approval of it; set confirmed=true only then. Calling it twice adds the items twice.
 
-- sprints: new sprints, created as planned. Give each a ref (any short label) that stories in
-  this batch use to join it.
+- sprints: new sprints. A sprint's status follows its dates, so one with past dates counts as
+  started or finished. Give each a ref (any short label) that stories in this batch use to join it.
 - stories[].sprint: a new sprint's ref, an existing sprint's id, or omitted for the backlog.
   A finished sprint takes stories only while import_window_open is true.
 - stories[].tasks[].status: todo (the default), in_progress or done. Anything but todo needs
-  import_window_open. A done task must sit in a sprint that has started.
-- stories[].tasks[].done_on: the day a done task was finished. Without one it takes its sprint's
-  last day, or today if the sprint is still running. One outside its sprint moves to the nearest
-  day inside it. Both come back as warnings.
+  import_window_open. Put each done story in the sprint whose dates contain its done day; a done
+  task must sit in a sprint that has started.
+- stories[].tasks[].done_on: the day a done task was finished. Ask the student when the source
+  doesn't say. Without one it takes its sprint's last day, or today if the sprint is still running.
+  One outside its sprint moves to the nearest day inside it. Both come back as warnings.
 - Only title is required. Leave a field out rather than guess, and tell the student.
 The whole batch is checked first. If anything is wrong nothing is added and every problem is
 listed with its path; fix them and call again. On success the created items come back with
