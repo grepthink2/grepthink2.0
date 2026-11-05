@@ -204,6 +204,12 @@ class MCPEndpoint:
     def __init__(self) -> None:
         self._app: Starlette | None = None
 
+    @property
+    def ready(self) -> bool:
+        """Whether an assistant can reach /mcp: the app started, and this API has a public address.
+        A local server starts it on a localhost address, which no hosted assistant can reach."""
+        return self._app is not None and bool(settings.PUBLIC_API_URL)
+
     @asynccontextmanager
     async def running(self) -> AsyncIterator[None]:
         """Serve /mcp for as long as the API runs. Without a public address, or when the MCP app

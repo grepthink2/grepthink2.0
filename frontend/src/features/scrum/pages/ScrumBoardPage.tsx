@@ -19,6 +19,7 @@ import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
 import ConnectAssistant from '../components/ConnectAssistant';
+import ImportNudge from '../components/ImportNudge';
 import { Button } from '@components/Button/Button';
 import SprintPicker from '../components/SprintPicker';
 import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorModal';
@@ -122,6 +123,7 @@ export default function ScrumBoardPage() {
   const [savingSprint, setSavingSprint] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
+  const connectRef = useRef<HTMLButtonElement>(null);
 
   const members = useMemo(() => buildMemberMap(board?.members ?? []), [board?.members]);
   const storyKeys = useMemo(() => {
@@ -338,6 +340,13 @@ export default function ScrumBoardPage() {
     });
   };
 
+  /** Opens the header's connector popover, with focus on its ⓘ so the keyboard follows. */
+  const openConnectAssistant = () => {
+    const trigger = connectRef.current;
+    trigger?.focus();
+    if (trigger?.getAttribute('aria-expanded') === 'false') trigger.click();
+  };
+
   if (loading) return <ScrumBoardSkeleton />;
 
   if (error || !board) {
@@ -365,6 +374,10 @@ export default function ScrumBoardPage() {
   // Only the class's instructor sets the sprint schedule. Staff access also covers the class's TAs
   // and the team's meeting TA, so the instructor's role in the class is needed as well.
   const setsSchedule = board.access === 'staff' && classRole === 'instructor';
+  // A team that can still bring its board in and hasn't started to. A backend older than this
+  // client sends none of these, and then nothing about the move-in shows.
+  const invitesMoveIn = canWrite && board.connector_ready && board.import_window_open
+    && !board.has_imported_stories;
 
   return (
     <div className="scrum-board">
@@ -392,7 +405,7 @@ export default function ScrumBoardPage() {
               onNewSprint={canAddSprint ? openSprintEditor : undefined}
             />
           )}
-          {canWrite && <ConnectAssistant />}
+          {canWrite && <ConnectAssistant ref={connectRef} />}
           <button
             type="button"
             className="scrum-board__icon-button"
@@ -411,6 +424,10 @@ export default function ScrumBoardPage() {
           </button>
         </div>
       </div>
+
+      {invitesMoveIn && (
+        <ImportNudge key={board.project.id} projectId={board.project.id} onConnect={openConnectAssistant} />
+      )}
 
       <div className="scrum-board__views" role="tablist" aria-label="Board views">
         {BOARD_VIEWS.map((v) => (

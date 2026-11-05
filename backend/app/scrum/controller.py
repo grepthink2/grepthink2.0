@@ -56,6 +56,8 @@ logger = logging.getLogger(__name__)
 PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 AI_DAILY_LIMIT = 10
+#: A team's move-in lasts while its board holds this many stories or fewer that weren't imported.
+MOVE_IN_STORIES = 3
 
 #: 403: staff read the board and comment on it, but only team members change it (D2).
 MEMBERS_ONLY = "Only team members can modify the board"
@@ -1028,6 +1030,13 @@ def _holds_imported_work(stories: list[dict], first_day: date, zone: ZoneInfo) -
     )
 
 
+def import_window_open(stories: list[dict]) -> bool:
+    """Whether a team can still move its board in through the connector (:mod:`app.mcp.controller`):
+    ``stories`` holds :data:`MOVE_IN_STORIES` or fewer that are neither archived nor imported."""
+    live = sum(1 for s in stories if not s.get("archived_at") and not s.get("imported_at"))
+    return live <= MOVE_IN_STORIES
+
+
 def _select_sprint(sprints: list[dict], sprint_id: str | None, today: date) -> dict | None:
     """The sprint the board shows, from ``sprints`` ordered by ``starts_at``.
 
@@ -1324,6 +1333,8 @@ def get_board(
         "members": members,
         "access": access,
         "task_index": task_index,
+        "import_window_open": import_window_open(all_stories),
+        "has_imported_stories": any(s.get("imported_at") for s in all_stories),
     }
 
 
