@@ -396,7 +396,8 @@ def test_fill_warnings(monkeypatch):
 
     assert result["warnings"] == [
         "stories[0] 'Bare story': no points, no assignee, no description",
-        "stories[0].tasks[0] 'Bare task': no points, no hours estimate, no assignee, "
+        "stories[0].tasks[0] 'Bare task': no points or hours (the burnup counts only task "
+        "estimates), no assignee, "
         "no description",
         "stories[1] 'Mismatch': its tasks' points add up to 3, not its 8 points",
     ]

@@ -49,7 +49,9 @@ Workflow:
 Moving a board in: while get_board_context says import_window_open, a team can bring work from
 another tool across, finished work included. Map stories to the class's existing sprints first,
 finished ones too. Put each done story in the sprint whose dates contain its done day, and ask the
-student when the source doesn't say when work was finished. A large board can take several batches.
+student when the source doesn't say when work was finished. Ask for task estimates too: the burnup
+counts only points and hours, and estimating a task after the import doesn't change the days already
+charted. A large board can take several batches.
 
 The connector only adds items. It never edits, moves or deletes what is on the board. An import
 rebuilds the burnup of each started sprint it adds to, and the chart says it includes imported work."""

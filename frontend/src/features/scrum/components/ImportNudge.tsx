@@ -7,8 +7,12 @@ import './ImportNudge.scss';
 
 const storageKey = (projectId: string) => `gt.scrum.importNudgeDismissed.${projectId}`;
 
-/** Storage that is blocked or full reads as not dismissed, and a dismissal then lasts until a reload. */
+/** This page's own record of a dismissal; it resets on reload. The notice unmounts on every board load. */
+const dismissedHere = new Set<string>();
+
+/** Storage that is blocked or full reads as not dismissed, so a dismissal it refused lasts until a reload. */
 function readDismissed(projectId: string): boolean {
+  if (dismissedHere.has(projectId)) return true;
   try {
     return localStorage.getItem(storageKey(projectId)) !== null;
   } catch {
@@ -17,10 +21,11 @@ function readDismissed(projectId: string): boolean {
 }
 
 function writeDismissed(projectId: string): void {
+  dismissedHere.add(projectId);
   try {
     localStorage.setItem(storageKey(projectId), '1');
   } catch {
-    // the page's own state hides the notice for now
+    // blocked or full: dismissedHere carries it for the rest of this page's life
   }
 }
 
@@ -61,9 +66,9 @@ export default function ImportNudge({ projectId, onConnect }: { projectId: strin
       )}
     >
       <p>
-        Your AI assistant can move your team&apos;s board in, finished work included, and your burnup charts
-        count that work on the days it was done. It shows you the plan first and adds nothing until you say yes.
-        Move in before your team adds more than 3 stories by hand, or finished work can&apos;t come across.
+        Your AI assistant can move your team&apos;s board in, finished work included. Tasks with an estimate count
+        in your burnup charts on the days they were done. It shows you the plan first and adds nothing until you say
+        yes. Move in before your team adds more than 3 stories by hand, or finished work can&apos;t come across.
       </p>
       {copy === 'refused' && (
         <div className="import-nudge__prompt">

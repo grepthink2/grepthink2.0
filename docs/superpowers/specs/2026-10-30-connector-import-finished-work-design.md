@@ -226,7 +226,9 @@ AI assistant" popover.
    hides the nudge once a team has brought anything in, because imported stories leave the window open.
 2. A notice on `ScrumBoardPage`, using the kit's `Alert`, dismissed per browser and per project.
 3. `features/connector/prompts.ts`: a copyable prompt that asks the student's assistant to gather the team's sprints,
-   stories and tasks from its source, with each task's status and the day finished work was done.
+   stories and tasks from its source, with each task's status and estimate and the day finished work was done. The
+   estimate matters: the burnup counts only task estimates, and an import without them draws a flat chart that
+   estimating later doesn't redraw.
 4. Tests for when it shows and hides, and for the dismissal.
 
 **Order, one pull request each onto `beta`:**

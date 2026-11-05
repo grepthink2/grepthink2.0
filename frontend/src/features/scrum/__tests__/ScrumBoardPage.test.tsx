@@ -449,7 +449,7 @@ describe('ScrumBoardPage move-in notice', () => {
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
   });
 
-  it('opens the connector popover, with focus on its button, and leaves it open if it already is', async () => {
+  it('opens the connector popover with focus on its button, and Enter leaves it open', async () => {
     const user = userEvent.setup();
     vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(INVITED));
     renderAt();

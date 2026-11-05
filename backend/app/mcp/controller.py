@@ -398,9 +398,11 @@ class _Checker:
 
     def warn_missing(self, label: str, item: NewStory | NewTask) -> None:
         missing = []
-        if item.points is None:
+        if isinstance(item, NewTask) and item.points is None and item.estimate_hours is None:
+            missing.append("no points or hours (the burnup counts only task estimates)")
+        elif item.points is None:
             missing.append("no points")
-        if isinstance(item, NewTask) and item.estimate_hours is None:
+        elif isinstance(item, NewTask) and item.estimate_hours is None:
             missing.append("no hours estimate")
         if item.assignee_id is None:
             missing.append("no assignee")

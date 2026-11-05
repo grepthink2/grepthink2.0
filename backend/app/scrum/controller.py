@@ -57,6 +57,7 @@ PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 AI_DAILY_LIMIT = 10
 #: A team's move-in lasts while its board holds this many stories or fewer that weren't imported.
+#: The board's notice (frontend ``ImportNudge``) states this number.
 MOVE_IN_STORIES = 3
 
 #: 403: staff read the board and comment on it, but only team members change it (D2).
