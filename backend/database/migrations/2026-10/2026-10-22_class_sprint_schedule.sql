@@ -17,7 +17,7 @@
 -- leaves sequence NULL), so applying this early is safe. Independent of 2026-10-22_burnup_hours.sql:
 -- either may run first.
 --
--- Applied: DEV 2026-11-02 (by Claude, via psql)   PROD — pending
+-- Applied: DEV 2026-11-02 (by Claude, via psql)   PROD present, confirmed from its catalog 2026-11-05 (date applied not recorded)
 --
 --   * classes_sprint_schedule_valid: all three set, or none. None is a class with no schedule (every
 --     class that exists today, until its instructor sets one); all three is a count of 1–20, one of

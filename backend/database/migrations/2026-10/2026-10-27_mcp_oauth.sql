@@ -23,7 +23,7 @@
 --
 -- One transaction, idempotent. Nothing reads these tables until the backend that does is deployed.
 --
--- Applied: DEV 2026-10-27 (by Claude, via psql)   PROD — pending
+-- Applied: DEV 2026-10-27 (by Claude, via psql)   PROD present, confirmed from its catalog 2026-11-05 (date applied not recorded)
 
 BEGIN;
 

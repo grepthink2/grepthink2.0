@@ -1,12 +1,12 @@
 # Connector: import finished work as done, with a true burnup — design
 
-Date: 2026-10-30. Status: draft for the maintainer. The open questions are at the end.
+Date: 2026-10-30, decisions 2026-11-02 and 2026-11-05. Status: agreed with the maintainer. No code yet.
 
 ## Why
 
-The import nudge (`2026-10-30-connector-import-nudge-design.md`) pushes teams that already run sprints
-elsewhere to move their board into GrepThink. Mid-term those teams have finished sprints and done work. Today
-the connector (`fill_board`, `app/mcp/controller.py`) can only add work as To do:
+The import nudge (planned at the end of this spec) pushes teams that already run sprints elsewhere to move their
+board into GrepThink. Mid-term those teams have finished sprints and done work. Today the connector (`fill_board`,
+`app/mcp/controller.py`) can only add work as To do:
 
 - tasks have no status on the way in;
 - stories cannot join a sprint whose dates are past;
@@ -16,18 +16,21 @@ the connector (`fill_board`, `app/mcp/controller.py`) can only add work as To do
   zero.
 
 The maintainer chose to let the connector bring finished work in as done, with a burnup that reads as though
-the team had used the board all along.
+the team had used the board all along, and that says it holds imported work.
 
 ## Goals
 
 1. `fill_board` takes a status for each task (`todo`, `in_progress`, `done`) and, for done work, the day it
    was finished (`done_on`).
-2. Stories may join any sprint of the project, finished ones included, existing or new in the batch.
-3. Each sprint that receives imported work shows a burnup as if the work had been there from the start:
+2. While the move-in window is open, stories may join any sprint of the project, finished ones included, existing
+   or new in the batch.
+3. Each started sprint that receives imported work shows a burnup as if the work had been there from the start:
    - scope flat from the sprint's first day;
    - completed rising on each task's `done_on`;
    - the cumulative chart's per-sprint values to match.
-4. Nothing already on the board changes: no edits, moves or deletes of existing tasks. Merge only, as before.
+4. No existing story or task is edited, moved or deleted: merge only, as before. The one thing that changes is the
+   receiving sprint's chart: its saved rows are replaced, so scope from stories already there also reads as flat.
+5. A rebuilt chart says so.
 
 ## Non-goals
 
@@ -36,106 +39,185 @@ the team had used the board all along.
   who ran the import).
 - Changing how the board's own moves and snapshots work.
 
+## The move-in window
+
+`user_stories` gains `imported_at timestamptz` (NULL for a story made any other way).
+
+- **Open** while the project holds 3 live stories or fewer with `imported_at` NULL. It is checked once, at the start
+  of each `fill_board` call, so imported stories never close it and a move-in can take several batches (the cap is
+  60 stories per call).
+- **While it is open,** every story `fill_board` writes gets `imported_at`, whatever its status or sprint. The order
+  of a team's batches therefore doesn't matter: open work sent first leaves the window open for done work.
+- **Once it is closed,** `fill_board` refuses a task that isn't To do and a story in a finished sprint, and says
+  why. Stories it still accepts get no `imported_at`, and charts are not rebuilt.
+- **Accepted consequence:** a team that only ever adds stories through the connector stays in the window, so it could
+  backdate later. The chart's note still shows.
+
 ## Design
 
 ### Input
 
 - `NewTask` gains `status: "todo" | "in_progress" | "done"` (default `todo`) and `done_on: date | None`.
 - Validation, in the same all-errors pass as today:
-  - `done_on` only with `status = "done"`, and not after today (the school's zone).
-  - A done task without `done_on` takes a default (open question 2) and a warning says so.
-  - A `done_on` outside its story's sprint is moved to the nearest day inside the sprint, with a warning.
-  - Stories may join completed sprints: the "planned or active only" rule goes for imports.
+  - `done_on` only with `status = "done"`, and never after today (the school's zone).
+  - A done task in the backlog, or in a sprint that hasn't started, is refused, and the error names the fix.
+  - A `done_on` outside its story's sprint moves to the nearest day inside the sprint, with a warning that names the
+    task. This costs one line in the checker, as a refusal would, and saves the assistant a second call.
+  - A done task with no `done_on` takes its sprint's last day, or today if the sprint is still running, with a
+    warning that names the task.
+  - A To do or In progress task in a finished sprint is accepted, with a warning: it adds scope that stays open.
+  - A story with no tasks gets a warning, because the burnup counts only task estimates.
   - The class's rules stay: a new sprint fits the class's days and the class's sprint cap.
 
 ### The write (one transaction, `scrum_fill_board`)
 
+The function gains a fifth argument, `p_burnup jsonb`, and each story object gains `imported_at`:
+
 - Tasks are inserted as now, at `todo`.
-- Each task not at `todo` gets one `task_moves` row (`todo` → its status), `moved_by` = the student:
-  - a done task's move is dated `done_on`, at noon in the school's zone, so it lands on that school day;
-  - an in-progress task's move is dated now.
+- Each task not at `todo` gets one `task_moves` row (`todo` to its status), `moved_by` = the student. The existing
+  BEFORE INSERT trigger (`scrum_apply_task_move`) sets the task's status and `moved_at`, so done tasks look exactly as
+  if the team had moved them that day. Python computes `moved_at`, since the school's zone lives there:
+  - a done task: noon at the school on `done_on`, or now if that is earlier, so no move is dated in the future;
+  - an in-progress task: now.
+- For each sprint named in `p_burnup` (`sprint_id`, or `sprint_ref` for a new one): delete its saved
+  `sprint_burnup_days` rows and insert the given ones. A failure rolls back the whole batch, so tasks and chart can
+  never disagree, and the window is not closed by a half-finished import. Like the rest of the function, this trusts
+  its caller.
 
-  The existing BEFORE INSERT trigger (`scrum_apply_task_move`) sets each task's status and `moved_at`, so done
-  tasks look exactly as if the team had moved them that day.
-- The function signature stays; the task objects carry `status` and `moved_at` (computed in Python, since the
-  school's zone lives there).
+**The new argument makes this a new signature, which removes the silent-downgrade risk.** The backend calls by argument
+name, so a new backend against a database without the new function fails loudly instead of importing done tasks as
+To do. No separate version check is needed. Confirm the failure on DEV.
 
-### The burnup (after the write, best-effort like today's snapshot)
+### The burnup rows (computed before the write)
 
-For each sprint that received imported work and has started (its first day is today or earlier):
+While the window is open, for each sprint that receives stories and has started (its first day is today or earlier),
+`fill_board` builds the rows it passes as `p_burnup`:
 
-- recompute its daily values for every day from its first day to the earlier of its last day and today;
-- write them to `sprint_burnup_days`, both units (points and hours), with one upsert:
-  - scope: the sprint's current scope, every day;
-  - completed: rebuilt from `task_moves` per school day, the board's existing reconstruction
-    (`_completed_by_day_from_moves`) run in both units.
+- it reads the sprint's live stories with their tasks, and those tasks' moves;
+- for every day from the sprint's first day to the earlier of its last day and today, in both units (points and
+  hours):
+  - scope: the sprint's scope after the batch, every day;
+  - completed: replayed from the existing moves plus the batch's moves. The replay in
+    `_completed_by_day_from_moves` moves into `app/scrum/burnup.py` as a pure function, and the board and the import
+    both call it.
 
-This **replaces** that sprint's saved snapshots for those days (open question 1). A sprint that has not started
-needs nothing: its chart begins when it does.
+Replacing the rows also removes those dated after the sprint's last day, so the cumulative chart, which reads a
+sprint's latest row, gets the final values. A real move made between the read and the write can leave today's row
+stale until the next snapshot corrects it; past days can't be affected, because a real move is dated now.
+
+A sprint that has not started gets no rows: its chart begins when it does. Outside the window `fill_board` keeps
+today's best-effort snapshot.
+
+### The label
+
+The data is per story; what people see is one note. The board response gains `burnup.sprint.imported` and
+`burnup.cumulative.imported`, computed from stories already loaded:
+
+- a sprint's chart shows **"Includes imported work"** when one of its stories has an `imported_at` on or after the
+  sprint's first day (the school's day), which is exactly the set of charts that were rebuilt;
+- the cumulative chart shows the same note when any sprint qualifies.
+
+`BurnupChart` gains an optional `note` prop. Story cards stay as they are.
 
 ### The assistant's side
 
-- `get_board_context` already lists sprints with their date-based status. Its description, and
-  `fill_board`'s, change:
+- `get_board_context` adds `import_window_open`, and still lists sprints with their date-based status.
+- Its description and `fill_board`'s change, for when the window is open:
   - map stories to the class's existing sprints first, finished ones included;
-  - import done work as done with the day it finished when the source has it;
-  - ask the student when the source doesn't say.
-- The nudge's gathering prompt (`features/connector/prompts.ts`) asks for the same: each task's status, and the
-  day finished work was done.
+  - put each done story in the sprint whose dates contain its done day;
+  - give each card one story with at least one task, carrying its points, hours and status;
+  - ask the student when the source doesn't say when work was finished.
 
 ### Events
 
-`board_agent_fill` meta gains `done` and `in_progress` counts.
+`board_agent_fill` meta gains `done`, `in_progress` and `imported` counts.
+
+## Applying it
+
+One new migration adds the column and the five-argument function, labelled `needs-prod-sql`. Apply it on DEV and then
+on PROD before the code deploys. `CREATE OR REPLACE` with a new argument leaves the old four-argument function in place,
+so the deployed backend keeps working; drop the old one once the new code is live.
 
 ## Testing
 
 - **Controller:**
-  - status and `done_on` validation, defaults and clamping warnings;
-  - completed sprints accepted;
-  - the payload carries status and `moved_at`;
-  - burnup rows rewritten for started sprints only, in both units, flat scope, completed by day;
+  - status and `done_on` validation, defaults, nearest-day moves and warnings;
+  - the window: open and closed, imported stories not counted, a second batch accepted;
+  - finished sprints accepted in the window and refused past it, unfinished work there warned about;
+  - the payload carries `imported_at`, status and `moved_at`, with no move dated in the future;
+  - `p_burnup` covers started sprints only, in both units, flat scope, completed by day, new sprints by ref;
+  - the label on rebuilt charts only;
   - round-trip budget.
-- **SQL on DEV** (rolled back): moves inserted, task statuses and `moved_at` set by the trigger, keys unchanged,
-  a bad row still rolls back everything.
-- **End to end on DEV:** import a finished sprint and an active one and read both charts through
-  `GET /scrum/board`; clean up.
+- **SQL on DEV** (rolled back, reviewed on its own as AGENTS.md asks for SQL functions): moves inserted, task statuses
+  and `moved_at` set by the trigger, keys unchanged, burnup rows replaced, and a bad row rolling back everything
+  including the burnup rows.
+- **End to end on DEV:** import a finished sprint and an active one, read both charts through `GET /scrum/board`, send a
+  second batch, then clean up.
 
 ## Builder's notes (from the read-through)
 
 - **The chart cannot simply keep its snapshots for a finished sprint.** The import day falls after the sprint
   ends, so there is no import-day jump. Scope carries forward from the sprint's saved snapshots, or sits at 0
   without any, and completed is rebuilt only on days with no snapshot. Keeping the snapshots gives a broken chart
-  (scope at 0, or completed above scope), not an honest one. The real choice is to rewrite, or to limit when the
-  rewrite may happen.
+  (scope at 0, or completed above scope), not an honest one.
 - **Snapshots exist after a sprint's last day** (one per day the board is opened), and the cumulative chart takes
-  a sprint's latest row. A rewrite replaces those rows too.
+  a sprint's latest row.
 - **Stories have no status, and the burnup counts only task estimates.** A done card with no subtasks adds nothing
   unless it arrives as a story with at least one task.
-- **DEV lacks two migrations already on `beta`** (`2026-10-22_class_sprint_schedule.sql`,
-  `2026-10-22_burnup_hours.sql`), so the board and the connector fail on DEV until they are applied. Nothing in
-  this design can be tested there before that.
-- **`scrum_fill_board` is still pending on PROD.** Since its signature stays the same, a backend deployed before the
-  new body is applied would quietly import done tasks as To do: the code must check that the function supports
-  statuses, and refuse otherwise.
 
-## Decided by the maintainer (2026-11-02)
+## Decided by the maintainer
 
-1. **Done work and backdating only while the team's board holds 3 stories or fewer**, the import nudge's
-   cut-off. Importing finished work is a one-time move-in, not a way to rework a chart later. While it is
-   allowed, the started sprints that receive imported work have their daily burnup rows rewritten (scope flat
-   from the first day, completed on the done days). That includes the rows after the sprint's last day, which
-   the cumulative chart reads. `board_agent_fill` records each import, with `done` and `in_progress` counts. Past
-   the cut-off, `fill_board` refuses a task that isn't To do and a story in a finished sprint, and says why.
-2. **Done work goes into the sprint that holds its done day.** The tool descriptions and the nudge's prompt tell
-   the assistant to put each done story into the sprint whose dates contain its `done_on`. The connector refuses
-   a done task in the backlog, or in a sprint that hasn't started, and names the fix. A `done_on` outside its
-   story's sprint is refused too, not moved, since the assistant can pick the right sprint.
-3. **Every story gets at least one task.** A single card from Jira, Trello or GitHub becomes a story with one
-   task carrying its points, hours and status. The assistant is told so, and the connector warns about a story
-   with no tasks, because the burnup counts only task estimates.
-4. **A done task with no date** takes its sprint's last day, or today if the sprint is still running, with a
-   warning that names the task.
-5. **The import nudge:** explained in the PR thread. Pending.
-6. **The two migrations missing on DEV** (`2026-10-22_class_sprint_schedule.sql`,
-   `2026-10-22_burnup_hours.sql`) were applied on DEV on 2026-11-02, after a rolled-back dry run. The steps for
-   PROD are in `DEPLOY.md`, "Due on PROD".
+2026-11-02:
+
+1. Done work and backdating are a one-time move-in, limited to the window above. Past it, `fill_board` refuses a task
+   that isn't To do and a story in a finished sprint, and says why.
+2. Done work goes into the sprint that holds its done day, and is refused in the backlog or in a sprint that hasn't
+   started.
+3. Every story gets at least one task, and the connector warns about a story with none.
+4. A done task with no date takes its sprint's last day, or today if the sprint is still running, with a warning.
+5. The two migrations then missing on DEV were applied there. PROD already had them, along with
+   `scrum_fill_board` and the OAuth tables (confirmed from its catalog on 2026-11-05).
+
+2026-11-05:
+
+6. Imported work is labelled. The data is per story, because the window has to tell imported stories from the rest, and
+   the visible label stays one note.
+7. Imported stories don't count toward the window's 3, so a move-in can take several batches.
+8. The burnup rows are rewritten in the same transaction as the batch.
+9. Unfinished work may go into a finished sprint during the move-in, with a warning.
+10. A `done_on` outside its sprint moves to the nearest day inside it, with a warning.
+11. The import nudge is planned before the next release (below).
+
+Decided by the builder, for the maintainer to veto: every story written in the window is marked, not only those with
+done work; the window has no time limit; no move is dated in the future.
+
+## The import nudge: plan
+
+The nudge's earlier draft (`2026-10-30-connector-import-nudge-design.md`) and its prompt file were never committed, and
+no branch or session holds them, so this section replaces them. Its copy and placement are proposals until the
+maintainer has seen them.
+
+**What it is.** A dismissible notice on the board, for team members, when the connector is ready and the window is
+open. It invites a team that already runs sprints elsewhere to bring its board in, and it opens the existing "Connect an
+AI assistant" popover.
+
+**What it needs:**
+
+1. The board response gains `connector_ready` (`PUBLIC_API_URL` is set and the MCP app started) and
+   `import_window_open`, so the nudge hides itself when either is false.
+2. A notice on `ScrumBoardPage`, using the kit's `Alert`, dismissed per browser and per project.
+3. `features/connector/prompts.ts`: a copyable prompt that asks the student's assistant to gather the team's sprints,
+   stories and tasks from its source, with each task's status and the day finished work was done.
+4. Tests for when it shows and hides, and for the dismissal.
+
+**Order, one pull request each onto `beta`:**
+
+1. The import above, with its migration applied on DEV and PROD.
+2. The nudge.
+3. `release/<version>` with the release notes.
+
+**The nudge must not ship before the import.** A story added before `imported_at` exists counts as hand-made, so a team
+that followed an early nudge with its open work could close its own window, and its finished work would then be refused.
+
+**The next release is not held for this.** The connector works without either piece: if a release has to go first, it
+goes without them, and nothing about the nudge shows.

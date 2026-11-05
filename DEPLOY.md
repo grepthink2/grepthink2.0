@@ -141,24 +141,18 @@ Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `stude
 signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
 cannot create a class. Applied to dev on 2026-09-23.
 
-**Due on PROD, not applied yet (checked 2026-11-02).** In this order, each after a dump (below), each pasted whole
-into the SQL editor (every file wraps itself in `BEGIN … COMMIT`):
+**Already on PROD (confirmed from its catalog on 2026-11-05):** `2026-10/2026-10-22_class_sprint_schedule.sql`,
+`2026-10/2026-10-22_burnup_hours.sql`, `2026-10/2026-10-25_scrum_fill_board.sql` and `2026-10/2026-10-27_mcp_oauth.sql`.
+That check covers what each file adds (columns, tables, constraint, index, function), not the function's body.
 
-1. `2026-10/2026-10-22_class_sprint_schedule.sql` and `2026-10/2026-10-22_burnup_hours.sql`, in either order.
-   **Before `beta` next merges into `main`:** the code on `beta` reads the new columns, and without them no team
-   can be created and the scrum board fails. Both are additive and safe to apply early. The first has a
-   PREFLIGHT query in its header: run it first. Applied to DEV on 2026-11-02.
-2. `2026-10/2026-10-25_scrum_fill_board.sql`, then `2026-10/2026-10-27_mcp_oauth.sql`: the scrum board MCP
-   connector's batch write and its OAuth tables. Before the connector is announced. Until then `/mcp` sign-in
-   fails, and the import nudge stays hidden because the backend sees the connector as not ready. Both applied
-   to DEV on 2026-10-27.
-3. **Check, then mark:** three older files still say "PROD — pending" in their headers:
-   - `2026-10/2026-10-16_class_external_tasks_url.sql`
-   - `2026-10/2026-10-18_final_review_slots.sql`
-   - `2026-10/2026-10-18_team_meetings.sql`
+**Check, then mark.** Three older files still say "PROD — pending" in their headers:
+- `2026-10/2026-10-16_class_external_tasks_url.sql`
+- `2026-10/2026-10-18_final_review_slots.sql`
+- `2026-10/2026-10-18_team_meetings.sql`
 
-   PROD may have them already, since its schema has run ahead of these headers before. Check each with a
-   `SELECT` against the columns or tables it adds. Apply the ones missing, then record the date in the header.
+PROD may have them already, since its schema has run ahead of these headers before. Check each with a
+`SELECT` against the columns or tables it adds. Apply the ones missing, after a dump (below), then record the
+date in the header.
 
 Also for PROD, outside SQL:
 - **`PUBLIC_API_URL`** on the backend project must be the API's host with no path (`https://api.grepthink2.com`),
