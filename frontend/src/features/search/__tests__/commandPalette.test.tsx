@@ -127,7 +127,8 @@ describe('CommandPalette — opening and closing', () => {
     await waitFor(() => expect(input()).toHaveFocus());
     fireEvent.keyDown(input(), { key: 'Escape' });
     await closed();
-    expect(trigger).toHaveFocus();
+    // The close runs from a timer, so the effect cleanup that restores focus follows the dialog's removal.
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('keeps focus in the dialog after "See all", a chip, or a click on panel text, so Esc still closes', async () => {
