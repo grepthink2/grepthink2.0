@@ -12,6 +12,7 @@ pure helpers directly.
 """
 
 from datetime import date
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -419,3 +420,42 @@ def test_the_cumulative_series_reads_the_unit():
     )
     points = burnup.build_cumulative_series(sprints, unit="points")
     assert (points["scope"], points["completed"]) == ([10, 18], [9, 12])
+
+
+@pytest.mark.parametrize(
+    ("story", "sprint_note", "cumulative_note"),
+    [
+        pytest.param("S1", False, False, id="nothing imported"),
+        # Midnight at the school (UTC-8) on the sprint's first day, Oct 19: the chart was rebuilt.
+        pytest.param({"imported_at": "2026-10-19T08:00:00Z"}, True, True, id="on the first day"),
+        # 23:59 at the school the night before, though Oct 19 in UTC: ahead of the sprint.
+        pytest.param({"imported_at": "2026-10-19T07:59:00Z"}, False, False, id="the night before"),
+    ],
+)
+def test_a_rebuilt_chart_says_it_includes_imported_work(
+    monkeypatch, client, story, sprint_note, cumulative_note
+):
+    extra = story if isinstance(story, dict) else {}
+    _seed(monkeypatch, user_stories=[_story("S1", "SP", **extra)])
+    monkeypatch.setattr(controller, "institution_timezone", lambda _: ZoneInfo("Etc/GMT+8"))
+
+    out = _board(client).json()["burnup"]
+
+    assert out["sprint"]["imported"] is sprint_note
+    assert out["cumulative"]["imported"] is cumulative_note
+
+
+def test_another_sprints_import_shows_only_on_the_cumulative_chart(monkeypatch, client):
+    _seed(
+        monkeypatch,
+        sprints=[dict(EARLIER), dict(SPRINT)],
+        user_stories=[
+            _story("S0", "SP0", imported_at="2026-10-20T20:00:00Z"),
+            _story("S1", "SP"),
+        ],
+    )
+
+    out = _board(client).json()["burnup"]
+
+    assert out["sprint"]["imported"] is False
+    assert out["cumulative"]["imported"] is True

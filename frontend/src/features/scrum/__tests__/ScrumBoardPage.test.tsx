@@ -607,6 +607,22 @@ describe('ScrumBoardPage burnup unit', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Burnup unit' })).toBeNull();
     expect(screen.queryByText(new RegExp(`^${NUDGE}`))).toBeNull();
   });
+
+  it.each([
+    { sprint: false, cumulative: false, notes: 0 },
+    { sprint: false, cumulative: true, notes: 1 },
+    { sprint: true, cumulative: true, notes: 2 },
+  ])('notes imported work on the charts it rebuilt: $notes', async ({ sprint, cumulative, notes }) => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({
+      burnup: makeBurnup({
+        sprint: { ...series([8, 8], [0, 3]), imported: sprint },
+        cumulative: { ...series([8], [3]), imported: cumulative },
+      }),
+    }));
+    renderAt('/app/projects/p1/board?view=burnup');
+    await screen.findByText('Cumulative burnup');
+    expect(screen.queryAllByText('Includes imported work')).toHaveLength(notes);
+  });
 });
 
 describe('ScrumBoardPage deep links (global search)', () => {

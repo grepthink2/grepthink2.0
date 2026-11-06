@@ -245,6 +245,15 @@ describe('BurnupChart', () => {
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Burnup: 13 of 18 points complete');
   });
 
+  it('shows a note only when it is given one', () => {
+    const chart = { labels: ['M'], scope: [1], completed: [0], title: 'Burnup', unit: 'points' as const };
+    const { container, rerender } = render(<BurnupChart {...chart} />);
+    expect(container.querySelector('.gt-burnup__note')).toBeNull();
+
+    rerender(<BurnupChart {...chart} note="Includes imported work" />);
+    expect(screen.getByText('Includes imported work')).toBeInTheDocument();
+  });
+
   it('names its unit, hours, in the stat and the plot', () => {
     const { container } = render(
       <BurnupChart labels={['M', 'T', 'W']} scope={[20, 20, 24]} completed={[0, 6, 9]} title="Sprint 3 burnup" unit="hours" />,

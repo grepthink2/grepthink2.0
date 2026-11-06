@@ -19,13 +19,15 @@ interface Props {
   height?: number;
   title?: string;
   subtitle?: string | null;
+  /** A line under the head, such as a note that the chart holds imported work. */
+  note?: string;
 }
 
 /**
  * Burnup — completed work (green line over a soft area) climbing toward
  * scope (dashed gray). Hand-rolled SVG per D13: token-driven, no chart lib.
  */
-export default function BurnupChart({ labels, scope, completed, unit, height = 150, title, subtitle }: Props) {
+export default function BurnupChart({ labels, scope, completed, unit, height = 150, title, subtitle, note }: Props) {
   const steps = Math.max(labels.length, scope.length, completed.length);
   const maxY = Math.max(...scope, ...completed, 1);
   const done = completed[completed.length - 1] ?? 0;
@@ -46,6 +48,7 @@ export default function BurnupChart({ labels, scope, completed, unit, height = 1
           </span>
         </div>
       )}
+      {note && <p className="gt-burnup__note">{note}</p>}
 
       <svg
         className="gt-burnup__plot"

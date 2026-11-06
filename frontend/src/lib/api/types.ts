@@ -956,6 +956,8 @@ export interface ApiBurnupSeries {
   scope: number[];
   completed: number[];
   subtitle: string | null;
+  /** The chart was rebuilt by an import through the connector; the board shows a note. */
+  imported?: boolean;
 }
 
 /** What a burnup counts: the points of the sprint's tasks, or their whole-hour estimates. */

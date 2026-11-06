@@ -43,6 +43,9 @@ function parseView(raw: string | null): BoardView {
   return BOARD_VIEWS.includes(raw as BoardView) ? (raw as BoardView) : 'board';
 }
 
+/** On a chart an import through the connector rebuilt, so backdated work reads as what it is. */
+const IMPORTED_NOTE = 'Includes imported work';
+
 /** A team with no sprints: its class has no sprint schedule, which only the class's instructor sets. */
 const NO_SCHEDULE = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings.';
 const NO_SCHEDULE_TEAM = 'This class has no sprint schedule yet. Your instructor sets it in Class Settings, or your team can create a sprint now.';
@@ -521,6 +524,7 @@ export default function ScrumBoardPage() {
                       unit={burnupUnit}
                       title={`${sprint!.name} burnup`}
                       subtitle={board.burnup.sprint.subtitle}
+                      note={board.burnup.sprint.imported ? IMPORTED_NOTE : undefined}
                     />
                   </div>
                 )}
@@ -532,6 +536,7 @@ export default function ScrumBoardPage() {
                     unit={burnupUnit}
                     title="Cumulative burnup"
                     subtitle={board.burnup.cumulative.subtitle}
+                    note={board.burnup.cumulative.imported ? IMPORTED_NOTE : undefined}
                   />
                 </div>
               </div>
