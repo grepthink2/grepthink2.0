@@ -35,6 +35,7 @@ from app.mcp.models import FillBoardRequest, NewSprint, NewStory, NewTask
 from app.scrum.burnup import replay_completed
 from app.scrum.controller import (
     _UNIT_COLUMN,
+    MOVE_IN_STORIES,
     _as_date,
     _board_access,
     _check_class_dates,
@@ -46,6 +47,7 @@ from app.scrum.controller import (
     _sprint_days,
     _today,
     _with_status,
+    import_window_open,
 )
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.schedule import latest_sprint_end, sprint_status
@@ -60,8 +62,6 @@ TITLE_MAX = 200
 DESCRIPTION_MAX = 20000
 SPRINT_NAME_MAX = 80
 HOURS_MIN, HOURS_MAX = 1, 15
-#: A team's move-in lasts while its board holds this many stories or fewer that weren't imported.
-MOVE_IN_STORIES = 3
 #: What ends a refusal that only applies once a team's move-in is over.
 MOVE_IN_OVER = (
     f"only while a board holds {MOVE_IN_STORIES} or fewer stories that weren't imported, "
@@ -225,10 +225,7 @@ def board_context(*, project_id: str, user_id: str) -> dict:
         "members": reads["members"],
         "sprints": reads["sprints"],
         "sprint_rules": _sprint_rules(reads["project"].get("classes") or {}, len(reads["sprints"])),
-        "import_window_open": sum(
-            1 for s in reads["stories"] if not s.get("archived_at") and not s.get("imported_at")
-        )
-        <= MOVE_IN_STORIES,
+        "import_window_open": import_window_open(reads["stories"]),
         "existing": [
             {
                 "key": s["key"],
@@ -401,9 +398,11 @@ class _Checker:
 
     def warn_missing(self, label: str, item: NewStory | NewTask) -> None:
         missing = []
-        if item.points is None:
+        if isinstance(item, NewTask) and item.points is None and item.estimate_hours is None:
+            missing.append("no points or hours (the burnup counts only task estimates)")
+        elif item.points is None:
             missing.append("no points")
-        if isinstance(item, NewTask) and item.estimate_hours is None:
+        elif isinstance(item, NewTask) and item.estimate_hours is None:
             missing.append("no hours estimate")
         if item.assignee_id is None:
             missing.append("no assignee")
@@ -631,7 +630,7 @@ def fill_board(*, project_id: str, user_id: str, client_id: str, request: FillBo
         today=today,
         now=deadlines.now_utc(),
         zone=zone,
-        move_in=len(reads["not_imported"]) <= MOVE_IN_STORIES,
+        move_in=import_window_open(reads["not_imported"]),
     )
     stories = _check(request, checker)
     if checker.errors:

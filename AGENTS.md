@@ -313,6 +313,9 @@ The full agent-facing action catalog (method, params, role) lives at
   replaces the saved `sprint_burnup_days` rows of each started sprint it adds to (`p_burnup`), all in one
   transaction, and that chart then says "Includes imported work". This is the only writer that backdates a
   move or rewrites past burnup rows; the board's own writes only snapshot today.
+  `scrum.controller.import_window_open` is the window's one rule. The board's dismissible notice
+  (`ImportNudge`) invites a team in only while the board response says `connector_ready` and
+  `import_window_open`, and not yet `has_imported_stories`.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).

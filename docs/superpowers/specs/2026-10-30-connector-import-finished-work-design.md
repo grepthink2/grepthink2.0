@@ -1,7 +1,8 @@
 # Connector: import finished work as done, with a true burnup — design
 
 Date: 2026-10-30, decisions 2026-11-02 and 2026-11-05. Status: agreed with the maintainer, and built, in the pull request
-that adds this file. The import nudge at the end is planned, not built.
+that adds this file. The import nudge at the end is built in the pull request after it, with its copy and placement
+still for the maintainer to check.
 
 ## Why
 
@@ -221,10 +222,13 @@ AI assistant" popover.
 **What it needs:**
 
 1. The board response gains `connector_ready` (`PUBLIC_API_URL` is set and the MCP app started) and
-   `import_window_open`, so the nudge hides itself when either is false.
+   `import_window_open`, so the nudge hides itself when either is false. It also gains `has_imported_stories`, which
+   hides the nudge once a team has brought anything in, because imported stories leave the window open.
 2. A notice on `ScrumBoardPage`, using the kit's `Alert`, dismissed per browser and per project.
 3. `features/connector/prompts.ts`: a copyable prompt that asks the student's assistant to gather the team's sprints,
-   stories and tasks from its source, with each task's status and the day finished work was done.
+   stories and tasks from its source, with each task's status and estimate and the day finished work was done. The
+   estimate matters: the burnup counts only task estimates, and an import without them draws a flat chart that
+   estimating later doesn't redraw.
 4. Tests for when it shows and hides, and for the dismissal.
 
 **Order, one pull request each onto `beta`:**

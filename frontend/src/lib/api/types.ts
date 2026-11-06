@@ -1006,6 +1006,12 @@ export interface ApiScrumBoard {
    * choices. Missing only from a backend older than this client (the two deploy separately).
    */
   task_index?: ApiTaskRef[];
+  /** An assistant can reach the MCP connector. Like the two below, missing from an older backend. */
+  connector_ready?: boolean;
+  /** The team can still bring its board in, finished work included, through the connector. */
+  import_window_open?: boolean;
+  /** The board holds stories brought in through the connector. */
+  has_imported_stories?: boolean;
 }
 
 /** The project page's sprint card: the sprint the board opens on, its task counts, the backlog size. */

@@ -7,6 +7,8 @@ already read, not from a query per sprint).
 
 from datetime import date
 
+import pytest
+
 from app.scrum import controller
 from tests.conftest import header_for
 from tests.scrum_support import CLASS, OUTSIDER, PID, UID, pin_today, scrum_db
@@ -194,6 +196,35 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert (snap["sprint_id"], snap["day"]) == ("S2", TODAY.isoformat())
     assert (snap["scope_points"], snap["completed_points"]) == (8, 5)
     assert (snap["scope_hours"], snap["completed_hours"]) == (5, 3)
+
+
+def _own(n):
+    return [_story(f"S{i}", None, None, "2026-09-01T00:00:00Z") for i in range(n)]
+
+
+def _imported(n):
+    return [{**s, "imported_at": "2026-09-01T12:00:00Z"} for s in _own(n)]
+
+
+@pytest.mark.parametrize(
+    ("stories", "window_open", "has_imported"),
+    [
+        pytest.param([], True, False, id="an empty board"),
+        pytest.param(_own(3), True, False, id="three of the team's own"),
+        pytest.param(_own(4), False, False, id="a fourth closes the window"),
+        pytest.param(_imported(9), True, True, id="imported stories don't close it"),
+    ],
+)
+def test_board_says_whether_a_team_can_still_move_in(
+    monkeypatch, client, stories, window_open, has_imported
+):
+    pin_today(monkeypatch, TODAY)
+    scrum_db(monkeypatch, sprints=[], user_stories=stories, tasks=[])
+
+    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
+
+    assert body["import_window_open"] is window_open
+    assert body["has_imported_stories"] is has_imported
 
 
 def test_board_names_each_tasks_dependencies_both_ways(monkeypatch, client):

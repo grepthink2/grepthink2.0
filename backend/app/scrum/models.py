@@ -265,6 +265,11 @@ class BoardResponse(BaseModel):
     access: Literal["member", "staff"]
     # Every task of the project, in key order, for the dependency picker.
     task_index: list[TaskRef] = Field(default_factory=list)
+    # What the board's move-in notice reads: an assistant can reach the connector, the team can
+    # still bring its board in, and it hasn't started to.
+    connector_ready: bool = False
+    import_window_open: bool = False
+    has_imported_stories: bool = False
 
 
 class SummaryCounts(BaseModel):

@@ -13,8 +13,9 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.main import app
 from app.mcp import controller as mcp_controller
-from tests.conftest import make_token
-from tests.scrum_support import PID, UID
+from app.mcp.server import mcp_endpoint
+from tests.conftest import header_for, make_token
+from tests.scrum_support import PID, UID, scrum_db
 from tests.test_mcp_controller import SPRINT_DONE, _db
 
 HEADERS = {
@@ -236,6 +237,26 @@ def test_a_failing_mcp_start_leaves_the_api_up(monkeypatch):
     with TestClient(app) as c:
         assert _rpc(c, "tools/list", token=_app_token()).status_code == 503
         assert c.get("/health").status_code == 200
+
+
+def test_the_connector_is_ready_only_with_a_started_app_and_a_public_address(monkeypatch):
+    monkeypatch.setattr(settings, "PUBLIC_API_URL", "https://api.example.com")
+    assert mcp_endpoint.ready is False  # outside the app's lifespan
+    with TestClient(app):
+        assert mcp_endpoint.ready is True
+        monkeypatch.setattr(settings, "PUBLIC_API_URL", "")
+        assert mcp_endpoint.ready is False  # a local server's address reaches no hosted assistant
+
+
+def test_the_board_says_whether_the_connector_is_ready(monkeypatch, client):
+    scrum_db(monkeypatch, sprints=[], user_stories=[], tasks=[])
+    url = f"/api/projects/{PID}/scrum/board"
+    headers = header_for("tony@ucsc.edu", sub=UID)
+    monkeypatch.setattr(settings, "PUBLIC_API_URL", "https://api.example.com")
+
+    assert client.get(url, headers=headers).json()["connector_ready"] is False
+    with TestClient(app) as started:
+        assert started.get(url, headers=headers).json()["connector_ready"] is True
 
 
 def test_a_project_name_instead_of_an_id_is_a_readable_tool_error(mcp_client, monkeypatch):

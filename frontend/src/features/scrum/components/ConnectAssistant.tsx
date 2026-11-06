@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type Ref } from 'react';
 import { Button } from '@components/Button/Button';
 import { InfoPopover } from '@components/InfoPopover/InfoPopover';
 import { API_BASE_URL } from '@/lib/api/client';
@@ -8,8 +8,15 @@ import './ConnectAssistant.scss';
 /**
  * How to let an AI assistant fill this board (the MCP connector, backend `app/mcp`): the address to
  * add as a custom connector in Claude or ChatGPT. Team members only: staff cannot add to a board.
+ * `ref` reaches the ⓘ that opens it.
  */
-export default function ConnectAssistant({ url = connectorUrl(API_BASE_URL, window.location.origin) }: { url?: string }) {
+export default function ConnectAssistant({
+  url = connectorUrl(API_BASE_URL, window.location.origin),
+  ref,
+}: {
+  url?: string;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -23,6 +30,7 @@ export default function ConnectAssistant({ url = connectorUrl(API_BASE_URL, wind
 
   return (
     <InfoPopover
+      ref={ref}
       title="Fill this board from your AI assistant"
       label="Connect an AI assistant"
       align="end"

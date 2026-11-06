@@ -49,7 +49,9 @@ Workflow:
 Moving a board in: while get_board_context says import_window_open, a team can bring work from
 another tool across, finished work included. Map stories to the class's existing sprints first,
 finished ones too. Put each done story in the sprint whose dates contain its done day, and ask the
-student when the source doesn't say when work was finished. A large board can take several batches.
+student when the source doesn't say when work was finished. Ask for task estimates too: the burnup
+counts only points and hours, and estimating a task after the import doesn't change the days already
+charted. A large board can take several batches.
 
 The connector only adds items. It never edits, moves or deletes what is on the board. An import
 rebuilds the burnup of each started sprint it adds to, and the chart says it includes imported work."""
@@ -203,6 +205,12 @@ class MCPEndpoint:
 
     def __init__(self) -> None:
         self._app: Starlette | None = None
+
+    @property
+    def ready(self) -> bool:
+        """Whether an assistant can reach /mcp: the app started, and this API has a public address.
+        A local server starts it on a localhost address, which no hosted assistant can reach."""
+        return self._app is not None and bool(settings.PUBLIC_API_URL)
 
     @asynccontextmanager
     async def running(self) -> AsyncIterator[None]:
