@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@components/Button/Button';
-import { API_BASE_URL } from '@/lib/api/client';
-import { connectorUrl } from '@features/scrum/utils/connectorUrl';
 import './ConnectorSetup.scss';
 
 /**
  * The MCP connector's address (backend `app/mcp`) with a Copy button, and where Claude and ChatGPT
  * take it: the board's "Connect an AI assistant" popover and the student Home's move-in modal show it.
  */
-export default function ConnectorSetup({
-  url = connectorUrl(API_BASE_URL, window.location.origin),
-}: {
-  url?: string;
-}) {
+export default function ConnectorSetup({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {

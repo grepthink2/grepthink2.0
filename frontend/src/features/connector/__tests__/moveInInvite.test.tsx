@@ -21,10 +21,20 @@ vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: stat
 vi.mock('@/lib/lazyModal', () => ({
   lazyModal:
     () =>
-    ({ open, onClose, teamName }: { open: boolean; onClose: () => void; teamName?: string }) =>
+    ({
+      open,
+      onClose,
+      teamName,
+      connectorAddress,
+    }: {
+      open: boolean;
+      onClose: () => void;
+      teamName?: string;
+      connectorAddress: string;
+    }) =>
       open ? (
         <div role="dialog" aria-label="Move in">
-          {teamName}
+          {teamName} {connectorAddress}
           <button type="button" onClick={onClose}>
             Close
           </button>
@@ -67,7 +77,10 @@ describe('MoveInInvite', () => {
     api.getScrumSummary.mockResolvedValue(summary(2));
     render(invite(project));
 
-    expect(await screen.findByRole('dialog', { name: 'Move in' })).toHaveTextContent('Team One');
+    const dialog = await screen.findByRole('dialog', { name: 'Move in' });
+    expect(dialog).toHaveTextContent('Team One');
+    // The connector's address: this site's, since tests run with no separate API base.
+    expect(dialog).toHaveTextContent(`${window.location.origin}/mcp`);
     expect(api.getScrumSummary).toHaveBeenCalledWith(project);
   });
 

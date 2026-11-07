@@ -6,8 +6,10 @@ import { MOVE_IN_BODY, MOVE_IN_PROMPT, MOVE_IN_TITLE } from '../prompts';
 
 afterEach(() => vi.restoreAllMocks());
 
+const ADDRESS = 'https://api.grepthink2.com/mcp';
+
 const renderModal = (onClose = vi.fn()) =>
-  render(<MoveInModal open onClose={onClose} teamName="Team One" />);
+  render(<MoveInModal open onClose={onClose} teamName="Team One" connectorAddress={ADDRESS} />);
 
 describe('MoveInModal', () => {
   it('shows the invitation, the team and the connector address', () => {
@@ -16,7 +18,7 @@ describe('MoveInModal', () => {
     const dialog = screen.getByRole('dialog', { name: MOVE_IN_TITLE });
     expect(dialog).toHaveTextContent('Team One');
     expect(dialog).toHaveTextContent(MOVE_IN_BODY);
-    expect(screen.getByText(/\/mcp$/)).toBeInTheDocument();
+    expect(screen.getByText(ADDRESS)).toBeInTheDocument();
     expect(screen.getByText('Add GrepThink to your assistant')).toBeInTheDocument();
     expect(screen.getByText('Paste this prompt into a chat')).toBeInTheDocument();
   });

@@ -12,6 +12,8 @@ export interface MoveInModalProps {
   onClose: () => void;
   /** The team being invited, shown under the title. */
   teamName?: string;
+  /** The connector's address. */
+  connectorAddress: string;
 }
 
 /**
@@ -19,7 +21,7 @@ export interface MoveInModalProps {
  * `app/mcp`): the board notice's words, then the two steps. MoveInInvite decides when it opens.
  * Focus starts on the body, as in What's new, so an Enter pressed as it opens copies nothing.
  */
-export default function MoveInModal({ open, onClose, teamName }: MoveInModalProps) {
+export default function MoveInModal({ open, onClose, teamName, connectorAddress }: MoveInModalProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const { copy, copyPrompt } = useCopyMoveInPrompt();
 
@@ -39,7 +41,7 @@ export default function MoveInModal({ open, onClose, teamName }: MoveInModalProp
       <ol className="move-in-modal__steps">
         <li>
           <p className="move-in-modal__step">Add GrepThink to your assistant</p>
-          <ConnectorSetup />
+          <ConnectorSetup url={connectorAddress} />
         </li>
         <li>
           <p className="move-in-modal__step">Paste this prompt into a chat</p>

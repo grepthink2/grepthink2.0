@@ -1,6 +1,8 @@
 import type { Ref } from 'react';
 import { InfoPopover } from '@components/InfoPopover/InfoPopover';
+import { API_BASE_URL } from '@/lib/api/client';
 import ConnectorSetup from '@features/connector/components/ConnectorSetup';
+import { connectorUrl } from '../utils/connectorUrl';
 import './ConnectAssistant.scss';
 
 /**
@@ -9,7 +11,7 @@ import './ConnectAssistant.scss';
  * `ref` reaches the ⓘ that opens it.
  */
 export default function ConnectAssistant({
-  url,
+  url = connectorUrl(API_BASE_URL, window.location.origin),
   ref,
 }: {
   url?: string;

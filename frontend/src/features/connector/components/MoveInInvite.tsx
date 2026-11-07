@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { api } from '@/lib/api';
+import { API_BASE_URL } from '@/lib/api/client';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { getClassDisplayStatus } from '@/lib/classLifecycle';
 import { lazyModal } from '@/lib/lazyModal';
 import { usePreview } from '@/lib/previewContext';
+import { connectorUrl } from '@features/scrum/utils/connectorUrl';
 import { isMoveInInviteSettled, settleMoveInInvite } from '../moveInInviteStore';
 
 // The student Home ships in the entry chunk, so the modal and its copy load the first time it opens.
@@ -62,7 +64,14 @@ export default function MoveInInvite({
 
   return (
     <ErrorBoundary fallback={null}>
-      <MoveInModal open={invitedProject !== null && invitedProject === projectId && !held} onClose={close} teamName={teamName} />
+      <MoveInModal
+        open={invitedProject !== null && invitedProject === projectId && !held}
+        onClose={close}
+        teamName={teamName}
+        // Built here, in the entry chunk: when the modal's chunk imported lib/api/client itself,
+        // rolldown moved that module out of the entry into a file of its own that every page preloads.
+        connectorAddress={connectorUrl(API_BASE_URL, window.location.origin)}
+      />
     </ErrorBoundary>
   );
 }
