@@ -1340,8 +1340,10 @@ def get_board(
 
 
 def get_summary(*, project_id: str, user_id: str) -> dict:
-    """The current sprint's task counts for the project page: a read with no side effects
-    (get_board records a board_viewed event and snapshots the burnup; this must not)."""
+    """The current sprint's task counts for the project page, and the board's story count for
+    the student Home's move-in invitation: a read with no side effects (get_board records a
+    board_viewed event and snapshots the burnup; this must not). ``story_count`` is every story
+    not archived, in a sprint or the backlog, imported or not."""
     client = get_client()
     _, institution_id = _board_access(client, project_id=project_id, user_id=user_id)
     pid = str(project_id)
@@ -1391,7 +1393,12 @@ def get_summary(*, project_id: str, user_id: str) -> dict:
     for t in tasks:
         if t.get("status") in counts:
             counts[t["status"]] += 1
-    return {"sprint": sprint, "counts": counts, "backlog_stories": backlog_stories}
+    return {
+        "sprint": sprint,
+        "counts": counts,
+        "backlog_stories": backlog_stories,
+        "story_count": sum(1 for s in stories if not s.get("archived_at")),
+    }
 
 
 # ------------------------------------------------------------ repo registry ----

@@ -109,6 +109,8 @@ def test_a_member_gets_the_active_sprint_task_counts_and_the_backlog_size(monkey
         },
         "counts": {"todo": 1, "in_progress": 2, "done": 3},
         "backlog_stories": 2,
+        "story_count": 5,
+        "connector_ready": False,
     }
 
 
@@ -121,7 +123,13 @@ def test_a_project_without_sprints_has_no_sprint_and_no_tasks(monkeypatch, clien
     )
     res = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID))
     assert res.status_code == 200
-    assert res.json() == {"sprint": None, "counts": NO_TASKS, "backlog_stories": 1}
+    assert res.json() == {
+        "sprint": None,
+        "counts": NO_TASKS,
+        "backlog_stories": 1,
+        "story_count": 1,
+        "connector_ready": False,
+    }
 
 
 def test_a_sprint_without_live_stories_counts_no_tasks(monkeypatch, client):
@@ -136,6 +144,27 @@ def test_a_sprint_without_live_stories_counts_no_tasks(monkeypatch, client):
     body = res.json()
     assert body["sprint"]["id"] == "S2"
     assert (body["counts"], body["backlog_stories"]) == (NO_TASKS, 1)
+    assert body["story_count"] == 0  # an archived story is not on the board
+
+
+def test_story_count_is_every_story_that_is_not_archived(monkeypatch, client):
+    _seed(monkeypatch)  # A, B, C and F in sprints, D in the backlog, E archived
+    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
+    assert body["story_count"] == 5
+
+
+def test_story_count_includes_imported_stories(monkeypatch, client):
+    scrum_db(
+        monkeypatch,
+        sprints=[S2],
+        user_stories=[
+            _story("A", "S2", imported_at="2026-09-09T00:00:00Z"),
+            _story("B", None),
+        ],
+        tasks=[],
+    )
+    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
+    assert body["story_count"] == 2
 
 
 @pytest.mark.parametrize("uid", [OUTSIDER, STUDENT])
