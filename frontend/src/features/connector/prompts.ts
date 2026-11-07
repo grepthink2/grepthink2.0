@@ -1,3 +1,11 @@
+/** The move-in invitation's title and paragraph: the board's notice and the student Home's modal both say this. */
+export const MOVE_IN_TITLE = 'Already running sprints somewhere else?';
+
+export const MOVE_IN_BODY =
+  "Your AI assistant can move your team's board in, finished work included. Tasks with an estimate count in your " +
+  'burnup charts on the days they were done. It shows you the plan first and adds nothing until you say yes. Move in ' +
+  "before your team adds more than 3 stories by hand, or finished work can't come across.";
+
 /**
  * What a student pastes into an AI assistant to move the team's board in. The connector's own
  * instructions (backend `app/mcp/server.py`) hold the board's rules, so this says what to bring.

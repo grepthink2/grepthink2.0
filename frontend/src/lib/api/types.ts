@@ -1019,6 +1019,13 @@ export interface ApiScrumSummary {
   sprint: ApiScrumSprint | null;
   counts: { todo: number; in_progress: number; done: number };
   backlog_stories: number;
+  /**
+   * The stories not archived, in a sprint or the backlog, imported ones included: the student Home's
+   * move-in invitation reads it. Like `connector_ready`, missing from a backend older than this client.
+   */
+  story_count?: number;
+  /** An assistant can reach the MCP connector. */
+  connector_ready?: boolean;
 }
 
 export interface ApiScrumComment {

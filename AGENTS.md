@@ -315,7 +315,9 @@ The full agent-facing action catalog (method, params, role) lives at
   move or rewrites past burnup rows; the board's own writes only snapshot today.
   `scrum.controller.import_window_open` is the window's one rule. The board's dismissible notice
   (`ImportNudge`) invites a team in only while the board response says `connector_ready` and
-  `import_window_open`, and not yet `has_imported_stories`.
+  `import_window_open`, and not yet `has_imported_stories`. On the student Home, `MoveInInvite` opens a
+  modal with the same invitation once a visit (a browser tab's session) while the summary response
+  says `connector_ready` and its `story_count`, imported stories included, is under 3.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).
