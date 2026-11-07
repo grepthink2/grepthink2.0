@@ -20,6 +20,7 @@ import {
   // MOCK_SCHEDULE,
 } from './mockData';
 import RequestsModal from './RequestsModal';
+import MoveInInvite from '@features/connector/components/MoveInInvite';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -719,6 +720,11 @@ const StudentHomeDashboard: React.FC = () => {
         onClose={() => setRequestsModalOpen(false)}
         classId={selectedClass?.id}
         onRequestsChanged={() => void refreshAllRequests()}
+      />
+      <MoveInInvite
+        projectId={teamProjectId}
+        teamName={teamProjectsInClass.find((p) => p.id === teamProjectId)?.name}
+        held={requestsModalOpen}
       />
     </div>
   );
