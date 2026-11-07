@@ -1,0 +1,29 @@
+@use '@styles/index.scss' as *;
+
+.move-in-modal {
+  &__lead {
+    margin: 0 0 $spacing-md;
+    line-height: 1.5;
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    margin: 0;
+    padding-left: $spacing-lg;
+
+    > li::marker {
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &__step {
+    margin: 0 0 $spacing-sm;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__prompt {
+    margin-top: $spacing-sm;
+  }
+}
