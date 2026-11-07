@@ -36,6 +36,7 @@ from app.scrum.burnup import (
     build_sprint_series,
     default_unit,
     holds_unit,
+    replay_completed,
     units_available,
 )
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
@@ -55,6 +56,9 @@ logger = logging.getLogger(__name__)
 PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 AI_DAILY_LIMIT = 10
+#: A team's move-in lasts while its board holds this many stories or fewer that weren't imported.
+#: The board's notice (frontend ``ImportNudge``) states this number.
+MOVE_IN_STORIES = 3
 
 #: 403: staff read the board and comment on it, but only team members change it (D2).
 MEMBERS_ONLY = "Only team members can modify the board"
@@ -933,18 +937,12 @@ def _completed_by_day_from_moves(
     ).data or []
     if not moves:
         return {}
-    status: dict[str, str] = {}
-    out: dict[str, int] = {}
-    i = 0
-    d = starts_at
-    end = min(ends_at, _today(zone))
-    while d <= end:
-        while i < len(moves) and _school_day(moves[i]["moved_at"], zone) <= d:
-            status[moves[i]["task_id"]] = moves[i]["to_status"]
-            i += 1
-        out[d.isoformat()] = sum(task_values[tid] for tid, st in status.items() if st == "done")
-        d += timedelta(days=1)
-    return out
+    return replay_completed(
+        [(m["task_id"], m["to_status"], _school_day(m["moved_at"], zone)) for m in moves],
+        task_values,
+        starts_at,
+        min(ends_at, _today(zone)),
+    )
 
 
 # ------------------------------------------------------------------- moves ----
@@ -1023,6 +1021,21 @@ def _name_for(client, user_id: str | None) -> str | None:
 
 
 # -------------------------------------------------------------------- board ----
+
+
+def _holds_imported_work(stories: list[dict], first_day: date, zone: ZoneInfo) -> bool:
+    """Whether an import rebuilt this sprint's chart: one of its ``stories`` was imported on or
+    after the sprint's ``first_day``. A story imported ahead of its sprint changes no past day."""
+    return any(
+        s.get("imported_at") and _school_day(s["imported_at"], zone) >= first_day for s in stories
+    )
+
+
+def import_window_open(stories: list[dict]) -> bool:
+    """Whether a team can still move its board in through the connector (:mod:`app.mcp.controller`):
+    ``stories`` holds :data:`MOVE_IN_STORIES` or fewer that are neither archived nor imported."""
+    live = sum(1 for s in stories if not s.get("archived_at") and not s.get("imported_at"))
+    return live <= MOVE_IN_STORIES
 
 
 def _select_sprint(sprints: list[dict], sprint_id: str | None, today: date) -> dict | None:
@@ -1243,6 +1256,12 @@ def get_board(
     for row in all_snaps:
         snaps_by_sprint.setdefault(row["sprint_id"], []).append(row)
 
+    imported = {
+        s["id"]
+        for s in sprints
+        if _holds_imported_work(live_stories(s["id"]), _sprint_days(s)[0], zone)
+    }
+
     sprint_series = None
     if selected:
         _snapshot_burnup_safe(client, selected["id"], institution_id, totals=totals)
@@ -1271,6 +1290,7 @@ def get_board(
             unit=unit,
         )
         sprint_series["subtitle"] = f"{selected['starts_at']} – {selected['ends_at']}"
+        sprint_series["imported"] = selected["id"] in imported
 
     # One point per sprint: the selected sprint's live values; another sprint's last snapshot,
     # or its live rows when it has none or that one holds nothing in the unit (written before the
@@ -1284,6 +1304,7 @@ def get_board(
             final = live_values(s["id"])
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
     cumulative = build_cumulative_series(cumulative_input, unit=unit)
+    cumulative["imported"] = bool(imported)
 
     # after every raise and outside fan_out: a refused or failed load is not a view
     events.record(
@@ -1313,6 +1334,8 @@ def get_board(
         "members": members,
         "access": access,
         "task_index": task_index,
+        "import_window_open": import_window_open(all_stories),
+        "has_imported_stories": any(s.get("imported_at") for s in all_stories),
     }
 
 

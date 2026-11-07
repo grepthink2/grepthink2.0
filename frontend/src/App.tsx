@@ -68,6 +68,8 @@ const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetP
 const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
 // The page an unsubscribe link in an email opens (signed out).
 const Unsubscribe = lazy(() => import('@features/auth/pages/Unsubscribe'));
+// Where a connected app's sign-in (Supabase's OAuth server) asks the student to allow it.
+const OAuthConsent = lazy(() => import('@features/auth/pages/OAuthConsent'));
 // The issue form previews its text with MarkdownText, so an eager ContactPage put the
 // Markdown renderer in the entry chunk every visitor downloads.
 const ContactPage = lazy(() => import('@features/landing/ContactPage'));
@@ -92,6 +94,7 @@ function App() {
             <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/oauth/consent" element={<OAuthConsent />} />
           </Route>
 
           {/* App routes with persistent sidebar (protected: requires auth).

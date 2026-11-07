@@ -40,11 +40,13 @@ def make_token(
     expired: bool = False,
     secret: str | None = None,
     email: str | None = None,
+    client_id: str | None = None,
 ) -> str:
     """Mint an HS256 JWT that mimics Supabase's access token shape.
 
     ``email`` is the verified address Supabase puts in every email or OAuth user's token;
-    pass it for the endpoints that read it (``/api/create-user``).
+    pass it for the endpoints that read it (``/api/create-user``). ``client_id`` makes it a
+    connected app's token, the kind Supabase's OAuth server issues (``/mcp``).
     """
     now = int(time.time())
     payload = {
@@ -56,6 +58,8 @@ def make_token(
     }
     if email is not None:
         payload["email"] = email
+    if client_id is not None:
+        payload["client_id"] = client_id
     return jwt.encode(payload, secret or TEST_SECRET, algorithm="HS256")
 
 

@@ -13,7 +13,7 @@
 -- hours. Applying this early is safe. Independent of 2026-10-22_class_sprint_schedule.sql: either may
 -- run first.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-11-02 (by Claude, via psql)   PROD present, confirmed from its catalog 2026-11-05 (date applied not recorded)
 --
 --   * scope_hours, completed_hours: integer, NOT NULL DEFAULT 0. A constant default adds the columns
 --     without rewriting the table.

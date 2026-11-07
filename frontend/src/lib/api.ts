@@ -20,6 +20,7 @@ import { staffingApi } from './api/staffing';
 import { scrumApi } from './api/scrum';
 import { analyticsApi } from './api/analytics';
 import { searchApi } from './api/search';
+import { mcpApi } from './api/mcp';
 
 export * from './api/types';
 export { ApiError, apiRequest, apiUpload } from './api/client';
@@ -39,4 +40,5 @@ export const api = {
   ...scrumApi,
   ...analyticsApi,
   ...searchApi,
+  ...mcpApi,
 };

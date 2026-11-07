@@ -1356,21 +1356,23 @@ ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."conversation_deletes" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_deletes" FOR SELECT USING (("user_id" = "auth"."uid"()));
+CREATE POLICY "conversation_deletes_select_own" ON "public"."conversation_deletes" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."conversation_reads" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conversation_reads_select_own" ON "public"."conversation_reads" FOR SELECT USING (("user_id" = "auth"."uid"()));
+CREATE POLICY "conversation_reads_select_own" ON "public"."conversation_reads" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conversations_select_participant" ON "public"."conversations" FOR SELECT USING ((("auth"."uid"() = "user_a") OR ("auth"."uid"() = "user_b")));
+CREATE POLICY "conversations_select_participant" ON "public"."conversations" FOR SELECT USING (((EXISTS ( SELECT 1
+   FROM "public"."conversation_participants" "cp"
+  WHERE (("cp"."conversation_id" = "conversations"."id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
 
 
@@ -1392,16 +1394,16 @@ ALTER TABLE "public"."meetings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "messages_select_participant" ON "public"."messages" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."conversations" "c"
-  WHERE (("c"."id" = "messages"."conversation_id") AND (("auth"."uid"() = "c"."user_a") OR ("auth"."uid"() = "c"."user_b"))))));
+CREATE POLICY "messages_select_participant" ON "public"."messages" FOR SELECT USING (((EXISTS ( SELECT 1
+   FROM "public"."conversation_participants" "cp"
+  WHERE (("cp"."conversation_id" = "messages"."conversation_id") AND ("cp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
 
 
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT USING (("user_id" = "auth"."uid"()));
+CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
@@ -1412,7 +1414,7 @@ CREATE POLICY "profiles_insert_own" ON "public"."profiles" FOR INSERT WITH CHECK
 
 
 
-CREATE POLICY "profiles_select_own" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
+CREATE POLICY "profiles_select_own" ON "public"."profiles" FOR SELECT USING (((( SELECT "auth"."uid"() AS "uid") = "id")));
 
 
 
@@ -1727,6 +1729,7 @@ CREATE TABLE IF NOT EXISTS user_stories (
   reporter_id    uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   assignee_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
   archived_at    timestamptz,                                     -- set ⇒ archive view
+  imported_at    timestamptz,                                     -- written during a move-in (app/mcp)
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT user_stories_key_uq UNIQUE (project_id, key)
@@ -1853,12 +1856,152 @@ BEGIN
   RETURN v;
 END; $$ LANGUAGE plpgsql;
 
+-- One transaction for a batch of sprints, stories and tasks (app/mcp, the scrum board connector).
+CREATE OR REPLACE FUNCTION public.scrum_fill_board(
+  p_project_id uuid,
+  p_reporter_id uuid,
+  p_sprints jsonb,
+  p_stories jsonb,
+  p_burnup jsonb,
+  p_expected_story_seq integer,
+  p_expected_task_seq integer
+) RETURNS jsonb
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+  n_stories integer := jsonb_array_length(p_stories);
+  n_tasks integer;
+  story_no integer;
+  task_no integer;
+  sprint_ids jsonb := '{}'::jsonb;
+  out_sprints jsonb := '[]'::jsonb;
+  out_stories jsonb := '[]'::jsonb;
+  out_tasks jsonb;
+  sp jsonb;
+  st jsonb;
+  tk jsonb;
+  v_id uuid;
+  v_story_id uuid;
+  v_sprint_id uuid;
+  v_status text;
+  burnup_sprints uuid[];
+BEGIN
+  SELECT coalesce(sum(jsonb_array_length(coalesce(nullif(e -> 'tasks', 'null'::jsonb), '[]'::jsonb))), 0)
+    INTO n_tasks
+    FROM jsonb_array_elements(p_stories) AS e;
+
+  INSERT INTO scrum_counters (project_id) VALUES (p_project_id) ON CONFLICT (project_id) DO NOTHING;
+  UPDATE scrum_counters
+     SET story_seq = story_seq + n_stories, task_seq = task_seq + n_tasks
+   WHERE project_id = p_project_id
+  RETURNING story_seq - n_stories, task_seq - n_tasks INTO story_no, task_no;
+
+  IF jsonb_array_length(p_burnup) > 0
+     AND (story_no, task_no) IS DISTINCT FROM (p_expected_story_seq, p_expected_task_seq) THEN
+    RAISE EXCEPTION 'the board changed while this batch was being prepared' USING ERRCODE = '23505';
+  END IF;
+
+  FOR sp IN SELECT e FROM jsonb_array_elements(p_sprints) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
+    INSERT INTO sprints (project_id, name, starts_at, ends_at)
+    VALUES (p_project_id, sp ->> 'name', (sp ->> 'starts_at')::date, (sp ->> 'ends_at')::date)
+    RETURNING id INTO v_id;
+    sprint_ids := sprint_ids || jsonb_build_object(sp ->> 'ref', v_id);
+    out_sprints := out_sprints || jsonb_build_object('ref', sp ->> 'ref', 'id', v_id, 'name', sp ->> 'name');
+  END LOOP;
+
+  FOR st IN SELECT e FROM jsonb_array_elements(p_stories) WITH ORDINALITY AS a(e, i) ORDER BY i LOOP
+    IF st ->> 'sprint_ref' IS NOT NULL THEN
+      v_sprint_id := (sprint_ids ->> (st ->> 'sprint_ref'))::uuid;
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint_ref % names no sprint in this batch', st ->> 'sprint_ref';
+      END IF;
+    ELSIF st ->> 'sprint_id' IS NOT NULL THEN
+      SELECT id INTO v_sprint_id FROM sprints
+       WHERE id = (st ->> 'sprint_id')::uuid AND project_id = p_project_id;
+      IF v_sprint_id IS NULL THEN
+        RAISE EXCEPTION 'sprint % is not a sprint of this project', st ->> 'sprint_id';
+      END IF;
+    ELSE
+      v_sprint_id := NULL;
+    END IF;
+    story_no := story_no + 1;
+    INSERT INTO user_stories (
+      project_id, key, title, description_md, points, assignee_id, sprint_id, reporter_id, imported_at
+    )
+    VALUES (
+      p_project_id, 'US-' || story_no, st ->> 'title', st ->> 'description_md', (st ->> 'points')::integer,
+      (st ->> 'assignee_id')::uuid, v_sprint_id, p_reporter_id, (st ->> 'imported_at')::timestamptz
+    )
+    RETURNING id INTO v_story_id;
+
+    out_tasks := '[]'::jsonb;
+    FOR tk IN
+      SELECT e FROM jsonb_array_elements(coalesce(nullif(st -> 'tasks', 'null'::jsonb), '[]'::jsonb)) WITH ORDINALITY AS a(e, i) ORDER BY i
+    LOOP
+      task_no := task_no + 1;
+      INSERT INTO tasks (
+        story_id, project_id, key, title, description_md, points, estimate_hours, assignee_id, tags, reporter_id
+      )
+      VALUES (
+        v_story_id, p_project_id, 'GT-' || task_no, tk ->> 'title', tk ->> 'description_md',
+        (tk ->> 'points')::integer, (tk ->> 'estimate_hours')::integer, (tk ->> 'assignee_id')::uuid,
+        ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(tk -> 'tags', 'null'::jsonb), '[]'::jsonb))), p_reporter_id
+      )
+      RETURNING id INTO v_id;
+      v_status := coalesce(tk ->> 'status', 'todo');
+      IF v_status <> 'todo' THEN
+        INSERT INTO task_moves (task_id, to_status, moved_by, moved_at)
+        VALUES (v_id, v_status, p_reporter_id, (tk ->> 'moved_at')::timestamptz);
+      END IF;
+      out_tasks := out_tasks || jsonb_build_object(
+        'id', v_id, 'key', 'GT-' || task_no, 'title', tk ->> 'title', 'status', v_status
+      );
+    END LOOP;
+
+    out_stories := out_stories || jsonb_build_object(
+      'id', v_story_id, 'key', 'US-' || story_no, 'title', st ->> 'title', 'sprint_id', v_sprint_id,
+      'tasks', out_tasks
+    );
+  END LOOP;
+
+  SELECT array_agg(DISTINCT coalesce((e ->> 'sprint_id')::uuid, (sprint_ids ->> (e ->> 'sprint_ref'))::uuid))
+    INTO burnup_sprints
+    FROM jsonb_array_elements(p_burnup) AS e;
+  IF EXISTS (
+    SELECT 1 FROM unnest(burnup_sprints) AS u(id)
+     WHERE u.id IS NULL
+        OR NOT EXISTS (SELECT 1 FROM sprints s WHERE s.id = u.id AND s.project_id = p_project_id)
+  ) THEN
+    RAISE EXCEPTION 'p_burnup names a sprint that is not in this project or this batch';
+  END IF;
+  DELETE FROM sprint_burnup_days WHERE sprint_id = ANY(burnup_sprints);
+  INSERT INTO sprint_burnup_days (sprint_id, day, scope_points, completed_points, scope_hours, completed_hours)
+  SELECT coalesce((e ->> 'sprint_id')::uuid, (sprint_ids ->> (e ->> 'sprint_ref'))::uuid),
+         (e ->> 'day')::date,
+         (e ->> 'scope_points')::integer, (e ->> 'completed_points')::integer,
+         (e ->> 'scope_hours')::integer, (e ->> 'completed_hours')::integer
+    FROM jsonb_array_elements(p_burnup) AS e
+  -- A board opened just now can snapshot today between the delete and this insert.
+  ON CONFLICT (sprint_id, day) DO UPDATE
+    SET scope_points = EXCLUDED.scope_points, completed_points = EXCLUDED.completed_points,
+        scope_hours = EXCLUDED.scope_hours, completed_hours = EXCLUDED.completed_hours;
+
+  RETURN jsonb_build_object('sprints', out_sprints, 'stories', out_stories);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) TO service_role;
+
 -- ============ 8) burnup snapshots ============
 CREATE TABLE IF NOT EXISTS sprint_burnup_days (
   sprint_id        uuid NOT NULL REFERENCES sprints(id) ON DELETE CASCADE,
   day              date NOT NULL,          -- America/Los_Angeles calendar day
   scope_points     integer NOT NULL,
   completed_points integer NOT NULL,
+  scope_hours      integer NOT NULL DEFAULT 0,
+  completed_hours  integer NOT NULL DEFAULT 0,
   PRIMARY KEY (sprint_id, day)
 );
 ALTER TABLE sprint_burnup_days ENABLE ROW LEVEL SECURITY;
@@ -2505,3 +2648,64 @@ REVOKE ALL ON FUNCTION public.analytics_trends(uuid, uuid, date, date, date, dat
 GRANT EXECUTE ON FUNCTION public.analytics_rollup_day(date, boolean)                           TO service_role;
 GRANT EXECUTE ON FUNCTION public.analytics_rollup_range(date, date)                            TO service_role;
 GRANT EXECUTE ON FUNCTION public.analytics_trends(uuid, uuid, date, date, date, date, text)     TO service_role;
+
+-- ============ scrum board MCP connector: its own OAuth server (2026-10-27_mcp_oauth.sql) ============
+CREATE TABLE IF NOT EXISTS public.mcp_clients (
+  client_id     text PRIMARY KEY,
+  info          jsonb NOT NULL CHECK (pg_column_size(info) <= 8192),
+  registered_at timestamptz NOT NULL DEFAULT now(),
+  last_used_at  timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS public.mcp_authorizations (
+  id          text PRIMARY KEY,
+  client_id   text NOT NULL REFERENCES public.mcp_clients(client_id) ON DELETE CASCADE,
+  params      jsonb NOT NULL,
+  user_id     uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+  code_hash   text UNIQUE,
+  expires_at  timestamptz NOT NULL,
+  used_at     timestamptz,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS mcp_authorizations_expires_idx ON public.mcp_authorizations (expires_at);
+
+CREATE TABLE IF NOT EXISTS public.mcp_grants (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  client_id    text NOT NULL REFERENCES public.mcp_clients(client_id) ON DELETE CASCADE,
+  scopes       text[] NOT NULL DEFAULT '{}',
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  expires_at   timestamptz NOT NULL,
+  revoked_at   timestamptz,
+  last_used_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS mcp_grants_user_idx ON public.mcp_grants (user_id);
+
+CREATE TABLE IF NOT EXISTS public.mcp_tokens (
+  token_hash text PRIMARY KEY,
+  grant_id   uuid NOT NULL REFERENCES public.mcp_grants(id) ON DELETE CASCADE,
+  kind       text NOT NULL CHECK (kind IN ('access', 'refresh')),
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS mcp_tokens_grant_idx ON public.mcp_tokens (grant_id);
+
+-- Added after the first DEV apply (2026-10-27); idempotent, so the whole file re-applies.
+ALTER TABLE public.mcp_authorizations
+  ADD COLUMN IF NOT EXISTS grant_id uuid REFERENCES public.mcp_grants(id) ON DELETE SET NULL;
+-- Registration's cleanup and the cascades it sets off.
+CREATE INDEX IF NOT EXISTS mcp_clients_unused_idx ON public.mcp_clients (registered_at)
+  WHERE last_used_at IS NULL;
+CREATE INDEX IF NOT EXISTS mcp_authorizations_client_idx ON public.mcp_authorizations (client_id);
+CREATE INDEX IF NOT EXISTS mcp_grants_client_idx ON public.mcp_grants (client_id);
+
+ALTER TABLE public.mcp_clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mcp_authorizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mcp_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mcp_tokens ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.mcp_clients, public.mcp_authorizations, public.mcp_grants, public.mcp_tokens
+  FROM anon, authenticated;
+GRANT ALL ON public.mcp_clients, public.mcp_authorizations, public.mcp_grants, public.mcp_tokens
+  TO service_role;

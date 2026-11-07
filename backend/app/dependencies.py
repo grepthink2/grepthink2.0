@@ -97,46 +97,7 @@ def verify_supabase_token(request: Request) -> dict:
     token = parts[1]
 
     try:
-        header = jwt.get_unverified_header(token)
-        alg = header.get("alg")
-
-        # Handle HS256 (symmetric) algorithm
-        if alg == "HS256":
-            if not settings.SUPABASE_JWT_SECRET:
-                raise Exception("Missing SUPABASE_JWT_SECRET")
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                options={"verify_aud": False},
-            )
-            logger.debug("Verified HS256 token for sub=%s", payload.get("sub"))
-            return payload
-
-        # Handle RS256/ES256 (asymmetric) algorithms
-        if alg in {"RS256", "ES256"}:
-            if not _jwks_client:
-                raise Exception("Missing SUPABASE_URL for JWKS")
-            try:
-                signing_key = _jwks_client.get_signing_key_from_jwt(token).key
-            except Exception as jwks_error:
-                if _static_jwk:
-                    logger.debug("JWKS lookup failed, falling back to static JWK: %s", jwks_error)
-                    signing_key = _static_jwk.key
-                else:
-                    raise jwks_error
-            payload = jwt.decode(
-                token,
-                signing_key,
-                algorithms=[alg],
-                options={"verify_aud": False},
-            )
-            logger.debug("Verified %s token for sub=%s", alg, payload.get("sub"))
-            return payload
-
-        raise Exception(f"Unsupported JWT alg: {alg}")
-    except HTTPException:
-        raise
+        payload = decode_supabase_jwt(token)
     except Exception:
         logger.warning(
             "Token verification failed on %s %s",
@@ -145,6 +106,52 @@ def verify_supabase_token(request: Request) -> dict:
             exc_info=True,
         )
         raise HTTPException(status_code=401, detail="Invalid authentication token")
+    return payload
+
+
+def decode_supabase_jwt(token: str) -> dict:
+    """Verify a Supabase access token's signature and expiry and return its claims.
+
+    Raises on anything invalid; callers turn that into their own refusal.
+    """
+    header = jwt.get_unverified_header(token)
+    alg = header.get("alg")
+
+    # Handle HS256 (symmetric) algorithm
+    if alg == "HS256":
+        if not settings.SUPABASE_JWT_SECRET:
+            raise Exception("Missing SUPABASE_JWT_SECRET")
+        payload = jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            options={"verify_aud": False},
+        )
+        logger.debug("Verified HS256 token for sub=%s", payload.get("sub"))
+        return payload
+
+    # Handle RS256/ES256 (asymmetric) algorithms
+    if alg in {"RS256", "ES256"}:
+        if not _jwks_client:
+            raise Exception("Missing SUPABASE_URL for JWKS")
+        try:
+            signing_key = _jwks_client.get_signing_key_from_jwt(token).key
+        except Exception as jwks_error:
+            if _static_jwk:
+                logger.debug("JWKS lookup failed, falling back to static JWK: %s", jwks_error)
+                signing_key = _static_jwk.key
+            else:
+                raise jwks_error
+        payload = jwt.decode(
+            token,
+            signing_key,
+            algorithms=[alg],
+            options={"verify_aud": False},
+        )
+        logger.debug("Verified %s token for sub=%s", alg, payload.get("sub"))
+        return payload
+
+    raise Exception(f"Unsupported JWT alg: {alg}")
 
 
 def require_user_payload(payload: dict = Depends(verify_supabase_token)) -> dict:

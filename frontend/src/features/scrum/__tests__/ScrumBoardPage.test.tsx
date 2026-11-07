@@ -422,6 +422,51 @@ describe('ScrumBoardPage states', () => {
   });
 });
 
+describe('ScrumBoardPage move-in notice', () => {
+  const NOTICE = 'Already running sprints somewhere else?';
+  const INVITED = { connector_ready: true, import_window_open: true, has_imported_stories: false };
+
+  beforeEach(() => localStorage.clear());
+
+  it('invites a team member while the connector is ready and the window is open', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(INVITED));
+    renderAt();
+
+    expect(await screen.findByText(NOTICE)).toBeInTheDocument();
+  });
+
+  it.each<[string, Partial<ApiScrumBoard>]>([
+    ['the connector is not ready', { ...INVITED, connector_ready: false }],
+    ['the window has closed', { ...INVITED, import_window_open: false }],
+    ['the team has already imported', { ...INVITED, has_imported_stories: true }],
+    ['the viewer is staff', { ...INVITED, access: 'staff' }],
+    ['the backend is older than this client', {}],
+  ])('stays away when %s', async (_why, over) => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(over));
+    renderAt();
+
+    await screen.findByRole('tab', { name: 'Board' });
+    expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
+  });
+
+  it('opens the connector popover with focus on its button, and Enter leaves it open', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(INVITED));
+    renderAt();
+
+    const connect = await screen.findByRole('button', { name: 'Connect your assistant' });
+    await user.click(connect);
+
+    expect(screen.getByRole('dialog', { name: 'Fill this board from your AI assistant' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect an AI assistant' })).toHaveFocus();
+
+    connect.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('dialog', { name: 'Fill this board from your AI assistant' })).toBeInTheDocument();
+  });
+});
+
 describe('ScrumBoardPage new sprint', () => {
   const NO_SPRINTS = () => boardFixture({ sprints: [], sprint_id: null, stories: [] });
   const SPRINT_1 = makeSprint({ id: 'sp-new', status: 'planned' });
@@ -606,6 +651,22 @@ describe('ScrumBoardPage burnup unit', () => {
     expect(sprintStat(container)).toHaveTextContent(/^3\/8 pts$/);
     expect(screen.queryByRole('radiogroup', { name: 'Burnup unit' })).toBeNull();
     expect(screen.queryByText(new RegExp(`^${NUDGE}`))).toBeNull();
+  });
+
+  it.each([
+    { sprint: false, cumulative: false, notes: 0 },
+    { sprint: false, cumulative: true, notes: 1 },
+    { sprint: true, cumulative: true, notes: 2 },
+  ])('notes imported work on the charts it rebuilt: $notes', async ({ sprint, cumulative, notes }) => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({
+      burnup: makeBurnup({
+        sprint: { ...series([8, 8], [0, 3]), imported: sprint },
+        cumulative: { ...series([8], [3]), imported: cumulative },
+      }),
+    }));
+    renderAt('/app/projects/p1/board?view=burnup');
+    await screen.findByText('Cumulative burnup');
+    expect(screen.queryAllByText('Includes imported work')).toHaveLength(notes);
   });
 });
 

@@ -61,7 +61,7 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `MAILEROO_API_URL` | optional; the Maileroo API base (default `https://smtp.maileroo.com/api/v2`) |
 | `MAILEROO_WEBHOOK_SECRET` | optional; the Maileroo webhook's shared secret (bounces, complaints). Unset, the webhook answers 503 and Maileroo retries |
 | `EMAIL_UNSUBSCRIBE_SECRET` | signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`). Set it on PROD before the first reminder or digest email goes out: changing the key later — or rotating the JWT secret while relying on the default — breaks every link already sent |
-| `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
+| `PUBLIC_API_URL` | this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header and the scrum board MCP connector's address (`<url>/mcp`). **Required for the connector:** without it `/mcp` answers 503 on Vercel. Must be the same host as the frontend's `VITE_API_URL`, which the board's "Connect an AI assistant" note shows. The connector issues its own tokens: keep Supabase's OAuth server (Authentication → OAuth server) **off** on DEV and PROD; a token it issued could change a student's password through Supabase Auth |
 | `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
 | `ANALYTICS_ADMIN_EMAILS` | optional; comma-separated emails that may view every institution's analytics (`/app/analytics`), matched case-insensitively against the login email in the user's token (not a verified school email). Instructors see the institutions of the classes they created regardless. Blank by default. The allowlist relies on Supabase email confirmation staying ON: with it off, a signup or an email change can claim a listed address that has no account yet (see `AUTH.md`). List only addresses that already have accounts |
 | `GITHUB_TOKEN` | optional; a fine-grained token from the `grepthink2` account, limited to `grepthink2.0`, with Issues read and write, Pull requests read and Metadata read. The issue form (`POST /api/issues`) files reports with it, and the scrum board reads pull-request state with it (such a token also reads every public repository). Unset: issue reports arrive by email only, and PR reads are anonymous (60 an hour, shared across Vercel's egress). The backend reads it at start, so a new value needs a redeploy |
@@ -140,6 +140,36 @@ so it stayed out of the bundle until `beta` was live on `main`, which it has bee
 Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `student`: every Google
 signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
 cannot create a class. Applied to dev on 2026-09-23.
+
+**Already on PROD (confirmed from its catalog on 2026-11-05):** `2026-10/2026-10-22_class_sprint_schedule.sql`,
+`2026-10/2026-10-22_burnup_hours.sql`, `2026-10/2026-10-25_scrum_fill_board.sql` and `2026-10/2026-10-27_mcp_oauth.sql`.
+That check covers what each file adds (columns, tables, constraint, index, function), not the function's body.
+
+**Due on PROD, not applied yet (2026-11-05):** `2026-11/2026-11-05_scrum_import.sql`, after a dump (below), pasted whole
+into the SQL editor. **Before the release that carries the connector's import**, because every `fill_board` call then
+needs the new column and the new `scrum_fill_board` signature. It is additive and leaves the old function in place, so
+it is safe to apply early. After that code is live, drop the old function (the file's header has the statement).
+
+**Check, then mark.** Three older files still say "PROD — pending" in their headers:
+- `2026-10/2026-10-16_class_external_tasks_url.sql`
+- `2026-10/2026-10-18_final_review_slots.sql`
+- `2026-10/2026-10-18_team_meetings.sql`
+
+PROD may have them already, since its schema has run ahead of these headers before. Check each with a
+`SELECT` against the columns or tables it adds. Apply the ones missing, after a dump (below), then record the
+date in the header.
+
+Also for PROD, outside SQL:
+- **`PUBLIC_API_URL`** on the backend project must be the API's host with no path (`https://api.grepthink2.com`),
+  the same host as the frontend's `VITE_API_URL`. It is the MCP connector's OAuth issuer, and without it `/mcp`
+  answers 503.
+- **Supabase's own OAuth server** stays off (Authentication → OAuth Server). The connector issues its own tokens;
+  a Supabase-issued one would carry the student's whole account. Turn it off on DEV too: it was switched on there
+  during the connector's work.
+
+After each file: verify with the `SELECT` in its header (or the advisors), record the date in its header,
+regenerate `supabase/schema.sql`, and remove the `needs-prod-sql` label from the PR that added it once all of its
+files are applied.
 
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. Take a
 dump before any PROD schema change. It needs Docker (Colima works), and the folder must stay

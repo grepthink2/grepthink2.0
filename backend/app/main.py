@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.routing import Route
 
 from app.analytics.url import router as analytics_router
 from app.assignments.url import router as assignments_router
@@ -31,6 +32,8 @@ from app.institutions.url import router as institutions_router
 from app.issues.url import router as issues_router
 from app.jobs.email_dispatch import run_forever as run_email_dispatch
 from app.limiter import limiter
+from app.mcp.server import MCP_PATHS, mcp_endpoint
+from app.mcp.url import router as mcp_router
 from app.messages.url import router as messages_router
 from app.middleware import SecurityHeadersMiddleware
 from app.notifications.url import router as notifications_router
@@ -68,7 +71,9 @@ async def lifespan(app: FastAPI):
             "pg_cron schedule"
         )
     try:
-        yield
+        # The MCP connector (app/mcp/server.py) and its session manager live as long as this app.
+        async with mcp_endpoint.running():
+            yield
     finally:
         if task is not None:
             task.cancel()
@@ -131,5 +136,12 @@ for router in (
     email_router,
     scrum_router,
     search_router,
+    mcp_router,
 ):
     app.include_router(router)
+
+# The scrum board MCP connector (app/mcp): /mcp and its OAuth protected-resource metadata. Each
+# path is routed whole to the MCP app, which carries its own bearer-token middleware; exact paths,
+# so FastAPI's 404 and 405 answers for every other path are unchanged.
+for path in MCP_PATHS:
+    app.router.routes.append(Route(path, endpoint=mcp_endpoint))

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Camera, UserPen, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Camera, UserPen, Mail, CheckCircle, AlertCircle, Plug } from 'lucide-react';
 import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
@@ -11,6 +11,7 @@ import { apiRequest, api, type ApiProfile } from '@/lib/api';
 import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import ChangeEmailModal from '@features/app/components/Settings/ChangeEmailModal';
 import EmailPreferences from '@features/app/components/Settings/EmailPreferences';
+import ConnectedApps from '@features/app/components/Settings/ConnectedApps';
 import './Settings.scss';
 
 interface SettingsProps {
@@ -18,7 +19,7 @@ interface SettingsProps {
   onClose: () => void;
 }
 
-type SettingsSection = 'profile' | 'email';
+type SettingsSection = 'profile' | 'email' | 'apps';
 
 /** The open Settings modal: mounted each time Settings opens (see `Settings` below). */
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -267,6 +268,17 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 Email
               </button>
             </li>
+            <li>
+              <button
+                type="button"
+                className={`settings-modal__nav-item${activeSection === 'apps' ? ' settings-modal__nav-item--active' : ''}`}
+                aria-current={activeSection === 'apps' ? 'true' : undefined}
+                onClick={() => setActiveSection('apps')}
+              >
+                <Plug size={16} />
+                Connected apps
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -458,6 +470,11 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           {activeSection === 'email' && (
             <div className="settings-modal__section">
               <EmailPreferences />
+            </div>
+          )}
+          {activeSection === 'apps' && (
+            <div className="settings-modal__section">
+              <ConnectedApps />
             </div>
           )}
         </div>

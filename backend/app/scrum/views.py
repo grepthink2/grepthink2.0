@@ -4,6 +4,7 @@ from fastapi import Depends, Request, Response, status
 
 from app.dependencies import require_user
 from app.limiter import limiter
+from app.mcp.server import mcp_endpoint
 from app.scrum import controller
 from app.scrum.models import (
     AddDependencyRequest,
@@ -64,7 +65,7 @@ def get_board(
     board = controller.get_board(
         project_id=project_id, user_id=user_id, sprint_id=sprint_id, unit=unit
     )
-    return BoardResponse(**board)
+    return BoardResponse(**board, connector_ready=mcp_endpoint.ready)
 
 
 def get_summary(project_id: str, user_id: str = Depends(require_user)) -> BoardSummaryResponse:

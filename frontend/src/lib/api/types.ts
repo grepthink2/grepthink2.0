@@ -956,6 +956,8 @@ export interface ApiBurnupSeries {
   scope: number[];
   completed: number[];
   subtitle: string | null;
+  /** The chart was rebuilt by an import through the connector; the board shows a note. */
+  imported?: boolean;
 }
 
 /** What a burnup counts: the points of the sprint's tasks, or their whole-hour estimates. */
@@ -1004,6 +1006,12 @@ export interface ApiScrumBoard {
    * choices. Missing only from a backend older than this client (the two deploy separately).
    */
   task_index?: ApiTaskRef[];
+  /** An assistant can reach the MCP connector. Like the two below, missing from an older backend. */
+  connector_ready?: boolean;
+  /** The team can still bring its board in, finished work included, through the connector. */
+  import_window_open?: boolean;
+  /** The board holds stories brought in through the connector. */
+  has_imported_stories?: boolean;
 }
 
 /** The project page's sprint card: the sprint the board opens on, its task counts, the backlog size. */
@@ -1266,4 +1274,19 @@ export interface ApiSearchItem {
 export interface ApiSearchIndex {
   items: ApiSearchItem[];
   generated_at: string;
+}
+
+/** A connected app's sign-in request, as the consent page shows it (GET /api/mcp/authorizations/{id}). */
+export interface ApiMcpAuthorization {
+  app_name: string;
+  /** Where the app sends the student back: the only hint of who registered it. */
+  redirect_host: string;
+}
+
+/** An app the student allowed to use their scrum boards (GET /api/mcp/connections). */
+export interface ApiMcpConnection {
+  client_id: string;
+  app_name: string;
+  connected_at: string;
+  last_used_at: string | null;
 }
