@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -11,6 +11,7 @@ interface JoinClassModalProps {
 }
 
 const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
+  const titleId = useId();
   const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +140,13 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="join-class-modal-backdrop" onClick={handleClose}>
-      <div className="join-class-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="join-class-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           className="join-class-modal__close"
           onClick={handleClose}
@@ -150,7 +157,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
         </button>
 
         <div className="join-class-modal__content">
-          <h1 className="join-class-modal__title">Join Class</h1>
+          <h1 className="join-class-modal__title" id={titleId}>Join Class</h1>
           <p className="join-class-modal__subtitle">
             Enter the 8-character class code provided by your instructor
           </p>

@@ -282,6 +282,10 @@ class BoardSummaryResponse(BaseModel):
     sprint: SprintOut | None = None
     counts: SummaryCounts
     backlog_stories: int
+    # What the student Home's move-in invitation reads: the stories not archived, imported ones
+    # included, and whether an assistant can reach the connector.
+    story_count: int
+    connector_ready: bool = False
 
 
 class StoryResponse(BaseModel):
