@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Alert } from '@components/Alert/Alert';
 import { Button } from '@components/Button/Button';
 import { Textarea } from '@components/Textarea/Textarea';
-import { MOVE_IN_PROMPT } from '@features/connector/prompts';
+import { MOVE_IN_BODY, MOVE_IN_PROMPT, MOVE_IN_TITLE } from '@features/connector/prompts';
+import { useCopyMoveInPrompt } from '@features/connector/useCopyMoveInPrompt';
 import './ImportNudge.scss';
 
 const storageKey = (projectId: string) => `gt.scrum.importNudgeDismissed.${projectId}`;
@@ -36,22 +37,13 @@ function writeDismissed(projectId: string): void {
  */
 export default function ImportNudge({ projectId, onConnect }: { projectId: string; onConnect: () => void }) {
   const [dismissed, setDismissed] = useState(() => readDismissed(projectId));
-  const [copy, setCopy] = useState<'idle' | 'copied' | 'refused'>('idle');
+  const { copy, copyPrompt } = useCopyMoveInPrompt();
 
   if (dismissed) return null;
 
-  const copyPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(MOVE_IN_PROMPT);
-      setCopy('copied');
-    } catch {
-      setCopy('refused');
-    }
-  };
-
   return (
     <Alert
-      title="Already running sprints somewhere else?"
+      title={MOVE_IN_TITLE}
       onDismiss={() => {
         writeDismissed(projectId);
         setDismissed(true);
@@ -65,11 +57,7 @@ export default function ImportNudge({ projectId, onConnect }: { projectId: strin
         </>
       )}
     >
-      <p>
-        Your AI assistant can move your team&apos;s board in, finished work included. Tasks with an estimate count
-        in your burnup charts on the days they were done. It shows you the plan first and adds nothing until you say
-        yes. Move in before your team adds more than 3 stories by hand, or finished work can&apos;t come across.
-      </p>
+      <p>{MOVE_IN_BODY}</p>
       {copy === 'refused' && (
         <div className="import-nudge__prompt">
           <Textarea label="Copy this prompt into your assistant" value={MOVE_IN_PROMPT} rows={12} readOnly />
