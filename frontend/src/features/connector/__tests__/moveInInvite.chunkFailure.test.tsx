@@ -29,7 +29,7 @@ describe('MoveInInvite when its modal cannot load', () => {
     render(
       <>
         <p>Home</p>
-        <MoveInInvite projectId="p1" teamName="Team One" held={false} />
+        <MoveInInvite projectId="p1" teamName="Team One" />
       </>,
     );
 

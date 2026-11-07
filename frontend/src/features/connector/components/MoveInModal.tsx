@@ -3,7 +3,7 @@ import { Button } from '@components/Button/Button';
 import { Modal } from '@components/Modal/Modal';
 import { Textarea } from '@components/Textarea/Textarea';
 import { MOVE_IN_BODY, MOVE_IN_PROMPT, MOVE_IN_TITLE } from '../prompts';
-import { useCopyMoveInPrompt } from '../useCopyMoveInPrompt';
+import { useCopyMoveInPrompt } from '../hooks/useCopyMoveInPrompt';
 import ConnectorSetup from './ConnectorSetup';
 import './MoveInModal.scss';
 

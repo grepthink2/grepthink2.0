@@ -22,7 +22,7 @@ const classContext = vi.hoisted(() => ({
 vi.mock('@/lib/classContext', () => ({ useClass: () => classContext }));
 vi.mock('@/lib/auth', () => ({ useUser: () => ({ user: { id: 'me' } }) }));
 // The invitation has tests of its own (features/connector); here, only what the Home hands it.
-type InviteProps = { projectId: string | null; teamName?: string; held: boolean };
+type InviteProps = { projectId: string | null; teamName?: string };
 const moveInInvite = vi.hoisted(() => vi.fn<(props: InviteProps) => null>(() => null));
 vi.mock('@features/connector/components/MoveInInvite', () => ({ default: moveInInvite }));
 
@@ -31,9 +31,9 @@ import StudentHomeDashboard from '../StudentHomeDashboard';
 
 const openJoinClassModal = vi.fn();
 
-function renderDashboard(initialEntries?: { pathname: string; state?: unknown }[]) {
+function renderDashboard() {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
+    <MemoryRouter>
       <Routes>
         <Route element={<Outlet context={{ openJoinClassModal }} />}>
           <Route path="/" element={<StudentHomeDashboard />} />
@@ -63,20 +63,14 @@ describe('StudentHomeDashboard layout', () => {
     api.getProjects.mockResolvedValue({ projects: [{ id: 'p1', name: 'Team One' }] });
     renderDashboard();
     await waitFor(() =>
-      expect(moveInInvite.mock.lastCall?.[0]).toEqual({ projectId: 'p1', teamName: 'Team One', held: false }),
+      expect(moveInInvite.mock.lastCall?.[0]).toEqual({ projectId: 'p1', teamName: 'Team One' }),
     );
   });
 
   it('hands the move-in invitation no team when the student has none', async () => {
     renderDashboard();
     await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
-    expect(moveInInvite.mock.lastCall?.[0]).toMatchObject({ projectId: null, held: false });
-  });
-
-  it('holds the move-in invitation while a notification has the requests open', async () => {
-    api.getProjects.mockResolvedValue({ projects: [{ id: 'p1', name: 'Team One' }] });
-    renderDashboard([{ pathname: '/', state: { openRequests: true } }]);
-    await waitFor(() => expect(moveInInvite.mock.lastCall?.[0]).toMatchObject({ projectId: 'p1', held: true }));
+    expect(moveInInvite.mock.lastCall?.[0]).toMatchObject({ projectId: null });
   });
 
   it('offers to join a class when the student is in none', () => {

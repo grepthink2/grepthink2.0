@@ -17,7 +17,8 @@ vi.mock('@/lib/classContext', () => ({
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: state.isPreviewing }) }));
 // The real modal has tests of its own (moveInModal.test.tsx), and the lazy chunk's failure has
 // moveInInvite.chunkFailure.test.tsx. Here the modal renders at once: React holds back a lazy
-// chunk's content for a moment, and a test that expects no dialog would pass in that gap.
+// chunk's content for a moment, and a test that expects no dialog would pass in that gap. Like the
+// kit's Modal, the stand-in is `aria-modal`.
 vi.mock('@/lib/lazyModal', () => ({
   lazyModal:
     () =>
@@ -33,7 +34,7 @@ vi.mock('@/lib/lazyModal', () => ({
       connectorAddress: string;
     }) =>
       open ? (
-        <div role="dialog" aria-label="Move in">
+        <div role="dialog" aria-modal="true" aria-label="Move in">
           {teamName} {connectorAddress}
           <button type="button" onClick={onClose}>
             Close
@@ -56,12 +57,28 @@ const summary = (storyCount: number, connectorReady = true) => ({
 let projects = 0;
 const newProject = () => `p${++projects}`;
 
-const invite = (projectId: string | null, held = false) => (
-  <MoveInInvite projectId={projectId} teamName="Team One" held={held} />
-);
+const invite = (projectId: string | null) => <MoveInInvite projectId={projectId} teamName="Team One" />;
 
 /** Lets an answer that has arrived run its handlers. */
 const flush = () => act(async () => {});
+
+/** Reads that answer only when a test says so, in the order they were made. */
+function heldReads() {
+  const answers: ((value: unknown) => void)[] = [];
+  api.getScrumSummary.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        answers.push(resolve);
+      }),
+  );
+  return answers;
+}
+
+/** The class list reloads (the tab came back into focus), so Home reads the board again. */
+function reloadClass(view: ReturnType<typeof render>, projectId: string) {
+  state.selectedClass = { ...state.selectedClass! };
+  view.rerender(invite(projectId));
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -127,6 +144,26 @@ describe('MoveInInvite', () => {
     expect(isMoveInInviteSettled(project)).toBe(false);
   });
 
+  it('never opens over another dialog, and the next Home load asks again', async () => {
+    const project = newProject();
+    api.getScrumSummary.mockResolvedValue(summary(1));
+    const first = render(
+      <>
+        <div role="dialog" aria-modal="true" aria-label="Settings" />
+        {invite(project)}
+      </>,
+    );
+
+    await waitFor(() => expect(api.getScrumSummary).toHaveBeenCalled());
+    await flush();
+    expect(screen.queryByRole('dialog', { name: 'Move in' })).not.toBeInTheDocument();
+    expect(isMoveInInviteSettled(project)).toBe(false);
+    first.unmount();
+
+    render(invite(project));
+    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
+  });
+
   it('closing settles this visit, and another team is still invited', async () => {
     const user = userEvent.setup();
     const [first, second] = [newProject(), newProject()];
@@ -147,6 +184,96 @@ describe('MoveInInvite', () => {
     expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
   });
 
+  it('stays closed when a read answers after the student closed it', async () => {
+    const user = userEvent.setup();
+    const project = newProject();
+    const answers = heldReads();
+    const view = render(invite(project));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await act(async () => answers[0](summary(1)));
+    await screen.findByRole('dialog', { name: 'Move in' });
+
+    reloadClass(view, project);
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await act(async () => answers[1](summary(1)));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(isMoveInInviteSettled(project)).toBe(true);
+  });
+
+  it('stays open while a later read still finds fewer than 3 stories', async () => {
+    const project = newProject();
+    const answers = heldReads();
+    const view = render(invite(project));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await act(async () => answers[0](summary(1)));
+    await screen.findByRole('dialog', { name: 'Move in' });
+
+    reloadClass(view, project);
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[1](summary(2)));
+
+    expect(screen.getByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
+  });
+
+  it('closes for the visit when a later read finds 3 stories', async () => {
+    const project = newProject();
+    const answers = heldReads();
+    const view = render(invite(project));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await act(async () => answers[0](summary(1)));
+    await screen.findByRole('dialog', { name: 'Move in' });
+
+    reloadClass(view, project);
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[1](summary(3)));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(isMoveInInviteSettled(project)).toBe(true);
+  });
+
+  it('waits for a fresh answer when a team comes back, and stays closed if it now has 3 stories', async () => {
+    const project = newProject();
+    const answers = heldReads();
+    const view = render(invite(project));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await act(async () => answers[0](summary(1)));
+    await screen.findByRole('dialog', { name: 'Move in' });
+
+    // The team goes away and comes back, as a class switch and back does.
+    view.rerender(invite(null));
+    view.rerender(invite(project));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[1](summary(7)));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(isMoveInInviteSettled(project)).toBe(true);
+  });
+
+  it("closes when the student's role in the class changes", async () => {
+    const project = newProject();
+    api.getScrumSummary.mockResolvedValue(summary(1));
+    const view = render(invite(project));
+    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
+
+    state.role = 'ta';
+    view.rerender(invite(project));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes when the team on Home goes away', async () => {
+    api.getScrumSummary.mockResolvedValue(summary(1));
+    const view = render(invite(newProject()));
+    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
+
+    view.rerender(invite(null));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('shows nothing and settles nothing when the read fails, so the next Home load asks again', async () => {
     const project = newProject();
     api.getScrumSummary.mockRejectedValueOnce(new Error('Service unavailable')).mockResolvedValueOnce(summary(1));
@@ -160,56 +287,6 @@ describe('MoveInInvite', () => {
     first.unmount();
 
     render(invite(project));
-    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
-  });
-
-  it('opens nothing on an answer that came in after the team changed', async () => {
-    const [first, second] = [newProject(), newProject()];
-    const answers: Record<string, ((value: unknown) => void)[]> = {};
-    api.getScrumSummary.mockImplementation(
-      (id: string) =>
-        new Promise((resolve) => {
-          (answers[id] ??= []).push(resolve);
-        }),
-    );
-    const view = render(invite(first));
-    await waitFor(() => expect(answers[first]).toHaveLength(1));
-
-    // The student picks another team, and then the first team's answer arrives.
-    view.rerender(invite(second));
-    await act(async () => answers[first][0](summary(1)));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-    // Back on the first team, only its new read may open the invitation.
-    view.rerender(invite(first));
-    await waitFor(() => expect(answers[first]).toHaveLength(2));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(isMoveInInviteSettled(first)).toBe(false);
-
-    await act(async () => answers[first][1](summary(1)));
-    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
-  });
-
-  it('closes when the team on Home goes away', async () => {
-    api.getScrumSummary.mockResolvedValue(summary(1));
-    const view = render(invite(newProject()));
-    expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
-
-    view.rerender(invite(null));
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('waits while another dialog holds it, then opens', async () => {
-    const project = newProject();
-    api.getScrumSummary.mockResolvedValue(summary(1));
-    const view = render(invite(project, true));
-
-    await waitFor(() => expect(api.getScrumSummary).toHaveBeenCalled());
-    await flush();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-    view.rerender(invite(project, false));
     expect(await screen.findByRole('dialog', { name: 'Move in' })).toBeInTheDocument();
   });
 

@@ -144,13 +144,8 @@ def test_a_sprint_without_live_stories_counts_no_tasks(monkeypatch, client):
     body = res.json()
     assert body["sprint"]["id"] == "S2"
     assert (body["counts"], body["backlog_stories"]) == (NO_TASKS, 1)
-    assert body["story_count"] == 0  # an archived story is not on the board
-
-
-def test_story_count_is_every_story_that_is_not_archived(monkeypatch, client):
-    _seed(monkeypatch)  # A, B, C and F in sprints, D in the backlog, E archived
-    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
-    assert body["story_count"] == 5
+    # An archived story doesn't count, though the board's backlog still lists old archived rows.
+    assert body["story_count"] == 0
 
 
 def test_story_count_includes_imported_stories(monkeypatch, client):

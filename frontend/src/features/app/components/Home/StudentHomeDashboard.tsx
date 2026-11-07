@@ -724,7 +724,6 @@ const StudentHomeDashboard: React.FC = () => {
       <MoveInInvite
         projectId={teamProjectId}
         teamName={teamProjectsInClass.find((p) => p.id === teamProjectId)?.name}
-        held={requestsModalOpen}
       />
     </div>
   );

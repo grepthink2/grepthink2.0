@@ -3,7 +3,7 @@ import { Alert } from '@components/Alert/Alert';
 import { Button } from '@components/Button/Button';
 import { Textarea } from '@components/Textarea/Textarea';
 import { MOVE_IN_BODY, MOVE_IN_PROMPT, MOVE_IN_TITLE } from '@features/connector/prompts';
-import { useCopyMoveInPrompt } from '@features/connector/useCopyMoveInPrompt';
+import { useCopyMoveInPrompt } from '@features/connector/hooks/useCopyMoveInPrompt';
 import './ImportNudge.scss';
 
 const storageKey = (projectId: string) => `gt.scrum.importNudgeDismissed.${projectId}`;

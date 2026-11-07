@@ -16,28 +16,36 @@ const MoveInModal = lazyModal(() => import('./MoveInModal'), (p) => p.open);
 const MOVE_IN_INVITE_BELOW = 3;
 
 /**
- * Opens the move-in invitation on the student Home, once a visit (see moveInInviteStore), while
- * the team's board holds fewer than MOVE_IN_INVITE_BELOW stories and an assistant can reach the
- * connector. Students only: TAs share this Home, and an instructor previewing the class has no
- * team. Never in a finished class. `held` keeps it closed while another dialog of the Home's is up.
- * The invitation is optional, so a failed read or a modal that cannot load shows nothing.
+ * Whether a modal dialog is up: Settings, Join class, the search palette, the requests, or the
+ * invitation itself. The invitation never opens over or under another one.
  */
-export default function MoveInInvite({
-  projectId,
-  teamName,
-  held,
-}: {
-  projectId: string | null;
-  teamName?: string;
-  held: boolean;
-}) {
+const aDialogIsOpen = () => document.querySelector('[aria-modal="true"]') !== null;
+
+/**
+ * Opens the move-in invitation on the student Home while the team's board holds fewer than
+ * MOVE_IN_INVITE_BELOW stories and an assistant can reach the connector, until the visit settles
+ * the team (see moveInInviteStore). Students only: TAs share this Home, and an instructor
+ * previewing the class has no team. Never in a finished class. The invitation is optional: a
+ * failed read, another dialog in the way, or a modal that cannot load shows nothing, and the next
+ * Home load asks again.
+ */
+export default function MoveInInvite({ projectId, teamName }: { projectId: string | null; teamName?: string }) {
   const classRole = useSelectedClassRole();
   const { selectedClass } = useClass();
   const { isPreviewing } = usePreview();
   const [invitedProject, setInvitedProject] = useState<string | null>(null);
 
+  // Another team starts uninvited: only an answer about it may open the invitation.
+  const [teamShown, setTeamShown] = useState(projectId);
+  if (teamShown !== projectId) {
+    setTeamShown(projectId);
+    setInvitedProject(null);
+  }
+
+  const applies = classRole === 'student' && !isPreviewing && Boolean(selectedClass);
+
   useEffect(() => {
-    if (classRole !== 'student' || isPreviewing || !projectId || !selectedClass) return;
+    if (!applies || !projectId || !selectedClass) return;
     if (isMoveInInviteSettled(projectId) || getClassDisplayStatus(selectedClass) === 'complete') return;
 
     let cancelled = false;
@@ -46,8 +54,17 @@ export default function MoveInInvite({
       .then(({ story_count: stories, connector_ready: ready }) => {
         // A backend older than this client sends no count, and then nothing opens.
         if (cancelled || stories === undefined) return;
-        if (stories >= MOVE_IN_INVITE_BELOW) settleMoveInInvite(projectId);
-        else if (ready) setInvitedProject(projectId);
+        if (stories >= MOVE_IN_INVITE_BELOW) {
+          settleMoveInInvite(projectId);
+          setInvitedProject(null);
+        } else if (!ready || isMoveInInviteSettled(projectId)) {
+          // The connector can't be reached, or the student closed the invitation while this read was out.
+          setInvitedProject(null);
+        } else {
+          const blocked = aDialogIsOpen();
+          // An open invitation stays open; a new one waits for a Home load with no other dialog up.
+          setInvitedProject((current) => (current === projectId || !blocked ? projectId : null));
+        }
       })
       .catch(() => {
         // nothing to show; the next Home load asks again
@@ -55,7 +72,7 @@ export default function MoveInInvite({
     return () => {
       cancelled = true;
     };
-  }, [classRole, isPreviewing, projectId, selectedClass]);
+  }, [applies, projectId, selectedClass]);
 
   const close = () => {
     if (invitedProject) settleMoveInInvite(invitedProject);
@@ -65,7 +82,9 @@ export default function MoveInInvite({
   return (
     <ErrorBoundary fallback={null}>
       <MoveInModal
-        open={invitedProject !== null && invitedProject === projectId && !held}
+        // The modal stays mounted once it has opened; keyed by team, another team's starts fresh.
+        key={projectId ?? 'no-team'}
+        open={applies && projectId !== null && invitedProject === projectId}
         onClose={close}
         teamName={teamName}
         // Built here, in the entry chunk: when the modal's chunk imported lib/api/client itself,

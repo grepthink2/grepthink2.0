@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MOVE_IN_PROMPT } from './prompts';
+import { MOVE_IN_PROMPT } from '../prompts';
 
 export type PromptCopy = 'idle' | 'copied' | 'refused';
 
