@@ -15,6 +15,13 @@ vi.mock('@/lib/classContext', () => ({
   useSelectedClassRole: () => state.role,
 }));
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: state.isPreviewing }) }));
+/** The move-in nudge switch, read through a getter so a test can turn it off. */
+const nudge = vi.hoisted(() => ({ on: true }));
+vi.mock('../config/moveInNudge', () => ({
+  get MOVE_IN_NUDGE_ON() {
+    return nudge.on;
+  },
+}));
 // The real modal has tests of its own (moveInModal.test.tsx), and the lazy chunk's failure has
 // moveInInvite.chunkFailure.test.tsx. Here the modal renders at once: React holds back a lazy
 // chunk's content for a moment, and a test that expects no dialog would pass in that gap. Like the
@@ -86,6 +93,7 @@ beforeEach(() => {
   state.role = 'student';
   state.selectedClass = { id: 'c1', status: 'active' };
   state.isPreviewing = false;
+  nudge.on = true;
 });
 
 describe('MoveInInvite', () => {
@@ -293,6 +301,13 @@ describe('MoveInInvite', () => {
   describe('makes no read', () => {
     it.each<ClassRole | null>(['ta', 'instructor', null])('for the class role %s', async (role) => {
       state.role = role;
+      render(invite(newProject()));
+      await flush();
+      expect(api.getScrumSummary).not.toHaveBeenCalled();
+    });
+
+    it('while the move-in nudge is turned off', async () => {
+      nudge.on = false;
       render(invite(newProject()));
       await flush();
       expect(api.getScrumSummary).not.toHaveBeenCalled();

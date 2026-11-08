@@ -1,0 +1,16 @@
+@use '@styles/index.scss' as *;
+
+.move-in-prompt-note {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid var(--gt-border-subtle);
+
+  &__text {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-sm;
+  }
+
+  &__prompt {
+    margin-top: $spacing-sm;
+  }
+}

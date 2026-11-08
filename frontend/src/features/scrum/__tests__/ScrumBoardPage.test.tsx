@@ -15,6 +15,13 @@ vi.mock('@/lib/auth', () => ({
 /** The viewer's role in the selected class: what the empty board's copy reads. */
 const viewer = vi.hoisted(() => ({ classRole: 'student' as ClassRole | null | undefined }));
 vi.mock('@/lib/classContext', () => ({ useSelectedClassRole: () => viewer.classRole }));
+/** The move-in nudge switch, read through a getter so a test can turn it off. */
+const nudge = vi.hoisted(() => ({ on: true }));
+vi.mock('@features/connector/config/moveInNudge', () => ({
+  get MOVE_IN_NUDGE_ON() {
+    return nudge.on;
+  },
+}));
 vi.mock('@/lib/api', () => ({
   api: {
     getScrumBoard: vi.fn(),
@@ -425,8 +432,41 @@ describe('ScrumBoardPage states', () => {
 describe('ScrumBoardPage move-in notice', () => {
   const NOTICE = 'Already running sprints somewhere else?';
   const INVITED = { connector_ready: true, import_window_open: true, has_imported_stories: false };
+  /** Whether the connector's ⓘ is pulsing: ConnectAssistant marks the trigger's wrapper while it does. */
+  const pulsing = () =>
+    screen.getByRole('button', { name: 'Connect an AI assistant' }).closest('.connect-assistant-trigger--pulse') !==
+    null;
 
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    nudge.on = true;
+  });
+
+  it("pulses the connector's ⓘ while the connector is ready, window or not", async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({ ...INVITED, import_window_open: false }));
+    renderAt();
+
+    await screen.findByRole('tab', { name: 'Board' });
+    expect(pulsing()).toBe(true);
+  });
+
+  it("doesn't pulse the ⓘ while the connector isn't ready", async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({ ...INVITED, connector_ready: false }));
+    renderAt();
+
+    await screen.findByRole('tab', { name: 'Board' });
+    expect(pulsing()).toBe(false);
+  });
+
+  it('shows neither the notice nor the pulse with the nudge turned off', async () => {
+    nudge.on = false;
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(INVITED));
+    renderAt();
+
+    await screen.findByRole('tab', { name: 'Board' });
+    expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
+    expect(pulsing()).toBe(false);
+  });
 
   it('invites a team member while the connector is ready and the window is open', async () => {
     vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture(INVITED));
@@ -455,10 +495,12 @@ describe('ScrumBoardPage move-in notice', () => {
     renderAt();
 
     const connect = await screen.findByRole('button', { name: 'Connect your assistant' });
+    expect(pulsing()).toBe(true);
     await user.click(connect);
 
     expect(screen.getByRole('dialog', { name: 'Fill this board from your AI assistant' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect an AI assistant' })).toHaveFocus();
+    expect(pulsing()).toBe(false); // opening it from the notice counts as the click
 
     connect.focus();
     await user.keyboard('{Enter}');
