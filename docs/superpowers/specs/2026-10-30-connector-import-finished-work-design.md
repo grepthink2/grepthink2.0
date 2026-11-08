@@ -242,3 +242,57 @@ that followed an early nudge with its open work could close its own window, and 
 
 **The next release is not held for this.** The connector works without either piece: if a release has to go first, it
 goes without them, and nothing about the nudge shows.
+
+## The Home invitation
+
+Decided by the maintainer on 2026-11-07: a modal on the student Home that opens by itself for students on a team with
+fewer than 3 stories, whether or not the team has imported. It opens on every visit, to push adoption.
+
+**What it is.** The look of What's New (the kit's `Modal`, a title, the team's name as the subtitle, the × and no
+footer), though What's New itself only ever opens from its menu. The title and first paragraph are the board notice's
+own, from one place, so the two can't drift. Two steps follow: "Add GrepThink to your assistant", with the connector's
+address and where Claude and ChatGPT take it, then "Paste this prompt into a chat", with the move-in prompt to copy. It
+closes with the ×, Esc or the scrim.
+
+**Who sees it.** All of these must hold:
+
+| Rule | Why |
+|---|---|
+| The caller's role in the selected class is `student` | TAs share the student Home; the account role is never used for a class decision |
+| Not in "View class as student" | An instructor's preview has no team to bring in |
+| The selected class isn't complete | Moving a board into a finished class is pointless |
+| The student is on a team in the selected class | The team on Home's team card: the first, or the one they pick |
+| The summary says `connector_ready` | Otherwise it sends students to a connector that answers 503 |
+| The summary's `story_count` is under 3 | The maintainer's rule |
+| This visit hasn't settled the team | See "How often" |
+| No other dialog is up when the answer arrives | It never opens over or under Settings, Join class, the search palette or the requests; the next Home load asks again |
+
+**What counts as a story.** Every story of the project with `archived_at` NULL: in a sprint or the backlog, imported or
+not. The import window allows 3 stories that aren't imported, so fewer than 3 in all always leaves it open, and the
+promise about finished work holds whenever the modal shows. A team with exactly 3 hand-made stories gets the board's
+notice and no modal.
+
+**How often.** Every visit, until the team has 3 stories:
+
+- A visit is a browser tab's session. A new tab or window starts one, and a reload doesn't. A duplicated tab copies
+  `sessionStorage`, so it starts with what the first tab settled.
+- Each Home load asks until the visit settles the team. Closing the invitation settles it, and it opens again on the
+  next visit. A board with 3 or more stories settles it with no modal, and the next visit asks again, so a team that
+  deletes back under 3 is invited again.
+- Nothing else settles it. A failed read, a connector that isn't ready, another dialog in the way, or leaving Home
+  without closing the invitation (Back, a search result, a reload) all leave the team to the next Home load.
+- An open invitation follows the latest answer: a later read that finds 3 stories closes it, and an answer that arrives
+  after the student closed it doesn't reopen it. A team that leaves Home's team card and comes back waits for a fresh
+  answer.
+- What a visit has settled is kept in `sessionStorage`. When storage refuses, the page's own record covers until a
+  reload.
+
+**When "after login" is.** Whenever Home loads. Sessions persist, so a student who never signs out sees it on their
+next visit.
+
+**Where the numbers come from.** `GET /api/projects/{id}/scrum/summary` gains `story_count` and `connector_ready`. The
+summary is a pure read; the board's own read records a `board_viewed` event and takes a burnup snapshot, which would
+count every Home visit as a board view.
+
+**The board's notice is unchanged.** It keeps its own rule and its own dismissal. Closing the modal doesn't dismiss the
+notice, and an earlier dismissal of the notice doesn't suppress the modal.

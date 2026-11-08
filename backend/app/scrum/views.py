@@ -77,6 +77,8 @@ def get_summary(project_id: str, user_id: str = Depends(require_user)) -> BoardS
         else None,
         counts=SummaryCounts(**summary["counts"]),
         backlog_stories=summary["backlog_stories"],
+        story_count=summary["story_count"],
+        connector_ready=mcp_endpoint.ready,
     )
 
 

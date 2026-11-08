@@ -248,9 +248,10 @@ def test_the_connector_is_ready_only_with_a_started_app_and_a_public_address(mon
         assert mcp_endpoint.ready is False  # a local server's address reaches no hosted assistant
 
 
-def test_the_board_says_whether_the_connector_is_ready(monkeypatch, client):
+@pytest.mark.parametrize("view", ["board", "summary"])
+def test_the_board_and_its_summary_say_whether_the_connector_is_ready(monkeypatch, client, view):
     scrum_db(monkeypatch, sprints=[], user_stories=[], tasks=[])
-    url = f"/api/projects/{PID}/scrum/board"
+    url = f"/api/projects/{PID}/scrum/{view}"
     headers = header_for("tony@ucsc.edu", sub=UID)
     monkeypatch.setattr(settings, "PUBLIC_API_URL", "https://api.example.com")
 
