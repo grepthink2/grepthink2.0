@@ -5,3 +5,34 @@
     margin: 0 0 $spacing-sm;
   }
 }
+
+.connect-assistant-trigger {
+  display: inline-flex;
+}
+
+// The ⓘ fades in and out until it is clicked (ConnectAssistant's `pulse`). Hover and keyboard focus
+// hold it still; with reduced motion it stays still in the link colour instead.
+@keyframes connect-assistant-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.connect-assistant-trigger--pulse .gt-infopop__trigger {
+  animation: connect-assistant-pulse 2.4s ease-in-out infinite;
+
+  &:hover,
+  &:focus-visible {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    color: var(--gt-text-link);
+  }
+}

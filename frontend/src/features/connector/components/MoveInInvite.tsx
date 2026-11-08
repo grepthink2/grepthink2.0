@@ -7,6 +7,7 @@ import { getClassDisplayStatus } from '@/lib/classLifecycle';
 import { lazyModal } from '@/lib/lazyModal';
 import { usePreview } from '@/lib/previewContext';
 import { connectorUrl } from '@features/scrum/utils/connectorUrl';
+import { MOVE_IN_NUDGE_ON } from '../config/moveInNudge';
 import { isMoveInInviteSettled, settleMoveInInvite } from '../moveInInviteStore';
 
 // The student Home ships in the entry chunk, so the modal and its copy load the first time it opens.
@@ -42,7 +43,7 @@ export default function MoveInInvite({ projectId, teamName }: { projectId: strin
     setInvitedProject(null);
   }
 
-  const applies = classRole === 'student' && !isPreviewing && Boolean(selectedClass);
+  const applies = MOVE_IN_NUDGE_ON && classRole === 'student' && !isPreviewing && Boolean(selectedClass);
 
   useEffect(() => {
     if (!applies || !projectId || !selectedClass) return;

@@ -20,6 +20,7 @@ import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
 import ConnectAssistant from '../components/ConnectAssistant';
 import ImportNudge from '../components/ImportNudge';
+import { MOVE_IN_NUDGE_ON } from '@features/connector/config/moveInNudge';
 import { Button } from '@components/Button/Button';
 import SprintPicker from '../components/SprintPicker';
 import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorModal';
@@ -376,7 +377,7 @@ export default function ScrumBoardPage() {
   const setsSchedule = board.access === 'staff' && classRole === 'instructor';
   // A team that can still bring its board in and hasn't started to. A backend older than this
   // client sends none of these, and then nothing about the move-in shows.
-  const invitesMoveIn = canWrite && board.connector_ready && board.import_window_open
+  const invitesMoveIn = MOVE_IN_NUDGE_ON && canWrite && board.connector_ready && board.import_window_open
     && !board.has_imported_stories;
 
   return (
@@ -405,7 +406,9 @@ export default function ScrumBoardPage() {
               onNewSprint={canAddSprint ? openSprintEditor : undefined}
             />
           )}
-          {canWrite && <ConnectAssistant ref={connectRef} />}
+          {canWrite && (
+            <ConnectAssistant ref={connectRef} pulse={MOVE_IN_NUDGE_ON && Boolean(board.connector_ready)} />
+          )}
           <button
             type="button"
             className="scrum-board__icon-button"
