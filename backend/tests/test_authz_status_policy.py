@@ -25,6 +25,7 @@ from app.assignments import deadlines
 from app.attendance import controller as attendance
 from app.core import authz
 from app.projects import controller as projects
+from app.schedule import controller as schedule
 from app.staffing import controller as staffing
 from app.tas import controller as tas
 from app.tas import review_slots
@@ -71,6 +72,8 @@ ROLES = {
 }
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 OCT_1, OCT_8 = datetime.date(2026, 10, 1), datetime.date(2026, 10, 8)
+SCHEDULE_FROM = datetime.datetime(2026, 11, 9, 8, tzinfo=datetime.UTC)
+SCHEDULE_TO = SCHEDULE_FROM + datetime.timedelta(days=7)
 
 # Final-review slots (app.tas.review_slots), in a block of their own. CLASS has sign-ups closed;
 # a row wrapped in _signups_open() opens them first. The clock reads SLOT_NOW: SLOT_A has started
@@ -626,6 +629,22 @@ CASES = {
         lambda db: tsr.view_tsrs(OUTSIDER, P1),
         403,
         NOT_PROJECT_MEMBER,
+    ),
+    # app.schedule: the class instructor or anyone enrolled reads their own schedule
+    "schedule.get/missing-class": (
+        lambda db: schedule.get_schedule(S1, MISSING_CLASS, SCHEDULE_FROM, SCHEDULE_TO),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "schedule.get/other-instructor": (
+        lambda db: schedule.get_schedule(OTHER_INSTR, CLASS, SCHEDULE_FROM, SCHEDULE_TO),
+        403,
+        NOT_CLASS_MEMBER,
+    ),
+    "schedule.get/outsider": (
+        lambda db: schedule.get_schedule(OUTSIDER, CLASS, SCHEDULE_FROM, SCHEDULE_TO),
+        403,
+        NOT_CLASS_MEMBER,
     ),
     # app.team_meetings: the team, its class instructor and its assigned TA read; only a member
     # whose role on that team is Product Owner writes. P1 has no Product Owner in this fixture.

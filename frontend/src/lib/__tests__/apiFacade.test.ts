@@ -14,6 +14,7 @@ import { mcpApi } from '../api/mcp';
 import { messagesApi } from '../api/messages';
 import { notificationsApi } from '../api/notifications';
 import { projectsApi } from '../api/projects';
+import { scheduleApi } from '../api/schedule';
 import { scrumApi } from '../api/scrum';
 import { searchApi } from '../api/search';
 import { staffingApi } from '../api/staffing';
@@ -32,6 +33,7 @@ const DOMAINS: Record<string, object> = {
   messagesApi,
   notificationsApi,
   projectsApi,
+  scheduleApi,
   scrumApi,
   searchApi,
   staffingApi,
@@ -126,6 +128,7 @@ const METHODS = [
   'getProjectTsrs',
   'getProjects',
   'getReviewSlots',
+  'getSchedule',
   'getScrumBoard',
   'getScrumComments',
   'getScrumRepos',

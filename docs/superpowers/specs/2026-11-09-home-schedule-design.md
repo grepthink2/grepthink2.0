@@ -113,7 +113,8 @@ A student on no team gets deadlines only. A student on two teams in the class ge
   (`dateUtils.formatDeadline`). The item's instant is `due_at` minus one minute, so a TSR due Friday
   lists under Friday, last in the day, as the handoff expects (my call). The endpoint sends
   `assignment_id` and `assignment_type`, never a path; the client builds the link (my call):
-  a student's goes to `/app/assignments/:id`, a TA's to `/app/ta-review/:id`, an instructor's to
+  a student's goes to `/app/assignments/:id`, a TA's to `/app/ta-review/:id` for a TSR only (TA Review
+  lists TSRs, so a TA's other deadlines have no link), an instructor's to
   `/app/modules/tsr/:id` or `/app/modules/feedback/:id`, and an instructor's interest form has no
   link. Drafts are never sent. A student sees a deadline whether or not they have submitted (my
   call).

@@ -1,15 +1,15 @@
-/* GrepThink · schedule layer, compact row. Port of design/components/schedule/schedule.css (the handoff in
-   design/design_handoff_schedule/): BEM `.gt-*` classes, `--gt-*` tokens only (lint:design), the rules kept
-   as the design has them.
-   Ported: the kind palette, the list root, the day header, the item row with its pills and the Join action,
-   the deadline marker, the zone footer and the compact block.
+/* GrepThink · schedule layer: the compact list and its rows. Port of design/components/schedule/schedule.css
+   (the handoff in design/design_handoff_schedule/): BEM `.gt-*` classes, `--gt-*` tokens only (lint:design),
+   the rules kept as the design has them.
+   Ported: the kind palette, the list root, the day header, the sprint rule, the item row with its pills and
+   the Join action, the deadline marker, the Now line, the loading / empty / error states, the zone footer
+   and the compact block.
    Not ported: the green Live pill, its pulsing dot and their keyframes (`.gt-sched-item__live`,
    `gt-sched-pulse`). A live row shows the kit's `<Badge status="live" />`, blue under the status colour
    rule (design/design_handoff_ui_alignment/NOTES.md), at the size `.gt-sched-item__head .gt-badge` gives
    the row's pills.
-   Left for the agenda and the schedule endpoint: the agenda's own rules and toolbar, the Now line, the sprint
-   divider, the loading/empty/error states, the expand toggle and panel, and the people list and note (rows
-   in the agenda only). */
+   Left for the agenda: its own rules and toolbar, the expand toggle and panel, and the people list and note
+   (rows in the agenda only). */
 
 /* ── Kind palette (tokens/colors.css --gt-sched-*; icon + label always accompany the color) ── */
 .gt-sched-item__tile { background: var(--gt-sched-lecture-soft); color: var(--gt-sched-lecture-text); }
@@ -34,6 +34,11 @@
 .gt-sched-day--today .gt-sched-day__title { color: var(--gt-green-700); }
 .gt-sched-day__date { font-size: 12px; color: var(--gt-text-tertiary); }
 .gt-sched-day__aside { margin-left: auto; font-size: 11.5px; color: var(--gt-text-tertiary); }
+
+/* ── Sprint divider (a rule with a label — never a row) ───── */
+.gt-sched-divider { display: flex; align-items: center; gap: 10px; padding: 8px 16px 2px; }
+.gt-sched-divider__label { font-size: 10.5px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gt-text-tertiary); white-space: nowrap; }
+.gt-sched-divider__rule { flex: 1; height: 0; margin: 0; border: 0; border-top: 1px dashed var(--gt-border-strong); }
 
 /* ── Item row ─────────────────────────────────────────────── */
 .gt-sched-item {
@@ -96,6 +101,26 @@
 .gt-sched-item--marker .gt-sched-item__main { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; padding-top: 0; }
 .gt-sched-item--marker .gt-sched-item__title { font-size: 13px; font-weight: var(--gt-weight-medium); }
 
+/* ── Now line ─────────────────────────────────────────────── */
+.gt-sched__now { display: grid; grid-template-columns: 112px 1fr; column-gap: 12px; align-items: center; padding: 2px 16px; }
+.gt-sched__now-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gt-green-700); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gt-sched__now-line { position: relative; flex: 1; height: 2px; border-radius: 1px; background: var(--gt-sched-now); }
+.gt-sched__now-line::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--gt-sched-now); }
+
+/* ── States: loading, empty, error ───────────────────────── */
+.gt-sched__state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 28px 16px; text-align: center; }
+.gt-sched__state--quiet { padding: 14px 16px 8px; }
+.gt-sched__state-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: 50%; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
+.gt-sched__state-title { margin: 0; font-size: 13.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.gt-sched__state--error .gt-sched__state-title { color: var(--gt-text-secondary); }
+.gt-sched__state-hint { margin: 0; max-width: 340px; font-size: 12px; line-height: var(--gt-leading-normal); color: var(--gt-text-tertiary); }
+.gt-sched__link, .gt-sched__retry { display: inline-flex; align-items: center; gap: 5px; border: none; background: transparent; padding: 0; font-family: var(--gt-font-sans); font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; cursor: pointer; }
+.gt-sched__link:hover, .gt-sched__retry:hover { text-decoration: underline; }
+.gt-sched__link:focus-visible, .gt-sched__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
+.gt-sched__skeleton { display: grid; grid-template-columns: 112px 28px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 12px 16px; }
+.gt-sched__skeleton-lines { display: flex; flex-direction: column; gap: 7px; }
+.gt-sched__more { margin: 0; padding: 6px 16px 2px; font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-tertiary); }
+
 /* ── Zone note (the card's footer) ───────────────────────── */
 .gt-sched__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gt-border-subtle); font-size: 12px; color: var(--gt-text-tertiary); }
 .gt-sched__zone { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gt-text-tertiary); }
@@ -110,7 +135,13 @@
 .gt-sched--compact .gt-sched-item__actions { margin-top: 6px; }
 .gt-sched--compact .gt-sched-item__action { height: 32px; padding: 0 12px; font-size: 12.5px; }
 .gt-sched--compact .gt-sched-item--marker { min-height: 32px; padding: 5px 0; }
+.gt-sched--compact .gt-sched__now { display: flex; gap: 10px; padding: 4px 0; }
 .gt-sched--compact .gt-sched-day { padding: 10px 0 2px; }
+.gt-sched--compact .gt-sched-divider { padding: 6px 0 2px; }
+.gt-sched--compact .gt-sched__skeleton { grid-template-columns: 60px 24px minmax(0, 1fr); column-gap: 10px; padding: 10px 0; }
+.gt-sched--compact .gt-sched__state { padding: 20px 8px; }
+.gt-sched--compact .gt-sched__state--quiet { padding: 10px 0 4px; align-items: flex-start; text-align: left; }
+.gt-sched--compact .gt-sched__more { padding: 6px 0 0; }
 
 /* ── Phone (< 768px) ──────────────────────────────────────── */
 @media (max-width: 767px) {

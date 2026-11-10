@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Avatar } from '@/components/Avatar/Avatar';
 import { Badge } from '@/components/Badge/Badge';
 import type { BadgeStatus } from '@/components/Badge/badgeStatus';
@@ -45,6 +46,8 @@ export interface ScheduleItemProps {
   overlaps?: ScheduleItemData[];
   onJoin?: (item: ScheduleItemData) => void;
   onMarkAttendance?: (item: ScheduleItemData) => void;
+  /** Staff: "Mark attendance" on a live or past TA meeting is a link here (in-app) instead of the `onMarkAttendance` button. */
+  markAttendanceHref?: string;
   onSetTime?: (item: ScheduleItemData) => void;
   /** Deadline titles with `href` call this instead of navigating. */
   onOpen?: (item: ScheduleItemData) => void;
@@ -61,7 +64,7 @@ export interface ScheduleItemProps {
  */
 export function ScheduleItem({
   item, lens = 'student', now, zone = viewerZone(), schoolZone, showSchoolTime = false,
-  overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
+  overlaps = [], onJoin, onMarkAttendance, markAttendanceHref, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
   const nowD = useNow(30000, now);
   const meta = kindMeta(item.kind);
@@ -128,10 +131,14 @@ export function ScheduleItem({
       </a>,
     );
   }
-  if (staff && item.kind === 'ta_meeting' && (status === 'live' || status === 'past') && onMarkAttendance) {
-    actions.push(
-      <button key="mark" type="button" className="gt-sched-item__action" onClick={() => onMarkAttendance(item)}>Mark attendance</button>,
-    );
+  if (staff && item.kind === 'ta_meeting' && (status === 'live' || status === 'past')) {
+    if (markAttendanceHref) {
+      actions.push(<Link key="mark" className="gt-sched-item__action" to={markAttendanceHref}>Mark attendance</Link>);
+    } else if (onMarkAttendance) {
+      actions.push(
+        <button key="mark" type="button" className="gt-sched-item__action" onClick={() => onMarkAttendance(item)}>Mark attendance</button>,
+      );
+    }
   }
   if (staff && isTbd && onSetTime && item.kind !== 'deadline') {
     actions.push(

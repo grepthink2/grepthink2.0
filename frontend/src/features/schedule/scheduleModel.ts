@@ -1,9 +1,9 @@
 /**
- * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping and the
- * formatters. Port of design/components/schedule/ScheduleModel.jsx (the handoff in
- * design/design_handoff_schedule/), the subset the compact row and the team-meetings card use. Left
- * for the schedule endpoint: the week helpers (weekKeys, fmtWeekLabel), findOverlaps, nowIndex,
- * nextUp, todayOrPeek and the ScheduleModel bundle object.
+ * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping, overlaps, the
+ * Now line's place, the compact card's today-or-peek pick and the formatters. Port of
+ * design/components/schedule/ScheduleModel.jsx (the handoff in design/design_handoff_schedule/), the
+ * subset the compact list, its rows and the team-meetings card use. Left for the agenda: the week
+ * helpers (weekKeys, fmtWeekLabel), nextUp and the ScheduleModel bundle object.
  *
  * Times render in the viewer's zone; every calendar-day computation happens on 'YYYY-MM-DD' keys,
  * so a daylight-saving change never moves a day.
@@ -39,6 +39,11 @@ export interface ScheduleItemData {
   title: string;
   /** ISO 8601 instant (UTC). For all-day items and sprint edges: midnight in the school zone. */
   startsAt: string;
+  /**
+   * All-day items: their day in the school's calendar ('YYYY-MM-DD'). The list keys and labels them
+   * by it in every viewer's zone, since their instant read elsewhere can fall on the day before or after.
+   */
+  date?: string;
   /** ISO 8601 instant; null for deadlines (a point in time) and all-day items. */
   endsAt?: string | null;
   allDay?: boolean;
@@ -92,6 +97,9 @@ export interface ScheduleDayGroup {
 
 /** What the time formatters read from an item. */
 type TimeSpan = Pick<ScheduleItemData, 'startsAt' | 'endsAt' | 'allDay'>;
+
+/** What an empty schedule says: the copy the Today's Schedule card has always promised. */
+export const SCHEDULE_EMPTY_COPY = 'Class events and deadlines will appear here.';
 
 /** "Join Zoom" is prominent from 10 minutes before start until the end. */
 export const JOIN_WINDOW_MS = 10 * 60 * 1000;
@@ -147,6 +155,11 @@ export function shiftKey(key: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** The day an item lists under: an all-day item's own calendar `date`, else its start in `zone`. */
+export function itemDay(item: Pick<ScheduleItemData, 'startsAt' | 'allDay' | 'date'>, zone: string = viewerZone()): string {
+  return item.allDay && item.date ? item.date : dayKey(item.startsAt, zone);
+}
+
 /* ── Status ──────────────────────────────────────────────────── */
 /** upcoming | live | past | cancelled | tbd. `cancelled`/`tbd` come from the data; the rest is derived from the clock. */
 export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): ScheduleStatus {
@@ -154,7 +167,7 @@ export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: s
   if (item.kind === 'sprint') return 'upcoming';
   const at = toDate(now);
   const start = toDate(item.startsAt);
-  if (item.allDay) return dayKey(start, zone) < dayKey(at, zone) ? 'past' : 'upcoming';
+  if (item.allDay) return itemDay(item, zone) < dayKey(at, zone) ? 'past' : 'upcoming';
   const end = item.endsAt ? toDate(item.endsAt).getTime() : start.getTime();
   if (end <= at.getTime()) return 'past';
   if (start.getTime() <= at.getTime()) return 'live';
@@ -173,7 +186,7 @@ export function isJoinable(item: ScheduleItemData, now: Date = new Date()): bool
 /** "today" | "tomorrow" | "in 3 days" when the item starts within COUNTDOWN_DAYS; otherwise null. */
 export function countdown(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): string | null {
   const today = dayKey(now, zone);
-  const day = dayKey(item.startsAt, zone);
+  const day = itemDay(item, zone);
   if (day < today) return null;
   const days = Math.round((keyToDate(day).getTime() - keyToDate(today).getTime()) / DAY_MS);
   if (days >= COUNTDOWN_DAYS) return null;
@@ -187,8 +200,8 @@ const rank = (it: ScheduleItemData): number => (it.kind === 'sprint' ? 0 : it.st
 /** Day, then: sprint edges → all-day → timed by start → Time TBD last. */
 export function sortItems(items: ScheduleItemData[], zone: string = viewerZone()): ScheduleItemData[] {
   return [...items].sort((a, b) => {
-    const ka = dayKey(a.startsAt, zone);
-    const kb = dayKey(b.startsAt, zone);
+    const ka = itemDay(a, zone);
+    const kb = itemDay(b, zone);
     if (ka !== kb) return ka < kb ? -1 : 1;
     const byRank = rank(a) - rank(b);
     if (byRank) return byRank;
@@ -203,7 +216,7 @@ export function groupByDay(items: ScheduleItemData[], { zone = viewerZone(), now
   const today = dayKey(now, zone);
   const groups = new Map<string, ScheduleDayGroup>();
   for (const it of sortItems(items, zone)) {
-    const key = dayKey(it.startsAt, zone);
+    const key = itemDay(it, zone);
     let group = groups.get(key);
     if (!group) {
       group = { key, isToday: key === today, dividers: [], items: [] };
@@ -212,6 +225,60 @@ export function groupByDay(items: ScheduleItemData[], { zone = viewerZone(), now
     (it.kind === 'sprint' ? group.dividers : group.items).push(it);
   }
   return [...groups.values()];
+}
+
+/** Timed items that share an instant: id → the others it overlaps. Deadlines, sprint edges, all-day, cancelled and TBD items never overlap. */
+export function findOverlaps(items: ScheduleItemData[]): Map<string, ScheduleItemData[]> {
+  const timed = items.filter(
+    (it) => !it.allDay && it.endsAt && it.kind !== 'sprint' && it.kind !== 'deadline' && it.status !== 'cancelled' && it.status !== 'tbd',
+  );
+  const out = new Map<string, ScheduleItemData[]>();
+  const add = (a: ScheduleItemData, b: ScheduleItemData) => out.set(a.id, [...(out.get(a.id) ?? []), b]);
+  for (let i = 0; i < timed.length; i++) {
+    for (let j = i + 1; j < timed.length; j++) {
+      const a = timed[i];
+      const b = timed[j];
+      if (toDate(a.startsAt) < toDate(b.endsAt as string) && toDate(b.startsAt) < toDate(a.endsAt as string)) {
+        add(a, b);
+        add(b, a);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Where the Now line sits in a day's sorted items: before the first timed item that has not ended,
+ * after them all when the day is over (`dayItems.length`), and nowhere (-1) on a day with no timed items.
+ */
+export function nowIndex(dayItems: ScheduleItemData[], now: Date = new Date()): number {
+  const at = toDate(now).getTime();
+  let timed = false;
+  for (let i = 0; i < dayItems.length; i++) {
+    const it = dayItems[i];
+    if (it.allDay || it.status === 'tbd' || it.kind === 'sprint') continue;
+    timed = true;
+    const end = toDate(it.endsAt ?? it.startsAt).getTime();
+    if (end > at) return i;
+  }
+  return timed ? dayItems.length : -1;
+}
+
+export type TodayOrPeek =
+  | { mode: 'today'; day: ScheduleDayGroup }
+  | { mode: 'peek'; day: ScheduleDayGroup; todayDividers: ScheduleItemData[] }
+  | { mode: 'none'; day: null; todayDividers: ScheduleItemData[] };
+
+/** The compact card: today's group when it has rows, else the next day that has some ("peek"), else none. */
+export function todayOrPeek(items: ScheduleItemData[], now: Date = new Date(), zone: string = viewerZone()): TodayOrPeek {
+  const today = dayKey(now, zone);
+  const groups = groupByDay(items, { zone, now });
+  const td = groups.find((g) => g.key === today);
+  if (td && td.items.length) return { mode: 'today', day: td };
+  const todayDividers = td ? td.dividers : [];
+  const next = groups.find((g) => g.key > today && g.items.length);
+  if (next) return { mode: 'peek', day: next, todayDividers };
+  return { mode: 'none', day: null, todayDividers };
 }
 
 /* ── Formatters (viewer's zone unless told otherwise) ─────────── */
