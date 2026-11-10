@@ -206,7 +206,7 @@ describe('SegmentedControl', () => {
     expect(option.getPropertyValue('box-sizing')).toBe('border-box');
     expect(option.getPropertyValue('border-style')).toBe('none');
     expect(option.getPropertyValue('border-radius')).toBe('5px');
-    expect(option.getPropertyValue('background')).toBe('transparent');
+    expect(option.getPropertyValue('background-color')).toBe('transparent');
     expect(option.getPropertyValue('font-weight')).toBe('var(--gt-weight-medium)');
     expect(option.getPropertyValue('transition')).toContain('background-color');
     // The padding and font size the global rule sets come from the size class, which every control has.

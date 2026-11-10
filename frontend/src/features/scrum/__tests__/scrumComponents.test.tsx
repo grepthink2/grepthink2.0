@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ApiScrumTask } from '@/lib/api';
@@ -34,11 +34,13 @@ describe('PointsChip', () => {
     render(<PointsChip missing />);
     const [missing] = cssRules('.gt-points--missing');
     expect(missing.getPropertyValue('border')).toBe('1px dashed var(--gt-border-subtle)');
-    expect(missing.getPropertyValue('background')).toBe('transparent');
+    expect(missing.getPropertyValue('background-color')).toBe('transparent');
     expect(missing.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');
-    // The rule wins over .gt-points, whose green text and fill it replaces (jsdom resolves the colour,
-    // not a background given with var()).
-    expect(getComputedStyle(screen.getByRole('img')).color).toBe('var(--gt-text-tertiary)');
+    // The rule wins over .gt-points, whose green text and fill it replaces. jsdom resolves var() in a
+    // computed colour, so the token gets a value the colour can be told by.
+    document.documentElement.style.setProperty('--gt-text-tertiary', 'rgb(1, 2, 3)');
+    onTestFinished(() => { document.documentElement.style.removeProperty('--gt-text-tertiary'); });
+    expect(getComputedStyle(screen.getByRole('img')).color).toBe('rgb(1, 2, 3)');
   });
 
   it('shows the points of a task that has them, with no accessible-name override', () => {
