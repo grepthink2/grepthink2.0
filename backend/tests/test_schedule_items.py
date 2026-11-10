@@ -310,7 +310,7 @@ def test_a_student_sees_their_teams_meetings_review_sprint_and_the_deadlines(db)
             TSR_DEADLINE,
         ],
     }
-    assert db.executes <= 10
+    assert db.executes == 10
 
 
 def test_a_student_on_two_teams_gets_both_teams_items(db):
@@ -332,7 +332,7 @@ def test_a_student_on_two_teams_gets_both_teams_items(db):
 def test_a_student_on_no_team_gets_the_deadlines_only(db):
     out = schedule.get_schedule(S3, CLASS, LO, HI)
     assert out == {"lens": "student", "items": [TSR_DEADLINE]}
-    assert db.executes <= 7  # nothing to read in a second wave
+    assert db.executes == 7  # nothing to read in a second wave
 
 
 def test_a_student_whose_team_holds_no_review_slot_has_no_final_review(db):
@@ -364,7 +364,7 @@ def test_a_ta_sees_the_teams_they_run_and_review_and_the_class_sprints(db):
             TSR_DEADLINE,
         ],
     }
-    assert db.executes <= 9
+    assert db.executes == 9
 
 
 def test_a_review_ta_sees_the_review_and_their_own_teams_meeting(db):
@@ -392,7 +392,7 @@ def test_an_instructor_sees_every_booked_review_the_deadlines_and_the_class_spri
             TSR_DEADLINE,
         ],
     }
-    assert db.executes <= 8
+    assert db.executes == 8
 
 
 @pytest.mark.parametrize(

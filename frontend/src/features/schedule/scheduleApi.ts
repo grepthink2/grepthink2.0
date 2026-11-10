@@ -6,12 +6,16 @@
 import type { ApiSchedule, ApiScheduleItem, ApiScheduleLens, ApiSchedulePerson } from '@/lib/api';
 import type { ScheduleItemData, SchedulePerson, ScheduleReviewer } from './scheduleModel';
 
-/** Where a deadline's title goes: the student's submission, a TA's review, the instructor's view. */
+/**
+ * Where a deadline's title goes: the student's submission, a TA's TSR review, the instructor's view.
+ * TA Review lists TSRs only (any other id falls back to the first TSR), so a TA's other deadlines
+ * have no link.
+ */
 export function deadlineHref(lens: ApiScheduleLens, item: ApiScheduleItem): string | undefined {
   const id = item.assignment_id;
   if (!id) return undefined;
   if (lens === 'student') return `/app/assignments/${id}`;
-  if (lens === 'ta') return `/app/ta-review/${id}`;
+  if (lens === 'ta') return item.assignment_type === 'tsr' ? `/app/ta-review/${id}` : undefined;
   if (item.assignment_type === 'tsr') return `/app/modules/tsr/${id}`;
   if (item.assignment_type === 'feedback') return `/app/modules/feedback/${id}`;
   return undefined; // an interest form has no instructor page of its own
