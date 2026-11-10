@@ -340,7 +340,7 @@ describe('Tabs', () => {
     expect(tabRule.getPropertyValue('padding')).toBe('6px 12px');
     expect(tabRule.getPropertyValue('border-style')).toBe('none');
     expect(tabRule.getPropertyValue('border-radius')).toBe('6px');
-    expect(tabRule.getPropertyValue('background')).toBe('transparent');
+    expect(tabRule.getPropertyValue('background-color')).toBe('transparent');
     expect(tabRule.getPropertyValue('font-size')).toBe('13px');
     expect(tabRule.getPropertyValue('font-weight')).toBe('var(--gt-weight-medium)');
     expect(tabRule.getPropertyValue('color')).toBe('var(--gt-text-tertiary)');

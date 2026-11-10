@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import { CalendarDays, Clock, Loader2, X } from 'lucide-react';
+import { Clock, Loader2, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { useUser } from '@/lib/auth';
+import { useSchoolTimezone } from '@/lib/institutions';
+import { usePreview } from '@/lib/previewContext';
 import { api } from '@/lib/api';
 import {
   avatarBgFromEmail,
@@ -16,11 +18,9 @@ import {
   type OutgoingRequestRow,
 } from '@/features/app/utils/joinRequests';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
-import {
-  // MOCK_SCHEDULE,
-} from './mockData';
 import RequestsModal from './RequestsModal';
 import MoveInInvite from '@features/connector/components/MoveInInvite';
+import { TodaySchedule } from '@features/schedule/components/TodaySchedule';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -119,6 +119,8 @@ const StudentHomeDashboard: React.FC = () => {
   // `classes` is every class the account is in: none at all is when Home offers to join one.
   const { selectedClass, classes } = useClass();
   const { user } = useUser();
+  const { isPreviewing } = usePreview();
+  const schoolZone = useSchoolTimezone(selectedClass?.institution?.id);
 
   const classId = selectedClass?.id;
 
@@ -387,32 +389,7 @@ const StudentHomeDashboard: React.FC = () => {
                 Today&apos;s Schedule
               </h2>
             </div>
-            {/* TODO: wire real schedule data once calendar integration exists.
-            <ul className="student-home__schedule-list">
-              {MOCK_SCHEDULE.map((item) => (
-                <li key={item.id} className="student-home__schedule-item">
-                  <span className="student-home__schedule-time">{item.timeLabel}</span>
-                  <div className="student-home__schedule-body">
-                    <span
-                      className={`student-home__schedule-dot student-home__schedule-dot--${item.accent}`}
-                    />
-                    <div>
-                      <p className="student-home__schedule-title">{item.title}</p>
-                      <p className="student-home__schedule-sub">{item.subtitle}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            */}
-            <div className="student-home__schedule-empty">
-              <div className="student-home__schedule-empty-icon" aria-hidden>
-                <CalendarDays size={22} strokeWidth={1.5} />
-              </div>
-              <p className="student-home__schedule-empty-title">
-                Class events and deadlines will appear here.
-              </p>
-            </div>
+            <TodaySchedule classId={classId} schoolZone={schoolZone} preview={isPreviewing} />
           </section>
         </div>
 

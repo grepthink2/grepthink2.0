@@ -10,16 +10,18 @@
   display: inline-flex;
 }
 
-// The ⓘ fades in and out until it is clicked (ConnectAssistant's `pulse`). Hover and keyboard focus
-// hold it still; with reduced motion it stays still in the link colour instead.
+// The ⓘ swaps to white on green and back until it is clicked (ConnectAssistant's `pulse`). Hover and
+// keyboard focus hold it still; with reduced motion it stays still on green instead.
 @keyframes connect-assistant-pulse {
   0%,
   100% {
-    opacity: 1;
+    background-color: transparent;
+    color: var(--gt-text-tertiary);
   }
 
   50% {
-    opacity: 0.35;
+    background-color: var(--gt-primary);
+    color: var(--gt-text-inverse);
   }
 }
 
@@ -33,6 +35,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-    color: var(--gt-text-link);
+    background-color: var(--gt-primary);
+    color: var(--gt-text-inverse);
   }
 }

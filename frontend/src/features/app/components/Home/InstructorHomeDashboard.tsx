@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
+  CalendarDays,
   CheckCircle2,
   ChevronRight,
   GraduationCap,
@@ -16,8 +17,10 @@ import {
 import { useAuth } from '@/lib/auth';
 import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
+import { useSchoolTimezone } from '@/lib/institutions';
 import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { TodaySchedule } from '@features/schedule/components/TodaySchedule';
 import { buildAttentionItems, type AttentionItem } from './attentionItems';
 import '@features/app/components/Modules/AddAssignmentButton.scss';
 import './InstructorHomeDashboard.scss';
@@ -58,7 +61,8 @@ function persistDismissedAlerts(ids: Set<string>): void {
 
 const InstructorHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { visibleClasses, setSelectedClass, getClassStatus } = useClass();
+  const { selectedClass, visibleClasses, setSelectedClass, getClassStatus } = useClass();
+  const schoolZone = useSchoolTimezone(selectedClass?.institution?.id);
   // Teaching the selected class is not the same as being allowed to create one (POST
   // /api/classes answers 403 then), so Create Class follows the account, as in My Classes.
   const { canCreateClasses } = useAuth();
@@ -251,6 +255,15 @@ const InstructorHomeDashboard: React.FC = () => {
               Create Class
             </button>
           )}
+
+          <section className="instructor-home__card" aria-labelledby="schedule-heading">
+            <div className="instructor-home__card-header">
+              <h2 id="schedule-heading" className="instructor-home__card-title">
+                <CalendarDays size={18} aria-hidden /> Today&apos;s Schedule
+              </h2>
+            </div>
+            <TodaySchedule classId={selectedClass?.id} schoolZone={schoolZone} />
+          </section>
 
           <section className="instructor-home__card" aria-labelledby="classes-heading">
             <div className="instructor-home__card-header">

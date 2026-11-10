@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
 import { cssRules } from '@/test/cssRules';
 
@@ -549,7 +549,10 @@ describe('ClassSettingsModal — sprints', () => {
     expect(cssRules('.class-settings-modal__sprint-preview')).toEqual([]);
     const [pastEnd] = cssRules('.class-settings-modal__sprint-preview--past-end');
     expect(Array.from(pastEnd)).toEqual(['color']);
-    expect(getComputedStyle(preview()).color).toBe('var(--gt-error-text)'); // over the hint's colour
+    // jsdom resolves var() in computed styles: give the token a value, so the colour shows which rule won.
+    document.documentElement.style.setProperty('--gt-error-text', 'rgb(200, 0, 0)');
+    onTestFinished(() => { document.documentElement.style.removeProperty('--gt-error-text'); });
+    expect(getComputedStyle(preview()).color).toBe('rgb(200, 0, 0)'); // over the hint's colour
   });
 
   it('counts from the last day of classes saved, as the API does, not from one picked and not saved yet', async () => {

@@ -11,6 +11,11 @@ export const instructorOnlyPaths: readonly string[] = [
   '/app/class-settings',
 ];
 
+/*
+ * Shared, so in no list below: /app/schedule. It follows the selected class for every role and asks
+ * for one when none is selected, so a class switch keeps it open.
+ */
+
 /** Class pages for students and TAs (TAs keep the student pages). */
 export const learnerOnlyPaths: readonly string[] = ['/app/browse-projects', '/app/my-project', '/app/assignments'];
 

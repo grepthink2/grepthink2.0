@@ -215,25 +215,29 @@ it exists.
   request from `beta` (squashing it leaves the two branches in conflict), and Dependabot's security
   updates, which merge into `main` directly and deploy without a new version. Vercel deploys `main`
   to production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
-  (`main.json`: pull requests only, both CI jobs required, merge commits only, no force-push or
-  deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
+  (`main.json`: pull requests only, both CI jobs and the release check required, merge commits
+  only, no force-push or deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
   Rules.
 - **Every release has a version and release notes.** The version is `frontend/package.json`'s
   `version`, `MAJOR.MINOR.PATCH`: a release with anything new or improved raises the minor number,
   and a release with fixes only raises the patch (1.0.0 is the maintainer's call). Its notes are
-  `frontend/src/features/releases/notes/<version>.md`. A release takes three steps:
-  1. On a branch from `beta` (`release/<version>`), add `notes/<version>.md` and raise the version
-     with `npm --prefix frontend version <version> --no-git-tag-version`, which updates
-     `package-lock.json` as well. Open a pull request into `beta` and merge it.
-  2. Open the release pull request from `beta` into `main` as usual, and merge it with a merge
-     commit.
-  3. [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the merge commit
-     `v<version>` and publishes the GitHub release, with the notes (without the front matter) as
-     its body.
+  `frontend/src/features/releases/notes/<version>.md`. A release is one pull request, from `beta`
+  into `main`:
+  1. Open it. Its "Release version and notes" check, which `main`'s ruleset requires, fails while
+     `v<version>` is tagged already or the notes file is missing.
+  2. Commit the release to `beta` directly, no pull request of its own: add `notes/<version>.md` and
+     raise the version with `npm --prefix frontend version <version> --no-git-tag-version`, which
+     updates `package-lock.json` as well, in one commit named `release: <version>`. The open pull
+     request picks it up, so the notes are reviewed there, and its check turns green.
+  3. Merge it with a merge commit.
+     [`.github/workflows/release.yml`](.github/workflows/release.yml) then tags the merge commit
+     `v<version>` and publishes the GitHub release, with the notes (without the front matter) as its
+     body.
 
-  A release with nothing for users to read (internal work only) skips step 1 and keeps the version,
-  and so does a Dependabot security update: no notes and no tag. The release pull request then gets
-  a warning that its version is tagged already, which is right for internal work only.
+  Every release from `beta` takes a version, internal work only included: raise the patch number and
+  write one line under `## Improved` (for example "Behind-the-scenes updates and fixes."). Only a
+  Dependabot security update, which merges into `main` straight from its own branch, keeps the
+  version: the check is skipped there, and it gets no tag.
 
   `releaseNotes.test.ts` fails a pull request when a notes file breaks the format, or when the
   newest one is not the version in `package.json`. A notes file looks like this:

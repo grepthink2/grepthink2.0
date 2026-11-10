@@ -1,6 +1,11 @@
 @use '@styles/index.scss' as *;
 
 .app-view {
+  /* Where the sticky header sits and how tall it is, for content that sticks or scrolls under it:
+     top: calc(var(--gt-app-header-top, 0px) + var(--gt-app-header-h, 0px)). The Header writes its
+     measured height over this 64px (taller on a class page with breadcrumbs). */
+  --gt-app-header-top: 0px;
+  --gt-app-header-h: 64px;
   min-height: 100vh;
   background-color: var(--gt-surface);
   color: var(--gt-text-primary); // text with no colour of its own reads as body text on the white shell
@@ -12,6 +17,7 @@
    and the sticky header down so nothing hides behind it. */
 .app-view--previewing {
   $preview-banner-h: 44px;
+  --gt-app-header-top: #{$preview-banner-h};
 
   .sidebar {
     top: $preview-banner-h;

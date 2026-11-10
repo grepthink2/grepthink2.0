@@ -5,10 +5,10 @@ name: Release
 #   - push to main → when frontend/package.json's version has no v<version> tag yet, publish the
 #     GitHub release v<version> at the pushed commit, which creates the tag. Its title is the
 #     version and its body the notes file without the front matter. A deploy that keeps the
-#     version (a Dependabot security update, a release of internal work only) finds the tag and
-#     does nothing.
-#   - pull request from beta into main → a warning, never a failure, when the version is tagged
-#     already: the release adds no notes.
+#     version (a Dependabot security update straight into main) finds the tag and does nothing.
+#   - pull request from beta into main → fails when v<version> is tagged already or its notes file
+#     is missing, so every release from beta gets a new version, notes and a tag. main's ruleset
+#     requires this check; it is skipped, and so passes, on pull requests from any other branch.
 on:
   push:
     branches: [main]
@@ -61,21 +61,30 @@ jobs:
           gh release create "$tag" --target "$GITHUB_SHA" --title "$version" --notes-file "$RUNNER_TEMP/notes.md"
 
   version-check:
-    name: Version already tagged?
+    name: Release version and notes
     # Only the release pull request; Dependabot's security updates into main keep the version.
     if: github.event_name == 'pull_request' && github.head_ref == 'beta'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Warn when the release adds no notes
+      - name: Fail unless the release has a new version and its notes
         run: |
           set -euo pipefail
           version=$(node -p "require('./frontend/package.json').version")
-          # 0: the tag exists; 2: it does not; anything else: the check failed, which never fails the pull request.
+          notes="frontend/src/features/releases/notes/$version.md"
+          how='push a release commit to beta that raises the version and adds its notes; this pull request picks it up (README, "Branches, releases and the database")'
+          # 0: the tag exists; 2: it does not; anything else: the check could not run.
           rc=0
           git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null || rc=$?
           if [ "$rc" -eq 0 ]; then
-            echo "::warning file=frontend/package.json::v$version is already tagged, so this release adds no notes. That is right for internal work only; otherwise add the notes and raise the version (README, \"Branches, releases and the database\")."
+            echo "::error file=frontend/package.json::v$version is already tagged: $how."
+            exit 1
           elif [ "$rc" -ne 2 ]; then
-            echo "::warning::Couldn't check the tag v$version: git ls-remote exited $rc"
+            echo "::error::Couldn't check the tag v$version: git ls-remote exited $rc. Re-run the job."
+            exit 1
           fi
+          if [ ! -f "$notes" ]; then
+            echo "::error file=$notes::No release notes for $version: $how."
+            exit 1
+          fi
+          echo "This release will be tagged v$version."

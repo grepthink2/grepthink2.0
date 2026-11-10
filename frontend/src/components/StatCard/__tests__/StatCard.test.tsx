@@ -280,7 +280,7 @@ describe('StatCard', () => {
     expect(hit.getPropertyValue('padding')).toBe('0px');
     expect(hit.getPropertyValue('border-style')).toBe('none');
     expect(hit.getPropertyValue('border-radius')).toBe('inherit');
-    expect(hit.getPropertyValue('background')).toBe('transparent');
+    expect(hit.getPropertyValue('background-color')).toBe('transparent');
     expect(cssRules('.gt-stat-card__hit:focus-visible')[0].getPropertyValue('box-shadow')).toBe('var(--gt-focus-ring)');
     // The ⓘ sits above the stretched button.
     const [info] = cssRules('.gt-stat-card .gt-infopop');
