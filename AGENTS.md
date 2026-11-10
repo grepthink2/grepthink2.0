@@ -102,13 +102,14 @@ review shape below, not the skill's own.
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search mcp
+  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search schedule mcp
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
   core/events.py     # record(kind, ...) → events table; DB failures never raise; ids and enums only in meta
   analytics/         # per-institution dashboard: SQL functions (RPC) + nightly analytics_daily rollup
+  schedule/          # GET /api/schedule: a caller's items in one class (TA meetings expanded per week), by lens
   mcp/               # scrum board MCP connector at /mcp (mcp SDK): tools, its own OAuth server, fill controller
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
@@ -125,6 +126,8 @@ frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
   features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
                       # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
+  features/schedule/  # schedule model + rows; Home's Today's Schedule (TodaySchedule, compact ScheduleList) and the
+                      # /app/schedule week (SchedulePage, ScheduleAgenda: a lazy route Home never imports)
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
@@ -257,7 +260,7 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
 `/api/projects/{id}/scrum` (scrum board), `/api/projects/{project_id}/meetings` (a team's one-off
-meetings), `/api/search` (`index`), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
+meetings), `/api/search` (`index`), `/api/schedule` (a caller's items in one class for a range), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
 board MCP connector, `app/mcp`), its OAuth metadata (`/.well-known/oauth-protected-resource/mcp`,
 `/.well-known/oauth-authorization-server`) and its OAuth endpoints (`/register`, `/authorize`, `/token`, `/revoke`).
 The full agent-facing action catalog (method, params, role) lives at

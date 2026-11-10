@@ -45,6 +45,7 @@ function notificationPath(notification: {
 
 const pageTitles: Record<string, string> = {
   '/app/home': 'Home',
+  '/app/schedule': 'Schedule',
   '/app/messages': 'Messages',
   '/app/my-classes': 'My Classes',
   '/app/analytics': 'Analytics',
@@ -90,6 +91,25 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
   );
 
   const notificationRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Publish the header's height on the app view as --gt-app-header-h, so content that sticks or
+  // scrolls under this sticky header (the schedule's day headings) clears it. A class page's header
+  // grows with its breadcrumbs; without a ResizeObserver the stylesheet's 64px stands.
+  useEffect(() => {
+    const header = headerRef.current;
+    const view = header?.closest<HTMLElement>('.app-view');
+    if (!header || !view || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const height = entry.borderBoxSize?.[0]?.blockSize ?? header.getBoundingClientRect().height;
+      view.style.setProperty('--gt-app-header-h', `${Math.round(height)}px`);
+    });
+    observer.observe(header);
+    return () => {
+      observer.disconnect();
+      view.style.removeProperty('--gt-app-header-h');
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -171,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
   }, []);
 
   return (
-    <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
+    <header ref={headerRef} className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
       {/* Mobile-only: open the off-canvas nav drawer */}
       <button
         className="app-header__menu-button"

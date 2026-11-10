@@ -81,8 +81,7 @@ describe('ScheduleList (compact)', () => {
     const items = Array.from({ length: 7 }, (_, i) => at(`M${i}`, `2026-11-11T0${i}:00:00Z`));
     renderList({ items });
     expect(screen.getAllByRole('listitem').filter((li) => li.classList.contains('gt-sched-item'))).toHaveLength(5);
-    expect(screen.getByText('+2 more today')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /more today/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '+2 more today' })).toHaveAttribute('href', '/app/schedule?day=2026-11-10');
   });
 
   it('draws today’s sprint edge as a rule above the list, not as a row', () => {
@@ -107,7 +106,7 @@ describe('ScheduleList (compact)', () => {
     expect(screen.getByRole('heading', { name: 'Next' })).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Next: Thursday, Nov 12' });
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
-    expect(screen.getByText('+1 more that day')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '+1 more that day' })).toHaveAttribute('href', '/app/schedule?day=2026-11-12');
   });
 
   it('says the card’s promise, verbatim, when nothing is scheduled in the range', () => {
@@ -133,9 +132,20 @@ describe('ScheduleList (compact)', () => {
     expect(time).toHaveAttribute('title', '7:00 – 7:30 PM GMT-8');
   });
 
-  it('has no footer when the viewer is on campus time', () => {
-    const { container } = renderList({ items: [ta()] });
-    expect(container.querySelector('.gt-sched__footer')).toBeNull();
+  it('links to the week from the footer, with no zone note on campus time', () => {
+    renderList({ items: [ta()] });
+    expect(screen.getByRole('link', { name: 'See week' })).toHaveAttribute('href', '/app/schedule');
+    expect(screen.queryByText(/Times in/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'See week' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/app/schedule');
+  });
+
+  it('links to the week when nothing is scheduled, and not while loading or after an error', () => {
+    const { unmount } = renderList({ items: [] });
+    expect(screen.getByRole('link', { name: 'See week' })).toBeInTheDocument();
+    unmount();
+    renderList({ status: 'error' });
+    expect(screen.queryByRole('link', { name: 'See week' })).not.toBeInTheDocument();
   });
 
   it('offers staff a Mark attendance link to TA Meetings on a live TA meeting, and students none', () => {

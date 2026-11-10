@@ -42,6 +42,14 @@ describe('class route rules', () => {
     }
   });
 
+  it('opens the schedule to every role, and to none: it follows the selected class itself', () => {
+    for (const role of ['instructor', 'ta', 'student', null] as const) {
+      expect(isPathAllowedForClassRole('/app/schedule', role)).toBe(true);
+    }
+    expect(isClassScopedPath('/app/schedule')).toBe(false);
+    expect(pathAfterClassSwitch('/app/schedule?day=2026-11-12', 'ta')).toBeNull();
+  });
+
   it('shares every other page', () => {
     expect(isPathAllowedForClassRole('/app/home', undefined)).toBe(true);
     expect(isPathAllowedForClassRole('/app/ta-meetings', 'student')).toBe(true);
