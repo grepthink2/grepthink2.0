@@ -1,0 +1,47 @@
+/* GrepThink · schedule layer, the agenda week. Port of the agenda rules of design/components/schedule/schedule.css:
+   the white surface of days, sticky day headers, the row's hairlines, people and note, the toolbar and the phone
+   rules. Loaded with the /app/schedule page only; the rows' shared rules are in ../schedule.scss.
+   Not ported: the class select, the expand toggle and its MeetingCard panel. The week switcher and the kind chips
+   are the kit's IconButton, Button and FilterChip, sized from the switcher's own class. */
+
+/* ── The week's days ──────────────────────────────────────── */
+.gt-sched--agenda .gt-sched__days { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); overflow: clip; }
+.gt-sched--agenda .gt-sched__day + .gt-sched__day { border-top: 1px solid var(--gt-border); }
+.gt-sched--agenda .gt-sched__day { padding-bottom: 6px; }
+.gt-sched--agenda .gt-sched-day { position: sticky; top: 0; z-index: 2; padding: 10px 16px; background: var(--gt-surface); border-bottom: 1px solid var(--gt-border-subtle); }
+.gt-sched-day__empty { margin: 0; padding: 8px 16px 12px; font-size: 12.5px; color: var(--gt-text-tertiary); }
+
+/* ── Agenda rows ──────────────────────────────────────────── */
+.gt-sched--agenda .gt-sched-item + .gt-sched-item { border-top: 1px solid var(--gt-border-subtle); }
+.gt-sched-item__people { display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; font-size: 12px; color: var(--gt-text-secondary); }
+.gt-sched-item__person { display: inline-flex; align-items: center; gap: 6px; }
+.gt-sched-item__person-role { color: var(--gt-text-tertiary); }
+.gt-sched-item__note { margin: 1px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--gt-text-secondary); }
+.gt-sched-item--past .gt-sched-item__people, .gt-sched-item--past .gt-sched-item__note { opacity: 0.55; }
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.gt-sched__toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.gt-sched__week { display: inline-flex; align-items: center; gap: 2px; padding: 2px; background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-sizing: border-box; }
+.gt-sched__week .gt-icon-button { width: 32px; height: 32px; }
+.gt-sched__week .gt-button { min-width: 112px; height: 32px; }
+.gt-sched__range { font-size: 12.5px; color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
+.gt-sched__filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+/* ── Phone (< 768px) ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-sched--agenda .gt-sched-item { grid-template-columns: 64px 24px minmax(0, 1fr); row-gap: 8px; padding: 10px 12px; }
+  .gt-sched--agenda .gt-sched-item__range { display: none; }
+  .gt-sched--agenda .gt-sched-item__start { display: block; font-size: 12.5px; }
+  .gt-sched--agenda .gt-sched-item__tile { width: 24px; height: 24px; }
+  .gt-sched--agenda .gt-sched-item__actions { grid-column: 2 / -1; justify-self: stretch; }
+  .gt-sched--agenda .gt-sched-item__action { flex: 1; min-height: 44px; }
+  .gt-sched--agenda .gt-sched__now { grid-template-columns: 64px 1fr; padding: 2px 12px; }
+  .gt-sched--agenda .gt-sched-day, .gt-sched--agenda .gt-sched-divider, .gt-sched--agenda .gt-sched__skeleton, .gt-sched--agenda .gt-sched-day__empty { padding-left: 12px; padding-right: 12px; }
+  .gt-sched--agenda .gt-sched__skeleton { grid-template-columns: 64px 24px minmax(0, 1fr); }
+  .gt-sched__toolbar { gap: 10px; }
+  .gt-sched__week { width: 100%; justify-content: space-between; }
+  .gt-sched__week .gt-icon-button { width: 44px; height: 44px; }
+  .gt-sched__week .gt-button { height: 44px; }
+  .gt-sched__filters { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .gt-sched__filters::-webkit-scrollbar { display: none; }
+}
