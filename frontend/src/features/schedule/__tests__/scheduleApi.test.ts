@@ -112,6 +112,7 @@ describe('toScheduleItem', () => {
         starts_at: '2026-11-09T08:00:00+00:00',
         ends_at: null,
         all_day: true,
+        date: '2026-11-09',
         sprint: { name: 'Sprint 4', edge: 'start' },
       }),
     ).toEqual({
@@ -121,6 +122,7 @@ describe('toScheduleItem', () => {
       startsAt: '2026-11-09T08:00:00+00:00',
       endsAt: null,
       allDay: true,
+      date: '2026-11-09',
       sprint: { name: 'Sprint 4', edge: 'start' },
     });
   });

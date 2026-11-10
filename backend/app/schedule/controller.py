@@ -12,8 +12,9 @@ is computed that those modules would disagree with:
   ``app/tas/review_slots``), an hour long, with the Home TA and the Review TA.
 * **Deadline**: a published assignment, one minute before its ``due_at`` (the last minute of the
   closing day, which the app shows as 11:59 PM).
-* **Sprint edge**: an all-day rule on the day a sprint starts or ends, the team's own sprints for a
-  student and the class's schedule (``app.scrum.schedule``) for staff.
+* **Sprint edge**: an all-day rule on the day a sprint starts or ends, sent as that day in the
+  school's calendar (``date``): the team's own sprints for a student and the class's schedule
+  (``app.scrum.schedule``) for staff.
 
 What each lens gets:
 
@@ -221,6 +222,9 @@ def _sprint_item(item_id: str, name: str, edge: str, day: date, zone: ZoneInfo, 
         "starts_at": _iso(midnight(day, zone)),
         "ends_at": None,
         "all_day": True,
+        # The school's calendar day: clients key and label an all-day item by it, never by
+        # converting `starts_at` (school midnight) into their own zone.
+        "date": day.isoformat(),
         "sprint": {"name": name, "edge": edge},
         **extra,
     }

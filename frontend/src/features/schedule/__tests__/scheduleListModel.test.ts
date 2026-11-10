@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findOverlaps, nowIndex, todayOrPeek, type ScheduleItemData } from '../scheduleModel';
+import { findOverlaps, groupByDay, nowIndex, statusOf, todayOrPeek, type ScheduleItemData } from '../scheduleModel';
 
 /** UTC-8 all year. */
 const ZONE = 'Etc/GMT+8';
@@ -84,5 +84,20 @@ describe('todayOrPeek', () => {
     expect(todayOrPeek([morning], NOW, ZONE).mode).toBe('today');
     // NOW is 4:12 AM on the 11th at UTC+5, and the meeting was at 10 PM on the 10th.
     expect(todayOrPeek([morning], NOW, 'Etc/GMT-5').mode).toBe('none');
+  });
+});
+
+describe('an all-day item’s day', () => {
+  // Midnight Nov 10 at a school on UTC-5: 9 PM on Nov 9 for a viewer on UTC-8.
+  const edge = at('2026-11-10T05:00:00.000Z', { id: 'e', kind: 'sprint', allDay: true, endsAt: null, date: '2026-11-10' });
+
+  it('is its calendar date, not its instant read in the viewer’s zone', () => {
+    expect(groupByDay([edge], { zone: ZONE, now: NOW }).map((g) => g.key)).toEqual(['2026-11-10']);
+  });
+
+  it('is past only once the viewer’s day is after it', () => {
+    const allDay = { ...edge, kind: 'meeting' as const };
+    expect(statusOf(allDay, new Date('2026-11-11T06:00:00Z'), ZONE)).toBe('upcoming'); // Nov 10, 10 PM
+    expect(statusOf(allDay, new Date('2026-11-11T09:00:00Z'), ZONE)).toBe('past'); // Nov 11, 1 AM
   });
 });

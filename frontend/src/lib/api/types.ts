@@ -1316,7 +1316,7 @@ export interface ApiSchedulePerson {
 
 /**
  * One item of GET /api/schedule. Instants are ISO strings with an offset; an all-day item (a sprint
- * edge) starts at midnight in the school's zone. Which keys a kind carries is in the comments.
+ * edge) carries its school calendar day in `date`, and starts at midnight in the school's zone. Which keys a kind carries is in the comments.
  */
 export interface ApiScheduleItem {
   id: string;
@@ -1325,6 +1325,8 @@ export interface ApiScheduleItem {
   starts_at: string;
   ends_at: string | null;
   all_day: boolean;
+  /** An all-day item's day in the school's calendar ('YYYY-MM-DD'): list it under this date, never under `starts_at` read in another zone. */
+  date?: string;
   project_id?: string;
   team_name?: string | null;
   location?: string | null;

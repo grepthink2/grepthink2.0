@@ -39,6 +39,11 @@ export interface ScheduleItemData {
   title: string;
   /** ISO 8601 instant (UTC). For all-day items and sprint edges: midnight in the school zone. */
   startsAt: string;
+  /**
+   * All-day items: their day in the school's calendar ('YYYY-MM-DD'). The list keys and labels them
+   * by it in every viewer's zone, since their instant read elsewhere can fall on the day before or after.
+   */
+  date?: string;
   /** ISO 8601 instant; null for deadlines (a point in time) and all-day items. */
   endsAt?: string | null;
   allDay?: boolean;
@@ -150,6 +155,11 @@ export function shiftKey(key: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** The day an item lists under: an all-day item's own calendar `date`, else its start in `zone`. */
+export function itemDay(item: Pick<ScheduleItemData, 'startsAt' | 'allDay' | 'date'>, zone: string = viewerZone()): string {
+  return item.allDay && item.date ? item.date : dayKey(item.startsAt, zone);
+}
+
 /* ── Status ──────────────────────────────────────────────────── */
 /** upcoming | live | past | cancelled | tbd. `cancelled`/`tbd` come from the data; the rest is derived from the clock. */
 export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): ScheduleStatus {
@@ -157,7 +167,7 @@ export function statusOf(item: ScheduleItemData, now: Date = new Date(), zone: s
   if (item.kind === 'sprint') return 'upcoming';
   const at = toDate(now);
   const start = toDate(item.startsAt);
-  if (item.allDay) return dayKey(start, zone) < dayKey(at, zone) ? 'past' : 'upcoming';
+  if (item.allDay) return itemDay(item, zone) < dayKey(at, zone) ? 'past' : 'upcoming';
   const end = item.endsAt ? toDate(item.endsAt).getTime() : start.getTime();
   if (end <= at.getTime()) return 'past';
   if (start.getTime() <= at.getTime()) return 'live';
@@ -176,7 +186,7 @@ export function isJoinable(item: ScheduleItemData, now: Date = new Date()): bool
 /** "today" | "tomorrow" | "in 3 days" when the item starts within COUNTDOWN_DAYS; otherwise null. */
 export function countdown(item: ScheduleItemData, now: Date = new Date(), zone: string = viewerZone()): string | null {
   const today = dayKey(now, zone);
-  const day = dayKey(item.startsAt, zone);
+  const day = itemDay(item, zone);
   if (day < today) return null;
   const days = Math.round((keyToDate(day).getTime() - keyToDate(today).getTime()) / DAY_MS);
   if (days >= COUNTDOWN_DAYS) return null;
@@ -190,8 +200,8 @@ const rank = (it: ScheduleItemData): number => (it.kind === 'sprint' ? 0 : it.st
 /** Day, then: sprint edges → all-day → timed by start → Time TBD last. */
 export function sortItems(items: ScheduleItemData[], zone: string = viewerZone()): ScheduleItemData[] {
   return [...items].sort((a, b) => {
-    const ka = dayKey(a.startsAt, zone);
-    const kb = dayKey(b.startsAt, zone);
+    const ka = itemDay(a, zone);
+    const kb = itemDay(b, zone);
     if (ka !== kb) return ka < kb ? -1 : 1;
     const byRank = rank(a) - rank(b);
     if (byRank) return byRank;
@@ -206,7 +216,7 @@ export function groupByDay(items: ScheduleItemData[], { zone = viewerZone(), now
   const today = dayKey(now, zone);
   const groups = new Map<string, ScheduleDayGroup>();
   for (const it of sortItems(items, zone)) {
-    const key = dayKey(it.startsAt, zone);
+    const key = itemDay(it, zone);
     let group = groups.get(key);
     if (!group) {
       group = { key, isToday: key === today, dividers: [], items: [] };

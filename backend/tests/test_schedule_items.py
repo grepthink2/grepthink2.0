@@ -287,6 +287,7 @@ CLASS_SPRINT_4 = {
     "starts_at": "2026-11-09T08:00:00+00:00",
     "ends_at": None,
     "all_day": True,
+    "date": "2026-11-09",
     "sprint": {"name": "Sprint 4", "edge": "start"},
 }
 ALPHA_SPRINT_4 = {**CLASS_SPRINT_4, "id": "sprint:sp-4:start", "project_id": P1}
@@ -462,3 +463,18 @@ def test_a_class_with_no_end_date_meets_for_the_terms_ten_weeks(db):
 def test_a_meeting_is_sent_only_when_it_overlaps_the_range(db, lo, hi, kept):
     kinds = [it["kind"] for it in schedule.get_schedule(S1, CLASS, lo, hi)["items"]]
     assert ("ta_meeting" in kinds) is kept
+
+
+def test_a_sprint_edge_carries_the_schools_calendar_day(db, monkeypatch):
+    # At UTC+5 the school's Monday starts on Sunday in UTC: the day sent is still Monday.
+    from app.institutions import controller as institutions
+
+    school = {"id": SCHOOL, "name": "Test U", "timezone": "Etc/GMT-5", "email_domains": []}
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [school]))
+    lo = datetime(2026, 11, 8, 19, tzinfo=UTC)  # Mon Nov 9, midnight at the school
+    edges = [
+        (it["date"], it["starts_at"])
+        for it in schedule.get_schedule(TA, CLASS, lo, lo + timedelta(days=1))["items"]
+        if it["kind"] == "sprint"
+    ]
+    assert edges == [("2026-11-09", "2026-11-08T19:00:00+00:00")]

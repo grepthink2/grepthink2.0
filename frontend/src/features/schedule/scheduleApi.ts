@@ -42,6 +42,7 @@ export function toScheduleItem(lens: ApiScheduleLens, it: ApiScheduleItem): Sche
     endsAt: it.ends_at,
     allDay: it.all_day,
   };
+  if (it.all_day && it.date) out.date = it.date;
   if (it.project_id) out.projectId = it.project_id;
   if (it.team_name) out.teamName = it.team_name;
   if (it.location) out.location = it.location;

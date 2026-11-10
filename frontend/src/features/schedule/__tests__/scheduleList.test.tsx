@@ -157,4 +157,42 @@ describe('ScheduleList (compact)', () => {
     fireEvent.click(screen.getByRole('link', { name: 'TSR 4 due' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/app/assignments/a1');
   });
+
+  describe('an all-day item lists on the school’s calendar day, wherever the viewer is', () => {
+    // The school is at UTC-5 and the viewer at UTC-8. Sprint 4 starts on Tue Nov 10 at the school,
+    // whose midnight is 9 PM on Monday for the viewer.
+    const SCHOOL = 'Etc/GMT+5';
+    const VIEWER = 'Etc/GMT+8';
+    const sprint: ScheduleItemData = {
+      id: 's4',
+      kind: 'sprint',
+      title: 'Sprint 4',
+      startsAt: '2026-11-10T05:00:00Z',
+      endsAt: null,
+      allDay: true,
+      date: '2026-11-10',
+      sprint: { name: 'Sprint 4', edge: 'start' },
+    };
+
+    it('is not today on the viewer’s Monday evening, after school midnight', () => {
+      renderList({
+        items: [sprint, at('Late call', '2026-11-10T06:30:00Z')],
+        now: new Date('2026-11-10T06:00:00Z'), // Mon 10 PM for the viewer
+        zone: VIEWER,
+        schoolZone: SCHOOL,
+      });
+      expect(screen.getByText('Late call')).toBeInTheDocument();
+      expect(screen.queryByText(/Sprint 4 starts/)).not.toBeInTheDocument();
+    });
+
+    it('is today on the viewer’s Tuesday', () => {
+      renderList({
+        items: [sprint, at('Standup', '2026-11-10T18:00:00Z')],
+        now: new Date('2026-11-10T16:00:00Z'), // Tue 8 AM for the viewer
+        zone: VIEWER,
+        schoolZone: SCHOOL,
+      });
+      expect(screen.getByText('Sprint 4 starts today')).toBeInTheDocument();
+    });
+  });
 });
