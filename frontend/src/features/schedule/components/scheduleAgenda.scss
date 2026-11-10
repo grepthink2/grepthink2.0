@@ -7,8 +7,10 @@
 /* ── The week's days ──────────────────────────────────────── */
 .gt-sched--agenda .gt-sched__days { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); overflow: clip; }
 .gt-sched--agenda .gt-sched__day + .gt-sched__day { border-top: 1px solid var(--gt-border); }
-.gt-sched--agenda .gt-sched__day { padding-bottom: 6px; }
-.gt-sched--agenda .gt-sched-day { position: sticky; top: 0; z-index: 2; padding: 10px 16px; background: var(--gt-surface); border-bottom: 1px solid var(--gt-border-subtle); }
+/* The window scrolls, under the app's sticky header (AppView.scss): day headings stick below it, and a
+   day scrolled to (`?day=`) stops below it. */
+.gt-sched--agenda .gt-sched__day { padding-bottom: 6px; scroll-margin-top: calc(var(--gt-app-header-top, 0px) + var(--gt-app-header-h, 0px)); }
+.gt-sched--agenda .gt-sched-day { position: sticky; top: calc(var(--gt-app-header-top, 0px) + var(--gt-app-header-h, 0px)); z-index: 2; padding: 10px 16px; background: var(--gt-surface); border-bottom: 1px solid var(--gt-border-subtle); }
 .gt-sched-day__empty { margin: 0; padding: 8px 16px 12px; font-size: 12.5px; color: var(--gt-text-tertiary); }
 
 /* ── Agenda rows ──────────────────────────────────────────── */
@@ -43,5 +45,6 @@
   .gt-sched__week .gt-icon-button { width: 44px; height: 44px; }
   .gt-sched__week .gt-button { height: 44px; }
   .gt-sched__filters { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .gt-sched__filters .gt-filter-chip { min-height: 44px; }
   .gt-sched__filters::-webkit-scrollbar { display: none; }
 }

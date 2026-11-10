@@ -20,7 +20,7 @@ import {
   type ScheduleKind,
   type ScheduleLens,
 } from '../scheduleModel';
-import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, weekKeys } from '../scheduleWeek';
+import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, itemsInWeek, weekKeys } from '../scheduleWeek';
 import { ScheduleAgendaItem } from './ScheduleAgendaItem';
 import { ScheduleDayHeader } from './ScheduleDayHeader';
 import { ScheduleDivider } from './ScheduleDivider';
@@ -78,10 +78,7 @@ export function ScheduleAgenda({
   const onThisWeek = week.title === 'This week';
   const differs = zoneDiffers(zone, schoolZone, now);
 
-  const inWeek = useMemo(
-    () => items.filter((it) => { const k = itemDay(it, zone); return k >= keys[0] && k <= keys[6]; }),
-    [items, zone, keys],
-  );
+  const inWeek = useMemo(() => itemsInWeek(items, keys, zone), [items, zone, keys]);
   const filtered = useMemo(() => (kinds.length ? inWeek.filter((it) => kinds.includes(it.kind)) : inWeek), [inWeek, kinds]);
   const groups = groupByDay(filtered, { zone, now });
   const byKey = new Map(groups.map((g) => [g.key, g]));
@@ -195,7 +192,8 @@ export function ScheduleAgenda({
               {g.items.length ? (
                 <ol className="gt-sched__items" aria-labelledby={id}>{rows(g.items, g.isToday)}</ol>
               ) : (
-                <p className="gt-sched-day__empty">Nothing scheduled</p>
+                // An empty today (or the day asked for) says so; a day with a sprint rule has that.
+                g.dividers.length === 0 && <p className="gt-sched-day__empty">Nothing scheduled</p>
               )}
             </li>
           );

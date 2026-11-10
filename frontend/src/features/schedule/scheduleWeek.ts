@@ -4,7 +4,7 @@
  * "Next up" pick and the `?day=` parameter. Port of the agenda half of
  * design/components/schedule/ScheduleModel.jsx.
  */
-import { dayKey, keyToDate, shiftKey, sortItems, type ScheduleItemData, type ScheduleKind } from './scheduleModel';
+import { dayKey, itemDay, keyToDate, shiftKey, sortItems, type ScheduleItemData, type ScheduleKind } from './scheduleModel';
 
 const md = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
@@ -40,9 +40,15 @@ export function nextUp(items: ScheduleItemData[], now: Date, zone: string): Sche
   ) ?? null;
 }
 
-/** `?day=` as a calendar day key, or null when it is missing or not a real 'YYYY-MM-DD' day. */
+/** The years `?day=` may name: the week around any of their days stays inside the calendar's arithmetic. */
+const FIRST_YEAR = 1970;
+const LAST_YEAR = 9998;
+
+/** `?day=` as a calendar day key, or null when it is missing, not a real 'YYYY-MM-DD' day, or outside 1970–9998. */
 export function parseDayParam(value: string | null): string | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const year = Number(value.slice(0, 4));
+  if (year < FIRST_YEAR || year > LAST_YEAR) return null;
   const d = keyToDate(value);
   return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value ? null : value;
 }
@@ -52,3 +58,23 @@ export const AGENDA_KINDS: readonly ScheduleKind[] = ['ta_meeting', 'meeting', '
 
 /** The id of an agenda day's heading, for `aria-labelledby` and for scrolling to `?day=`. */
 export const agendaDayId = (key: string): string => `gt-sched-day-${key}`;
+
+/** The longest range GET /api/schedule answers: 42 days of hours (app/schedule/models.py). */
+export const MAX_RANGE_MS = 42 * 86_400_000;
+
+/**
+ * A request window cut to what the endpoint answers. Forty-two calendar days between two local
+ * midnights are an hour longer than 42 days of hours across a fall-back change, which the endpoint
+ * refuses; the end comes in to fit.
+ */
+export function fitRange(from: Date, to: Date): { from: Date; to: Date } {
+  return to.getTime() - from.getTime() > MAX_RANGE_MS ? { from, to: new Date(from.getTime() + MAX_RANGE_MS) } : { from, to };
+}
+
+/** The items the agenda shows for a week: those whose day, in the viewer's zone, is one of `keys`. */
+export function itemsInWeek(items: ScheduleItemData[], keys: string[], zone: string): ScheduleItemData[] {
+  return items.filter((it) => {
+    const day = itemDay(it, zone);
+    return day >= keys[0] && day <= keys[6];
+  });
+}

@@ -11,10 +11,10 @@ import { ScheduleAgenda } from '../components/ScheduleAgenda';
 import { ScheduleEmpty } from '../components/ScheduleStates';
 import { useSchedule } from '../hooks/useSchedule';
 import { dayKey, shiftKey, viewerZone, type ScheduleKind } from '../scheduleModel';
-import { agendaDayId, nextUp, parseDayParam, weekKeys } from '../scheduleWeek';
+import { agendaDayId, fitRange, itemsInWeek, nextUp, parseDayParam, weekKeys } from '../scheduleWeek';
 import './SchedulePage.scss';
 
-/** How far an empty week looks ahead for "Next up": one request, at most the endpoint's six weeks. */
+/** How far an empty week looks ahead for "Next up": one request, cut by fitRange to the endpoint's six weeks. */
 const LOOK_AHEAD_DAYS = 42;
 
 /** Set on a week switch, so only a `?day=` someone opened scrolls the page. */
@@ -53,20 +53,26 @@ export default function SchedulePage() {
     : week.status === 'ready' && !week.reloading ? 'ready' : 'loading';
 
   // An empty week looks once at the six weeks after it (or after today, for a week gone by) for "Next up".
-  const weekEmpty = weekStatus === 'ready' && week.answer !== null && week.answer.items.length === 0;
+  // "Empty" as the agenda counts it: nothing whose day is in the week (an answer may hold an item
+  // that started the night before and runs into the week).
+  const weekEmpty = weekStatus === 'ready' && week.answer !== null
+    && itemsInWeek(week.answer.items, weekKeys(monday), zone).length === 0;
   const lookKey = shiftKey(monday, 7) > today ? shiftKey(monday, 7) : today;
   const lookRange = useMemo(
-    () => ({ from: startOfDayIn(zone, lookKey), to: startOfDayIn(zone, shiftKey(lookKey, LOOK_AHEAD_DAYS)) }),
+    () => fitRange(startOfDayIn(zone, lookKey), startOfDayIn(zone, shiftKey(lookKey, LOOK_AHEAD_DAYS))),
     [zone, lookKey],
   );
   const ahead = useSchedule(classId, lookRange.from, lookRange.to, { enabled: !isPreviewing && weekEmpty });
-  const next = weekEmpty && ahead.answer ? nextUp(ahead.answer.items, now, zone) : null;
+  // Only this window's own answer: while it reloads, the hook still holds another week's.
+  const aheadSettled = ahead.status === 'ready' && !ahead.reloading && !ahead.error;
+  const next = weekEmpty && aheadSettled && ahead.answer ? nextUp(ahead.answer.items, now, zone) : null;
 
   const switched = Boolean((location.state as ScheduleLocationState | null)?.weekSwitch);
   const ready = weekStatus === 'ready';
   useEffect(() => {
     if (!focusDay || switched || !ready) return;
-    document.getElementById(agendaDayId(focusDay))?.scrollIntoView?.({ block: 'start' });
+    // The day's section, whose scroll margin clears the app's sticky header.
+    document.getElementById(agendaDayId(focusDay))?.closest('.gt-sched__day')?.scrollIntoView?.({ block: 'start' });
   }, [focusDay, switched, ready]);
 
   if (!classId) return <div className="gt-sched-page"><NoClassSelected onSelectClass={openClassSelector} /></div>;

@@ -13,6 +13,8 @@ const preview = vi.hoisted(() => ({ isPreviewing: false }));
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => preview }));
 
 import { clearInstitutionsCache } from '@/lib/institutions';
+import { cssRules } from '@/test/cssRules';
+import '@features/app/AppView.scss';
 import SchedulePage from '../pages/SchedulePage';
 
 /** Tue Nov 10, 2026, 3:12 PM at UTC-8. */
@@ -137,7 +139,8 @@ describe('SchedulePage', () => {
     const thursday = document.getElementById('gt-sched-day-2026-11-19');
     expect(thursday).toHaveTextContent('Thursday');
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
-    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(thursday);
+    // The day's section, whose scroll margin keeps its heading clear of the app's sticky header.
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(thursday?.closest('.gt-sched__day'));
   });
 
   it('falls back to this week for a ?day= that is not a day', async () => {
@@ -220,5 +223,64 @@ describe('SchedulePage', () => {
     renderPage();
     expect(screen.getByText("The schedule isn't part of the student preview.")).toBeInTheDocument();
     expect(api.getSchedule).not.toHaveBeenCalled();
+  });
+
+  it('reads "empty" as the agenda does: an answer of spill-over items only still looks ahead for Next up', async () => {
+    api.getSchedule
+      // Starts on Sunday Nov 8 at 11:30 PM and runs into the week: in the answer, not in the week.
+      .mockResolvedValueOnce(answer([item({ id: 'Late', starts_at: '2026-11-09T07:30:00Z', ends_at: '2026-11-09T08:30:00Z' })]))
+      .mockResolvedValueOnce(answer([item({ id: 'Retro', starts_at: '2026-11-17T18:00:00Z' })]));
+    renderPage();
+    expect(await screen.findByText('Nothing scheduled this week')).toBeInTheDocument();
+    expect(await screen.findByText(/Next up: Retro/)).toBeInTheDocument();
+  });
+
+  it('shows no Next up from another week while this week’s look-ahead loads', async () => {
+    const pending = new Promise<ApiSchedule>(() => {});
+    api.getSchedule
+      .mockResolvedValueOnce(answer([]))
+      .mockResolvedValueOnce(answer([item({ id: 'Retro', starts_at: '2026-11-24T18:00:00Z' })]))
+      .mockResolvedValueOnce(answer([]))
+      .mockReturnValueOnce(pending);
+    renderPage();
+    expect(await screen.findByText(/Next up: Retro/)).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('group', { name: 'Week' })).getAllByRole('button')[2]);
+    expect(await screen.findByText('Nothing scheduled next week')).toBeInTheDocument();
+    await waitFor(() => expect(api.getSchedule).toHaveBeenCalledTimes(4));
+    expect(screen.queryByText(/Next up/)).not.toBeInTheDocument();
+  });
+
+  it('says "Nothing scheduled" under an empty today, never under a day that holds a sprint rule', async () => {
+    api.getSchedule.mockResolvedValue(
+      answer([
+        item({ id: 'edge', kind: 'sprint', title: 'Sprint 4', starts_at: '2026-11-12T08:00:00Z', ends_at: null, all_day: true, date: '2026-11-12', sprint: { name: 'Sprint 4', edge: 'start' } }),
+      ]),
+    );
+    renderPage();
+    const thursday = (await screen.findByText('Sprint 4 starts')).closest('.gt-sched__day') as HTMLElement;
+    expect(within(thursday).queryByText('Nothing scheduled')).not.toBeInTheDocument();
+    const today = document.getElementById('gt-sched-day-2026-11-10')?.closest('.gt-sched__day') as HTMLElement;
+    expect(within(today).getByText('Nothing scheduled')).toBeInTheDocument();
+  });
+});
+
+describe('agenda styles', () => {
+  const OFFSET = 'calc(var(--gt-app-header-top, 0px) + var(--gt-app-header-h, 0px))';
+
+  it('sticks day headers under the app header and scrolls a day clear of it', () => {
+    expect(cssRules('.gt-sched--agenda .gt-sched-day').map((r) => r.getPropertyValue('top')).filter(Boolean)).toEqual([OFFSET]);
+    expect(cssRules('.gt-sched--agenda .gt-sched__day').map((r) => r.getPropertyValue('scroll-margin-top')).filter(Boolean)).toEqual([OFFSET]);
+  });
+
+  it('knows the header’s height and where it sits, in and out of the preview', () => {
+    const [view] = cssRules('.app-view');
+    expect(view.getPropertyValue('--gt-app-header-h').trim()).toBe('64px');
+    expect(view.getPropertyValue('--gt-app-header-top').trim()).toBe('0px');
+    expect(cssRules('.app-view--previewing')[0].getPropertyValue('--gt-app-header-top').trim()).toBe('44px');
+  });
+
+  it('gives the kind chips 44px on phones', () => {
+    const phone = cssRules('.gt-sched__filters .gt-filter-chip', 'max-width: 767px');
+    expect(phone.map((r) => r.getPropertyValue('min-height'))).toContain('44px');
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ScheduleItemData } from '../scheduleModel';
-import { fmtWeekLabel, nextUp, parseDayParam, weekKeys } from '../scheduleWeek';
+import { fitRange, fmtWeekLabel, itemsInWeek, nextUp, parseDayParam, weekKeys } from '../scheduleWeek';
 
 const ZONE = 'Etc/GMT+8';
 /** Tue Nov 10, 2026, 3:12 PM at UTC-8. */
@@ -53,5 +53,40 @@ describe('parseDayParam', () => {
     for (const bad of [null, '', '2026-13-01', '2026-02-30', '12/11/2026', '2026-1-5', 'today']) {
       expect(parseDayParam(bad)).toBeNull();
     }
+  });
+});
+
+describe('parseDayParam: years the calendar math can hold', () => {
+  it('refuses a day before 1970 or after 9998', () => {
+    for (const bad of ['0001-01-01', '1969-12-31', '9999-12-31', '9999-01-01']) expect(parseDayParam(bad)).toBeNull();
+    expect(parseDayParam('1970-01-01')).toBe('1970-01-01');
+    expect(parseDayParam('9998-12-31')).toBe('9998-12-31');
+  });
+});
+
+describe('fitRange', () => {
+  const H = 3_600_000;
+  it('keeps a window of 42 days of hours or less as it is', () => {
+    // Spring forward: 42 calendar days from a UTC-8 midnight to a UTC-7 midnight are 1007 hours.
+    const from = new Date('2026-03-01T08:00:00Z');
+    const to = new Date('2026-04-12T07:00:00Z');
+    expect(fitRange(from, to)).toEqual({ from, to });
+  });
+
+  it('cuts a window that a fall-back change makes longer than 42 days of hours', () => {
+    // Fall back: 42 calendar days from a UTC-7 midnight to a UTC-8 midnight are 1009 hours.
+    const from = new Date('2026-11-01T07:00:00Z');
+    const to = new Date('2026-12-13T08:00:00Z');
+    expect(to.getTime() - from.getTime()).toBe(1009 * H);
+    expect(fitRange(from, to)).toEqual({ from, to: new Date(from.getTime() + 1008 * H) });
+  });
+});
+
+describe('itemsInWeek', () => {
+  it('keeps the items whose day, in the viewer’s zone, is in the week', () => {
+    const keys = weekKeys('2026-11-10');
+    const spill = { id: 'spill', kind: 'meeting' as const, title: 's', startsAt: '2026-11-09T07:30:00Z', endsAt: '2026-11-09T08:30:00Z' };
+    const inside = { id: 'in', kind: 'meeting' as const, title: 'i', startsAt: '2026-11-09T08:30:00Z', endsAt: null };
+    expect(itemsInWeek([spill, inside], keys, ZONE).map((i) => i.id)).toEqual(['in']);
   });
 });

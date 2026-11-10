@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiNotification } from '@/lib/api';
 import type { Class, ClassRole, School } from '@/lib/classContext';
 
@@ -248,5 +248,40 @@ describe('Header — global search', () => {
     expect(onPrefetchSearch).toHaveBeenCalledTimes(1);
     fireEvent.click(trigger);
     expect(onOpenSearch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Header height', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('publishes its measured height on the app view, for content that sticks or scrolls under it', () => {
+    let observe: ResizeObserverCallback = () => {};
+    const disconnect = vi.fn();
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) {
+        observe = callback;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {
+        disconnect();
+      }
+    });
+    const { container, unmount } = render(
+      <div className="app-view">
+        <MemoryRouter initialEntries={['/app/schedule']}>
+          <Header onOpenSettings={vi.fn()} onToggleNav={vi.fn()} onOpenSearch={vi.fn()} onPrefetchSearch={vi.fn()} />
+        </MemoryRouter>
+      </div>,
+    );
+    const view = container.querySelector('.app-view') as HTMLElement;
+    const header = container.querySelector('header') as HTMLElement;
+    act(() => observe([{ target: header, borderBoxSize: [{ blockSize: 88, inlineSize: 900 }] } as unknown as ResizeObserverEntry], {} as ResizeObserver));
+    expect(view.style.getPropertyValue('--gt-app-header-h')).toBe('88px');
+    unmount();
+    expect(disconnect).toHaveBeenCalled();
+    expect(view.style.getPropertyValue('--gt-app-header-h')).toBe('');
   });
 });
