@@ -314,6 +314,13 @@
       "method": "GET", "endpoint": "/api/classes/{class_id}/ta-schedule?week={week}", "uiRoute": "/app/ta-meetings"
     },
     {
+      "id": "view_schedule", "title": "Show my schedule in a class: TA meetings, team meetings, final reviews, deadlines and sprint edges", "role": "any",
+      "method": "GET", "endpoint": "/api/schedule?class_id={class_id}&from={from}&to={to}",
+      "params": {"class_id": "uuid! (query — a class the caller teaches or is enrolled in)", "from": "datetime! (query — ISO instant with an offset)", "to": "datetime! (query — after from, at most 42 days later)"},
+      "uiRoute": "/app/home",
+      "note": "Answers {lens, items}: what the caller's role in the class (student, ta, instructor) sees. 422 for a range without an offset, backwards, or over 42 days."
+    },
+    {
       "id": "mark_attendance", "title": "Mark one member present/late/absent", "role": "instructor|meeting-ta",
       "method": "PUT", "endpoint": "/api/projects/{project_id}/attendance",
       "params": {"week_number": "int!", "person_id": "uuid!", "status": "enum(present|late|absent)!"}

@@ -1297,3 +1297,61 @@ export interface ApiMcpConnection {
   connected_at: string;
   last_used_at: string | null;
 }
+
+/** The caller's role in the class, which decides what their schedule holds. */
+export type ApiScheduleLens = 'student' | 'ta' | 'instructor';
+
+/** Someone a schedule item names: a TA meeting's TA, a team meeting's organizer, a reviewer. */
+export interface ApiSchedulePerson {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  /** The caller. */
+  you: boolean;
+  /** "TA" or "Organizer". */
+  role?: string;
+  /** Final reviews: the Home TA or the Review TA. */
+  slot?: 'home' | 'review';
+}
+
+/**
+ * One item of GET /api/schedule. Instants are ISO strings with an offset; an all-day item (a sprint
+ * edge) starts at midnight in the school's zone. Which keys a kind carries is in the comments.
+ */
+export interface ApiScheduleItem {
+  id: string;
+  kind: 'ta_meeting' | 'meeting' | 'final_review' | 'deadline' | 'sprint';
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  project_id?: string;
+  team_name?: string | null;
+  location?: string | null;
+  zoom_url?: string | null;
+  /** ta_meeting (its TA) and meeting (its organizer). */
+  host?: ApiSchedulePerson | null;
+  /** final_review: the Home TA, then the Review TA, each once known. */
+  reviewers?: ApiSchedulePerson[];
+  /** ta_meeting: "Weekly · Tue". */
+  recurrence_label?: string;
+  /** ta_meeting, when the class meets more than once a week. */
+  meeting_index?: number;
+  meetings_per_week?: number;
+  /** ta_meeting: the caller's own status (student lens) or the team's tally (staff), as recorded so far. */
+  attendance?: 'present' | 'late' | 'absent' | 'unmarked' | { present: number; total: number };
+  /** meeting */
+  note?: string | null;
+  scope?: 'team' | 'class';
+  /** deadline */
+  assignment_id?: string;
+  assignment_type?: string | null;
+  /** sprint */
+  sprint?: { name: string; edge: 'start' | 'end' };
+}
+
+/** GET /api/schedule?class_id=&from=&to= */
+export interface ApiSchedule {
+  lens: ApiScheduleLens;
+  items: ApiScheduleItem[];
+}
