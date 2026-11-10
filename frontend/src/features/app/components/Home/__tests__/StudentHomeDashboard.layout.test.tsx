@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   getPendingTeamInvites: vi.fn(),
   getMyJoinRequests: vi.fn(),
   getInstitutions: vi.fn(),
+  getSchedule: vi.fn(),
 }));
 vi.mock('@/lib/api', () => ({ api }));
 
@@ -21,6 +22,8 @@ const classContext = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => classContext }));
 vi.mock('@/lib/auth', () => ({ useUser: () => ({ user: { id: 'me' } }) }));
+const preview = vi.hoisted(() => ({ isPreviewing: false }));
+vi.mock('@/lib/previewContext', () => ({ usePreview: () => preview }));
 // The invitation has tests of its own (features/connector); here, only what the Home hands it.
 type InviteProps = { projectId: string | null; teamName?: string };
 const moveInInvite = vi.hoisted(() => vi.fn<(props: InviteProps) => null>(() => null));
@@ -50,7 +53,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   classContext.selectedClass = SE101;
   classContext.classes = [SE101];
+  preview.isPreviewing = false;
   api.getInstitutions.mockResolvedValue([]);
+  api.getSchedule.mockResolvedValue({ lens: 'student', items: [] });
   api.getProjects.mockResolvedValue({ projects: [] });
   api.getProjectMembers.mockResolvedValue({ members: [] });
   api.getIncomingJoinRequests.mockResolvedValue({ requests: [] });
@@ -117,5 +122,44 @@ describe('StudentHomeDashboard layout', () => {
       [...container.querySelectorAll(`.student-home__column--${column} h2`)].map((h) => h.textContent);
     expect(headings('main')).toEqual(["Today's Schedule"]);
     expect(headings('aside')).toEqual(['Your team', 'Requests']);
+  });
+});
+
+describe("StudentHomeDashboard Today's Schedule", () => {
+  it('lists the selected class’s schedule from the endpoint', async () => {
+    api.getSchedule.mockResolvedValue({
+      lens: 'student',
+      items: [
+        {
+          id: 'deadline:a1',
+          kind: 'deadline',
+          title: 'TSR 4 due',
+          starts_at: '2099-01-01T07:59:00Z',
+          ends_at: null,
+          all_day: false,
+          assignment_id: 'a1',
+          assignment_type: 'tsr',
+        },
+      ],
+    });
+    renderDashboard();
+    expect(await screen.findByRole('link', { name: 'TSR 4 due' })).toHaveAttribute('href', '/app/assignments/a1');
+    expect(api.getSchedule).toHaveBeenCalledWith('c1', expect.any(Date), expect.any(Date), expect.any(AbortSignal));
+  });
+
+  it('asks nothing with no class selected', async () => {
+    classContext.selectedClass = null;
+    renderDashboard();
+    expect(screen.getByText('Class events and deadlines will appear here.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
+    expect(api.getSchedule).not.toHaveBeenCalled();
+  });
+
+  it('asks nothing in the student preview, and says why it is empty', async () => {
+    preview.isPreviewing = true;
+    renderDashboard();
+    expect(screen.getByText("The schedule isn't part of the student preview.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
+    expect(api.getSchedule).not.toHaveBeenCalled();
   });
 });
