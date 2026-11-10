@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useNow } from '@/lib/useNow';
 import {
   SCHEDULE_EMPTY_COPY,
@@ -23,6 +23,9 @@ import '../schedule.scss';
 
 /** Where staff take attendance: the TA Meetings page. */
 const MARK_ATTENDANCE_HREF = '/app/ta-meetings';
+/** The week agenda; `?day=` opens the week holding that day, scrolled to it. */
+const WEEK_HREF = '/app/schedule';
+const dayHref = (key: string): string => `${WEEK_HREF}?day=${key}`;
 
 export interface ScheduleListProps {
   items: ScheduleItemData[];
@@ -47,8 +50,8 @@ const peekDate = (label: { title: string; date: string }): string =>
 /**
  * The Today's Schedule card body (the handoff's compact `ScheduleList`): today's items with the Now
  * line, at most `maxItems` then "+n more today"; when today is empty, "Nothing scheduled today" and a
- * peek at the next day that has something; the zone note in a footer when the viewer is away from
- * campus. The card's header belongs to the page. The agenda week is a separate component, so none of
+ * peek at the next day that has something; a footer with the zone note when the viewer is away from
+ * campus and "See week" (the /app/schedule agenda), which "+n more" links open at their day. The card's header belongs to the page. The agenda week is a separate component, so none of
  * its toolbar ships with Home.
  */
 export function ScheduleList({
@@ -100,7 +103,13 @@ export function ScheduleList({
         <>
           {pick.day.dividers.map((d) => <ScheduleDivider key={d.id} item={d} isToday />)}
           <ol className="gt-sched__items" aria-label="Today">{rows(shown, true)}</ol>
-          {extra > 0 && <p className="gt-sched__more">+{extra} more today</p>}
+          {extra > 0 && (
+            <p className="gt-sched__more">
+              <Link className="gt-sched__link" to={dayHref(pick.day.key)}>
+                +{extra} more today<ScheduleIcon name="arrow-right" size={13} />
+              </Link>
+            </p>
+          )}
         </>
       );
     } else {
@@ -116,7 +125,13 @@ export function ScheduleList({
             <>
               <ScheduleDayHeader title="Next" date={label} as="h4" />
               <ol className="gt-sched__items" aria-label={`Next: ${label}`}>{rows(pick.day.items.slice(0, 3), false)}</ol>
-              {pick.day.items.length > 3 && <p className="gt-sched__more">+{pick.day.items.length - 3} more that day</p>}
+              {pick.day.items.length > 3 && (
+                <p className="gt-sched__more">
+                  <Link className="gt-sched__link" to={dayHref(pick.day.key)}>
+                    +{pick.day.items.length - 3} more that day<ScheduleIcon name="arrow-right" size={13} />
+                  </Link>
+                </p>
+              )}
             </>
           )}
         </>
@@ -127,12 +142,19 @@ export function ScheduleList({
   return (
     <div className="gt-sched gt-sched--compact">
       {body}
-      {status === 'ready' && differs && (
+      {status === 'ready' && (
         <div className="gt-sched__footer">
-          <span className="gt-sched__zone">
-            <ScheduleIcon name="globe" size={13} />
-            Times in {zoneLabel(vz, liveNow)} · campus is {zoneLabel(schoolZone, liveNow)}
-          </span>
+          {differs ? (
+            <span className="gt-sched__zone">
+              <ScheduleIcon name="globe" size={13} />
+              Times in {zoneLabel(vz, liveNow)} · campus is {zoneLabel(schoolZone, liveNow)}
+            </span>
+          ) : (
+            <span />
+          )}
+          <Link className="gt-sched__link" to={WEEK_HREF}>
+            See week<ScheduleIcon name="arrow-right" size={13} />
+          </Link>
         </div>
       )}
     </div>
