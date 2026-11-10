@@ -95,6 +95,43 @@ describe('useSchedule', () => {
   });
 });
 
+describe('useSchedule when a reload fails or is overtaken', () => {
+  it('keeps the last good answer on screen beside the error when a reload for the class fails', async () => {
+    api.getSchedule.mockResolvedValueOnce(answer('Monday')).mockRejectedValueOnce(new Error('offline'));
+    const { result, rerender } = renderHook(({ classId, from }) => useSchedule(classId, from, TO), {
+      initialProps: { classId: 'c1', from: FROM },
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    rerender({ classId: 'c1', from: new Date('2026-11-11T08:00:00Z') }); // midnight rolls the range
+    await waitFor(() => expect(result.current.error).toBe(true));
+    expect(result.current.status).toBe('ready');
+    expect(result.current.answer?.items[0].title).toBe('Monday');
+
+    // Another class has nothing to show yet: it loads, and a failure there is the error state.
+    api.getSchedule.mockRejectedValueOnce(new Error('offline'));
+    rerender({ classId: 'c2', from: FROM });
+    expect(result.current).toMatchObject({ status: 'loading', answer: null, error: false });
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.answer).toBeNull();
+  });
+
+  it('drops a late answer from a request the next one replaced', async () => {
+    const first = deferred<ApiSchedule>();
+    const second = deferred<ApiSchedule>();
+    api.getSchedule.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const { result, rerender } = renderHook(({ from }) => useSchedule('c1', from, TO), {
+      initialProps: { from: FROM },
+    });
+    rerender({ from: new Date('2026-11-11T08:00:00Z') });
+    second.resolve(answer('Tuesday'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    first.resolve(answer('Monday'));
+    await first.promise;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(result.current.answer?.items.map((i) => i.title)).toEqual(['Tuesday']);
+  });
+});
+
 describe('TodaySchedule', () => {
   function renderCard(props: Partial<Parameters<typeof TodaySchedule>[0]> = {}) {
     return render(

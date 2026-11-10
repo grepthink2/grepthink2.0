@@ -15,6 +15,11 @@ export interface ScheduleState {
   answer: ScheduleAnswer | null;
   /** A newer answer is on its way while `answer` stays on screen. */
   reloading: boolean;
+  /**
+   * The last request failed. With an answer still on screen (a reload for the same class, such as
+   * the range rolling over at midnight) the status stays 'ready'; with nothing to show it is 'error'.
+   */
+  error: boolean;
   /** Ask again (after an error). */
   retry: () => void;
 }
@@ -27,7 +32,8 @@ interface Settled {
 /**
  * The caller's schedule items in one class for [from, to), mapped for the schedule components. No
  * request without a class or while `enabled` is false. A new range for the same class keeps the last
- * answer on screen until the new one lands; another class starts from loading.
+ * answer on screen until the new one lands, and keeps it beside the error if that request fails;
+ * another class starts from loading. An answer to a request a newer one replaced is dropped.
  */
 export function useSchedule(
   classId: string | null | undefined,
@@ -61,14 +67,13 @@ export function useSchedule(
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  if (!key) return { status: 'idle', answer: null, reloading: false, retry };
+  if (!key) return { status: 'idle', answer: null, reloading: false, error: false, retry };
   const answer = last && last.classId === classId ? last.answer : null;
   if (settled?.key === key) {
-    return settled.failed
-      ? { status: 'error', answer: null, reloading: false, retry }
-      : { status: 'ready', answer, reloading: false, retry };
+    if (settled.failed && !answer) return { status: 'error', answer: null, reloading: false, error: true, retry };
+    return { status: 'ready', answer, reloading: false, error: settled.failed, retry };
   }
   return answer
-    ? { status: 'ready', answer, reloading: true, retry }
-    : { status: 'loading', answer: null, reloading: false, retry };
+    ? { status: 'ready', answer, reloading: true, error: false, retry }
+    : { status: 'loading', answer: null, reloading: false, error: false, retry };
 }
