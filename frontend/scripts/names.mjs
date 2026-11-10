@@ -337,13 +337,6 @@ export const NAMES_ALLOWLIST = [
 
   // ── schedule ──────────────────────────────────────────────────────────────────────────────────
   {
-    design: ['ScheduleList', 'ScheduleDivider'],
-    status: 'not ported',
-    reason:
-      "They come with the Today's Schedule card and the /app/schedule agenda, which wait for " +
-      'GET /api/schedule. The rows are ported already: team meetings render ScheduleItem and ScheduleDayHeader.',
-  },
-  {
     design: 'SCHEDULE_KINDS',
     status: 'different name',
     keeps: 'KINDS',

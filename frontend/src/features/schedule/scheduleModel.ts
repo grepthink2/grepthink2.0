@@ -1,9 +1,9 @@
 /**
- * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping and the
- * formatters. Port of design/components/schedule/ScheduleModel.jsx (the handoff in
- * design/design_handoff_schedule/), the subset the compact row and the team-meetings card use. Left
- * for the schedule endpoint: the week helpers (weekKeys, fmtWeekLabel), findOverlaps, nowIndex,
- * nextUp, todayOrPeek and the ScheduleModel bundle object.
+ * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping, overlaps, the
+ * Now line's place, the compact card's today-or-peek pick and the formatters. Port of
+ * design/components/schedule/ScheduleModel.jsx (the handoff in design/design_handoff_schedule/), the
+ * subset the compact list, its rows and the team-meetings card use. Left for the agenda: the week
+ * helpers (weekKeys, fmtWeekLabel), nextUp and the ScheduleModel bundle object.
  *
  * Times render in the viewer's zone; every calendar-day computation happens on 'YYYY-MM-DD' keys,
  * so a daylight-saving change never moves a day.
@@ -92,6 +92,9 @@ export interface ScheduleDayGroup {
 
 /** What the time formatters read from an item. */
 type TimeSpan = Pick<ScheduleItemData, 'startsAt' | 'endsAt' | 'allDay'>;
+
+/** What an empty schedule says: the copy the Today's Schedule card has always promised. */
+export const SCHEDULE_EMPTY_COPY = 'Class events and deadlines will appear here.';
 
 /** "Join Zoom" is prominent from 10 minutes before start until the end. */
 export const JOIN_WINDOW_MS = 10 * 60 * 1000;
@@ -212,6 +215,60 @@ export function groupByDay(items: ScheduleItemData[], { zone = viewerZone(), now
     (it.kind === 'sprint' ? group.dividers : group.items).push(it);
   }
   return [...groups.values()];
+}
+
+/** Timed items that share an instant: id → the others it overlaps. Deadlines, sprint edges, all-day, cancelled and TBD items never overlap. */
+export function findOverlaps(items: ScheduleItemData[]): Map<string, ScheduleItemData[]> {
+  const timed = items.filter(
+    (it) => !it.allDay && it.endsAt && it.kind !== 'sprint' && it.kind !== 'deadline' && it.status !== 'cancelled' && it.status !== 'tbd',
+  );
+  const out = new Map<string, ScheduleItemData[]>();
+  const add = (a: ScheduleItemData, b: ScheduleItemData) => out.set(a.id, [...(out.get(a.id) ?? []), b]);
+  for (let i = 0; i < timed.length; i++) {
+    for (let j = i + 1; j < timed.length; j++) {
+      const a = timed[i];
+      const b = timed[j];
+      if (toDate(a.startsAt) < toDate(b.endsAt as string) && toDate(b.startsAt) < toDate(a.endsAt as string)) {
+        add(a, b);
+        add(b, a);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Where the Now line sits in a day's sorted items: before the first timed item that has not ended,
+ * after them all when the day is over (`dayItems.length`), and nowhere (-1) on a day with no timed items.
+ */
+export function nowIndex(dayItems: ScheduleItemData[], now: Date = new Date()): number {
+  const at = toDate(now).getTime();
+  let timed = false;
+  for (let i = 0; i < dayItems.length; i++) {
+    const it = dayItems[i];
+    if (it.allDay || it.status === 'tbd' || it.kind === 'sprint') continue;
+    timed = true;
+    const end = toDate(it.endsAt ?? it.startsAt).getTime();
+    if (end > at) return i;
+  }
+  return timed ? dayItems.length : -1;
+}
+
+export type TodayOrPeek =
+  | { mode: 'today'; day: ScheduleDayGroup }
+  | { mode: 'peek'; day: ScheduleDayGroup; todayDividers: ScheduleItemData[] }
+  | { mode: 'none'; day: null; todayDividers: ScheduleItemData[] };
+
+/** The compact card: today's group when it has rows, else the next day that has some ("peek"), else none. */
+export function todayOrPeek(items: ScheduleItemData[], now: Date = new Date(), zone: string = viewerZone()): TodayOrPeek {
+  const today = dayKey(now, zone);
+  const groups = groupByDay(items, { zone, now });
+  const td = groups.find((g) => g.key === today);
+  if (td && td.items.length) return { mode: 'today', day: td };
+  const todayDividers = td ? td.dividers : [];
+  const next = groups.find((g) => g.key > today && g.items.length);
+  if (next) return { mode: 'peek', day: next, todayDividers };
+  return { mode: 'none', day: null, todayDividers };
 }
 
 /* ── Formatters (viewer's zone unless told otherwise) ─────────── */
