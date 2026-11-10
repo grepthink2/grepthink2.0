@@ -479,9 +479,14 @@ The full agent-facing action catalog (method, params, role) lives at
   and 132 kB of CSS (23 kB gzipped).
 - **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
   equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
-  release adds both in a `release/<version>` pull request into `beta`. After the release merges into
-  `main`, `.github/workflows/release.yml` tags it and publishes the GitHub release from the same file.
-  A deploy with nothing for users to read keeps the version and gets no tag.
+  release is one pull request from `beta` into `main`, and every one is tagged: its "Release version
+  and notes" check (required by `main`'s ruleset) fails while `v<version>` is tagged already or the
+  notes file is missing. Turn it green with one `release: <version>` commit pushed straight to `beta`
+  (no pull request of its own): the notes file plus `npm --prefix frontend version <version>
+  --no-git-tag-version`. Raise the minor number for anything new or improved, the patch for fixes or
+  internal work only (one line under `## Improved`). After the merge into `main`,
+  `.github/workflows/release.yml` tags it and publishes the GitHub release from the same file. Only a
+  Dependabot security update straight into `main` keeps the version.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
