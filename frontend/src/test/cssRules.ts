@@ -11,19 +11,38 @@
  * (`'max-width: 767px'`, `'prefers-reduced-motion'`).
  */
 export function cssRules(selector: string, condition?: string): CSSStyleDeclaration[] {
+  const moz = selector.includes(MOZ);
+  const sheets = moz ? sheetsWithMozRenamed() : Array.from(document.styleSheets);
+  const target = moz ? selector.replaceAll(MOZ, WEBKIT_MOZ) : selector;
   const found: CSSStyleDeclaration[] = [];
   const walk = (rules: CSSRuleList, conditions: string[]) => {
     for (const rule of Array.from(rules)) {
       if ('selectorText' in rule) {
         const style = rule as CSSStyleRule;
         const inScope = condition === undefined ? conditions.length === 0 : conditions.join(' and ').includes(condition);
-        if (inScope && selectorList(style.selectorText).includes(selector)) found.push(style.style);
+        if (inScope && selectorList(style.selectorText).includes(target)) found.push(style.style);
       }
       if ('cssRules' in rule) walk((rule as CSSGroupingRule).cssRules, [...conditions, ...conditionOf(rule)]);
     }
   };
-  for (const sheet of Array.from(document.styleSheets)) walk(sheet.cssRules, []);
+  for (const sheet of sheets) walk(sheet.cssRules, []);
   return found;
+}
+
+/**
+ * jsdom drops a rule whose selector names a Firefox-only pseudo-element (`::-moz-range-thumb`) but
+ * keeps an unknown `::-webkit-` one, so a `::-moz-` rule is read from the stylesheets' text with the
+ * prefix renamed.
+ */
+const MOZ = '::-moz-';
+const WEBKIT_MOZ = '::-webkit-moz-';
+
+function sheetsWithMozRenamed(): CSSStyleSheet[] {
+  return Array.from(document.querySelectorAll('style'), (el) => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync((el.textContent ?? '').replaceAll(MOZ, WEBKIT_MOZ));
+    return sheet;
+  });
 }
 
 /** What a grouping rule adds to the conditions of the rules inside it. */

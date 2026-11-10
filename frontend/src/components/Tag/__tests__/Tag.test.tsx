@@ -64,7 +64,7 @@ describe('Tag', () => {
     expect(remove.getPropertyValue('padding')).toBe('0px');
     expect(remove.getPropertyValue('border-style')).toBe('none');
     expect(remove.getPropertyValue('border-radius')).toBe('4px');
-    expect(remove.getPropertyValue('background')).toBe('transparent');
+    expect(remove.getPropertyValue('background-color')).toBe('transparent');
     expect(remove.getPropertyValue('font')).toBe('inherit');
     expect(remove.getPropertyValue('transition')).toBe('opacity var(--gt-transition-fast), background-color var(--gt-transition-fast)');
     expect(cssRules('.gt-tag__remove', 'prefers-reduced-motion')[0].getPropertyValue('transition')).toBe('none');
