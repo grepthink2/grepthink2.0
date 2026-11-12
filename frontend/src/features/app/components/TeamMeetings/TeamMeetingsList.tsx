@@ -7,6 +7,7 @@ import { ScheduleDayHeader } from '@features/schedule/components/ScheduleDayHead
 import { ScheduleIcon } from '@features/schedule/components/ScheduleIcon';
 import { ScheduleItem } from '@features/schedule/components/ScheduleItem';
 import {
+  dayKey,
   fmtTimeRange,
   groupByDay,
   viewerZone,
@@ -77,7 +78,10 @@ export interface TeamMeetingsListProps {
   /** card: "Add one", which opens the Edit Project modal on the Meetings tab. */
   onManage?: () => void;
   onJoin?: (item: ScheduleItemData) => void;
-  /** card: "+n more · See your week on Home" target, Home's schedule card. @default '/app/home' */
+  /**
+   * card: "+n more · See your week on Home" target, Home's schedule card; `?day=` (the first meeting left
+   * out, on the viewer's calendar) opens the week holding it. @default '/app/home'
+   */
   scheduleHref?: string;
   /** card: upcoming rows before "+n more". @default 5 */
   maxUpcoming?: number;
@@ -249,6 +253,7 @@ export function TeamMeetingsList({
     }
     const shown = upcoming.slice(0, maxUpcoming);
     const more = upcoming.length - shown.length;
+    const moreHref = more > 0 ? `${scheduleHref}?day=${dayKey(upcoming[shown.length].startsAt, vz)}` : scheduleHref;
     // The card's own title is an h3 on the project page, so its day headings are h4s.
     const rows = (list: TeamMeeting[]) =>
       groupByDay(list.map((m) => toScheduleItem(m, { teamName, people })), { zone: vz, now }).map((group) => (
@@ -267,7 +272,7 @@ export function TeamMeetingsList({
           {shown.length ? rows(shown) : <p className="gt-tm__quiet">No upcoming meetings.</p>}
           {more > 0 && (
             <p className="gt-tm__more">
-              <a className="gt-tm__link" href={scheduleHref}>
+              <a className="gt-tm__link" href={moreHref}>
                 +{more} more · See your week on Home<ScheduleIcon name="arrow-right" size={13} />
               </a>
             </p>

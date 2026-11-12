@@ -707,7 +707,8 @@ describe('TeamMeetingsList — the project-page card', () => {
 
     expect(screen.getByText('Meeting 5')).toBeInTheDocument();
     expect(screen.queryByText('Meeting 6')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '+2 more · See your week on Home' })).toHaveAttribute('href', '/app/home');
+    // Home's week holding the first meeting left out (Meeting 6, Mon Oct 26 in Los Angeles).
+    expect(screen.getByRole('link', { name: '+2 more · See your week on Home' })).toHaveAttribute('href', '/app/home?day=2026-10-26');
   });
 
   it('gives the Product Owner a quiet Add one line when there are none', async () => {
