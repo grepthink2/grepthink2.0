@@ -1,25 +1,6 @@
-import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { SCHEDULE_EMPTY_COPY } from '../scheduleModel';
 import { ScheduleIcon } from './ScheduleIcon';
 import '../schedule.scss';
-
-/** Placeholder rows while the schedule loads: 3 in the card, more in the agenda. */
-export function ScheduleSkeleton({ count = 3, compact = true }: { count?: number; compact?: boolean }) {
-  return (
-    <div role="status" aria-busy="true" aria-label="Loading schedule">
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="gt-sched__skeleton">
-          <Skeleton width={compact ? 46 : 84} height={12} radius={4} />
-          <Skeleton width={compact ? 24 : 28} height={compact ? 24 : 28} radius={7} />
-          <div className="gt-sched__skeleton-lines">
-            <Skeleton width={i % 2 ? '48%' : '62%'} height={12} radius={4} />
-            <Skeleton width={i % 2 ? '70%' : '36%'} height={10} radius={4} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /** A quiet failure with a way to try again; never a red panel. The card omits the icon well. */
 export function ScheduleError({ onRetry, compact = true }: { onRetry?: () => void; compact?: boolean }) {

@@ -1,9 +1,10 @@
 /**
  * Pure schedule model: kinds, zone-aware day math, status, the Join window, grouping, overlaps, the
- * Now line's place, the compact card's today-or-peek pick and the formatters. Port of
- * design/components/schedule/ScheduleModel.jsx (the handoff in design/design_handoff_schedule/), the
- * subset the compact list, its rows and the team-meetings card use. Left for the agenda: the week
- * helpers (weekKeys, fmtWeekLabel), nextUp and the ScheduleModel bundle object.
+ * Now line's place and the formatters. Port of design/components/schedule/ScheduleModel.jsx (the
+ * handoff in design/design_handoff_schedule/), the subset the rows, the week on Home and the
+ * team-meetings card share. The week's own helpers (weekKeys, fmtWeekLabel, nextUp) are in
+ * scheduleWeek.ts, loaded with the week; not ported: the compact card's today-or-peek pick and the
+ * ScheduleModel bundle object.
  *
  * Times render in the viewer's zone; every calendar-day computation happens on 'YYYY-MM-DD' keys,
  * so a daylight-saving change never moves a day.
@@ -98,7 +99,7 @@ export interface ScheduleDayGroup {
 /** What the time formatters read from an item. */
 type TimeSpan = Pick<ScheduleItemData, 'startsAt' | 'endsAt' | 'allDay'>;
 
-/** What an empty schedule says: the copy the Today's Schedule card has always promised. */
+/** What an empty schedule says: the copy Home's schedule card has always promised. */
 export const SCHEDULE_EMPTY_COPY = 'Class events and deadlines will appear here.';
 
 /** "Join Zoom" is prominent from 10 minutes before start until the end. */
@@ -262,23 +263,6 @@ export function nowIndex(dayItems: ScheduleItemData[], now: Date = new Date()): 
     if (end > at) return i;
   }
   return timed ? dayItems.length : -1;
-}
-
-export type TodayOrPeek =
-  | { mode: 'today'; day: ScheduleDayGroup }
-  | { mode: 'peek'; day: ScheduleDayGroup; todayDividers: ScheduleItemData[] }
-  | { mode: 'none'; day: null; todayDividers: ScheduleItemData[] };
-
-/** The compact card: today's group when it has rows, else the next day that has some ("peek"), else none. */
-export function todayOrPeek(items: ScheduleItemData[], now: Date = new Date(), zone: string = viewerZone()): TodayOrPeek {
-  const today = dayKey(now, zone);
-  const groups = groupByDay(items, { zone, now });
-  const td = groups.find((g) => g.key === today);
-  if (td && td.items.length) return { mode: 'today', day: td };
-  const todayDividers = td ? td.dividers : [];
-  const next = groups.find((g) => g.key > today && g.items.length);
-  if (next) return { mode: 'peek', day: next, todayDividers };
-  return { mode: 'none', day: null, todayDividers };
 }
 
 /* ── Formatters (viewer's zone unless told otherwise) ─────────── */

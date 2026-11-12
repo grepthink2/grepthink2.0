@@ -20,7 +20,7 @@ import {
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import RequestsModal from './RequestsModal';
 import MoveInInvite from '@features/connector/components/MoveInInvite';
-import { TodaySchedule } from '@features/schedule/components/TodaySchedule';
+import { HomeScheduleCard } from '@features/schedule/components/HomeScheduleCard';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -386,10 +386,10 @@ const StudentHomeDashboard: React.FC = () => {
           <section className="student-home__card" aria-labelledby="schedule-heading">
             <div className="student-home__card-header">
               <h2 id="schedule-heading" className="student-home__card-title">
-                Today&apos;s Schedule
+                Schedule
               </h2>
             </div>
-            <TodaySchedule classId={classId} schoolZone={schoolZone} preview={isPreviewing} />
+            <HomeScheduleCard classId={classId} schoolZone={schoolZone} preview={isPreviewing} />
           </section>
         </div>
 

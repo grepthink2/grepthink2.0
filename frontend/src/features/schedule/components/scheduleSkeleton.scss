@@ -1,0 +1,5 @@
+/* GrepThink · schedule loading rows (ScheduleSkeleton). Port of the skeleton rules of
+   design/components/schedule/schedule.css. Their own file, so Home's fallback for the week's lazy code
+   brings no more than these; the agenda narrows them on phones in scheduleAgenda.scss. */
+.gt-sched__skeleton { display: grid; grid-template-columns: 112px 28px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 12px 16px; }
+.gt-sched__skeleton-lines { display: flex; flex-direction: column; gap: 7px; }

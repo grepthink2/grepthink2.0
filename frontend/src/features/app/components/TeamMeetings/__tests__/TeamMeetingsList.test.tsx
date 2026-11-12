@@ -703,11 +703,11 @@ describe('TeamMeetingsList — the project-page card', () => {
     const many = [1, 2, 3, 4, 5, 6, 7].map((n) =>
       meeting({ id: `m${n}`, title: `Meeting ${n}`, startsAt: `2026-10-2${n}T18:00:00Z` }),
     );
-    card({ meetings: many, maxUpcoming: 5, scheduleHref: '/app/schedule' });
+    card({ meetings: many, maxUpcoming: 5 });
 
     expect(screen.getByText('Meeting 5')).toBeInTheDocument();
     expect(screen.queryByText('Meeting 6')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '+2 more · See all in Schedule' })).toHaveAttribute('href', '/app/schedule');
+    expect(screen.getByRole('link', { name: '+2 more · See your week on Home' })).toHaveAttribute('href', '/app/home');
   });
 
   it('gives the Product Owner a quiet Add one line when there are none', async () => {

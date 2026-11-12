@@ -16,7 +16,6 @@ const sidebar = (canCreateClasses: boolean, classRole: ClassRole | null | undefi
   buildSidebarConfig({ canCreateClasses, classRole }).map(pin);
 
 const HOME: PinnedItem = ['Home', '/app/home'];
-const SCHEDULE: PinnedItem = ['Schedule', '/app/schedule'];
 const MESSAGES: PinnedItem = ['Messages', '/app/messages'];
 const ANALYTICS: PinnedItem = ['Analytics', '/app/analytics'];
 const MY_CLASSES: PinnedItem = ['My Classes', '/app/my-classes'];
@@ -27,8 +26,8 @@ const CREATE_CLASS: PinnedItem = ['Create Class', '/app/create-class'];
 const JOIN_CLASS: PinnedItem = ['Join Class', '/app/join-class'];
 
 // The top cluster has no heading; the account's cross-class pages live there.
-const INSTRUCTOR_MAIN: PinnedSection = ['main', undefined, [[undefined, [HOME, SCHEDULE, MESSAGES, ANALYTICS]]]];
-const STUDENT_MAIN: PinnedSection = ['main', undefined, [[undefined, [HOME, SCHEDULE, MESSAGES]]]];
+const INSTRUCTOR_MAIN: PinnedSection = ['main', undefined, [[undefined, [HOME, MESSAGES, ANALYTICS]]]];
+const STUDENT_MAIN: PinnedSection = ['main', undefined, [[undefined, [HOME, MESSAGES]]]];
 const INSTRUCTOR_CLASSES: PinnedSection = ['classes', 'Classes', [[undefined, [MY_CLASSES, CREATE_CLASS]]]];
 const STUDENT_CLASSES: PinnedSection = ['classes', 'Classes', [[undefined, [MY_CLASSES, JOIN_CLASS]]]];
 
@@ -132,6 +131,17 @@ describe('buildSidebarConfig', () => {
   it('hides the class section with no class selected', () => {
     expect(sidebar(false, null)).toEqual([STUDENT_MAIN, STUDENT_CLASSES, FOOTER]);
     expect(sidebar(true, null)).toEqual([INSTRUCTOR_MAIN, INSTRUCTOR_CLASSES, FOOTER]);
+  });
+
+  it('has no Schedule item for any role: the week is on Home', () => {
+    for (const canCreateClasses of [true, false]) {
+      for (const classRole of ['instructor', 'ta', 'student', null] as const) {
+        const items = buildSidebarConfig({ canCreateClasses, classRole }).flatMap((section) =>
+          section.groups.flatMap((group) => group.items),
+        );
+        expect(items.filter((item) => item.label === 'Schedule' || item.path === '/app/schedule')).toEqual([]);
+      }
+    }
   });
 
   it('gives no two items of one sidebar the same icon', () => {

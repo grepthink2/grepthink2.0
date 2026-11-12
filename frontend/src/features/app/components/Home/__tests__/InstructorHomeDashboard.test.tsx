@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Stable across renders, as the real provider's are: the dashboard derives its list from them.
 const classContext = vi.hoisted(() => ({
@@ -26,6 +26,10 @@ const api = vi.hoisted(() => ({
 vi.mock('@/lib/api', () => ({ api }));
 
 import InstructorHomeDashboard from '../InstructorHomeDashboard';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   auth.canCreateClasses = true;
@@ -68,7 +72,9 @@ describe('InstructorHomeDashboard', () => {
     expect(screen.queryByRole('button', { name: /create class/i })).not.toBeInTheDocument();
   });
 
-  it("shows the selected class's schedule above the class list", async () => {
+  it("shows the selected class's week at the top of the main column, above Needs Attention", async () => {
+    // Tue Nov 10, 2026, 3:12 PM at UTC-8: Wednesday's deadline is in the week shown in any zone.
+    vi.useFakeTimers({ now: new Date('2026-11-10T23:12:00Z'), toFake: ['Date'] });
     api.getSchedule.mockResolvedValue({
       lens: 'instructor',
       items: [
@@ -76,7 +82,7 @@ describe('InstructorHomeDashboard', () => {
           id: 'deadline:a1',
           kind: 'deadline',
           title: 'TSR 4 due',
-          starts_at: '2099-01-01T07:59:00Z',
+          starts_at: '2026-11-11T20:00:00Z',
           ends_at: null,
           all_day: false,
           assignment_id: 'a1',
@@ -89,11 +95,13 @@ describe('InstructorHomeDashboard', () => {
         <InstructorHomeDashboard />
       </MemoryRouter>,
     );
-    const card = screen.getByRole('heading', { name: "Today's Schedule" }).closest('section')!;
+    const card = screen.getByRole('heading', { name: 'Schedule' }).closest('section')!;
     expect(await within(card).findByRole('link', { name: 'TSR 4 due' })).toHaveAttribute('href', '/app/modules/tsr/a1');
     expect(api.getSchedule).toHaveBeenCalledWith('taught', expect.any(Date), expect.any(Date), expect.any(AbortSignal));
-    const headings = [...container.querySelectorAll('h2')].map((h) => h.textContent?.trim());
-    expect(headings.indexOf("Today's Schedule")).toBe(headings.indexOf('Active Classes') - 1);
+    const [main, aside] = [...container.querySelectorAll('.instructor-home__column')];
+    const headings = (column: Element) => [...column.querySelectorAll('h2')].map((h) => h.textContent?.trim());
+    expect(headings(main)).toEqual(['Schedule', 'Needs Attention', 'Recent Activity']);
+    expect(headings(aside)).toEqual(['Active Classes']);
   });
 
   it('asks nothing with no class selected', async () => {
@@ -104,7 +112,7 @@ describe('InstructorHomeDashboard', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('All caught up')).toBeInTheDocument();
-    expect(screen.getByText('Class events and deadlines will appear here.')).toBeInTheDocument();
+    expect(await screen.findByText('Class events and deadlines will appear here.')).toBeInTheDocument();
     expect(api.getSchedule).not.toHaveBeenCalled();
   });
 });

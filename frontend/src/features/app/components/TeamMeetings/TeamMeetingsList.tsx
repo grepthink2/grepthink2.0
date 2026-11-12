@@ -77,7 +77,7 @@ export interface TeamMeetingsListProps {
   /** card: "Add one", which opens the Edit Project modal on the Meetings tab. */
   onManage?: () => void;
   onJoin?: (item: ScheduleItemData) => void;
-  /** card: "+n more · See all in Schedule" target. @default '/app/schedule' */
+  /** card: "+n more · See your week on Home" target, Home's schedule card. @default '/app/home' */
   scheduleHref?: string;
   /** card: upcoming rows before "+n more". @default 5 */
   maxUpcoming?: number;
@@ -103,7 +103,7 @@ export interface TeamMeetingsListProps {
 export function TeamMeetingsList({
   variant = 'manage', meetings = [], status = 'ready', now: nowProp, zone, schoolZone, canManage = false,
   teamName, people = {}, onCreate, onUpdate, onDelete, onRetry, onManage, onJoin, onEditorChange,
-  scheduleHref = '/app/schedule', maxUpcoming = 5, defaultEditingId = null, defaultConfirmId = null, defaultPastOpen = false,
+  scheduleHref = '/app/home', maxUpcoming = 5, defaultEditingId = null, defaultConfirmId = null, defaultPastOpen = false,
   className = '',
 }: TeamMeetingsListProps) {
   const now = useNow(30000, nowProp);
@@ -268,7 +268,7 @@ export function TeamMeetingsList({
           {more > 0 && (
             <p className="gt-tm__more">
               <a className="gt-tm__link" href={scheduleHref}>
-                +{more} more · See all in Schedule<ScheduleIcon name="arrow-right" size={13} />
+                +{more} more · See your week on Home<ScheduleIcon name="arrow-right" size={13} />
               </a>
             </p>
           )}

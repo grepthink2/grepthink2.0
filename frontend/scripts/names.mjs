@@ -337,6 +337,14 @@ export const NAMES_ALLOWLIST = [
 
   // ── schedule ──────────────────────────────────────────────────────────────────────────────────
   {
+    design: 'ScheduleList',
+    status: 'different name',
+    keeps: 'ScheduleAgenda',
+    reason:
+      "The design's list has a compact and an agenda variant. Home shows the week, so only the agenda is kept, " +
+      'as ScheduleAgenda (components/ScheduleAgenda.tsx); HomeSchedule feeds it.',
+  },
+  {
     design: 'SCHEDULE_KINDS',
     status: 'different name',
     keeps: 'KINDS',
