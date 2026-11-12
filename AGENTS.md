@@ -126,8 +126,8 @@ frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
   features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
                       # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
-  features/schedule/  # schedule model + rows; Home's Today's Schedule (TodaySchedule, compact ScheduleList) and the
-                      # /app/schedule week (SchedulePage, ScheduleAgenda: a lazy route Home never imports)
+  features/schedule/  # schedule model + rows; Home's schedule card, the week from today (HomeScheduleCard lazy-loads
+                      # HomeSchedule and ScheduleAgenda, so the entry chunk has none of it); /app/schedule redirects to Home
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
