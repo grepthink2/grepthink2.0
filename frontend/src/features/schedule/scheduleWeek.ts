@@ -1,8 +1,8 @@
 /**
- * The agenda's week arithmetic, kept out of scheduleModel.ts so Home's entry chunk does not carry it:
- * week keys (Monday to Sunday, on 'YYYY-MM-DD' keys in the viewer's zone), the week's label, the
- * "Next up" pick and the `?day=` parameter. Port of the agenda half of
- * design/components/schedule/ScheduleModel.jsx.
+ * The agenda's week arithmetic, kept out of scheduleModel.ts and loaded with the week on Home, so the
+ * entry chunk does not carry it: week keys (Monday to Sunday, on 'YYYY-MM-DD' keys in the viewer's
+ * zone, the current week from today on), the week's label, the "Next up" pick and the `?day=`
+ * parameter. Port of the agenda half of design/components/schedule/ScheduleModel.jsx.
  */
 import { dayKey, itemDay, keyToDate, shiftKey, sortItems, type ScheduleItemData, type ScheduleKind } from './scheduleModel';
 
@@ -15,20 +15,35 @@ export function weekKeys(anchorKey: string): string[] {
   return Array.from({ length: 7 }, (_, i) => shiftKey(monday, i));
 }
 
-/** { title: 'This week' | 'Next week' | 'Last week' | null, range: 'Nov 9 – 15' | 'Nov 30 – Dec 6' | 'Dec 28 – Jan 3, 2027' } */
+/**
+ * The days of the week holding `anchorKey`, from `fromKey` on when it falls in that week (Home's
+ * week starts at today, so nothing past sits above it); any other week runs Monday to Sunday.
+ */
+export function weekDaysFrom(anchorKey: string, fromKey: string | null): string[] {
+  const keys = weekKeys(anchorKey);
+  const at = fromKey ? keys.indexOf(fromKey) : -1;
+  return at > 0 ? keys.slice(at) : keys;
+}
+
+/**
+ * The label of the days shown, a whole week or one that starts at today:
+ * { title: 'This week' | 'Next week' | 'Last week' | null, range: 'Nov 9 – 15' | 'Nov 30 – Dec 6' | 'Dec 28 – Jan 3, 2027' | 'Nov 15' }
+ */
 export function fmtWeekLabel(keys: string[], now: Date, zone: string): { title: string | null; range: string } {
   const thisMonday = weekKeys(dayKey(now, zone))[0];
-  const title = keys[0] === thisMonday
+  const monday = weekKeys(keys[0])[0];
+  const title = monday === thisMonday
     ? 'This week'
-    : keys[0] === shiftKey(thisMonday, 7)
+    : monday === shiftKey(thisMonday, 7)
       ? 'Next week'
-      : keys[0] === shiftKey(thisMonday, -7) ? 'Last week' : null;
+      : monday === shiftKey(thisMonday, -7) ? 'Last week' : null;
   const a = keyToDate(keys[0]);
-  const b = keyToDate(keys[6]);
+  const b = keyToDate(keys[keys.length - 1]);
   const year = b.getUTCFullYear() !== keyToDate(dayKey(now, zone)).getUTCFullYear() ? `, ${b.getUTCFullYear()}` : '';
-  const range = a.getUTCMonth() === b.getUTCMonth()
-    ? `${md.format(a)} – ${b.getUTCDate()}${year}`
-    : `${md.format(a)} – ${md.format(b)}${year}`;
+  let range: string;
+  if (keys.length === 1) range = `${md.format(a)}${year}`;
+  else if (a.getUTCMonth() === b.getUTCMonth()) range = `${md.format(a)} – ${b.getUTCDate()}${year}`;
+  else range = `${md.format(a)} – ${md.format(b)}${year}`;
   return { title, range };
 }
 
@@ -71,10 +86,12 @@ export function fitRange(from: Date, to: Date): { from: Date; to: Date } {
   return to.getTime() - from.getTime() > MAX_RANGE_MS ? { from, to: new Date(from.getTime() + MAX_RANGE_MS) } : { from, to };
 }
 
-/** The items the agenda shows for a week: those whose day, in the viewer's zone, is one of `keys`. */
+/** The items the agenda shows for the days shown: those whose day, in the viewer's zone, is one of `keys` (consecutive days). */
 export function itemsInWeek(items: ScheduleItemData[], keys: string[], zone: string): ScheduleItemData[] {
+  const first = keys[0];
+  const last = keys[keys.length - 1];
   return items.filter((it) => {
     const day = itemDay(it, zone);
-    return day >= keys[0] && day <= keys[6];
+    return day >= first && day <= last;
   });
 }
