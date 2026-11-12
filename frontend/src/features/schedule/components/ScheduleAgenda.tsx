@@ -9,7 +9,6 @@ import {
   findOverlaps,
   fmtDayLabel,
   fmtTime,
-  groupByDay,
   itemDay,
   kindMeta,
   nowIndex,
@@ -20,7 +19,7 @@ import {
   type ScheduleKind,
   type ScheduleLens,
 } from '../scheduleModel';
-import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, itemsInWeek, weekDaysFrom, weekKeys } from '../scheduleWeek';
+import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, groupWeek, itemsInWeek, weekDaysFrom, weekKeys } from '../scheduleWeek';
 import { ScheduleAgendaItem } from './ScheduleAgendaItem';
 import { ScheduleDayHeader } from './ScheduleDayHeader';
 import { ScheduleDivider } from './ScheduleDivider';
@@ -86,9 +85,9 @@ export function ScheduleAgenda({
   const onThisWeek = week.title === 'This week';
   const differs = zoneDiffers(zone, schoolZone, now);
 
-  const inWeek = useMemo(() => itemsInWeek(items, keys, zone), [items, zone, keys]);
+  const inWeek = useMemo(() => itemsInWeek(items, keys, zone, now), [items, zone, keys, now]);
   const filtered = useMemo(() => (kinds.length ? inWeek.filter((it) => kinds.includes(it.kind)) : inWeek), [inWeek, kinds]);
-  const groups = groupByDay(filtered, { zone, now });
+  const groups = groupWeek(filtered, keys, now, zone);
   const byKey = new Map(groups.map((g) => [g.key, g]));
   const overlaps = useMemo(() => findOverlaps(filtered), [filtered]);
   const filtersOn = kinds.length > 0;
@@ -160,9 +159,9 @@ export function ScheduleAgenda({
 
   let body: ReactNode;
   if (status === 'loading') {
-    body = <div className="gt-sched__days"><ScheduleSkeleton count={5} compact={false} /></div>;
+    body = <div className="gt-sched__days"><ScheduleSkeleton /></div>;
   } else if (status === 'error') {
-    body = <div className="gt-sched__days"><ScheduleError onRetry={onRetry} compact={false} /></div>;
+    body = <div className="gt-sched__days"><ScheduleError onRetry={onRetry} /></div>;
   } else if (groups.length === 0) {
     const nextLabel = next ? peekDate(fmtDayLabel(itemDay(next, zone), now, zone)) : null;
     body = (
@@ -176,7 +175,10 @@ export function ScheduleAgenda({
             </>
           ) : (
             <>
-              <p className="gt-sched__state-title">Nothing scheduled {week.title ? week.title.toLowerCase() : 'that week'}</p>
+              <p className="gt-sched__state-title">
+                {/* A week cut to start at today says nothing about the days before it. */}
+                Nothing {keys.length < 7 ? 'else ' : ''}scheduled {week.title ? week.title.toLowerCase() : 'that week'}
+              </p>
               {next && nextLabel && (
                 <p className="gt-sched__state-hint">
                   Next up: {next.title}{next.teamName ? ` · ${next.teamName}` : ''} · {nextLabel}
@@ -213,9 +215,10 @@ export function ScheduleAgenda({
   }
 
   return (
-    <section className="gt-sched gt-sched--agenda" aria-label="Schedule">
+    // No landmark of its own: the card or page around it names the region.
+    <div className="gt-sched gt-sched--agenda">
       {toolbar}
       {body}
-    </section>
+    </div>
   );
 }

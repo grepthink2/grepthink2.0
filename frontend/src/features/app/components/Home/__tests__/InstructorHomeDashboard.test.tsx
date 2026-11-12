@@ -97,6 +97,7 @@ describe('InstructorHomeDashboard', () => {
     );
     const card = screen.getByRole('heading', { name: 'Schedule' }).closest('section')!;
     expect(await within(card).findByRole('link', { name: 'TSR 4 due' })).toHaveAttribute('href', '/app/modules/tsr/a1');
+    expect(screen.getAllByRole('region', { name: 'Schedule' })).toEqual([card]);
     expect(api.getSchedule).toHaveBeenCalledWith('taught', expect.any(Date), expect.any(Date), expect.any(AbortSignal));
     const [main, aside] = [...container.querySelectorAll('.instructor-home__column')];
     const headings = (column: Element) => [...column.querySelectorAll('h2')].map((h) => h.textContent?.trim());

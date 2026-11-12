@@ -101,6 +101,19 @@ describe('ScheduleAgenda', () => {
     expect(screen.getByText('Nov 16 – 22')).toBeInTheDocument();
   });
 
+  it('says a whole week is empty, and a week cut to start at today has nothing else', () => {
+    const { unmount } = renderAgenda();
+    expect(screen.getByText('Nothing scheduled this week')).toBeInTheDocument();
+    unmount();
+    renderAgenda({ startDay: '2026-11-10' });
+    expect(screen.getByText('Nothing else scheduled this week')).toBeInTheDocument();
+  });
+
+  it('is no landmark of its own: the card around it names the region', () => {
+    renderAgenda({ items: [ta()] });
+    expect(screen.queryByRole('region')).not.toBeInTheDocument();
+  });
+
   it('steps a week from its Monday, and comes back to this week', () => {
     const onWeekChange = vi.fn();
     renderAgenda({ weekAnchor: '2026-11-17', startDay: '2026-11-10', onWeekChange });

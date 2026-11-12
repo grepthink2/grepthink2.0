@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { startOfDayIn } from '@/lib/startOfDayIn';
 import { useNow } from '@/lib/useNow';
@@ -61,9 +61,9 @@ export default function HomeSchedule({ classId, schoolZone, preview = false, now
     : week.status === 'ready' && !week.reloading ? 'ready' : 'loading';
 
   // An empty week looks once at the six weeks after it (or after today, for a week gone by) for "Next up".
-  // "Empty" as the agenda counts it: nothing whose day is one of the days shown (an answer may hold an
-  // item that started the night before and runs into them).
-  const weekEmpty = weekStatus === 'ready' && week.answer !== null && itemsInWeek(week.answer.items, days, vz).length === 0;
+  // "Empty" as the agenda counts it: nothing whose day is one of the days shown, and nothing from the
+  // night before that is still on (an answer may hold one that has ended, which does not count).
+  const weekEmpty = weekStatus === 'ready' && week.answer !== null && itemsInWeek(week.answer.items, days, vz, now).length === 0;
   const lookKey = shiftKey(monday, 7) > today ? shiftKey(monday, 7) : today;
   const lookRange = useMemo(
     () => fitRange(startOfDayIn(vz, lookKey), startOfDayIn(vz, shiftKey(lookKey, LOOK_AHEAD_DAYS))),
@@ -76,11 +76,14 @@ export default function HomeSchedule({ classId, schoolZone, preview = false, now
 
   const switched = Boolean((location.state as ScheduleLocationState | null)?.weekSwitch);
   const ready = weekStatus === 'ready';
+  // Once per history entry: the week loading again (midnight, Try again) leaves the page where it is.
+  const scrolledFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!focusDay || switched || !ready) return;
+    if (!focusDay || switched || !ready || scrolledFor.current === location.key) return;
+    scrolledFor.current = location.key;
     // The day's section, whose scroll margin clears the app's sticky header.
     document.getElementById(agendaDayId(focusDay))?.closest('.gt-sched__day')?.scrollIntoView?.({ block: 'start' });
-  }, [focusDay, switched, ready]);
+  }, [focusDay, switched, ready, location.key]);
 
   if (!classId) return <ScheduleEmpty />;
   if (preview) return <ScheduleEmpty note="The schedule isn't part of the student preview." />;

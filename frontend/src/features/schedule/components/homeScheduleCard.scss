@@ -1,0 +1,9 @@
+/* Home's schedule card while the week's code loads: room for the week's toolbar, then the loading rows on
+   the surface the week draws its days on (scheduleAgenda.scss and homeSchedule.scss), so the card keeps
+   its place when the week arrives. In the entry chunk: keep it to these few rules. */
+.gt-sched-home__toolbar { height: 38px; margin-bottom: 14px; }
+.gt-sched-home__days { background: var(--gt-surface); border: 1px solid var(--gt-border-subtle); border-radius: var(--gt-radius-md); overflow: clip; }
+
+@media (max-width: 767px) {
+  .gt-sched-home__toolbar { height: 50px; }
+}

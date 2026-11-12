@@ -34,8 +34,8 @@ function Where() {
   );
 }
 
-function renderHome(entry = '/app/home', props: Partial<HomeScheduleProps> = {}) {
-  return render(
+function tree(entry: string, props: Partial<HomeScheduleProps>) {
+  return (
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/app/schedule" element={<ScheduleRedirect />} />
@@ -49,8 +49,13 @@ function renderHome(entry = '/app/home', props: Partial<HomeScheduleProps> = {})
           }
         />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+}
+
+function renderHome(entry = '/app/home', props: Partial<HomeScheduleProps> = {}) {
+  const result = render(tree(entry, props));
+  return { ...result, rerenderWith: (next: Partial<HomeScheduleProps>) => result.rerender(tree(entry, next)) };
 }
 
 const lastRange = () => {
@@ -139,6 +144,45 @@ describe('HomeSchedule', () => {
     expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(thursday?.closest('.gt-sched__day'));
   });
 
+  it('scrolls to ?day= once: a reload of the week (the clock past midnight) does not scroll again', async () => {
+    api.getSchedule.mockResolvedValue(answer([item({ id: 'Retro', starts_at: '2026-11-13T18:00:00Z' })]));
+    const { rerenderWith } = renderHome('/app/home?day=2026-11-13');
+    expect(await screen.findByText('Retro')).toBeInTheDocument();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    // Wed Nov 11, 12:05 AM: the week now starts at Wednesday, so it is asked for again.
+    rerenderWith({ now: new Date('2026-11-11T08:05:00Z') });
+    await waitFor(() => expect(lastRange()).toEqual(['2026-11-11T08:00:00.000Z', '2026-11-16T08:00:00.000Z']));
+    expect(await screen.findByText('Retro')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Loading schedule' })).not.toBeInTheDocument());
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+  });
+
+  it('scrolls to ?day= once the week loads after Try again, and only then', async () => {
+    api.getSchedule.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(answer([item({ id: 'Retro', starts_at: '2026-11-13T18:00:00Z' })]));
+    renderHome('/app/home?day=2026-11-13');
+    fireEvent.click(await screen.findByRole('button', { name: 'try again' }));
+    expect(await screen.findByText('Retro')).toBeInTheDocument();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+  });
+
+  it('lists a live item that began before midnight under Today, with Join Zoom; one that ended stays out', async () => {
+    const afterMidnight = new Date('2026-11-11T08:10:00Z'); // Wed Nov 11, 12:10 AM
+    api.getSchedule.mockResolvedValue(
+      answer([
+        item({ id: 'Wrap', starts_at: '2026-11-11T07:00:00Z', ends_at: '2026-11-11T08:05:00Z' }), // Tue 11 PM – 12:05 AM
+        item({ id: 'Late sync', starts_at: '2026-11-11T07:30:00Z', ends_at: '2026-11-11T08:45:00Z', zoom_url: 'https://zoom.example/3' }),
+      ]),
+    );
+    renderHome('/app/home', { now: afterMidnight });
+    const today = await screen.findByRole('list', { name: 'Today' });
+    expect(within(today).getByText('Late sync')).toBeInTheDocument();
+    expect(within(today).getByRole('link', { name: 'Join Zoom' })).toHaveAttribute('href', 'https://zoom.example/3');
+    expect(screen.queryByText('Wrap')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nothing else scheduled/)).not.toBeInTheDocument();
+    expect(api.getSchedule).toHaveBeenCalledTimes(1);
+    expect(lastRange()).toEqual(['2026-11-11T08:00:00.000Z', '2026-11-16T08:00:00.000Z']);
+  });
+
   it('lands an old /app/schedule?day= link on Home, on the same week, scrolled to the day', async () => {
     api.getSchedule.mockResolvedValue(answer([item({ id: 'Retro', starts_at: '2026-11-17T18:00:00Z' })]));
     renderHome('/app/schedule?day=2026-11-19');
@@ -212,7 +256,8 @@ describe('HomeSchedule', () => {
         ]),
       );
     renderHome();
-    expect(await screen.findByText('Nothing scheduled this week')).toBeInTheDocument();
+    // The week starts at today, so the days before it may have held something.
+    expect(await screen.findByText('Nothing else scheduled this week')).toBeInTheDocument();
     expect(await screen.findByText('Next up: Final review · Alpha · Friday, Nov 20 · 2:00 PM')).toBeInTheDocument();
     expect(api.getSchedule).toHaveBeenCalledTimes(2);
     expect(lastRange()).toEqual(['2026-11-16T08:00:00.000Z', '2026-12-28T08:00:00.000Z']);
@@ -245,7 +290,7 @@ describe('HomeSchedule', () => {
       .mockResolvedValueOnce(answer([item({ id: 'Late', starts_at: '2026-11-10T07:30:00Z', ends_at: '2026-11-10T08:30:00Z' })]))
       .mockResolvedValueOnce(answer([item({ id: 'Retro', starts_at: '2026-11-17T18:00:00Z' })]));
     renderHome();
-    expect(await screen.findByText('Nothing scheduled this week')).toBeInTheDocument();
+    expect(await screen.findByText('Nothing else scheduled this week')).toBeInTheDocument();
     expect(await screen.findByText(/Next up: Retro/)).toBeInTheDocument();
   });
 

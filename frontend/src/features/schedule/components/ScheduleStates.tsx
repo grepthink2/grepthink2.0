@@ -2,15 +2,13 @@ import { SCHEDULE_EMPTY_COPY } from '../scheduleModel';
 import { ScheduleIcon } from './ScheduleIcon';
 import '../schedule.scss';
 
-/** A quiet failure with a way to try again; never a red panel. The card omits the icon well. */
-export function ScheduleError({ onRetry, compact = true }: { onRetry?: () => void; compact?: boolean }) {
+/** A quiet failure with a way to try again; never a red panel. */
+export function ScheduleError({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="gt-sched__state gt-sched__state--error" role="alert">
-      {!compact && (
-        <span className="gt-sched__state-icon">
-          <ScheduleIcon name="circle-alert" size={18} />
-        </span>
-      )}
+      <span className="gt-sched__state-icon">
+        <ScheduleIcon name="circle-alert" size={18} />
+      </span>
       <p className="gt-sched__state-title">Couldn’t load your schedule</p>
       <p className="gt-sched__state-hint">
         Check your connection
