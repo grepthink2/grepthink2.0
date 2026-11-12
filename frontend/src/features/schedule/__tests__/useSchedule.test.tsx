@@ -1,15 +1,12 @@
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiSchedule } from '@/lib/api';
 
 const api = vi.hoisted(() => ({ getSchedule: vi.fn() }));
 vi.mock('@/lib/api', () => ({ api }));
 
-import { TodaySchedule } from '../components/TodaySchedule';
 import { useSchedule } from '../hooks/useSchedule';
 
-const ZONE = 'Etc/GMT+8';
 const FROM = new Date('2026-11-10T08:00:00Z');
 const TO = new Date('2026-11-25T08:00:00Z');
 
@@ -129,40 +126,5 @@ describe('useSchedule when a reload fails or is overtaken', () => {
     await first.promise;
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(result.current.answer?.items.map((i) => i.title)).toEqual(['Tuesday']);
-  });
-});
-
-describe('TodaySchedule', () => {
-  function renderCard(props: Partial<Parameters<typeof TodaySchedule>[0]> = {}) {
-    return render(
-      <MemoryRouter>
-        <TodaySchedule classId="c1" schoolZone={ZONE} zone={ZONE} {...props} />
-      </MemoryRouter>,
-    );
-  }
-
-  it('asks for today and the fourteen days after it, from midnight in the viewer’s zone', async () => {
-    vi.useFakeTimers({ now: new Date('2026-11-10T23:12:00Z'), toFake: ['Date'] });
-    api.getSchedule.mockResolvedValue(answer('Planning'));
-    renderCard();
-    expect(await screen.findByText('Planning')).toBeInTheDocument();
-    expect(api.getSchedule).toHaveBeenCalledWith(
-      'c1',
-      new Date('2026-11-10T08:00:00Z'),
-      new Date('2026-11-25T08:00:00Z'),
-      expect.any(AbortSignal),
-    );
-  });
-
-  it('shows the empty state and asks nothing with no class selected', () => {
-    renderCard({ classId: null });
-    expect(screen.getByText('Class events and deadlines will appear here.')).toBeInTheDocument();
-    expect(api.getSchedule).not.toHaveBeenCalled();
-  });
-
-  it('says the schedule is not part of the student preview, and asks nothing', () => {
-    renderCard({ preview: true });
-    expect(screen.getByText("The schedule isn't part of the student preview.")).toBeInTheDocument();
-    expect(api.getSchedule).not.toHaveBeenCalled();
   });
 });

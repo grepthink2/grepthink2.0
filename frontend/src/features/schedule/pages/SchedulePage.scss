@@ -1,6 +1,0 @@
-/* The /app/schedule page: the agenda week on the app's background, one column. */
-.gt-sched-page { box-sizing: border-box; max-width: 1040px; padding: var(--gt-space-lg) var(--gt-space-lg) var(--gt-space-xxl); }
-
-@media (max-width: 767px) {
-  .gt-sched-page { padding: var(--gt-space-md) var(--gt-space-md) var(--gt-space-xl); }
-}

@@ -1,0 +1,3 @@
+/* The week inside Home's schedule card. The card is already the white surface, so the days take a hairline
+   instead of a second card's shadow. */
+.gt-sched-home .gt-sched--agenda .gt-sched__days { box-shadow: none; border: 1px solid var(--gt-border-subtle); }

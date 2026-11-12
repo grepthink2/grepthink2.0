@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
   getAssignments: vi.fn(),
@@ -116,17 +116,26 @@ describe('StudentHomeDashboard layout', () => {
     expect(api.getMySubmissions).not.toHaveBeenCalled();
   });
 
-  it("puts Today's Schedule in the main column and Requests directly below the team card", () => {
+  it('puts the Schedule in the main column and Requests directly below the team card', () => {
     const { container } = renderDashboard();
     const headings = (column: string) =>
       [...container.querySelectorAll(`.student-home__column--${column} h2`)].map((h) => h.textContent);
-    expect(headings('main')).toEqual(["Today's Schedule"]);
+    expect(headings('main')).toEqual(['Schedule']);
     expect(headings('aside')).toEqual(['Your team', 'Requests']);
   });
 });
 
-describe("StudentHomeDashboard Today's Schedule", () => {
-  it('lists the selected class’s schedule from the endpoint', async () => {
+describe('StudentHomeDashboard schedule', () => {
+  /** Tue Nov 10, 2026, 3:12 PM at UTC-8: Wednesday's deadline is in the week shown in any zone. */
+  const NOW = new Date('2026-11-10T23:12:00Z');
+  beforeEach(() => {
+    vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows the selected class’s week from the endpoint, with no kind chips', async () => {
     api.getSchedule.mockResolvedValue({
       lens: 'student',
       items: [
@@ -134,7 +143,7 @@ describe("StudentHomeDashboard Today's Schedule", () => {
           id: 'deadline:a1',
           kind: 'deadline',
           title: 'TSR 4 due',
-          starts_at: '2099-01-01T07:59:00Z',
+          starts_at: '2026-11-11T20:00:00Z',
           ends_at: null,
           all_day: false,
           assignment_id: 'a1',
@@ -145,12 +154,14 @@ describe("StudentHomeDashboard Today's Schedule", () => {
     renderDashboard();
     expect(await screen.findByRole('link', { name: 'TSR 4 due' })).toHaveAttribute('href', '/app/assignments/a1');
     expect(api.getSchedule).toHaveBeenCalledWith('c1', expect.any(Date), expect.any(Date), expect.any(AbortSignal));
+    expect(screen.getByRole('button', { name: 'This week' })).toBeDisabled();
+    expect(screen.queryByRole('group', { name: 'Filter by kind' })).not.toBeInTheDocument();
   });
 
   it('asks nothing with no class selected', async () => {
     classContext.selectedClass = null;
     renderDashboard();
-    expect(screen.getByText('Class events and deadlines will appear here.')).toBeInTheDocument();
+    expect(await screen.findByText('Class events and deadlines will appear here.')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
     expect(api.getSchedule).not.toHaveBeenCalled();
   });
@@ -158,7 +169,7 @@ describe("StudentHomeDashboard Today's Schedule", () => {
   it('asks nothing in the student preview, and says why it is empty', async () => {
     preview.isPreviewing = true;
     renderDashboard();
-    expect(screen.getByText("The schedule isn't part of the student preview.")).toBeInTheDocument();
+    expect(await screen.findByText("The schedule isn't part of the student preview.")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('No pending requests.')).toBeInTheDocument());
     expect(api.getSchedule).not.toHaveBeenCalled();
   });

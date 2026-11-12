@@ -17,6 +17,7 @@ import { ConversationsProvider } from '@features/messages/hooks/useConversations
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 import { PreviewProvider } from '@/lib/previewContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { ScheduleRedirect } from '@features/schedule/components/ScheduleRedirect';
 
 // Every /app page except Home is code-split with React.lazy, so the entry
 // chunk every visitor downloads holds the shell, the landing page and the
@@ -29,7 +30,6 @@ const Dashboard = lazy(() => import('@features/app/pages/Dashboard'));
 const Modules = lazy(() => import('@features/app/pages/Modules'));
 const TAManagement = lazy(() => import('@features/app/pages/TAManagement'));
 const TAMeetings = lazy(() => import('@features/app/pages/TAMeetings'));
-const SchedulePage = lazy(() => import('@features/schedule/pages/SchedulePage'));
 const BrowseProjects = lazy(() => import('@features/app/pages/BrowseProjects'));
 const MyProject = lazy(() => import('@features/app/pages/MyProject'));
 const Assignments = lazy(() => import('@features/app/pages/Assignments'));
@@ -114,7 +114,8 @@ function App() {
             }>
               <Route index element={<Navigate to="/app/home" replace />} />
               <Route path="home" element={<Home />} />
-              <Route path="schedule" element={<SchedulePage />} />
+              {/* The week moved onto Home: an old link keeps its ?day=. */}
+              <Route path="schedule" element={<ScheduleRedirect />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/compose" element={<Messages />} />
               <Route path="messages/:conversationId" element={<Messages />} />

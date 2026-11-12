@@ -45,7 +45,6 @@ function notificationPath(notification: {
 
 const pageTitles: Record<string, string> = {
   '/app/home': 'Home',
-  '/app/schedule': 'Schedule',
   '/app/messages': 'Messages',
   '/app/my-classes': 'My Classes',
   '/app/analytics': 'Analytics',

@@ -1,5 +1,5 @@
 /**
- * What one schedule row shows, worked out once for both rows: the compact card's (ScheduleItem) and
+ * What one schedule row shows, worked out once for both rows: the compact one (ScheduleItem, the team meetings card) and
  * the agenda's (ScheduleAgendaItem). Pure: the clock and the zones come in.
  */
 import type { BadgeStatus } from '@/components/Badge/badgeStatus';

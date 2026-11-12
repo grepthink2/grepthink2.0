@@ -271,7 +271,7 @@ describe('Header height', () => {
     });
     const { container, unmount } = render(
       <div className="app-view">
-        <MemoryRouter initialEntries={['/app/schedule']}>
+        <MemoryRouter initialEntries={['/app/home']}>
           <Header onOpenSettings={vi.fn()} onToggleNav={vi.fn()} onOpenSearch={vi.fn()} onPrefetchSearch={vi.fn()} />
         </MemoryRouter>
       </div>,
