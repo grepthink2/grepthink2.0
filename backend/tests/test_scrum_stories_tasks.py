@@ -441,3 +441,57 @@ def test_criteria_past_a_limit_are_refused_and_nothing_is_written(
     assert [s["id"] for s in db.rows("user_stories")] == ["st1"]
     assert "acceptance_criteria" not in db.rows("user_stories")[0]
     assert db.executes == 0
+
+
+# ------------------------------------------------------------------------- rank ----
+
+SPRINT_2 = dict(SPRINT, id="sp2", name="Sprint 2")
+
+
+@pytest.mark.parametrize(
+    ("story", "target"),
+    [
+        pytest.param({"sprint_id": "sp1"}, "sp2", id="to another sprint"),
+        pytest.param({"sprint_id": "sp1"}, None, id="to the backlog"),
+        pytest.param({"sprint_id": None}, "sp1", id="from the backlog"),
+        pytest.param(
+            {"sprint_id": "sp1", "archived_at": ARCHIVED_AT},
+            "sp1",
+            id="a legacy archived story into the sprint it names",
+        ),
+    ],
+)
+def test_a_story_that_changes_lists_loses_its_rank(monkeypatch, story, target):
+    """It comes last in its new list, among the stories nobody has ordered."""
+    db = scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT), dict(SPRINT_2)],
+        user_stories=[{**STORY, "rank": 2, **story}],
+    )
+    out = controller.update_story(story_id="st1", user_id=UID, fields={"sprint_id": target})
+    [row] = db.rows("user_stories")
+    assert (row["sprint_id"], row["rank"], out["rank"]) == (target, None, None)
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        pytest.param({"title": "Find a trail"}, id="an edit"),
+        pytest.param({"sprint_id": "sp1"}, id="its own sprint again"),
+    ],
+)
+def test_a_story_that_stays_in_its_list_keeps_its_rank(monkeypatch, fields):
+    db = scrum_db(
+        monkeypatch, sprints=[dict(SPRINT)], user_stories=[{**STORY, "sprint_id": "sp1", "rank": 2}]
+    )
+    controller.update_story(story_id="st1", user_id=UID, fields=fields)
+    assert db.rows("user_stories")[0]["rank"] == 2
+
+
+def test_moving_an_unranked_story_names_no_rank_column(monkeypatch):
+    """Nothing to clear, so the move also works on a database without the column."""
+    db = scrum_db(monkeypatch, sprints=[dict(SPRINT)], user_stories=[dict(STORY)])
+    controller.update_story(story_id="st1", user_id=UID, fields={"sprint_id": "sp1"})
+    [row] = db.rows("user_stories")
+    assert row["sprint_id"] == "sp1"
+    assert "rank" not in row

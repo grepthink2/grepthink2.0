@@ -1080,6 +1080,11 @@ export interface ApiCreateStoryBody {
   acceptance_criteria?: string[];
 }
 
+/** A list's story ids in their saved order: ranks 1 to n. */
+export interface ApiStoryOrder {
+  story_ids: string[];
+}
+
 export interface ApiUpdateStoryBody {
   title?: string;
   /** Explicit null clears it (an omitted key leaves it as it is). */

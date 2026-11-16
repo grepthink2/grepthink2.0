@@ -72,7 +72,9 @@ class ScrumFake(FakeSupabase):
     ``from_status`` and applies the move to the task. Both run as the fake's insert
     trigger, so a task embedded on the move's insert shows its status before the move,
     as in Postgres. ``scrum_next_key`` hands out 1, 2, 3… per project and kind, like the
-    counter table behind it.
+    counter table behind it, and ``scrum_set_story_order`` gives each listed story of the project
+    its position as its rank and answers how many it set
+    (2026-11-16_story_rank_and_criteria.sql).
     """
 
     def __init__(self, **kwargs):
@@ -82,6 +84,15 @@ class ScrumFake(FakeSupabase):
             k = (params["p_project_id"], params["p_kind"])
             counters[k] = counters.get(k, 0) + 1
             return counters[k]
+
+        def set_story_order(params: dict) -> int:
+            position = {str(sid): n for n, sid in enumerate(params["p_story_ids"], start=1)}
+            ranked = 0
+            for story in self.rows("user_stories"):
+                if story["id"] in position and story["project_id"] == params["p_project_id"]:
+                    story["rank"] = position[story["id"]]
+                    ranked += 1
+            return ranked
 
         def apply_move(db: FakeSupabase, row: dict) -> None:
             task = next((t for t in db.rows("tasks") if t["id"] == row["task_id"]), None)
@@ -97,7 +108,7 @@ class ScrumFake(FakeSupabase):
             )
 
         super().__init__(
-            rpc={"scrum_next_key": next_key},
+            rpc={"scrum_next_key": next_key, "scrum_set_story_order": set_story_order},
             triggers={("task_moves", "insert"): apply_move},
             **kwargs,
         )

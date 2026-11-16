@@ -3,9 +3,12 @@ by key, and PUT /api/projects/{project_id}/scrum/stories/order sets one list's r
 
 from datetime import date
 
+import pytest
+
+from app.core import authz
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import PID, UID, pin_today, scrum_db
+from tests.scrum_support import OTHER_PID, OUTSIDER, PID, TA, UID, pin_today, scrum_db
 
 TODAY = date(2026, 9, 10)
 SPRINT = {
@@ -79,3 +82,176 @@ def test_board_stories_carry_their_rank_and_criteria(monkeypatch, client):
     assert (story["rank"], story["acceptance_criteria"]) == (1, ["Finds a trail by name"])
     [backlog] = body["backlog"]
     assert (backlog["rank"], backlog["acceptance_criteria"]) == (None, [])
+
+
+# --------------------------------------------------------------- the order route ----
+
+URL = f"/api/projects/{PID}/scrum/stories/order"
+SP = "00000000-0000-0000-0000-00000000a001"
+SP2 = "00000000-0000-0000-0000-00000000a002"
+SP_THEIRS = "00000000-0000-0000-0000-00000000a003"
+#: Stories US-1 to US-7 of PID, by number, and one of OTHER_PID.
+ST = {n: f"00000000-0000-0000-0000-00000000b00{n}" for n in range(1, 8)}
+THEIRS = "00000000-0000-0000-0000-00000000c001"
+UNKNOWN = "00000000-0000-0000-0000-00000000dead"
+#: One id more than an order takes.
+TOO_MANY = [f"00000000-0000-0000-0000-{n:012d}" for n in range(201)]
+
+
+def _sprint(sid: str, project: str) -> dict:
+    return {**SPRINT, "id": sid, "project_id": project}
+
+
+def _seed_lists(monkeypatch):
+    """Sprint SP holds US-1 to US-3, ranked in key order. The backlog holds US-4, US-5 and the
+    legacy archived US-6, which still names SP. SP2 holds US-7. OTHER_PID's story sits in its
+    own sprint."""
+    return scrum_db(
+        monkeypatch,
+        sprints=[_sprint(SP, PID), _sprint(SP2, PID), _sprint(SP_THEIRS, OTHER_PID)],
+        user_stories=[
+            _story(ST[1], "US-1", SP, "1", rank=1),
+            _story(ST[2], "US-2", SP, "2", rank=2),
+            _story(ST[3], "US-3", SP, "3", rank=3),
+            _story(ST[4], "US-4", None, "4"),
+            _story(ST[5], "US-5", None, "5"),
+            _story(ST[6], "US-6", SP, "6", archived_at="2026-09-01T00:00:00Z"),
+            _story(ST[7], "US-7", SP2, "7"),
+            {**_story(THEIRS, "US-1", SP_THEIRS, "8"), "project_id": OTHER_PID},
+        ],
+    )
+
+
+def _ranks(db, *ids: str) -> list[int | None]:
+    by_id = {s["id"]: s for s in db.rows("user_stories")}
+    return [by_id[i].get("rank") for i in ids]
+
+
+def _put(client, body: dict, user: str = UID):
+    return client.put(URL, headers=header_for("tony@ucsc.edu", sub=user), json=body)
+
+
+def test_ordering_a_sprint_ranks_its_stories_from_one(monkeypatch, client):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": SP, "story_ids": [ST[3], ST[1], ST[2]]})
+
+    assert res.status_code == 200, res.text
+    assert res.json() == {"story_ids": [ST[3], ST[1], ST[2]]}
+    assert _ranks(db, ST[3], ST[1], ST[2]) == [1, 2, 3]
+    # The access check, the sprint with its stories, and one rpc with the project and the ids in
+    # their new order. No burnup snapshot: the order moves no line.
+    assert [q["table"] for q in db.queries] == [
+        "project_members",
+        "sprints",
+        "rpc:scrum_set_story_order",
+    ]
+    [params] = db.queries[-1]["filters"]
+    assert params == {"p_project_id": PID, "p_story_ids": [ST[3], ST[1], ST[2]]}
+    assert db.executes == 3
+
+
+def test_ordering_the_backlog_takes_its_legacy_archived_story_too(monkeypatch, client):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": None, "story_ids": [ST[6], ST[5], ST[4]]})
+
+    assert res.status_code == 200, res.text
+    assert _ranks(db, ST[6], ST[5], ST[4]) == [1, 2, 3]
+    assert _ranks(db, ST[1], ST[7], THEIRS) == [1, None, None]  # the other lists stay as they were
+    assert db.executes == 3
+
+
+def test_ids_are_matched_whatever_their_case(monkeypatch, client):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": SP.upper(), "story_ids": [ST[2].upper(), ST[1], ST[3]]})
+
+    assert res.status_code == 200, res.text
+    assert res.json() == {"story_ids": [ST[2], ST[1], ST[3]]}
+    assert _ranks(db, ST[2], ST[1], ST[3]) == [1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    ("sprint", "ids"),
+    [
+        pytest.param(SP, [ST[1], ST[2]], id="a story missing"),
+        pytest.param(SP, [ST[1], ST[2], ST[3], UNKNOWN], id="an id that is no story"),
+        pytest.param(SP, [ST[1], ST[2], ST[7]], id="a story of another sprint"),
+        pytest.param(SP, [ST[1], ST[2], ST[3], ST[6]], id="the legacy archived story"),
+        pytest.param(SP, [ST[1], ST[2], THEIRS], id="a story of another project"),
+        pytest.param(None, [ST[4], ST[5], ST[6], ST[1]], id="a sprint's story in the backlog"),
+        pytest.param(None, [ST[4], ST[5]], id="a backlog story missing"),
+    ],
+)
+def test_a_list_that_is_not_the_live_one_is_refused_and_nothing_is_written(
+    monkeypatch, client, sprint, ids
+):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": sprint, "story_ids": ids})
+
+    assert res.status_code == 409
+    assert res.json()["detail"] == controller.STORIES_CHANGED
+    assert not [q for q in db.queries if q["op"] == "rpc"]
+    assert _ranks(db, ST[1], ST[2], ST[3], ST[4], ST[5], ST[6]) == [1, 2, 3, None, None, None]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param({"sprint_id": SP, "story_ids": [ST[1], ST[1], ST[2]]}, id="a repeated id"),
+        pytest.param({"sprint_id": SP, "story_ids": [ST[1], ST[1].upper()]}, id="repeated in caps"),
+        pytest.param({"sprint_id": SP, "story_ids": []}, id="no ids"),
+        pytest.param({"sprint_id": SP, "story_ids": TOO_MANY}, id="201 ids"),
+        pytest.param({"story_ids": [ST[1]]}, id="no sprint_id (null for the backlog)"),
+        pytest.param({"sprint_id": SP, "story_ids": ["st1"]}, id="an id that is no uuid"),
+    ],
+)
+def test_a_malformed_order_is_a_422_before_any_read(monkeypatch, client, body):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, body)
+
+    assert res.status_code == 422
+    assert db.executes == 0
+
+
+@pytest.mark.parametrize(
+    ("user", "detail"),
+    [
+        pytest.param(TA, controller.MEMBERS_ONLY, id="staff"),
+        pytest.param(OUTSIDER, authz.NOT_PROJECT_MEMBER, id="an outsider"),
+    ],
+)
+def test_only_team_members_order_stories(monkeypatch, client, user, detail):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": SP, "story_ids": [ST[3], ST[2], ST[1]]}, user=user)
+
+    assert (res.status_code, res.json()["detail"]) == (403, detail)
+    assert _ranks(db, ST[3], ST[2], ST[1]) == [3, 2, 1]
+    assert not [q for q in db.queries if q["op"] == "rpc"]
+
+
+@pytest.mark.parametrize("sprint", [SP_THEIRS, UNKNOWN])
+def test_a_sprint_of_another_project_is_404(monkeypatch, client, sprint):
+    db = _seed_lists(monkeypatch)
+
+    res = _put(client, {"sprint_id": sprint, "story_ids": [THEIRS]})
+
+    assert (res.status_code, res.json()["detail"]) == (404, controller.SPRINT_NOT_FOUND)
+    assert _ranks(db, THEIRS) == [None]
+    assert not [q for q in db.queries if q["op"] == "rpc"]
+
+
+def test_a_missing_project_is_404(monkeypatch, client):
+    _seed_lists(monkeypatch)
+
+    res = client.put(
+        "/api/projects/00000000-0000-0000-0000-00000000beef/scrum/stories/order",
+        headers=header_for("tony@ucsc.edu", sub=UID),
+        json={"sprint_id": None, "story_ids": [ST[4]]},
+    )
+
+    assert (res.status_code, res.json()["detail"]) == (404, authz.PROJECT_NOT_FOUND)

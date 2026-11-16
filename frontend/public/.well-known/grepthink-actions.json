@@ -398,7 +398,14 @@
     {
       "id": "update_story", "title": "Update or move a user story", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/scrum/stories/{story_id}",
-      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)", "acceptance_criteria": "string[] (the whole list, replacing the story's; [] clears it; at most 20, each 1-300 characters once trimmed)"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)", "acceptance_criteria": "string[] (the whole list, replacing the story's; [] clears it; at most 20, each 1-300 characters once trimmed)"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "A story moved to another sprint or to the backlog loses its rank there: it comes last, among the stories nobody has ordered (set_story_order orders them)."
+    },
+    {
+      "id": "set_story_order", "title": "Order a sprint's stories, or the backlog's, by priority", "role": "project-member",
+      "method": "PUT", "endpoint": "/api/projects/{project_id}/scrum/stories/order",
+      "params": {"sprint_id": "uuid! (null orders the backlog)", "story_ids": "uuid[]! (every story of that sprint or of the backlog, each once, in the new order; 1-200)"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Each story takes its position as its rank, 1 first; the board lists stories by rank, then the unranked ones by key. Answers {story_ids} in the saved order. 409 'Stories changed; reload and try again' when the ids are not exactly that list's stories (one added, moved or deleted since the board was read), and nothing is saved; 422 for a repeated id; 404 for a sprint that is not the project's."
     },
     {
       "id": "delete_scrum_story", "title": "Delete a backlog story and its tasks", "role": "project-member",

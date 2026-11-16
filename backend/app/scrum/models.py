@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Annotated, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 BoardStatus = Literal["todo", "in_progress", "done"]
 EstimateScale = Literal["linear", "exponential", "fibonacci"]
@@ -80,6 +81,21 @@ class UpdateStoryRequest(BaseModel):
     sprint_id: str | None = None  # explicit null in JSON ⇒ move to backlog
     #: The whole list, in order: it replaces the story's, and [] clears it (explicit null is a 422).
     acceptance_criteria: list[Criterion] | None = Field(None, max_length=CRITERIA_MAX)
+
+
+class StoryOrderRequest(BaseModel):
+    """One list's stories in their new order: a sprint's live stories, or the backlog's when
+    ``sprint_id`` is null. Every story of the list, each once (the controller checks the list)."""
+
+    sprint_id: UUID | None  # required: null names the backlog
+    story_ids: list[UUID] = Field(..., min_length=1, max_length=200)
+
+    @field_validator("story_ids")
+    @classmethod
+    def _each_story_once(cls, ids: list[UUID]) -> list[UUID]:
+        if len(set(ids)) != len(ids):
+            raise ValueError("story_ids names a story more than once")
+        return ids
 
 
 class CreateTaskRequest(BaseModel):
@@ -302,6 +318,12 @@ class BoardSummaryResponse(BaseModel):
     # included, and whether an assistant can reach the connector.
     story_count: int
     connector_ready: bool = False
+
+
+class StoryOrderResponse(BaseModel):
+    """The list's story ids in their saved order: ranks 1 to n."""
+
+    story_ids: list[str]
 
 
 class TaskResponse(BaseModel):

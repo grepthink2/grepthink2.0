@@ -77,6 +77,9 @@ SPRINT_OUTSIDE_CLASS = "A sprint must run between {first} and {last}"
 TITLE_REQUIRED = "title cannot be null"
 #: 422: a story's criteria are a list; [] clears them.
 CRITERIA_REQUIRED = "acceptance_criteria cannot be null"
+#: 409: an order names other stories than its list holds now (a teammate added, moved or deleted
+#: one since the board was loaded). Nothing is written.
+STORIES_CHANGED = "Stories changed; reload and try again"
 #: 422: the board's ``?unit=`` is not a unit the selected sprint's burnup can draw (spec D21):
 #: points while one of its tasks has none, or a value that is neither points nor hours.
 UNIT_UNAVAILABLE = "Burnup unit not available for this sprint"
@@ -442,6 +445,15 @@ def _in_backlog(story: dict) -> bool:
     return story.get("sprint_id") is None or bool(story.get("archived_at"))
 
 
+def _changes_list(story: dict, sprint_id: str | None) -> bool:
+    """Whether writing ``sprint_id`` (None: the backlog) moves ``story`` to another list: another
+    sprint, the backlog from a sprint, or a sprint from the backlog, a legacy archived story into
+    the sprint it still names included."""
+    if sprint_id is None:
+        return not _in_backlog(story)
+    return _in_backlog(story) or str(story["sprint_id"]).lower() != str(sprint_id).lower()
+
+
 def _get_task_or_404(client, task_id: str, columns: str = "*") -> dict:
     res = client.table("tasks").select(columns).eq("id", str(task_id)).maybe_single().execute()
     row = res.data if res else None
@@ -501,6 +513,11 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
         payload["sprint_id"] = fields["sprint_id"]  # None ⇒ backlog
         # a sprint write also clears the legacy archive flag
         payload["archived_at"] = None
+        # A story that changes lists comes last in its new one, among the stories nobody has
+        # ordered: its rank was its place in the list it left. Sent only when it holds one, so a
+        # move also works on a database without the column.
+        if story.get("rank") is not None and _changes_list(story, fields["sprint_id"]):
+            payload["rank"] = None
     if not payload:
         return story
     payload["updated_at"] = datetime.now(UTC).isoformat()
@@ -531,6 +548,62 @@ def delete_story(*, story_id: str, user_id: str) -> None:
     if not _in_backlog(story):
         raise HTTPException(status_code=409, detail=STORY_IN_SPRINT)
     client.table("user_stories").delete().eq("id", str(story_id)).execute()
+
+
+def set_story_order(
+    *, project_id: str, user_id: str, sprint_id: str | None, story_ids: list[str]
+) -> list[str]:
+    """Order one list of stories: ``sprint_id``'s live stories, or the backlog's when it is None
+    (:func:`_in_backlog`). Each story takes its position in ``story_ids`` as its ``rank``, 1 first,
+    in one ``scrum_set_story_order`` call.
+
+    Who can call: team members. Returns the ids in their saved order. Raises 404
+    :data:`authz.PROJECT_NOT_FOUND`, 403 as :func:`_require_writer`, 404 :data:`SPRINT_NOT_FOUND`
+    for a sprint that is not the project's, and 409 :data:`STORIES_CHANGED`, with nothing written,
+    unless ``story_ids`` are exactly the list's stories (one missing, an extra one, one of another
+    sprint or project). Three round trips: the access check, the list's stories, the rpc. No burnup
+    snapshot: the order moves no line.
+    """
+    client = get_client()
+    _require_writer(client, project_id=project_id, user_id=user_id)
+    pid = str(project_id).lower()
+    if sprint_id is None:
+        rows = (
+            client.table("user_stories")
+            .select("id, sprint_id, archived_at")
+            .eq("project_id", str(project_id))
+            .execute()
+        ).data or []
+        stories = [s for s in rows if _in_backlog(s)]
+    else:
+        # The sprint and its stories in one read: its project says whether it is this one's.
+        res = (
+            client.table("sprints")
+            .select("project_id, user_stories(id, project_id, archived_at)")
+            .eq("id", str(sprint_id))
+            .maybe_single()
+            .execute()
+        )
+        sprint = res.data if res else None
+        if not sprint or str(sprint["project_id"]).lower() != pid:
+            raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
+        stories = [
+            s
+            for s in sprint.get("user_stories") or []
+            if str(s["project_id"]).lower() == pid and not s.get("archived_at")
+        ]
+    # The database's ids, so an id sent in other letters still matches.
+    by_id = {str(s["id"]).lower(): s["id"] for s in stories}
+    wanted = [str(i).lower() for i in story_ids]
+    if sorted(wanted) != sorted(by_id):
+        raise HTTPException(status_code=409, detail=STORIES_CHANGED)
+    ordered = [by_id[i] for i in wanted]
+    client.rpc(
+        "scrum_set_story_order",
+        {"p_project_id": str(project_id), "p_story_ids": ordered},
+        operation="write",
+    ).execute()
+    return ordered
 
 
 def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
