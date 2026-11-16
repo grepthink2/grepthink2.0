@@ -23,6 +23,18 @@ export function avatarName(name: string): string | undefined {
 /** Reporter/assignee lookup built once per board load. */
 export type MemberMap = Record<string, ApiScrumMember>;
 
+/** How a team member moves one story within its list (a sprint's, or the backlog's); staff get none. */
+export interface StoryOrderControl {
+  /** Move the story one place up (higher priority) or down. */
+  onMove: (direction: 'up' | 'down') => void;
+  /** First of its list: Move up is off. */
+  first: boolean;
+  /** Last of its list: Move down is off. */
+  last: boolean;
+  /** The list's new order is saving: the buttons keep their focus and ignore clicks. */
+  busy?: boolean;
+}
+
 export function buildMemberMap(members: ApiScrumMember[]): MemberMap {
   return Object.fromEntries(members.map((m) => [m.user_id, m]));
 }
