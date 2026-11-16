@@ -19,6 +19,7 @@ vi.mock('@/lib/api', () => ({
     deleteScrumStory: vi.fn(),
     addTaskDependency: vi.fn(),
     removeTaskDependency: vi.fn(),
+    setStoryOrder: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -32,6 +33,7 @@ beforeEach(() => {
   vi.mocked(api.updateScrumTask).mockReset();
   vi.mocked(api.addTaskDependency).mockReset();
   vi.mocked(api.removeTaskDependency).mockReset();
+  vi.mocked(api.setStoryOrder).mockReset();
 });
 
 /** The server's detail for a refused move (backend TASK_BLOCKED). */
@@ -576,5 +578,103 @@ describe('useScrumBoard dependencies', () => {
     expect(out).toBeNull();
     expect(result.current.notice).toEqual({ kind: 'error', message: cycle });
     expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe('useScrumBoard story order', () => {
+  /** Sprint 1 holds US-1 to US-3, unranked; the backlog holds US-8 (ranked first) and US-9. */
+  const orderBoard = () => makeBoard({
+    stories: [
+      makeStory({ id: 's1', key: 'US-1' }),
+      makeStory({ id: 's2', key: 'US-2', points: 5 }),
+      makeStory({ id: 's3', key: 'US-3' }),
+    ],
+    backlog: [
+      makeStory({ id: 's8', key: 'US-8', sprint_id: null, rank: 1 }),
+      makeStory({ id: 's9', key: 'US-9', sprint_id: null }),
+    ],
+  });
+  const ids = (stories: ApiScrumStory[]) => stories.map((s) => s.id);
+
+  beforeEach(() => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(orderBoard());
+  });
+
+  it("ranks the sprint's stories 1 to n and shows the new order before the save lands", async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let saved: Promise<boolean> = Promise.resolve(false);
+    act(() => { saved = result.current.reorderStories('sp1', ['s2', 's3', 's1']); });
+
+    expect(api.setStoryOrder).toHaveBeenCalledWith('p1', 'sp1', ['s2', 's3', 's1']);
+    expect(ids(result.current.board!.stories)).toEqual(['s2', 's3', 's1']);
+    expect(result.current.board!.stories.map((s) => s.rank)).toEqual([1, 2, 3]);
+    expect(ids(result.current.board!.backlog)).toEqual(['s8', 's9']);   // the other list stays
+
+    await act(async () => { save({ story_ids: ['s2', 's3', 's1'] }); });
+    await expect(saved).resolves.toBe(true);
+    expect(ids(result.current.board!.stories)).toEqual(['s2', 's3', 's1']);
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);                 // nothing to reload
+  });
+
+  it('orders the backlog with a null sprint', async () => {
+    vi.mocked(api.setStoryOrder).mockResolvedValue({ story_ids: ['s9', 's8'] });
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.reorderStories(null, ['s9', 's8']); });
+
+    expect(api.setStoryOrder).toHaveBeenCalledWith('p1', null, ['s9', 's8']);
+    expect(ids(result.current.board!.backlog)).toEqual(['s9', 's8']);
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
+  });
+
+  it('puts the order back and explains when the save fails, keeping an edit made meanwhile', async () => {
+    let refuse: (e: Error) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((_res, rej) => { refuse = rej; }));
+    vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's2', key: 'US-2', points: 8 }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let saved: Promise<boolean> = Promise.resolve(true);
+    act(() => { saved = result.current.reorderStories('sp1', ['s3', 's2', 's1']); });
+    await act(async () => { await result.current.updateStory('s2', { points: 8 }); });
+    await act(async () => { refuse(new Error('offline')); });
+
+    await expect(saved).resolves.toBe(false);
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
+    expect(result.current.board!.stories.map((s) => s.rank)).toEqual([null, null, null]);
+    expect(result.current.board!.stories[1].points).toBe(8);
+    expect(result.current.notice).toEqual({ kind: 'error', message: 'offline' });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it('a 409 says the stories changed and reloads the board', async () => {
+    vi.mocked(api.setStoryOrder).mockRejectedValue(
+      new ApiError(409, 'Stories changed; reload and try again', 'Request failed'),
+    );
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.reorderStories('sp1', ['s3', 's2', 's1']); });
+
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
+    expect(result.current.notice).toEqual({ kind: 'error', message: 'Stories changed; reload and try again' });
+    await waitFor(() => expect(api.getScrumBoard).toHaveBeenCalledTimes(2));
+  });
+
+  it("keeps a story edit's list in the board's order", async () => {
+    // The response carries the rank a teammate gave it since this board was loaded.
+    vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's3', key: 'US-3', title: 'Renamed', rank: 1 }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.updateStory('s3', { title: 'Renamed' }); });
+
+    expect(ids(result.current.board!.stories)).toEqual(['s3', 's1', 's2']);
   });
 });

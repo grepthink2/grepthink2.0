@@ -12,6 +12,7 @@ import {
   confirmMove, findStory, findTask, mapTask, mergeTaskResponse, rollbackMove, syncRefStatus,
 } from '../utils/boardReducer';
 import { blockedMessage, isBlocked } from '../utils/dependencies';
+import { sortStories } from '../utils/storyOrder';
 
 /** Transient user-facing message. F9 renders these as toasts. */
 export interface BoardNotice {
@@ -30,6 +31,11 @@ function noticeFor(err: unknown, fallback: string): BoardNotice {
 function changesEstimate(task: ApiScrumTask, body: ApiUpdateTaskBody): boolean {
   return (body.points !== undefined && body.points !== task.points)
     || (body.estimate_hours !== undefined && body.estimate_hours !== task.estimate_hours);
+}
+
+/** `stories` with the ranks `ranks` names (the others as they are), in the board's order. */
+function withRanks(stories: ApiScrumStory[], ranks: Map<string, number | null>): ApiScrumStory[] {
+  return sortStories(stories.map((s) => (ranks.has(s.id) ? { ...s, rank: ranks.get(s.id) } : s)));
 }
 
 /**
@@ -249,11 +255,12 @@ export function useScrumBoard(
       : null;
     if (!snapshot) return null;
 
+    // Resorted, so a rank in the response (a teammate's reorder since the load) moves the story.
     const local = (patch: Partial<ApiScrumStory>) =>
       setBoard((prev) => (prev ? {
         ...prev,
-        stories: applyStoryPatch(prev.stories, storyId, patch),
-        backlog: applyStoryPatch(prev.backlog, storyId, patch),
+        stories: sortStories(applyStoryPatch(prev.stories, storyId, patch)),
+        backlog: sortStories(applyStoryPatch(prev.backlog, storyId, patch)),
       } : prev));
 
     const seq = nextWrite(storyId);
@@ -342,6 +349,34 @@ export function useScrumBoard(
     [mutate, patchStory],
   );
   /**
+   * Put a sprint's stories, or the backlog's (`sprintId` null), in a new order: `storyIds` is every
+   * story of that list. Optimistic: the list takes ranks 1 to n and is redrawn in that order at once.
+   * A refused save puts the ranks it changed back and says why; a 409 (a teammate added, moved or
+   * deleted one of the list's stories since this board was loaded) also reloads the board. Resolves
+   * whether the order was saved.
+   */
+  const reorderStories = useCallback(
+    async (sprintId: string | null, storyIds: string[]): Promise<boolean> => {
+      const current = boardRef.current;
+      if (!projectId || !current) return false;
+      const list = sprintId === null ? 'backlog' : 'stories';
+      const before = new Map(current[list].map((s) => [s.id, s.rank ?? null]));
+      const ranked = new Map<string, number | null>(storyIds.map((id, i) => [id, i + 1]));
+      setBoard((prev) => (prev ? { ...prev, [list]: withRanks(prev[list], ranked) } : prev));
+      try {
+        await api.setStoryOrder(projectId, sprintId, storyIds);
+        return true;
+      } catch (err) {
+        // Only the ranks go back: an edit saved meanwhile (a story's points) stays.
+        setBoard((prev) => (prev ? { ...prev, [list]: withRanks(prev[list], before) } : prev));
+        setNotice(noticeFor(err, 'Couldn’t save the order'));
+        if (err instanceof ApiError && err.status === 409) void refresh();
+        return false;
+      }
+    },
+    [projectId, refresh],
+  );
+  /**
    * Delete a backlog story with its tasks. Resolves false when the write fails or is refused
    * (a story in a sprint, a read-only preview); the notice carries the reason.
    */
@@ -404,6 +439,7 @@ export function useScrumBoard(
     moveTask,
     createStory,
     updateStory,
+    reorderStories,
     deleteStory,
     createTask,
     updateTask,
