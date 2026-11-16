@@ -6,7 +6,7 @@ Thanks for helping. The short version:
    template: what changed, how you verified it, which gates ran. Releases go from `beta` to `main`
    separately (README, "Branches, releases and the database").
 2. **Read [AGENTS.md](AGENTS.md) first.** It holds the architecture, the roles, the conventions and
-   the gotchas that bite; [backend/STYLE_GUIDE.md](backend/STYLE_GUIDE.md) covers backend code.
+   a table of which doc under `docs/agents/` to read for the area you change; [backend/STYLE_GUIDE.md](backend/STYLE_GUIDE.md) covers backend code.
    Larger features get a design record in `docs/superpowers/specs/` before code.
 3. **Run the gates before you push** (README, "Tests and checks"). CI runs the same ones with
    coverage, and the coverage thresholds only go up.
