@@ -180,8 +180,9 @@ def _sprint_rules(klass: dict, sprint_count: int) -> dict:
 
 def board_context(*, project_id: str, user_id: str) -> dict:
     """Everything an app needs to draft a batch: the board's rules, the team, the sprints, and
-    the items already on the board (keys and titles only, to avoid duplicates). Readable by
-    whoever can read the board; ``can_write`` says whether the caller can add to it."""
+    the items already on the board (keys and titles to avoid duplicates, and each story's
+    acceptance criteria). Readable by whoever can read the board; ``can_write`` says whether the
+    caller can add to it."""
     pid = _project_id(project_id)
     client = get_client()
     access, institution_id = _board_access(client, project_id=pid, user_id=user_id)
@@ -196,9 +197,9 @@ def board_context(*, project_id: str, user_id: str) -> dict:
             "stories": lambda: (
                 (
                     client.table("user_stories")
-                    .select(
-                        "key, title, sprint_id, archived_at, imported_at, tasks(key, title, status)"
-                    )
+                    # Every column rather than a list: acceptance_criteria arrives with a migration,
+                    # and a read that named it would fail on a database without it.
+                    .select("*, tasks(key, title, status)")
                     .eq("project_id", pid)
                     .order("created_at")
                     .execute()
@@ -231,6 +232,7 @@ def board_context(*, project_id: str, user_id: str) -> dict:
                 "key": s["key"],
                 "title": s["title"],
                 "sprint_id": None if _in_backlog(s) else s.get("sprint_id"),
+                "acceptance_criteria": s.get("acceptance_criteria") or [],
                 "tasks": [
                     {"key": t["key"], "title": t["title"], "status": t["status"]}
                     for t in sorted(s.get("tasks") or [], key=lambda t: _key_order(t["key"]))
