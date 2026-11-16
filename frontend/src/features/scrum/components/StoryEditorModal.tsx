@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import type { ApiCreateStoryBody, ApiScrumMember, ApiScrumSprint } from '@/lib/api';
 import type { EstimateScale } from '../config/scrumTags';
+import { cleanCriteria, criteriaFit } from '../utils/criteria';
+import CriteriaEditor from './CriteriaEditor';
 import { PointPicker } from './ScalePicker';
 import './StoryEditorModal.scss';
 
@@ -27,11 +29,14 @@ export default function StoryEditorModal({
   members, sprints, currentSprintId, scale, saving = false, onClose, onCreate,
 }: Props) {
   const [title, setTitle] = useState('');
+  const [criteria, setCriteria] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState<number | undefined>();
   const [assignee, setAssignee] = useState('');
   const [sprintId, setSprintId] = useState(currentSprintId ?? '');
   const titleRef = useRef<HTMLInputElement>(null);
+  // A criterion past its soft limit is kept and flagged; the story waits until it fits.
+  const ready = Boolean(title.trim()) && criteriaFit(criteria);
 
   useEffect(() => {
     const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -41,16 +46,18 @@ export default function StoryEditorModal({
   }, [onClose]);
 
   const submit = () => {
-    const trimmed = title.trim();
-    if (!trimmed || saving) return;
+    if (!ready || saving) return;
+    const kept = cleanCriteria(criteria);
     onCreate({
-      title: trimmed,
+      title: title.trim(),
       ...(description.trim() ? { description_md: description.trim() } : {}),
       ...(points != null ? { points } : {}),
       ...(assignee ? { assignee_id: assignee } : {}),
       // Omitted = backlog on create (the controller only sets non-null fields),
       // and the create body types sprint_id as optional rather than nullable.
       ...(sprintId ? { sprint_id: sprintId } : {}),
+      // Blank rows are dropped, and a story without criteria sends none.
+      ...(kept.length > 0 ? { acceptance_criteria: kept } : {}),
     });
   };
 
@@ -81,6 +88,8 @@ export default function StoryEditorModal({
           />
         </label>
 
+        <CriteriaEditor value={criteria} onChange={setCriteria} />
+
         {/* The hint sits outside the label so it can't leak into the
             textarea's accessible name; aria-describedby still announces it. */}
         <div className="story-editor__field">
@@ -90,7 +99,7 @@ export default function StoryEditorModal({
             aria-describedby="story-editor-description-hint"
             rows={4}
             value={description}
-            placeholder="Acceptance criteria, links, anything the team needs…"
+            placeholder="Notes, links, anything the team needs…"
             onChange={(e) => setDescription(e.target.value)}
           />
           <span className="story-editor__hint" id="story-editor-description-hint">
@@ -129,7 +138,7 @@ export default function StoryEditorModal({
             type="button"
             className="story-editor__submit"
             onClick={submit}
-            disabled={!title.trim()}
+            disabled={!ready}
             aria-busy={saving}
           >
             {saving && <Loader2 className="story-editor__spinner" size={14} aria-hidden="true" />}
