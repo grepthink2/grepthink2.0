@@ -194,6 +194,10 @@ class StoryOut(BaseModel):
     reporter_id: str
     assignee_id: str | None = None
     archived_at: str | None = None
+    #: Its place in its sprint's list or the backlog's, 1 first; None until the team orders it (a new
+    #: story, or one just moved to another list), and those come last, by key.
+    rank: int | None = None
+    acceptance_criteria: list[str] = Field(default_factory=list)
     comment_count: int = 0
     tasks: list[TaskOut] = Field(default_factory=list)
 

@@ -615,6 +615,14 @@ def _key_order(key: str) -> tuple:
         return (1, 0, key)
 
 
+def _story_order(story: dict) -> tuple:
+    """Sort key for one list of stories (a sprint's, or the backlog's): by ``rank``, then the
+    stories nobody has ordered (``rank`` NULL, or no such column yet) by key. The web client
+    sorts the same way (``features/scrum/utils/storyOrder.ts``)."""
+    rank = story.get("rank")
+    return (rank is None, rank or 0, _key_order(story["key"]))
+
+
 def _has_unfinished_dependency(client, task_id: str) -> bool:
     """Whether a task it depends on is not done: one read of its edges, and one more of
     those tasks' statuses when it has any."""
@@ -1220,12 +1228,15 @@ def get_board(
     task_index = sorted((ref(t) for t in tasks), key=lambda r: _key_order(r["key"]))
 
     sel_id = selected["id"] if selected else None
-    stories = (
-        [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
-        if sel_id
-        else []
+    stories = sorted(
+        (
+            [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
+            if sel_id
+            else []
+        ),
+        key=_story_order,
     )
-    backlog = [s for s in all_stories if _in_backlog(s)]
+    backlog = sorted((s for s in all_stories if _in_backlog(s)), key=_story_order)
 
     def live_stories(sid: str) -> list[dict]:
         return [s for s in all_stories if s.get("sprint_id") == sid and not s.get("archived_at")]
