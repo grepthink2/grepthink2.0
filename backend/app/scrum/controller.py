@@ -75,6 +75,8 @@ SPRINT_LIMIT = "This class runs {count} sprints, and your team has all of them"
 #: holds the last day of classes (the latest day the class's own last sprint may end).
 SPRINT_OUTSIDE_CLASS = "A sprint must run between {first} and {last}"
 TITLE_REQUIRED = "title cannot be null"
+#: 422: a story's criteria are a list; [] clears them.
+CRITERIA_REQUIRED = "acceptance_criteria cannot be null"
 #: 422: the board's ``?unit=`` is not a unit the selected sprint's burnup can draw (spec D21):
 #: points while one of its tasks has none, or a value that is neither points nor hours.
 UNIT_UNAVAILABLE = "Burnup unit not available for this sprint"
@@ -465,6 +467,11 @@ def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
     for k in ("title", "description_md", "points", "assignee_id", "sprint_id"):
         if fields.get(k) is not None:
             row[k] = fields[k]
+    # Named only when there are some: the column's default is the empty list, and a story without
+    # criteria is created on a database that has no such column yet. No rank: a new story comes
+    # last in its list, among the ones nobody has ordered.
+    if fields.get("acceptance_criteria"):
+        row["acceptance_criteria"] = fields["acceptance_criteria"]
     res = client.table("user_stories").insert(row).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create story")
@@ -480,8 +487,12 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     institution_id = _require_writer(client, project_id=story["project_id"], user_id=user_id)
     if "title" in fields and fields["title"] is None:
         raise HTTPException(status_code=422, detail=TITLE_REQUIRED)
+    if "acceptance_criteria" in fields and fields["acceptance_criteria"] is None:
+        raise HTTPException(status_code=422, detail=CRITERIA_REQUIRED)
     payload: dict = {}
-    for k in ("title", "description_md", "points", "assignee_id"):
+    # The criteria only when the request names them, so an edit that leaves them out works on a
+    # database without the column.
+    for k in ("title", "description_md", "points", "assignee_id", "acceptance_criteria"):
         if k in fields:
             payload[k] = fields[k]
     if "sprint_id" in fields:

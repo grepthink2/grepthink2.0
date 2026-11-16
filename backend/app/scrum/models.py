@@ -7,9 +7,9 @@ authoritative in the controller — Pydantic here is a fast pre-flight.
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 BoardStatus = Literal["todo", "in_progress", "done"]
 EstimateScale = Literal["linear", "exponential", "fibonacci"]
@@ -31,6 +31,15 @@ ESTIMATE_SCALES: dict[str, list[int]] = {
     "exponential": [1, 2, 4, 8, 16, 32],
     "fibonacci": [1, 2, 3, 5, 8, 13],
 }
+#: A story holds at most this many acceptance criteria (the database's
+#: user_stories_criteria_valid caps it too), each 1 to CRITERION_MAX characters once trimmed.
+CRITERIA_MAX = 20
+CRITERION_MAX = 300
+#: One acceptance criterion as a request sends it: trimmed, then 1 to CRITERION_MAX characters, so
+#: a blank one is refused.
+Criterion = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=CRITERION_MAX)
+]
 
 # ----- Requests -----
 
@@ -60,6 +69,7 @@ class CreateStoryRequest(BaseModel):
     points: int | None = Field(None, gt=0)
     assignee_id: str | None = None
     sprint_id: str | None = None
+    acceptance_criteria: list[Criterion] | None = Field(None, max_length=CRITERIA_MAX)
 
 
 class UpdateStoryRequest(BaseModel):
@@ -68,6 +78,8 @@ class UpdateStoryRequest(BaseModel):
     points: int | None = Field(None, gt=0)
     assignee_id: str | None = None
     sprint_id: str | None = None  # explicit null in JSON ⇒ move to backlog
+    #: The whole list, in order: it replaces the story's, and [] clears it (explicit null is a 422).
+    acceptance_criteria: list[Criterion] | None = Field(None, max_length=CRITERIA_MAX)
 
 
 class CreateTaskRequest(BaseModel):
@@ -290,11 +302,6 @@ class BoardSummaryResponse(BaseModel):
     # included, and whether an assistant can reach the connector.
     story_count: int
     connector_ready: bool = False
-
-
-class StoryResponse(BaseModel):
-    message: str
-    story: StoryOut
 
 
 class TaskResponse(BaseModel):

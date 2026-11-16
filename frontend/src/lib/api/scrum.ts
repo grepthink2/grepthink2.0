@@ -72,11 +72,14 @@ export const scrumApi = {
     return 'sprint' in res ? res.sprint : res;
   },
 
-  createStory: async (projectId: string, body: ApiCreateStoryBody) => {
-    return apiRequest<{ message: string; story: ApiScrumStory }>(
+  /** The story as saved, without tasks. */
+  createStory: async (projectId: string, body: ApiCreateStoryBody): Promise<ApiScrumStory> => {
+    const res = await apiRequest<ApiScrumStory | { message: string; story: ApiScrumStory }>(
       `/api/projects/${projectId}/scrum/stories`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, story}.
+    return 'story' in res ? res.story : res;
   },
 
   /** The story as saved, without its tasks. */

@@ -947,6 +947,14 @@ export interface ApiScrumStory {
   assignee_id: string | null;
   /** Legacy archive flag: set ⇒ the story is in the backlog whatever its sprint_id. Read-only. */
   archived_at: string | null;
+  /**
+   * Its place in its sprint's list or the backlog's, 1 first; null until the team orders it (a new
+   * story, or one just moved to another list), and those come last, by key (`utils/storyOrder.ts`).
+   * Like `acceptance_criteria`, missing only from a backend older than this client.
+   */
+  rank?: number | null;
+  /** Short statements of what "done" means for the story, in order; at most 20. */
+  acceptance_criteria?: string[];
   comment_count: number;
   tasks: ApiScrumTask[];
 }
@@ -1068,6 +1076,8 @@ export interface ApiCreateStoryBody {
   assignee_id?: string;
   /** Omit for backlog. */
   sprint_id?: string;
+  /** At most 20, each 1–300 characters once trimmed; omit for none. */
+  acceptance_criteria?: string[];
 }
 
 export interface ApiUpdateStoryBody {
@@ -1078,6 +1088,8 @@ export interface ApiUpdateStoryBody {
   assignee_id?: string;
   /** Explicit null moves the story to the backlog. */
   sprint_id?: string | null;
+  /** The whole list, replacing the story's; [] clears it (an omitted key leaves it as it is). */
+  acceptance_criteria?: string[];
 }
 
 export interface ApiCreateTaskBody {

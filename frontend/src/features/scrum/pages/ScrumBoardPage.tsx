@@ -332,12 +332,12 @@ export default function ScrumBoardPage() {
     const created = await createStory(body);
     setSavingStory(false);
     if (!created) return;              // the hook already raised the error toast
-    push('success', `${created.story.key} created`);
+    push('success', `${created.key} created`);
     // Continue the flow: land in the new story so its tasks can be added now. One transition closes
     // the editor and opens the story (the router navigates in one): never a commit with no modal.
     startTransition(() => {
       setCreatingStory(false);
-      setStoryParam(created.story.id);
+      setStoryParam(created.id);
     });
   };
 

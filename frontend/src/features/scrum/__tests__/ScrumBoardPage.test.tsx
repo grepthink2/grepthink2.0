@@ -326,7 +326,7 @@ describe('ScrumBoardPage create story (F13)', () => {
 
   it('creates the story and lands in it so tasks can be added next', async () => {
     const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
-    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.createStory).mockResolvedValue(created);
     vi.mocked(api.getScrumBoard).mockResolvedValue({
       ...boardFixture(), stories: [...boardFixture().stories, created],
     });
@@ -934,7 +934,7 @@ describe('ScrumBoardPage modal swaps never commit an empty screen', () => {
 
   it('a created story replaces the new-story editor in one commit', async () => {
     const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
-    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.createStory).mockResolvedValue(created);
     vi.mocked(api.getScrumBoard).mockResolvedValue({
       ...boardFixture(), stories: [...boardFixture().stories, created],
     });

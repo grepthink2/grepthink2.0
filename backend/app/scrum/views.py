@@ -27,7 +27,6 @@ from app.scrum.models import (
     ScrumReposListResponse,
     SprintOut,
     StoryOut,
-    StoryResponse,
     SummaryCounts,
     TaskOut,
     TaskRef,
@@ -115,11 +114,12 @@ def update_sprint(
 
 def create_story(
     project_id: str, body: CreateStoryRequest, user_id: str = Depends(require_user)
-) -> StoryResponse:
+) -> StoryOut:
+    """Create a story. Answers the story as saved, without tasks."""
     row = controller.create_story(
         project_id=project_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return StoryResponse(message="Story created successfully", story=_story_out(row))
+    return _story_out(row)
 
 
 def update_story(

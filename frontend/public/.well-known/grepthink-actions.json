@@ -392,12 +392,13 @@
     {
       "id": "create_story", "title": "Create a user story", "role": "project-member",
       "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/stories",
-      "params": {"title": "string!", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (omit for backlog)"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"title": "string!", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (omit for backlog)", "acceptance_criteria": "string[] (at most 20, each 1-300 characters once trimmed; a blank one is refused)"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Answers the story as saved, without tasks."
     },
     {
       "id": "update_story", "title": "Update or move a user story", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/scrum/stories/{story_id}",
-      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)", "acceptance_criteria": "string[] (the whole list, replacing the story's; [] clears it; at most 20, each 1-300 characters once trimmed)"}, "uiRoute": "/app/projects/{projectId}/board"
     },
     {
       "id": "delete_scrum_story", "title": "Delete a backlog story and its tasks", "role": "project-member",
