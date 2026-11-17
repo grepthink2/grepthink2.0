@@ -36,6 +36,8 @@ KINDS = frozenset(
         "board_viewed",
         "analytics_viewed",
         "board_agent_fill",
+        "document_created",
+        "document_finalized",
     }
 )
 

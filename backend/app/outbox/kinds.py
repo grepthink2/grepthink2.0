@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.classes.invite_email import render_class_invite
+from app.documents.notify import render_document_finalized
 from app.outbox.rendered import Rendered
 from app.utils.email import wrap_editor_html_for_email
 
@@ -81,6 +82,8 @@ KINDS: dict[str, Kind] = {
     for kind in (
         Kind(name="class_invite", render=_render_class_invite, notify_creator_on_failure=True),
         Kind(name="custom_invite", render=_render_custom_invite, notify_creator_on_failure=True),
+        # A team's TAs hear that it finalized a document (app/documents/notify.py). Transactional.
+        Kind(name="document_finalized", render=render_document_finalized),
     )
 }
 
