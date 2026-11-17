@@ -19,6 +19,7 @@ import { interestApi } from './api/interest';
 import { staffingApi } from './api/staffing';
 import { scheduleApi } from './api/schedule';
 import { scrumApi } from './api/scrum';
+import { documentsApi } from './api/documents';
 import { analyticsApi } from './api/analytics';
 import { searchApi } from './api/search';
 import { mcpApi } from './api/mcp';
@@ -40,6 +41,7 @@ export const api = {
   ...staffingApi,
   ...scheduleApi,
   ...scrumApi,
+  ...documentsApi,
   ...analyticsApi,
   ...searchApi,
   ...mcpApi,

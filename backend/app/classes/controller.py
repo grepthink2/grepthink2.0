@@ -26,7 +26,12 @@ from app.institutions.controller import (
 )
 from app.outbox import controller as outbox
 from app.outbox import invite_jobs
-from app.scrum.controller import SPRINTS_IN_USE, ensure_project_sprints
+from app.scrum.controller import (
+    SPRINTS_IN_USE,
+    ensure_project_sprints,
+    sprint_in_use,
+    sprints_with_work,
+)
 from app.scrum.schedule import Schedule, latest_sprint_end, schedule_end, schedule_problem
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
@@ -1035,26 +1040,33 @@ def _class_teams(client, class_id: str) -> list[dict]:
 
 
 def _refuse_sprints_in_use(client, teams: list[dict], count: int) -> None:
-    """409 :data:`~app.scrum.controller.SPRINTS_IN_USE` when a story is in a team's sprint beyond
-    ``count``, which a schedule of ``count`` sprints deletes; archived stories count, as in
-    :func:`~app.scrum.controller.ensure_project_sprints`.
+    """409 :data:`~app.scrum.controller.SPRINTS_IN_USE` when a story or a document is in a team's
+    sprint beyond ``count``, which a schedule of ``count`` sprints deletes; archived stories count, as
+    in :func:`~app.scrum.controller.ensure_project_sprints`.
 
     The first such team in ``teams``' order is named, with its lowest such sprint. One read: the
-    teams' sprints whose ``sequence`` is above ``count``, each with its stories' ids. None without
-    teams. Sprints with no ``sequence`` are never deleted, so never read.
+    teams' sprints whose ``sequence`` is above ``count``, each with its stories' and documents' ids
+    (:func:`~app.scrum.controller.sprints_with_work`). None without teams. Sprints with no
+    ``sequence`` are never deleted, so never read.
     """
     if not teams:
         return
-    beyond = (
-        client.table("sprints")
-        .select("project_id, sequence, user_stories(id)")
-        .in_("project_id", [team["id"] for team in teams])
-        .gt("sequence", count)
-        .execute()
-    ).data or []
+    team_ids = [team["id"] for team in teams]
+    beyond = sprints_with_work(
+        lambda embeds: (
+            (
+                client.table("sprints")
+                .select(f"project_id, sequence, {embeds}")
+                .in_("project_id", team_ids)
+                .gt("sequence", count)
+                .execute()
+            ).data
+            or []
+        )
+    )
     lowest: dict[str, int] = {}
     for sprint in beyond:
-        if sprint.get("user_stories"):
+        if sprint_in_use(sprint):
             team_id, k = str(sprint["project_id"]), sprint["sequence"]
             lowest[team_id] = min(k, lowest.get(team_id, k))
     for team in teams:

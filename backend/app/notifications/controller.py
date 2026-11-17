@@ -27,6 +27,7 @@ NOTIFICATION_TYPES = frozenset(
         "member_removed",
         "email_undeliverable",
         "mention",
+        "document_finalized",
     }
 )
 
@@ -565,6 +566,30 @@ def notify_mention(
             )
     except Exception:
         logger.exception("notify_mention failed | entity_type=%s", entity_type)
+
+
+def notify_document_finalized(
+    *,
+    recipient_ids: list[str],
+    project_name: str,
+    document_title: str,
+    document_id: str,
+) -> None:
+    """Tell each of ``recipient_ids`` (the team's TAs) that the team finalized a document, e.g.
+    "Trailhead finalized its Sprint 2 report". One insert for all of them; never raises."""
+    _insert_notifications(
+        [
+            {
+                "user_id": user_id,
+                "type": "document_finalized",
+                "title": "Document finalized",
+                "body": f"{project_name} finalized its {document_title}",
+                "entity_type": "document",
+                "entity_id": document_id,
+            }
+            for user_id in recipient_ids
+        ]
+    )
 
 
 def notify_project_created_by_student(

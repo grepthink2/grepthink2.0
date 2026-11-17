@@ -90,6 +90,20 @@ describe('apiRequest', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it('answers the text of a file when asked for text', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('# Title\n', { status: 200, headers: { 'Content-Type': 'text/markdown; charset=utf-8' } }),
+    );
+    await expect(apiRequest<string>('/api/x/markdown', {}, 'text')).resolves.toBe('# Title\n');
+  });
+
+  it('still refuses a failed text request with the server detail', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(404, { detail: 'Document not found' }));
+    const err = await failureOf(apiRequest('/api/x/markdown', {}, 'text'));
+    expect(err.message).toBe('Document not found');
+    expect(err.status).toBe(404);
+  });
+
   it('returns undefined for 204 No Content', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
     await expect(apiRequest('/api/x', { method: 'DELETE' })).resolves.toBeUndefined();

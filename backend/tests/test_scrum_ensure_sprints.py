@@ -17,10 +17,12 @@ from datetime import date
 
 import pytest
 from fastapi import HTTPException
+from postgrest.exceptions import APIError
 
 from app.core.db import get_client
 from app.scrum import controller
 from app.scrum.schedule import Schedule
+from tests import fake_supabase
 from tests.scrum_support import OTHER_PID, PID, UID, scrum_db
 
 START = date(2026, 9, 28)  # a Monday
@@ -310,3 +312,54 @@ def test_a_sprint_without_a_sequence_survives_every_call(monkeypatch):
         (2, "Sprint 2", "2026-11-05", "2026-12-04"),
     ]
     assert db.rows("user_stories")[0]["sprint_id"] == "legacy"
+
+
+def _document(sprint_id: str) -> dict:
+    return {
+        "id": f"doc-{sprint_id}",
+        "project_id": PID,
+        "kind": "sprint_report",
+        "sprint_id": sprint_id,
+    }
+
+
+def test_a_document_beyond_the_count_refuses_the_change_as_a_story_does(monkeypatch):
+    """Sprint 3 holds no story but a sprint report: deleting the sprint would delete the report.
+    The documents come with the stories, in the one read."""
+    db = _seed(monkeypatch, sprints=SCHEDULED, stories=[_story("A", "s1")])
+    db.rows("project_documents").append(_document("s3"))
+
+    with pytest.raises(HTTPException) as refused:
+        _ensure(count=2)
+
+    assert refused.value.status_code == 409
+    assert refused.value.detail == (
+        "Trailhead already uses Sprint 3; lower the count after they move their stories or "
+        "delete that plan"
+    )
+    assert _writes(db) == []
+    assert db.executes == 1
+
+
+def test_before_the_documents_table_exists_the_check_reads_the_stories_alone(monkeypatch):
+    """PostgREST finds no relationship to a table that isn't there yet (PGRST200): the read runs
+    again without the documents, and the schedule changes as before."""
+    db = _seed(monkeypatch, sprints=SCHEDULED, stories=[_story("A", "s1")])
+    real = fake_supabase._Query.execute
+
+    def execute(query):
+        if query._table == "sprints" and "project_documents" in query._select:
+            raise APIError(
+                {
+                    "code": "PGRST200",
+                    "message": "Could not find a relationship",
+                    "details": None,
+                    "hint": None,
+                }
+            )
+        return real(query)
+
+    monkeypatch.setattr(fake_supabase._Query, "execute", execute)
+
+    assert _ensure(count=2) == {"created": 0, "updated": 0, "deleted": 1}
+    assert _writes(db) == ["delete"]

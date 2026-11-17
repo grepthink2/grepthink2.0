@@ -341,7 +341,10 @@ SPRINT_ROUND_TRIPS = 2
 def teams(monkeypatch):
     """INSTR's two classes, each with one team. STUDENT is enrolled in both and on no team."""
     fake = FakeSupabase(
-        relations={("sprints", "user_stories"): ("id", "sprint_id", True)},
+        relations={
+            ("sprints", "user_stories"): ("id", "sprint_id", True),
+            ("sprints", "project_documents"): ("id", "sprint_id", True),
+        },
         classes=[
             {
                 "id": SCHEDULED,
@@ -544,7 +547,10 @@ CHECKS = ["classes:select", "projects:select", "sprints:select"]
 def term(monkeypatch):
     """TERM with its two teams, neither with a numbered sprint; ELSEWHERE in OTHER_TERM."""
     fake = FakeSupabase(
-        relations={("sprints", "user_stories"): ("id", "sprint_id", True)},
+        relations={
+            ("sprints", "user_stories"): ("id", "sprint_id", True),
+            ("sprints", "project_documents"): ("id", "sprint_id", True),
+        },
         classes=[
             {
                 "id": TERM,
@@ -902,3 +908,25 @@ def test_a_class_with_no_last_day_takes_a_schedule_then_refuses_a_last_day_a_wee
     # The class row itself, not {"message": ..., "class": ...} (STYLE_GUIDE.md, Response Format).
     assert res.json() == _term(term)
     assert _term(term)["end_date"] == "2026-10-19"
+
+
+def test_a_document_in_a_sprint_the_change_would_delete_refuses_it_before_anything_is_written(
+    client, term
+):
+    """Alpha's Sprint 5 holds no story but a sprint report, which the deletion would take with it."""
+    _running(term, SIX_WEEKLY, SIX_WEEKLY_SPRINTS)
+    term.rows("project_documents").append(
+        {
+            "id": "alpha-report-5",
+            "project_id": ALPHA,
+            "kind": "sprint_report",
+            "sprint_id": f"{ALPHA}-5",
+        }
+    )
+    sprints_before = [dict(s) for s in term.rows("sprints")]
+
+    res = _change(client, FOUR_WEEKLY)
+
+    assert (res.status_code, res.json()["detail"]) == (409, IN_USE.format(team="Alpha", k=5))
+    assert term.rows("sprints") == sprints_before
+    assert sorted(_trace(term)) == CHECKS

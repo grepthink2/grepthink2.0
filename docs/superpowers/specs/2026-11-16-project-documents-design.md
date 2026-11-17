@@ -265,6 +265,99 @@ Each kind's Markdown follows its template's headings; the heading block (documen
 team name, date, and revision where the template asks) comes from the project, the sprint and the
 revision.
 
+**Amended 2026-11-17** (while building PR 2):
+
+1. The migration is `2026-11/2026-11-17_project_documents.sql`, and four functions write the tables, each
+   plpgsql, SECURITY INVOKER, `search_path` pinned, executable by `service_role` only:
+   `document_create(p_project_id, p_kind, p_sprint_id, p_body, p_user)` (the document and its revision 1,
+   source `seed`; a second one is 23505, the API's 409), `document_save(p_document_id, p_body, p_user,
+   p_source, p_base)` (no snapshot: it answers `number, overwrote_number, overwrote_by`; P0002 for no such
+   document), `document_finalize(p_document_id, p_revision, p_snapshot, p_user)` and
+   `prune_document_revisions()`, run daily at 09:20 UTC by `prod/2026-11/2026-11-17_document_revisions_cron.sql`.
+2. Finalize adds no revision: it stamps the head. `source` allows `seed`, `edit`, `import` and `export`
+   only. The request names the revision the caller is looking at (`{revision}`); unless it is still the
+   head, `document_finalize` refuses under the document's lock (409 "The document changed; reload and try
+   again"). It writes the snapshot on that revision and makes the document final. Finalizing the revision
+   that is already the finalized one changes nothing and notifies nobody, so a snapshot, once written, never
+   changes.
+3. There is no `GET /documents/{id}/revisions/{number}`: `GET /documents/{id}?revision=n` reads one
+   revision (404 "Revision not found" for one that does not exist or was pruned), and the revisions list
+   has no bodies.
+4. The class's list is one row per document of the class's teams (id, kind, title, team, sprint, status,
+   revisions, edited since, last update), for the class instructor and its TAs (403 "Only the instructor
+   or a class TA can read the class's documents" for anyone else).
+5. The sprint report's averages to date count this sprint and every sprint of the team that started
+   before it, pooled: stories, then hours, over all their days. The release summary's backlog lists the
+   unfinished stories of each sprint, sprints by start, then the backlog's stories, each list in board
+   order. Seeds stay within the body limits: at most 30 key stories, at most 60 scenarios, a scenario's
+   title cut to 120 characters (the story's key when its title is blank) and its steps to the whole
+   criteria that fit in 2000 characters.
+6. A save checks that every story its body names is on the team's board (422 "A story is not on this
+   team's board"). Deleting takes the same roles as finalizing (403 "Only the Scrum Master or the Product
+   Owner can delete a document"). A project's document given a sprint is 422 "This document belongs to the
+   project, not to a sprint".
+7. Saving (30 a minute) and finalizing (10 a minute) are rate-limited per signed-in user: a save stores up
+   to 256 kB, and a finalize emails the team's TAs.
+8. The in-app notification's `entity_id` is the document's id; the email links to
+   `/app/projects/<project>/documents/<document>`.
+
+**Amended 2026-11-17, after the branch review:**
+
+1. **Every hand-in is kept.** `project_document_revisions` gains `finalized_at` and `finalized_by`, which
+   `document_finalize` stamps with the snapshot on the revision it hands in. A revision that carries a
+   snapshot answers it (`derived_frozen`) whichever hand-in is the document's latest; the revisions list marks
+   every hand-in (`finalized`, `finalized_at`) without reading snapshots; pruning never deletes a revision
+   with a snapshot. `document_finalize` answers NULL when it wrote nothing (the revision was finalized
+   already, by a request that won the lock), and the API then tells nobody and records nothing.
+2. **A document too long to store is refused, never a 500.** A body (create, save) or a snapshot (finalize)
+   over 200,000 bytes of compact UTF-8 JSON answers "This document is too long" (422 for a body, 409 for a
+   finalize), as does the database's size CHECK. The test report's derived sections hold each story its
+   scenarios name once, `stories: {<id>: {key, title, acceptance_criteria} | {missing: true}}`, and each
+   scenario lists its `story_ids`.
+3. *(Superseded by the counting rules below.)* **A sprint report describes the sprint as it ended.**
+   `sprint_burnup_days` gains `story_ids` and `done_story_ids` (nullable, no default; the same migration),
+   which every board snapshot writes from the rows it reads for its totals; on a database without them the
+   snapshot is saved without them. The report
+   takes the sprint's stories and its completed ones from the last saved day on or before the sprint's end
+   that recorded them, each shown as it is now (`missing` once deleted), and names that day (`as_of`); with
+   no such day it falls back to the board now (`as_of: "now"`). The rates to date use the same rule for each
+   sprint, and the burnup replays the task moves for the days nobody saved, as the board does.
+4. Shrinking a class's sprint schedule refuses (409, "already uses Sprint k") when a sprint it would delete
+   holds a document, as it does for a story.
+
+**Amended 2026-11-17, the maintainer's counting rules** (this supersedes item 3 of the amendment above):
+
+1. **Each saved burnup day records its sprint's stories with their numbers.** `sprint_burnup_days.stories`
+   (jsonb, nullable, no default; `sprint_burnup_days_stories_valid` holds it to NULL or a JSON array) lists
+   one `{id, done, hours, points}` per live story of the sprint that day, in board order: `done` by the
+   documents' rule (a task, and every task done), `hours` the sum of its tasks' estimate hours (0 when none
+   has one). It replaces `story_ids` and `done_story_ids`: the migration no longer adds them and drops them
+   where an earlier text of it did. The board writes it with every snapshot it takes, from the rows it reads
+   for its totals and with no round trip of its own; on a database without the column the day is saved
+   without it. A story points edit still takes no snapshot.
+2. **A sprint report reads the sprint's end record:** the last saved day on or before the sprint's last day
+   that has `stories` (`as_of`, that day), else the board now (`as_of: "now"`).
+3. **Stories.** `completed` and `not_completed` list the record's stories that still exist, each with its
+   key and title as they are now and its points and hours from the record. A story deleted since is left
+   out everywhere: no line, not counted. Without a record, the lines and numbers come from the board now.
+4. **Hours count only completed stories.** `hours_completed` is the sum of the record's hours over the
+   stories it marks done. An unfinished story adds nothing to its sprint, and its hours count in the sprint
+   where it is completed. Without a record: the task hours of the stories completed now.
+   `stories_completed`, the per-day rates and `to_date` use the same rule for every counted sprint, each
+   from its own end record or the board now.
+5. **After the sprint ended** (`after_sprint`, null without a record, empty while the sprint runs). Among
+   the record's stories that still exist and are still in the sprint (a story moved to another sprint shows
+   in that sprint's report): `stories`, those the record marks not done that are completed now (id, key,
+   title, points, hours, as they are now); `tasks`, the tasks of those and of the record's done stories
+   that are done now and were last moved to done after the sprint's last day at the school (id, story key,
+   title, hours, `done_on`; a task with no recorded move to done is left out), by `done_on` and then story
+   order, at most 100; `hours`, the hours of every such task. None of it enters the sprint's numbers or
+   rates.
+6. **The burnup is unchanged:** it counts every done task, so `hours_completed` can be below its last
+   point. The page and the Markdown name the figure "Hours in completed stories", and both show an "After
+   the sprint ended" section when `after_sprint` holds anything. Finalize freezes `after_sprint` with the
+   other derived sections; the connector's import still rebuilds days without a record.
+
 ## Part 3 — The web client (PR 3)
 
 - `BOARD_VIEWS` gains `documents`. The tab lists, in order: Release plan (a link to its tab, from PR

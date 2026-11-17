@@ -26,8 +26,8 @@ from fastapi import HTTPException
 from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
-from app.core.db import fan_out, get_client
-from app.core.errors import AppError, DatabaseConflictError
+from app.core.db import MISSING_TABLE_CODES, fan_out, get_client
+from app.core.errors import AppError, DatabaseConflictError, DatabaseError
 from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import (
@@ -112,21 +112,28 @@ def _board_access(client, *, project_id: str, user_id: str) -> tuple[str, str | 
     :data:`authz.NOT_PROJECT_MEMBER` when it exists but the caller is neither on the
     team nor staff for its class. One round trip for a member, the common case.
     """
+    access, institution_id, _ = _board_place(client, project_id=project_id, user_id=user_id)
+    return access, institution_id
+
+
+def _board_place(client, *, project_id: str, user_id: str) -> tuple[str, str | None, str | None]:
+    """:func:`_board_access`, and the project's class id, from the same reads."""
     # Row existence rather than ``authz.get_project_role``: ``project_members.role``
     # is nullable, and a member whose role is NULL is still on the team.
     member = (
         client.table("project_members")
-        .select("id, projects(classes(institution_id))")
+        .select("id, projects(class_id, classes(institution_id))")
         .eq("project_id", str(project_id))
         .eq("user_id", str(user_id))
         .limit(1)
         .execute()
     )
     if member.data:  # a membership row means the project exists
-        return "member", _institution_of(member.data[0].get("projects"))
+        project = member.data[0].get("projects") or {}
+        return "member", _institution_of(project), project.get("class_id")
     project = authz.load_project(client, project_id, class_columns="created_by, institution_id")
     if _staff_among(client, project, {str(user_id)}):
-        return "staff", _institution_of(project)
+        return "staff", _institution_of(project), project.get("class_id")
     raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
 
 
@@ -341,6 +348,27 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
 
 # ----------------------------------------------------------- class schedule ----
 
+#: A database without the documents' table (2026-11-17_project_documents.sql not applied yet): PostgREST
+#: knows no relationship from sprints to it (PGRST200), or no table at all.
+_NO_DOCUMENTS_CODES = frozenset({"PGRST200"}) | MISSING_TABLE_CODES
+
+
+def sprints_with_work(read) -> list[dict]:
+    """``read(embeds)``'s sprints, each with what keeps it from being deleted embedded: its stories and
+    its documents (a sprint report goes with its sprint). On a database without the documents' table
+    yet, the stories alone, one more round trip."""
+    try:
+        return read("user_stories(id), project_documents(id)")
+    except DatabaseError as exc:
+        if exc.pg_code not in _NO_DOCUMENTS_CODES:
+            raise
+        return read("user_stories(id)")
+
+
+def sprint_in_use(row: dict) -> bool:
+    """Whether a sprint read by :func:`sprints_with_work` holds a story or a document."""
+    return bool(row.get("user_stories") or row.get("project_documents"))
+
 
 def ensure_project_sprints(
     client, *, project_id: str, project_name: str, schedule: Schedule
@@ -350,8 +378,8 @@ def ensure_project_sprints(
     Sprint k of ``schedule`` is the team's sprint whose ``sequence`` is k, named "Sprint k"
     (:data:`~app.scrum.schedule.SPRINT_NAME`) and dated by the k-th window of
     :func:`~app.scrum.schedule.sprint_windows`. One read takes the team's sequenced sprints with
-    the ids of their stories, archived ones included. Then, each only when there is something to
-    write, it deletes the sprints beyond ``schedule.count`` in one delete, inserts the missing ones
+    the ids of their stories, archived ones included, and of their documents. Then, each only when
+    there is something to write, it deletes the sprints beyond ``schedule.count`` in one delete, inserts the missing ones
     in one insert, and rewrites the ones whose name or dates differ in one upsert on ``id``, in
     place, so their stories stay in them. Neither write sends ``status``: a new sprint takes the
     column default, a rewritten one keeps its stored value, and the API derives it from the dates.
@@ -361,20 +389,27 @@ def ensure_project_sprints(
     Who can call: the callers authorize (a team's creation, its class instructor's schedule
     change); nothing here checks a user. Returns ``{"created", "updated", "deleted"}`` counts.
     Raises 409 :data:`SPRINTS_IN_USE`, naming ``project_name`` and the lowest such k, when a story
-    is in a sprint beyond the count; nothing is written then. Round trips: the read and at most
-    one of each write. The schedule's own writes leave a team's sequences running from 1 with no
-    gap, so its count either grows (the insert) or shrinks (the delete): three at most.
+    or a document is in a sprint beyond the count (deleting the sprint would take a sprint report with
+    it); nothing is written then. Round trips: the read and at most one of each write. The schedule's
+    own writes leave a team's sequences running from 1 with no gap, so its count either grows (the
+    insert) or shrinks (the delete): three at most, and one more read on a database without the
+    documents' table yet (:func:`sprints_with_work`).
     """
-    rows = (
-        client.table("sprints")
-        .select("id, name, starts_at, ends_at, sequence, user_stories(id)")
-        .eq("project_id", str(project_id))
-        .not_.is_("sequence", "null")
-        .execute()
-    ).data or []
+    rows = sprints_with_work(
+        lambda embeds: (
+            (
+                client.table("sprints")
+                .select(f"id, name, starts_at, ends_at, sequence, {embeds}")
+                .eq("project_id", str(project_id))
+                .not_.is_("sequence", "null")
+                .execute()
+            ).data
+            or []
+        )
+    )
     by_sequence = {row["sequence"]: row for row in rows}
     extras = {k: row for k, row in by_sequence.items() if k > schedule.count}
-    in_use = [k for k, row in extras.items() if row.get("user_stories")]
+    in_use = [k for k, row in extras.items() if sprint_in_use(row)]
     if in_use:
         detail = SPRINTS_IN_USE.format(team=project_name, k=min(in_use))
         raise HTTPException(status_code=409, detail=detail)
@@ -960,35 +995,73 @@ def _sprint_progress(stories: list[dict]) -> dict:
     }
 
 
-def _live_burnup_totals(client, sprint_id: str) -> Totals:
-    """Totals straight from the database, for writes that have no board loaded: the sprint's
-    live stories with their tasks embedded, in one read."""
-    stories = (
+def _live_sprint_stories(client, sprint_id: str) -> list[dict]:
+    """The sprint's live stories with their tasks embedded, straight from the database, for writes
+    that have no board loaded: one read. Every story column, as the board reads them: the snapshot
+    lists the stories in board order, and ``rank`` exists only where
+    2026-11-16_story_rank_and_criteria.sql has been applied."""
+    return (
         client.table("user_stories")
-        .select("id, tasks(points, estimate_hours, status)")
+        .select("*, tasks(points, estimate_hours, status)")
         .eq("sprint_id", str(sprint_id))
         .is_("archived_at", "null")
         .execute()
     ).data or []
-    return _totals(stories, _done_tasks(stories))
+
+
+def _story_record(stories: list[dict]) -> list[dict]:
+    """What a snapshot records of the sprint's live ``stories`` (``tasks`` embedded), in board order:
+    each one's id, whether it is completed (a task, and every task done), the sum of its tasks'
+    estimate hours (0 when none has one) and its points. A sprint report reads the sprint as it ended
+    from it (app/documents)."""
+    return [
+        {
+            "id": s["id"],
+            "done": bool(s.get("tasks")) and all(t.get("status") == "done" for t in s["tasks"]),
+            "hours": sum(t.get("estimate_hours") or 0 for t in s.get("tasks") or []),
+            "points": s.get("points"),
+        }
+        for s in sorted(stories, key=_story_order)
+    ]
+
+
+#: A column the table does not have, as PostgREST and Postgres say it: the snapshot's ``stories`` on a
+#: database 2026-11-17_project_documents.sql has not reached yet.
+_MISSING_COLUMN_CODES = frozenset({"PGRST204", "42703"})
 
 
 def _snapshot_burnup_safe(
-    client, sprint_id: str, institution_id: str | None, totals: Totals | None = None
+    client,
+    sprint_id: str,
+    institution_id: str | None,
+    totals: Totals | None = None,
+    stories: list[dict] | None = None,
 ) -> None:
-    """Best-effort daily snapshot in both units, filed under the day at the project's school
-    (``institution_id``); never fails the triggering write, an unreadable school included.
-    Pass the sprint's precomputed `totals` to skip the recompute."""
+    """Best-effort daily snapshot in both units, with the sprint's stories as they stand
+    (:func:`_story_record`), filed under the day at the project's school (``institution_id``); never
+    fails the triggering write, an unreadable school included. Pass the sprint's live ``stories``
+    (``tasks`` embedded) the caller has loaded, and their ``totals``, to skip the read. Without the
+    ``stories`` column (its migration not applied yet) the day is saved again without it, one more
+    round trip."""
     try:
         day = _today(institution_timezone(institution_id))
+        if stories is None:
+            stories = _live_sprint_stories(client, sprint_id)
         if totals is None:
-            totals = _live_burnup_totals(client, sprint_id)
-        client.table("sprint_burnup_days").upsert(
-            {"sprint_id": str(sprint_id), "day": day.isoformat(), **totals.values()},
-            on_conflict="sprint_id,day",
-        ).execute()
+            totals = _totals(stories, _done_tasks(stories))
+        row = {"sprint_id": str(sprint_id), "day": day.isoformat(), **totals.values()}
+        try:
+            _upsert_snapshot(client, {**row, "stories": _story_record(stories)})
+        except DatabaseError as exc:
+            if exc.pg_code not in _MISSING_COLUMN_CODES:
+                raise
+            _upsert_snapshot(client, row)
     except Exception:
         logger.exception("scrum: burnup snapshot failed | sprint=%s", sprint_id)
+
+
+def _upsert_snapshot(client, row: dict) -> None:
+    client.table("sprint_burnup_days").upsert(row, on_conflict="sprint_id,day").execute()
 
 
 def _completed_by_day_from_moves(
@@ -1342,7 +1415,9 @@ def get_board(
 
     sprint_series = None
     if selected:
-        _snapshot_burnup_safe(client, selected["id"], institution_id, totals=totals)
+        _snapshot_burnup_safe(
+            client, selected["id"], institution_id, totals=totals, stories=stories
+        )
         starts = date.fromisoformat(str(selected["starts_at"]))
         ends = date.fromisoformat(str(selected["ends_at"]))
         snaps = snaps_by_sprint.get(selected["id"], [])
@@ -1742,3 +1817,18 @@ def ai_draft(
         on_conflict="user_id,used_on",
     ).execute()
     return {"draft": draft}
+
+
+# ------------------------------------------------------- shared with documents ----
+# The project documents (app/documents) read the board by the board's own rules: who may see it,
+# the school's day, which stories a list holds and in what order, and what a burnup counts. These
+# are the names they import.
+board_access = _board_access
+board_place = _board_place
+school_today = _today
+school_day = _school_day
+sprint_days = _sprint_days
+in_backlog = _in_backlog
+story_order = _story_order
+burnup_totals = _totals
+done_tasks = _done_tasks
