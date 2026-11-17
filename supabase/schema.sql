@@ -2754,3 +2754,166 @@ REVOKE ALL ON public.mcp_clients, public.mcp_authorizations, public.mcp_grants, 
   FROM anon, authenticated;
 GRANT ALL ON public.mcp_clients, public.mcp_authorizations, public.mcp_grants, public.mcp_tokens
   TO service_role;
+
+-- ============ project documents (2026-11-17_project_documents.sql) ============
+-- A team's documents (app/documents): a sprint report per sprint, a release summary and a test plan and report
+-- per project. Every save is a revision; finalize stamps the head revision with the derived sections it froze
+-- (snapshot). The four functions below are the only writers of either table. Browser roles hold nothing.
+CREATE TABLE IF NOT EXISTS public.project_documents (
+  id                 uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id         uuid        NOT NULL REFERENCES public.projects (id) ON DELETE CASCADE,
+  kind               text        NOT NULL,
+  sprint_id          uuid        REFERENCES public.sprints (id) ON DELETE CASCADE,  -- a sprint's kinds only
+  status             text        NOT NULL DEFAULT 'draft',                          -- final ⇒ never back
+  head_revision      integer     NOT NULL DEFAULT 0,
+  finalized_revision integer,
+  finalized_at       timestamptz,
+  finalized_by       uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
+  created_by         uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT project_documents_kind_valid CHECK (kind IN
+    ('sprint_plan', 'sprint_report', 'release_plan', 'release_summary', 'test_report')),
+  CONSTRAINT project_documents_status_valid CHECK (status IN ('draft', 'final')),
+  CONSTRAINT project_documents_sprint_shape CHECK (
+    (kind IN ('sprint_plan', 'sprint_report')) = (sprint_id IS NOT NULL))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS project_documents_sprint_kind_uq
+  ON public.project_documents (sprint_id, kind) WHERE sprint_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS project_documents_project_kind_uq
+  ON public.project_documents (project_id, kind) WHERE sprint_id IS NULL;
+CREATE INDEX IF NOT EXISTS project_documents_project_idx ON public.project_documents (project_id);
+CREATE INDEX IF NOT EXISTS project_documents_created_by_idx ON public.project_documents (created_by);
+CREATE INDEX IF NOT EXISTS project_documents_finalized_by_idx ON public.project_documents (finalized_by);
+
+CREATE TABLE IF NOT EXISTS public.project_document_revisions (
+  document_id uuid        NOT NULL REFERENCES public.project_documents (id) ON DELETE CASCADE,
+  number      integer     NOT NULL,
+  body        jsonb       NOT NULL,
+  snapshot    jsonb,                                   -- the derived sections, frozen by finalize
+  source      text        NOT NULL DEFAULT 'edit',
+  saved_by    uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
+  saved_at    timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (document_id, number),
+  CONSTRAINT project_document_revisions_number_valid CHECK (number >= 1),
+  CONSTRAINT project_document_revisions_source_valid CHECK (source IN ('seed', 'edit', 'import', 'export')),
+  CONSTRAINT project_document_revisions_size
+    CHECK (pg_column_size(body) <= 262144 AND (snapshot IS NULL OR pg_column_size(snapshot) <= 262144))
+);
+CREATE INDEX IF NOT EXISTS project_document_revisions_saved_by_idx
+  ON public.project_document_revisions (saved_by);
+
+ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_document_revisions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.project_documents, public.project_document_revisions FROM anon, authenticated;
+GRANT ALL ON public.project_documents, public.project_document_revisions TO service_role;
+
+-- A new draft whose head is revision 1 ('seed'). A second one of a sprint and kind, or a project and kind,
+-- fails on its unique index (23505).
+CREATE OR REPLACE FUNCTION public.document_create(
+  p_project_id uuid, p_kind text, p_sprint_id uuid, p_body jsonb, p_user uuid
+) RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO project_documents (project_id, kind, sprint_id, head_revision, created_by)
+  VALUES (p_project_id, p_kind, p_sprint_id, 1, p_user)
+  RETURNING id INTO v_id;
+  INSERT INTO project_document_revisions (document_id, number, body, source, saved_by)
+  VALUES (v_id, 1, p_body, 'seed', p_user);
+  RETURN v_id;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.document_create(uuid, text, uuid, jsonb, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.document_create(uuid, text, uuid, jsonb, uuid) TO service_role;
+
+-- One save under the document's row lock: revision head+1 becomes the head. With p_base not the old head, it
+-- answers the replaced head's number and saver. No such document: P0002.
+CREATE OR REPLACE FUNCTION public.document_save(
+  p_document_id uuid, p_body jsonb, p_user uuid, p_source text, p_base integer
+) RETURNS TABLE (number integer, overwrote_number integer, overwrote_by uuid)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+#variable_conflict use_column
+DECLARE
+  v_head integer;
+  v_head_by uuid;
+BEGIN
+  SELECT d.head_revision INTO v_head FROM project_documents d WHERE d.id = p_document_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'document not found' USING ERRCODE = 'no_data_found';
+  END IF;
+  SELECT r.saved_by INTO v_head_by
+    FROM project_document_revisions r WHERE r.document_id = p_document_id AND r.number = v_head;
+  INSERT INTO project_document_revisions (document_id, number, body, source, saved_by)
+  VALUES (p_document_id, v_head + 1, p_body, p_source, p_user);
+  UPDATE project_documents d SET head_revision = v_head + 1, updated_at = now() WHERE d.id = p_document_id;
+  number := v_head + 1;
+  IF p_base IS NOT NULL AND p_base <> v_head THEN
+    overwrote_number := v_head;
+    overwrote_by := v_head_by;
+  END IF;
+  RETURN NEXT;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.document_save(uuid, jsonb, uuid, text, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.document_save(uuid, jsonb, uuid, text, integer) TO service_role;
+
+-- Stamps the head revision with p_snapshot and makes the document final at it; 23505 ("document changed")
+-- unless p_revision is the head; the revision that is already the finalized one changes nothing. No such
+-- document: P0002.
+CREATE OR REPLACE FUNCTION public.document_finalize(
+  p_document_id uuid, p_revision integer, p_snapshot jsonb, p_user uuid
+) RETURNS integer LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+DECLARE
+  v_head integer;
+  v_finalized integer;
+BEGIN
+  SELECT d.head_revision, d.finalized_revision INTO v_head, v_finalized
+    FROM project_documents d WHERE d.id = p_document_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'document not found' USING ERRCODE = 'no_data_found';
+  END IF;
+  IF v_head IS DISTINCT FROM p_revision THEN
+    RAISE EXCEPTION 'document changed' USING ERRCODE = 'unique_violation';
+  END IF;
+  IF v_finalized IS NOT DISTINCT FROM p_revision THEN
+    RETURN p_revision;
+  END IF;
+  UPDATE project_document_revisions r SET snapshot = p_snapshot
+   WHERE r.document_id = p_document_id AND r.number = p_revision;
+  UPDATE project_documents d
+     SET status = 'final', finalized_revision = p_revision, finalized_at = now(), finalized_by = p_user,
+         updated_at = now()
+   WHERE d.id = p_document_id;
+  RETURN p_revision;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.document_finalize(uuid, integer, jsonb, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.document_finalize(uuid, integer, jsonb, uuid) TO service_role;
+
+-- Keeps each document's head and finalized revisions and deletes the rest: 7 days (UTC) after its sprint ended,
+-- or 30 days after its class's end_date for a project's documents (no end_date: nothing). Run daily by
+-- backend/database/migrations/prod/2026-11/2026-11-17_document_revisions_cron.sql.
+CREATE OR REPLACE FUNCTION public.prune_document_revisions()
+RETURNS integer LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
+DECLARE
+  v_today date := (now() AT TIME ZONE 'UTC')::date;
+  v_pruned integer;
+BEGIN
+  DELETE FROM project_document_revisions r
+   USING project_documents d
+   WHERE r.document_id = d.id
+     AND r.number <> d.head_revision
+     AND r.number IS DISTINCT FROM d.finalized_revision
+     AND (
+       EXISTS (SELECT 1 FROM sprints s WHERE s.id = d.sprint_id AND s.ends_at <= v_today - 7)
+       OR (d.sprint_id IS NULL
+           AND EXISTS (SELECT 1 FROM projects p JOIN classes c ON c.id = p.class_id
+                        WHERE p.id = d.project_id AND c.end_date <= v_today - 30))
+     );
+  GET DIAGNOSTICS v_pruned = ROW_COUNT;
+  RETURN v_pruned;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.prune_document_revisions() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.prune_document_revisions() TO service_role;
