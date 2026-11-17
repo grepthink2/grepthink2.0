@@ -7,7 +7,7 @@ import { storyHours } from '../utils/rollups';
 import { ApiError } from '@/lib/api/client';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import type { ApiBoardStatus, ApiScrumBoard, ApiScrumStory, ApiScrumTask } from '@/lib/api';
-import { makeBoard, makeRef, makeStory, makeTask } from './fixtures';
+import { makeBoard, makeRef, makeSprint, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -633,16 +633,19 @@ describe('useScrumBoard story order', () => {
     expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
   });
 
-  it('puts the order back and explains when the save fails, keeping an edit made meanwhile', async () => {
+  it('puts the order back, explains and reloads the board when the save fails, keeping an edit made meanwhile', async () => {
     let refuse: (e: Error) => void = () => {};
     vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((_res, rej) => { refuse = rej; }));
     vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's2', key: 'US-2', points: 8 }));
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
+    let reload: (b: ApiScrumBoard) => void = () => {};
+    vi.mocked(api.getScrumBoard).mockReturnValueOnce(new Promise((res) => { reload = res; }));
 
     let saved: Promise<boolean> = Promise.resolve(true);
     act(() => { saved = result.current.reorderStories('sp1', ['s3', 's2', 's1']); });
     await act(async () => { await result.current.updateStory('s2', { points: 8 }); });
+    expect(ids(result.current.board!.stories)).toEqual(['s3', 's2', 's1']);   // the edit moves nothing
     await act(async () => { refuse(new Error('offline')); });
 
     await expect(saved).resolves.toBe(false);
@@ -650,7 +653,46 @@ describe('useScrumBoard story order', () => {
     expect(result.current.board!.stories.map((s) => s.rank)).toEqual([null, null, null]);
     expect(result.current.board!.stories[1].points).toBe(8);
     expect(result.current.notice).toEqual({ kind: 'error', message: 'offline' });
+    // Whatever refused it, the board may hold what this copy doesn't: it reloads.
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
+    await act(async () => { reload(orderBoard()); });
+  });
+
+  it('a save the preview refuses puts the order back with a calm notice, and reloads nothing', async () => {
+    vi.mocked(api.setStoryOrder).mockRejectedValue(new ReadOnlyPreviewError());
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.reorderStories('sp1', ['s3', 's2', 's1']); });
+
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
+    expect(result.current.notice?.kind).toBe('info');
     expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the ranks a reload brought in while the save was on its way to failing', async () => {
+    // A focus refresh lands during the save with a teammate's order; then the save is refused.
+    let refuse: (e: Error) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((_res, rej) => { refuse = rej; }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const teammates = makeBoard({
+      ...orderBoard(),
+      stories: ['s2', 's1', 's3'].map((id, i) => makeStory({ id, key: `US-${id.slice(1)}`, rank: i + 1 })),
+    });
+    vi.mocked(api.getScrumBoard).mockResolvedValue(teammates);
+
+    let saved: Promise<boolean> = Promise.resolve(true);
+    act(() => { saved = result.current.reorderStories('sp1', ['s3', 's1', 's2']); });
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(ids(result.current.board!.stories)).toEqual(['s2', 's1', 's3']);
+    await act(async () => {
+      refuse(new ApiError(500, 'Could not save your changes. Please try again.', 'Request failed'));
+    });
+
+    await expect(saved).resolves.toBe(false);
+    expect(ids(result.current.board!.stories)).toEqual(['s2', 's1', 's3']);
+    expect(result.current.board!.stories.map((s) => s.rank)).toEqual([1, 2, 3]);
   });
 
   it('a 409 says the stories changed and reloads the board', async () => {
@@ -693,14 +735,90 @@ describe('useScrumBoard story order', () => {
     expect(api.getScrumBoard).toHaveBeenCalledTimes(3);
   });
 
-  it("keeps a story edit's list in the board's order", async () => {
-    // The response carries the rank a teammate gave it since this board was loaded.
-    vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's3', key: 'US-3', title: 'Renamed', rank: 1 }));
+  it('loads the board again once the order is saved when a load started during the save', async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    let during: (b: ApiScrumBoard) => void = () => {};
+    vi.mocked(api.getScrumBoard)
+      .mockReturnValueOnce(new Promise((res) => { during = res; }))
+      .mockResolvedValueOnce(makeBoard({
+        ...orderBoard(),
+        stories: ['s2', 's3', 's1'].map((id, i) => makeStory({ id, key: `US-${id.slice(1)}`, rank: i + 1 })),
+      }));
+
+    let saved: Promise<boolean> = Promise.resolve(false);
+    act(() => { saved = result.current.reorderStories('sp1', ['s2', 's3', 's1']); });
+    act(() => { window.dispatchEvent(new Event('focus')); });
+    await act(async () => { during(orderBoard()); });                // it read the old order
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);
+
+    await act(async () => { save({ story_ids: ['s2', 's3', 's1'] }); });
+    await expect(saved).resolves.toBe(true);
+    await waitFor(() => expect(ids(result.current.board!.stories)).toEqual(['s2', 's3', 's1']));
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(3);
+  });
+
+  it('a sprint picked while an order saves stays picked: the reload asks for it', async () => {
+    const sprints = [makeSprint({ id: 'sp1' }), makeSprint({ id: 'sp2', name: 'Sprint 2' })];
+    const sprintTwo = makeBoard({
+      sprints, sprint_id: 'sp2', stories: [makeStory({ id: 's7', key: 'US-7', sprint_id: 'sp2' })],
+    });
+    vi.mocked(api.getScrumBoard).mockResolvedValue({ ...orderBoard(), sprints });
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    let switched: (b: ApiScrumBoard) => void = () => {};
+    let reloaded: (b: ApiScrumBoard) => void = () => {};
+    vi.mocked(api.getScrumBoard)
+      .mockReturnValueOnce(new Promise((res) => { switched = res; }))
+      .mockReturnValueOnce(new Promise((res) => { reloaded = res; }));
+
+    let saved: Promise<boolean> = Promise.resolve(false);
+    act(() => { saved = result.current.reorderStories('sp1', ['s2', 's1', 's3']); });
+    act(() => { void result.current.selectSprint('sp2'); });
+    await act(async () => { save({ story_ids: ['s2', 's1', 's3'] }); await saved; });
+
+    // The reload after the save asks for the sprint picked, not the one still on screen.
+    expect(vi.mocked(api.getScrumBoard).mock.calls.map((c) => c[1])).toEqual([undefined, 'sp2', 'sp2']);
+    await act(async () => { switched(sprintTwo); });
+    await act(async () => { reloaded(sprintTwo); });
+    expect(result.current.board?.sprint_id).toBe('sp2');
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('a story edit answered with the rank from before a reorder leaves the story where the reorder put it', async () => {
+    let answer: (s: ApiScrumStory) => void = () => {};
+    vi.mocked(api.updateStory).mockReturnValue(new Promise((res) => { answer = res; }));
+    vi.mocked(api.setStoryOrder).mockResolvedValue({ story_ids: ['s3', 's1', 's2'] });
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await act(async () => { await result.current.updateStory('s3', { title: 'Renamed' }); });
+    // The edit was written before the reorder, so it answers rank null.
+    let edited: Promise<unknown> = Promise.resolve();
+    act(() => { edited = result.current.updateStory('s3', { points: 5 }); });
+    await act(async () => { await result.current.reorderStories('sp1', ['s3', 's1', 's2']); });
+    await act(async () => { answer(makeStory({ id: 's3', key: 'US-3', points: 5, rank: null })); await edited; });
 
     expect(ids(result.current.board!.stories)).toEqual(['s3', 's1', 's2']);
+    expect(result.current.board!.stories[0]).toMatchObject({ points: 5, rank: 1 });
+  });
+
+  it('a story edit that fails puts its fields back but leaves the story where a reorder put it', async () => {
+    let refuse: (e: Error) => void = () => {};
+    vi.mocked(api.updateStory).mockReturnValue(new Promise((_res, rej) => { refuse = rej; }));
+    vi.mocked(api.setStoryOrder).mockResolvedValue({ story_ids: ['s3', 's1', 's2'] });
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let edited: Promise<unknown> = Promise.resolve();
+    act(() => { edited = result.current.updateStory('s3', { points: 5 }); });
+    await act(async () => { await result.current.reorderStories('sp1', ['s3', 's1', 's2']); });
+    await act(async () => { refuse(new Error('offline')); await edited; });
+
+    expect(ids(result.current.board!.stories)).toEqual(['s3', 's1', 's2']);
+    expect(result.current.board!.stories[0]).toMatchObject({ points: null, rank: 1 });
   });
 });
