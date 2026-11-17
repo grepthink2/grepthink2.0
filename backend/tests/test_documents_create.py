@@ -87,6 +87,7 @@ def test_a_sprint_report_answers_201_with_the_document_as_a_read_shows_it(db, cl
         "saved_by_name": "Tony Wu",
         "saved_at": revisions(db, row["id"])[0]["saved_at"],
         "source": "seed",
+        "finalized_at": None,
     }
     assert out["body"] == {"stop": [], "start": [], "keep": [], "satisfied_note": ""}
     assert [s["key"] for s in out["derived"]["completed"]] == ["US-3"]

@@ -12,10 +12,11 @@ Permission model, the board's (the service-role client bypasses RLS, so every ch
 
 Every save is a revision and the last writer wins (``document_save``, which also says when a save replaced
 a revision the saver never saw). A document's derived sections, what the board says, are worked out live
-until finalize freezes them: ``document_finalize`` stores them on the head revision (its snapshot), and
-whoever reads that revision afterwards gets the snapshot. A finalized document stays final when it is saved
-again, at its finalized revision, and says it was edited since. The SQL functions ``document_create``,
-``document_save`` and ``document_finalize`` are the only writers of revisions.
+until finalize freezes them: ``document_finalize`` stores them on the head revision (its snapshot, with when
+and by whom), and whoever reads a revision that carries a snapshot gets the snapshot. Every hand-in is kept,
+so a document finalized twice answers each hand-in as it was. A finalized document stays final when it is
+saved again, at its finalized revision, and says it was edited since. The SQL functions
+``document_create``, ``document_save`` and ``document_finalize`` are the only writers of revisions.
 
 Logs and exception messages carry ids only: never a document's text, a name or an address.
 """
@@ -80,14 +81,18 @@ _DOCUMENT_COLUMNS = (
     "id, project_id, kind, sprint_id, status, head_revision, finalized_revision, finalized_at, "
     "finalized_by, created_by, created_at, updated_at"
 )
-_PROFILE = "profiles(first_name, last_name, email)"
+#: A revision's saver. The revisions table has two foreign keys to profiles (its saver and its
+#: finalizer), so the embed names its own.
+_SAVER = "saver:profiles!project_document_revisions_saved_by_fkey(first_name, last_name, email)"
 #: A document with the profile of whoever finalized it (project_documents has two foreign keys to
 #: profiles, so the embed names its own).
 _DOCUMENT_SELECT = (
     f"{_DOCUMENT_COLUMNS}, "
     "finalizer:profiles!project_documents_finalized_by_fkey(first_name, last_name, email)"
 )
-_REVISION_COLUMNS = f"number, body, snapshot, source, saved_by, saved_at, {_PROFILE}"
+_REVISION_COLUMNS = (
+    f"number, body, snapshot, source, saved_by, saved_at, finalized_at, finalized_by, {_SAVER}"
+)
 #: Postgres' code for "no such row", raised by document_save and document_finalize.
 _NO_DATA_FOUND = "P0002"
 
@@ -233,7 +238,7 @@ def _document_out(document: dict, kind: Kind, sprint: dict | None, today: date) 
 def _saver_name(revision: dict) -> str | None:
     if not revision.get("saved_by"):
         return None
-    return profile_display_name(revision.get("profiles")) or "Unknown"
+    return profile_display_name(revision.get("saver")) or "Unknown"
 
 
 def _revision_out(revision: dict) -> dict:
@@ -243,6 +248,8 @@ def _revision_out(revision: dict) -> dict:
         "saved_by_name": _saver_name(revision),
         "saved_at": revision.get("saved_at"),
         "source": revision.get("source"),
+        #: When the revision was handed in; None for one that never was.
+        "finalized_at": revision.get("finalized_at"),
     }
 
 
@@ -273,9 +280,10 @@ def _view(
 def _derived(
     client, document: dict, kind: Kind, revision: dict, ctx: Ctx, *, board_read: bool
 ) -> tuple[dict, bool]:
-    """The revision's derived sections: its snapshot when it is the finalized revision, else worked out
-    from the board, read now unless ``board_read``. And whether they are the snapshot."""
-    if revision["number"] == document.get("finalized_revision") and revision.get("snapshot"):
+    """The revision's derived sections: its snapshot when it was handed in (whichever hand-in is the
+    document's latest), else worked out from the board, read now unless ``board_read``. And whether they
+    are the snapshot."""
+    if revision.get("snapshot") is not None:
         return revision["snapshot"], True
     if not board_read:
         ctx = derive.load_context(
@@ -337,7 +345,7 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
         )
         rows = (
             client.table("project_document_revisions")
-            .select(f"document_id, saved_by, {_PROFILE}")
+            .select(f"document_id, saved_by, {_SAVER}")
             .or_(heads)
             .execute()
         ).data or []
@@ -560,11 +568,11 @@ def save_document(document_id: UUID, user_id: str, body: dict, base_revision: in
 
 
 def list_revisions(document_id: UUID, user_id: str) -> dict:
-    """The document's revisions, newest first, without their bodies.
+    """The document's revisions, newest first, without their bodies or snapshots.
 
     Who can call: team members and class staff. Returns ``{"revisions": [{number, source, saved_by,
-    saved_by_name, saved_at, finalized}]}``; ``finalized`` marks the document's finalized revision.
-    Raises 404 for no such document, 403 for anyone else.
+    saved_by_name, saved_at, finalized, finalized_at}]}``; ``finalized`` marks every revision that was
+    handed in, and ``finalized_at`` says when. Raises 404 for no such document, 403 for anyone else.
     """
     client = get_client()
     document = _load_document(client, document_id)
@@ -572,12 +580,11 @@ def list_revisions(document_id: UUID, user_id: str) -> dict:
     _kind_of(document)
     rows = (
         client.table("project_document_revisions")
-        .select(f"number, source, saved_by, saved_at, {_PROFILE}")
+        .select(f"number, source, saved_by, saved_at, finalized_at, {_SAVER}")
         .eq("document_id", str(document["id"]))
         .order("number", desc=True)
         .execute()
     ).data or []
-    final = document.get("finalized_revision")
     return {
         "revisions": [
             {
@@ -586,7 +593,8 @@ def list_revisions(document_id: UUID, user_id: str) -> dict:
                 "saved_by": r.get("saved_by"),
                 "saved_by_name": _saver_name(r),
                 "saved_at": r.get("saved_at"),
-                "finalized": r["number"] == final,
+                "finalized": r.get("finalized_at") is not None,
+                "finalized_at": r.get("finalized_at"),
             }
             for r in rows
         ]
@@ -614,7 +622,9 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
 
     Who can call: the team's Scrum Master, Product Owner, owner or admin. Returns the document as
     :func:`get_document` does. Finalizing the revision that is already the finalized one changes and
-    tells nothing. Raises 404 for no such document, 403 (see :func:`_require_team_role`), 409
+    tells nothing, also when another finalizer got there first (``document_finalize`` answers NULL):
+    the answer is then what was handed in. Raises 404 for no such document, 403 (see
+    :func:`_require_team_role`), 409
     :data:`DOCUMENT_CHANGED` when another revision was saved since, and 409 with the first of the
     kind's blocking checks that fails.
     """
@@ -657,7 +667,7 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
     if failures:
         raise HTTPException(status_code=409, detail=failures[0])
     try:
-        client.rpc(
+        handed_in = client.rpc(
             "document_finalize",
             {
                 "p_document_id": str(document["id"]),
@@ -673,6 +683,20 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
         if exc.pg_code == _NO_DATA_FOUND:
             raise HTTPException(status_code=404, detail=DOCUMENT_NOT_FOUND) from exc
         raise
+    if handed_in.data is None:
+        # Another finalizer handed this revision in after our read: nothing was written. Answer what
+        # they handed in, and tell nobody twice.
+        stored = fan_out(
+            {
+                "document": lambda: _load_document(client, document["id"]),
+                "revision": lambda: _revision(client, document["id"], revision),
+            }
+        )
+        found = stored["revision"] or found
+        derived, frozen = _derived(client, stored["document"], kind, found, ctx, board_read=True)
+        return _view(
+            stored["document"], kind, ctx, found, derived, frozen=frozen, access="member", role=role
+        )
 
     project = reads["project"]
     title = title_of(kind, ctx.sprint)
@@ -697,7 +721,7 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
         after,
         kind,
         ctx,
-        {**found, "snapshot": derived},
+        {**found, "snapshot": derived, "finalized_at": after.get("finalized_at")},
         derived,
         frozen=True,
         access="member",

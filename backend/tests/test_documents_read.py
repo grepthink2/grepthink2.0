@@ -175,6 +175,7 @@ def test_the_revisions_newest_first_without_their_bodies(db):
         "saved_by_name",
         "saved_at",
         "finalized",
+        "finalized_at",
     }
     assert db.executes <= 4  # the document, staff's two access reads, the revisions
 

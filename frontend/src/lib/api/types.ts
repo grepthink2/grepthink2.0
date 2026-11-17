@@ -1193,9 +1193,11 @@ export interface ApiDocumentRevision {
   saved_by_name: string | null;
   saved_at: string;
   source: ApiDocumentRevisionSource;
+  /** When the revision was handed in (finalized); null for one that never was. Every hand-in is kept. */
+  finalized_at: string | null;
 }
 
-/** A revision as the revisions list names it (no body). `finalized`: the document's finalized revision. */
+/** A revision as the revisions list names it (no body, no snapshot). `finalized`: it was handed in. */
 export interface ApiDocumentRevisionEntry extends ApiDocumentRevision {
   finalized: boolean;
 }
@@ -1342,9 +1344,9 @@ export interface ApiDocumentDerivedSections {
 
 /**
  * GET /api/documents/{document_id}: one document at one revision. A member reads the head by default,
- * staff the finalized revision of a final document. `derived` is that revision's snapshot when it is
- * the finalized one (`derived_frozen`), else the board now. `ApiProjectDocument<'sprint_report'>`
- * names one kind's body and derived sections.
+ * staff the finalized revision of a final document. `derived` is the revision's snapshot when it was
+ * handed in, whichever hand-in is the latest (`derived_frozen`), else the board now.
+ * `ApiProjectDocument<'sprint_report'>` names one kind's body and derived sections.
  */
 export interface ApiProjectDocument<K extends ApiDocumentKind = ApiDocumentKind> {
   document: ApiDocumentInfo & { kind: K };

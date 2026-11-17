@@ -7,7 +7,9 @@ in the app and by email. A finalized document can't be deleted.
 
 from __future__ import annotations
 
+import copy
 import logging
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import HTTPException
@@ -21,6 +23,7 @@ from tests.documents_support import (
     AFTER_SPRINT_2,
     CLASS,
     DURING_SPRINT_2,
+    INSTR,
     MEETING_TA,
     PID,
     PO,
@@ -39,6 +42,7 @@ from tests.documents_support import (
     revisions,
     writes,
 )
+from tests.scrum_support import pin_clock
 
 ITEM_1 = "6a000000-0000-4000-8000-000000000001"
 ITEM_2 = "6a000000-0000-4000-8000-000000000002"
@@ -332,3 +336,65 @@ def test_a_document_deleted_while_deleting_is_404(db, monkeypatch):
         404,
         controller.DOCUMENT_NOT_FOUND,
     )
+
+
+# ------------------------------------------------------------------- every hand-in ----
+
+
+def test_every_hand_in_is_kept_and_read_back_as_it_was_handed_in(db, monkeypatch):
+    """Revision 1 handed in, then an edit, then revision 2 handed in a day later on a changed board:
+    revision 1 still answers its own snapshot, both are marked handed in, the document is the
+    second's, and the TAs hear again, under the second revision's keys."""
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+    first = controller.finalize_document(doc, SM, 1)
+    controller.save_document(doc, UID, {**REPORT, "satisfied_note": "Still nothing"}, 1)
+    db.store["tasks"] = []  # the board changes before the second hand-in
+    pin_clock(monkeypatch, datetime(2026, 10, 2, 19, 0, tzinfo=UTC))
+    second = controller.finalize_document(doc, PO, 2)
+
+    assert second["derived"] != first["derived"]
+    one = controller.get_document(doc, INSTR, 1)
+    assert (one["derived_frozen"], one["derived"]) == (True, first["derived"])
+    assert one["revision"]["finalized_at"] == revisions(db, doc)[0]["finalized_at"]
+    listed = controller.list_revisions(doc, INSTR)["revisions"]
+    assert [(r["number"], r["finalized"]) for r in listed] == [(2, True), (1, True)]
+    assert listed[0]["finalized_at"] == "2026-10-02T19:00:00+00:00" != listed[1]["finalized_at"]
+    row = document(db, doc)
+    assert (row["finalized_revision"], row["finalized_by"], row["finalized_at"]) == (
+        2,
+        PO,
+        "2026-10-02T19:00:00+00:00",
+    )
+    assert (second["document"]["finalized_by_name"], second["document"]["edited_since"]) == (
+        "Pat Owner",
+        False,
+    )
+    assert sorted(e["dedupe_key"] for e in db.rows("email_outbox")) == sorted(
+        f"document_finalized:{doc}:{n}:{ta}" for n in (1, 2) for ta in (MEETING_TA, REVIEW_TA)
+    )
+    assert len(db.rows("notifications")) == 4
+
+
+def test_two_finalizers_of_one_head_tell_the_tas_once(db, monkeypatch):
+    """Both read the draft; the second finds it finalized under the lock (the function answers NULL)
+    and answers what the first handed in, telling nobody and recording nothing."""
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+    draft = copy.deepcopy(document(db, doc))
+    real = controller._load_document
+    reads: list[str] = []
+
+    def load(client, document_id):
+        reads.append(str(document_id))
+        if len(reads) == 3:  # the second request's first read: the draft, before the first commits
+            return copy.deepcopy(draft)
+        return real(client, document_id)
+
+    monkeypatch.setattr(controller, "_load_document", load)
+    first = controller.finalize_document(doc, SM, 1)
+    second = controller.finalize_document(doc, PO, 1)
+
+    assert len(db.rows("notifications")) == 2 and len(db.rows("email_outbox")) == 2
+    assert [e["kind"] for e in db.rows("events")].count("document_finalized") == 1
+    assert (second["derived"], second["derived_frozen"]) == (first["derived"], True)
+    assert second["document"]["finalized_by"] == SM
+    assert revisions(db, doc)[0]["finalized_by"] == SM

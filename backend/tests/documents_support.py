@@ -7,11 +7,13 @@ and ``ADMIN`` hold the other roles that may finalize, ``MEMBER`` holds the plain
 NULL role). ``INSTR``, ``TA`` and ``MEETING_TA`` are staff; ``REVIEW_TA`` is a class TA who is the team's
 Review TA. ``STUDENT`` is enrolled on another team and ``OUTSIDER`` in nothing.
 
-``DocumentsFake`` imitates 2026-11-17_project_documents.sql: ``document_create`` (23505 on a second
-document of a sprint and kind, or a project and kind; 23514 for a kind whose sprint is wrong),
-``document_save`` (P0002 for no such document), ``document_finalize`` (P0002, and 23505 "document changed"
-unless the revision is the head; the finalized revision again changes nothing) and
-``prune_document_revisions``. Its clock is ``deadlines.now_utc``, which the tests pin.
+``DocumentsFake`` imitates 2026-11-17_project_documents.sql: ``document_create`` (P0002 for a sprint
+that is not the project's, 23505 on a second document of a sprint and kind, or a project and kind, 23514
+for a kind whose sprint is wrong), ``document_save`` (P0002 for no such document) and
+``document_finalize`` (P0002, and 23505 "document changed" unless the revision is the head; it stamps
+the snapshot, the time and the finalizer on the revision, and answers None for the finalized revision
+again). Its clock is ``deadlines.now_utc``, which the tests pin. What only the database can show (the
+locks, the indexes, the CHECKs, pruning) is the migration's rehearsal's to prove.
 """
 
 from __future__ import annotations
@@ -72,7 +74,11 @@ REVIEW_TA = "review-ta-1"
 RELATIONS = {
     **SCRUM_RELATIONS,
     ("project_documents", "project_document_revisions"): ("id", "document_id", True),
-    ("project_document_revisions", "profiles"): ("saved_by", "id", False),
+    ("project_document_revisions", "profiles!project_document_revisions_saved_by_fkey"): (
+        "saved_by",
+        "id",
+        False,
+    ),
     ("projects", "project_documents"): ("id", "project_id", True),
     ("project_documents", "sprints"): ("sprint_id", "id", False),
     ("project_documents", "profiles!project_documents_finalized_by_fkey"): (
@@ -103,7 +109,6 @@ class DocumentsFake(ScrumFake):
                 "document_create": self._create,
                 "document_save": self._save,
                 "document_finalize": self._finalize,
-                "prune_document_revisions": self._prune,
             }
         )
 
@@ -117,6 +122,10 @@ class DocumentsFake(ScrumFake):
 
     def _create(self, params: dict) -> str:
         project, kind, sprint_id = params["p_project_id"], params["p_kind"], params["p_sprint_id"]
+        if sprint_id is not None and not any(
+            s["id"] == sprint_id and s["project_id"] == project for s in self.rows("sprints")
+        ):
+            raise _refusal("P0002", "sprint not found")
         if (kind in SPRINT_KINDS) != (sprint_id is not None):
             raise _refusal("23514", "project_documents_sprint_shape")
         for d in self.rows("project_documents"):
@@ -152,6 +161,8 @@ class DocumentsFake(ScrumFake):
                 "source": "seed",
                 "saved_by": params["p_user"],
                 "saved_at": now,
+                "finalized_at": None,
+                "finalized_by": None,
             }
         )
         return document_id
@@ -177,6 +188,8 @@ class DocumentsFake(ScrumFake):
                 "source": params["p_source"],
                 "saved_by": params["p_user"],
                 "saved_at": now,
+                "finalized_at": None,
+                "finalized_by": None,
             }
         )
         doc.update(head_revision=head + 1, updated_at=now)
@@ -190,17 +203,19 @@ class DocumentsFake(ScrumFake):
             }
         ]
 
-    def _finalize(self, params: dict) -> int:
+    def _finalize(self, params: dict) -> int | None:
         doc = self._document(params["p_document_id"])
         revision = params["p_revision"]
         if doc["head_revision"] != revision:
             raise _refusal("23505", "document changed")
         if doc.get("finalized_revision") == revision:
-            return revision
+            return None
+        now = _now()
         for r in self.rows("project_document_revisions"):
             if r["document_id"] == doc["id"] and r["number"] == revision:
-                r["snapshot"] = params["p_snapshot"]
-        now = _now()
+                r.update(
+                    snapshot=params["p_snapshot"], finalized_at=now, finalized_by=params["p_user"]
+                )
         doc.update(
             status="final",
             finalized_revision=revision,
@@ -209,32 +224,6 @@ class DocumentsFake(ScrumFake):
             updated_at=now,
         )
         return revision
-
-    def _prune(self, _params: dict) -> int:
-        today = deadlines.now_utc().date()
-        sprints = {s["id"]: s for s in self.rows("sprints")}
-        projects = {p["id"]: p for p in self.rows("projects")}
-        classes = {c["id"]: c for c in self.rows("classes")}
-
-        def over(doc: dict) -> bool:
-            if doc.get("sprint_id"):
-                ends = sprints.get(doc["sprint_id"], {}).get("ends_at")
-                return ends is not None and (today - date.fromisoformat(str(ends))).days >= 7
-            klass = classes.get(projects.get(doc["project_id"], {}).get("class_id"), {})
-            end = klass.get("end_date")
-            return end is not None and (today - date.fromisoformat(str(end))).days >= 30
-
-        docs = {d["id"]: d for d in self.rows("project_documents")}
-        kept, pruned = [], 0
-        for r in self.rows("project_document_revisions"):
-            doc = docs[r["document_id"]]
-            needed = r["number"] in (doc["head_revision"], doc.get("finalized_revision"))
-            if not needed and over(doc):
-                pruned += 1
-            else:
-                kept.append(r)
-        self.store["project_document_revisions"] = kept
-        return pruned
 
 
 def sprint(sid: str, name: str, starts_at: str, ends_at: str) -> dict:

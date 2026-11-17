@@ -498,7 +498,7 @@
       "id": "get_document", "title": "Read one of a team's documents", "role": "project-member|instructor|ta|meeting-ta",
       "method": "GET", "endpoint": "/api/documents/{document_id}",
       "params": {"revision": "int (query: a revision number; by default a member reads the head, and staff read the finalized revision of a final document, else the head)"},
-      "note": "Returns {document, revision, body, derived, derived_frozen, access, can_write, can_finalize}. body is what the team typed; derived is what the board supplies (stories, rates, burnup, backlog, criteria, repositories), worked out from the board now, or the snapshot frozen when the revision was finalized (derived_frozen). 404 'Revision not found' for a revision that does not exist or was pruned."
+      "note": "Returns {document, revision, body, derived, derived_frozen, access, can_write, can_finalize}. body is what the team typed; derived is what the board supplies (stories, rates, burnup, backlog, criteria, repositories): a revision that was handed in (finalized) answers the snapshot frozen then, whichever hand-in is the latest (derived_frozen); any other revision is worked out from the board now. revision carries finalized_at for a hand-in. 404 'Revision not found' for a revision that does not exist or was pruned."
     },
     {
       "id": "save_document", "title": "Save a new revision of a team's document", "role": "project-member",
@@ -509,13 +509,13 @@
     {
       "id": "list_document_revisions", "title": "List a document's revisions", "role": "project-member|instructor|ta|meeting-ta",
       "method": "GET", "endpoint": "/api/documents/{document_id}/revisions",
-      "note": "Returns {revisions}: newest first, each {number, source (seed|edit|import|export), saved_by, saved_by_name, saved_at, finalized}, without bodies. Read one with get_document's revision. Old revisions are pruned: a sprint's document keeps only its head and finalized revisions from 7 days after its sprint ends, a project's from 30 days after the class's last day."
+      "note": "Returns {revisions}: newest first, each {number, source (seed|edit|import|export), saved_by, saved_by_name, saved_at, finalized, finalized_at}, without bodies; finalized marks every revision that was handed in. Read one with get_document's revision. Old revisions are pruned: a sprint's document keeps only its head and its hand-ins from 7 days after its sprint ends, a project's from 30 days after the class's last day."
     },
     {
       "id": "finalize_document", "title": "Finalize (hand in) a team's document", "role": "scrum master|product owner|owner|admin",
       "method": "POST", "endpoint": "/api/documents/{document_id}/finalize", "rateLimit": "10/min per user",
       "params": {"revision": "int! (the revision the caller is looking at; it must still be the head)"},
-      "note": "Freezes the board's sections on that revision and makes the document final; the team's meeting TA and Review TA are notified in the app and by email. Answers the document as get_document does. 409 'The document changed; reload and try again' when another revision was saved since; 409 with the first check that fails: 'The sprint has not ended yet', 'Add at least one action to start doing', 'Add at least one action to keep doing', 'Add an action to stop doing, or say why there is none' (sprint report); 'Pick at least one key story', 'Every key story needs acceptance criteria' (release summary); 'Add at least one test scenario', 'Mark every scenario as passed or failed' (test plan and report). Other team members get 403 'Only the Scrum Master or the Product Owner can finalize a document'; class staff get 403. Finalizing the finalized revision again changes nothing."
+      "note": "Freezes the board's sections on that revision (kept for good, as every hand-in is) and makes the document final at it; the team's meeting TA and Review TA are notified in the app and by email. Answers the document as get_document does. 409 'The document changed; reload and try again' when another revision was saved since; 409 with the first check that fails: 'The sprint has not ended yet', 'Add at least one action to start doing', 'Add at least one action to keep doing', 'Add an action to stop doing, or say why there is none' (sprint report); 'Pick at least one key story', 'Every key story needs acceptance criteria' (release summary); 'Add at least one test scenario', 'Mark every scenario as passed or failed' (test plan and report). Other team members get 403 'Only the Scrum Master or the Product Owner can finalize a document'; class staff get 403. Finalizing the finalized revision again changes nothing."
     },
     {
       "id": "delete_document", "title": "Delete a team's draft document", "role": "scrum master|product owner|owner|admin",
