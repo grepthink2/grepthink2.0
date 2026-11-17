@@ -60,8 +60,8 @@
 -- without it), and the class schedule's check for documents skips them while the table is missing. Apply on
 -- DEV before the branch is tested there, and on PROD before the release that ships it.
 --
--- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal), the earlier
--- text with story_ids and done_story_ids: run this text there again   PROD — pending
+-- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal: first the
+-- earlier text with story_ids and done_story_ids, then this text's sprint_burnup_days statements)   PROD — pending
 --
 -- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the sprint_burnup_days column stories (jsonb)
 -- or, where only the earlier text ran, story_ids and done_story_ids (ARRAY), and the four functions, with the
