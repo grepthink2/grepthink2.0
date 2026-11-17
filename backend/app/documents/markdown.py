@@ -197,7 +197,7 @@ def render_sprint_report(heading: Heading, body: dict, derived: dict) -> str:
         "## Work completion rate",
         "",
         f"- User stories completed: {derived['stories_completed']}",
-        f"- Ideal work hours completed: {derived['hours_completed']}",
+        f"- Hours in completed stories: {derived['hours_completed']}",
         f"- Days in the sprint: {derived['days']}",
         f"- User stories per day: {derived['stories_per_day']:.2f}",
         f"- Ideal work hours per day: {derived['hours_per_day']:.2f}",

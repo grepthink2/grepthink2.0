@@ -407,8 +407,7 @@ def test_a_sprint_report_reads_the_stories_its_sprint_ended_with(db):
             "completed_points": 0,
             "scope_hours": 5,
             "completed_hours": 5,
-            "story_ids": [ST3],
-            "done_story_ids": [ST3],
+            "stories": [{"id": ST3, "done": True, "hours": 5, "points": 5}],
         }
     )
     doc = add_document(db, "sprint_report", sprint_id=S2)
@@ -418,6 +417,7 @@ def test_a_sprint_report_reads_the_stories_its_sprint_ended_with(db):
     assert derived["as_of"] == "2026-09-27"
     assert [s["key"] for s in derived["completed"]] == ["US-3"]
     assert derived["not_completed"] == []  # US-4 was not in the sprint that day
+    assert derived["hours_completed"] == 5
 
 
 def test_a_revision_number_past_the_databases_integer_is_422(db, client):

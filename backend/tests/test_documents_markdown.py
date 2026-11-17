@@ -341,7 +341,9 @@ def test_no_student_text_adds_a_heading_or_leaves_its_place():
     assert lines[first + len(steps)] == ""  # the quote ends where the steps end
 
 
-def test_a_story_deleted_since_the_sprint_ended_is_named_as_gone():
+def test_a_story_line_marked_missing_reads_as_gone():
+    """The sprint report leaves deleted stories out, but a line marked ``missing`` (as a hand-in kept from
+    before can hold) still renders, as a story no longer on the board."""
     heading = Heading(project_name="Trailhead", date=date(2026, 9, 28), sprint_name="Sprint 2")
     derived = {**SPRINT_DERIVED, "completed": [{"id": "x", "missing": True}], "not_completed": []}
     text = markdown.render_sprint_report(heading, SPRINT_BODY, derived)

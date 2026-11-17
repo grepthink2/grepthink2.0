@@ -1288,12 +1288,16 @@ export type ApiDocumentBody = ApiDocumentBodies[ApiDocumentKind];
 // Derived sections: what the board supplies, live on a draft and frozen on a finalized revision.
 
 /**
- * A story of a sprint report, as it is now: its hours are the sum of its tasks' estimates, null when
- * none has one. `missing` for a story the sprint ended with that has been deleted since.
+ * A story of a sprint report: its key and title as they are now, and its points and hours (the sum of
+ * its tasks' estimates, null when none has one) as the sprint ended. A story deleted since is left out.
  */
-export type ApiDocumentStoryLine =
-  | { id: string; key: string; title: string; points: number | null; hours: number | null; missing?: never }
-  | { id: string; missing: true };
+export interface ApiDocumentStoryLine {
+  id: string;
+  key: string;
+  title: string;
+  points: number | null;
+  hours: number | null;
+}
 
 export interface ApiSprintReportDerived {
   /**
@@ -1308,7 +1312,11 @@ export interface ApiSprintReportDerived {
    */
   as_of: string;
   stories_completed: number;
-  /** The estimate hours of those stories' done tasks, whatever their story's state. */
+  /**
+   * The hours in the completed stories (their tasks' estimates as the sprint ended). An unfinished
+   * story adds nothing here: its hours count in the sprint where it is completed. The burnup counts
+   * every done task, so its last point can be higher.
+   */
   hours_completed: number;
   /** The sprint's length, both end days counted. */
   days: number;

@@ -32,7 +32,7 @@
 ## Work completion rate
 
 - User stories completed: 2
-- Ideal work hours completed: 10
+- Hours in completed stories: 10
 - Days in the sprint: 14
 - User stories per day: 0.14
 - Ideal work hours per day: 0.71
