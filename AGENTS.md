@@ -83,6 +83,7 @@ review shape below, not the skill's own.
 | Anything under `backend/` | [docs/agents/backend.md](docs/agents/backend.md): authorization, batching, errors, routes and the client, SQL, rate limits, email, events |
 | Anything under `frontend/` | [docs/agents/frontend.md](docs/agents/frontend.md): the shared UI kit, oxlint and TypeScript 7, the entry chunk, Vitest, local harnesses |
 | The scrum board or its MCP connector | [docs/agents/scrum.md](docs/agents/scrum.md): sprints, status, burnup, move-in, connector tokens |
+| A team's project documents (sprint reports, release summary, test plan and report) | [docs/agents/documents.md](docs/agents/documents.md): the kinds registry, revisions, finalize, who may |
 | Attendance, TAs, meetings, final reviews, deadlines, the schedule, any date | [docs/agents/meetings-and-time.md](docs/agents/meetings-and-time.md) |
 | A release, or the Supabase, Vercel or Cloudflare CLI | [docs/agents/release-and-ops.md](docs/agents/release-and-ops.md) |
 | Sign-up, login, email verification | `AUTH.md` |
@@ -127,7 +128,7 @@ review shape below, not the skill's own.
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search schedule mcp
+  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search schedule mcp documents
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -136,6 +137,7 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   analytics/         # per-institution dashboard: SQL functions (RPC) + nightly analytics_daily rollup
   schedule/          # GET /api/schedule: a caller's items in one class (TA meetings expanded per week), by lens
   mcp/               # scrum board MCP connector at /mcp (mcp SDK): tools, its own OAuth server, fill controller
+  documents/         # a team's documents: kinds registry, revisions, finalize with a frozen snapshot, Markdown
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
   utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
@@ -220,7 +222,7 @@ Use these words in code, copy, comments and the agent catalog:
 - **Catalog roles** (`frontend/public/.well-known/grepthink-actions.json`, each action's `role`; join
   alternatives with `|`): `public` (no sign-in), `any` (any signed-in user), `student`, `ta` (a class
   TA), `meeting-ta` (the team's meeting TA), `instructor` (the class instructor), `project-member`,
-  `owner`, `product owner`, `admin`.
+  `owner`, `product owner`, `scrum master`, `admin`.
 
 ## Run / test
 ```bash
@@ -247,7 +249,8 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
 `/api/projects/{id}/scrum` (scrum board), `/api/projects/{project_id}/meetings` (a team's one-off
-meetings), `/api/search` (`index`), `/api/schedule` (a caller's items in one class for a range), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
+meetings), `/api/search` (`index`), `/api/schedule` (a caller's items in one class for a range), `/api/projects/{project_id}/documents`,
+`/api/documents` and `/api/classes/{class_id}/documents` (a team's project documents), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
 board MCP connector, `app/mcp`), its OAuth metadata (`/.well-known/oauth-protected-resource/mcp`,
 `/.well-known/oauth-authorization-server`) and its OAuth endpoints (`/register`, `/authorize`, `/token`, `/revoke`).
 The full agent-facing action catalog (method, params, role) lives at

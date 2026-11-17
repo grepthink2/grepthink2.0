@@ -265,6 +265,42 @@ Each kind's Markdown follows its template's headings; the heading block (documen
 team name, date, and revision where the template asks) comes from the project, the sprint and the
 revision.
 
+**Amended 2026-11-17** (while building PR 2):
+
+1. The migration is `2026-11/2026-11-17_project_documents.sql`, and four functions write the tables, each
+   plpgsql, SECURITY INVOKER, `search_path` pinned, executable by `service_role` only:
+   `document_create(p_project_id, p_kind, p_sprint_id, p_body, p_user)` (the document and its revision 1,
+   source `seed`; a second one is 23505, the API's 409), `document_save(p_document_id, p_body, p_user,
+   p_source, p_base)` (no snapshot: it answers `number, overwrote_number, overwrote_by`; P0002 for no such
+   document), `document_finalize(p_document_id, p_revision, p_snapshot, p_user)` and
+   `prune_document_revisions()`, run daily at 09:20 UTC by `prod/2026-11/2026-11-17_document_revisions_cron.sql`.
+2. Finalize adds no revision: it stamps the head. `source` allows `seed`, `edit`, `import` and `export`
+   only. The request names the revision the caller is looking at (`{revision}`); unless it is still the
+   head, `document_finalize` refuses under the document's lock (409 "The document changed; reload and try
+   again"). It writes the snapshot on that revision and makes the document final. Finalizing the revision
+   that is already the finalized one changes nothing and notifies nobody, so a snapshot, once written, never
+   changes.
+3. There is no `GET /documents/{id}/revisions/{number}`: `GET /documents/{id}?revision=n` reads one
+   revision (404 "Revision not found" for one that does not exist or was pruned), and the revisions list
+   has no bodies.
+4. The class's list is one row per document of the class's teams (id, kind, title, team, sprint, status,
+   revisions, edited since, last update), for the class instructor and its TAs (403 "Only the instructor
+   or a class TA can read the class's documents" for anyone else).
+5. The sprint report's averages to date count this sprint and every sprint of the team that started
+   before it, pooled: stories, then hours, over all their days. The release summary's backlog lists the
+   unfinished stories of each sprint, sprints by start, then the backlog's stories, each list in board
+   order. Seeds stay within the body limits: at most 30 key stories, at most 60 scenarios, a scenario's
+   title cut to 120 characters (the story's key when its title is blank) and its steps to the whole
+   criteria that fit in 2000 characters.
+6. A save checks that every story its body names is on the team's board (422 "A story is not on this
+   team's board"). Deleting takes the same roles as finalizing (403 "Only the Scrum Master or the Product
+   Owner can delete a document"). A project's document given a sprint is 422 "This document belongs to the
+   project, not to a sprint".
+7. Saving (30 a minute) and finalizing (10 a minute) are rate-limited per signed-in user: a save stores up
+   to 256 kB, and a finalize emails the team's TAs.
+8. The in-app notification's `entity_id` is the document's id; the email links to
+   `/app/projects/<project>/documents/<document>`.
+
 ## Part 3 — The web client (PR 3)
 
 - `BOARD_VIEWS` gains `documents`. The tab lists, in order: Release plan (a link to its tab, from PR

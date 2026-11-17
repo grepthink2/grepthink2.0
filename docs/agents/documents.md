@@ -1,0 +1,10 @@
+# Project documents
+
+Read this before changing `backend/app/documents`, its migration (`2026-11-17_project_documents.sql`) or `frontend/src/lib/api/documents.ts`.
+
+- **One engine, a registry of kinds.** `app/documents/kinds.py` files each kind (sprint report, release summary, test plan and report) with its body model, its seed, its derived sections (`derive.py`, what the board says), its finalize checks and its Markdown (`markdown.py`). The database also allows `sprint_plan` and `release_plan`; the API answers 422 for them until they are filed there.
+- **Save is last-writer-wins.** Every `PUT /api/documents/{id}` is a new revision, with no lock and no merge; `overwrote` names a revision someone saved after the one the edit started from (`base_revision`).
+- **Finalize stamps the head and freezes the derived sections.** `document_finalize` refuses (409) unless the revision is still the head, stores the derived sections on it (`snapshot`) and makes the document final. Whoever reads that revision gets the snapshot; every other revision derives from the board now. A later save leaves it final at its finalized revision (`edited_since`), and finalizing the finalized revision again changes nothing.
+- **Who:** the board's rule (`scrum.controller.board_access`): members read and write, staff read. Finalizing and deleting take `scrum master`, `product owner`, `owner` or `admin` (`project_members.role`). A class's list is its instructor's and TAs'.
+- **The SQL functions are the only writers of revisions:** `document_create`, `document_save` and `document_finalize`, each one transaction under the document's row lock, and `prune_document_revisions` (a daily pg_cron job, `prod/2026-11/`), which keeps only the head and finalized revisions once a sprint ended 7 days ago or a class's last day was 30 days ago.
+- **Finalizing tells the meeting TA and the Review TA** (`notify.py`): an in-app notification and an outbox email deduped per revision and recipient. A failure there is logged with ids only and never fails the finalize.
