@@ -4,8 +4,9 @@
 -- records each run), AFTER ../../2026-11/2026-11-17_project_documents.sql, which creates the function. Everything
 -- the job needs is inside the database: no HTTP call, no secret, no Vault entry.
 --
--- public.prune_document_revisions() keeps a document's head and finalized revisions and deletes the others once
--- its sprint ended 7 days ago (a sprint's document) or once its class's last day was 30 days ago (a project's).
+-- public.prune_document_revisions() keeps a document's head and every revision handed in (one with a snapshot),
+-- and deletes the others once its sprint ended 7 days ago (a sprint's document) or once its class's last day was
+-- 30 days ago (a project's).
 -- It counts days in UTC, so the hour only decides when in the day it runs: 09:20 UTC, after the analytics
 -- rollup at 09:00, is 01:20/02:20 in Santa Cruz.
 --

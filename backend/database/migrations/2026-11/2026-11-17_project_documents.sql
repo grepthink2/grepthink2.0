@@ -1,49 +1,71 @@
--- 2026-11-17 — project documents: two tables, and the functions that are their only writers
+-- 2026-11-17 — project documents: two tables, the functions that are their only writers, and what a
+-- sprint's burnup snapshot remembers of its stories
 --
 -- A team keeps its end-of-term documents in GrepThink (app/documents): a sprint report for each sprint, and a
 -- release summary and a test plan and report for the project. Every save is a revision; finalizing stamps the
--- head revision with the document's derived sections (what the board said), frozen.
+-- head revision with the document's derived sections (what the board said), frozen, and every revision handed
+-- in that way is kept.
+--
+-- Requires 2026-11-16_story_rank_and_criteria.sql: the documents read user_stories.rank and
+-- acceptance_criteria by name.
 --
 --   * project_documents: one row per document. kind is one of five; sprint_plan and release_plan are kept for
 --     later work, and the API refuses them for now. A sprint's kinds name their sprint and a project's kinds
 --     name none (project_documents_sprint_shape); one partial unique index allows one document per sprint and
 --     kind, another one per project and kind. head_revision is the newest revision's number. finalized_revision,
---     finalized_at and finalized_by say which revision was handed in, when and by whom. status turns 'final' on
---     the first finalize and never back: a later save leaves the document final at its finalized revision.
+--     finalized_at and finalized_by say which revision was handed in last, when and by whom. status turns
+--     'final' on the first finalize and never back: a later save leaves the document final at its finalized
+--     revision.
 --   * project_document_revisions: every save of a document, numbered from 1. body is what the team typed.
---     snapshot holds the derived sections that finalize froze on that revision, and is NULL on every other one.
---     source says what wrote the revision: 'seed' (revision 1), 'edit', or 'import' and 'export' (kept for the
---     sprint plan's round trip with the board, later work).
+--     A revision that was handed in carries the derived sections finalize froze on it (snapshot), when
+--     (finalized_at) and by whom (finalized_by); every other revision has NULL there. A snapshot, once written,
+--     never changes. source says what wrote the revision: 'seed' (revision 1), 'edit', or 'import' and
+--     'export' (kept for the sprint plan's round trip with the board, later work). The saver's and the
+--     finalizer's foreign keys both point at profiles, so an embed names its own
+--     (project_document_revisions_saved_by_fkey).
 --   * document_create, document_save and document_finalize write both tables, each in one transaction. The
 --     backend checks who may call them and validates the body first.
---       document_create inserts a draft whose head is revision 1 (source 'seed'). A second document of the same
---         sprint and kind, or of the same project and kind, fails on its unique index with 23505 (the API's 409).
+--       document_create inserts a draft whose head is revision 1 (source 'seed'). It takes no lock on the
+--         document; a second document of the same sprint and kind, or of the same project and kind, fails on its
+--         unique index with 23505 (the API's 409). A sprint that is not the project's raises P0002, and the
+--         sprint it names is held (FOR KEY SHARE) until the insert commits.
 --       document_save locks the document, adds revision head+1 and makes it the head. Given p_base (the revision
 --         the saver started from) and a head that is not p_base, it also answers that head's number and who
 --         saved it: the save replaced a revision the saver never saw. No such document raises P0002.
 --       document_finalize locks the document and refuses with 23505 ("document changed", the API's 409) unless
---         p_revision is still the head. It writes p_snapshot on that revision and makes the document final at
---         it. Asked to finalize the revision that is already the finalized one, it changes nothing, so a
---         snapshot, once written, never changes. No such document raises P0002.
+--         p_revision is still the head. It writes p_snapshot, now() and p_user on that revision, makes the
+--         document final at it and answers the revision. Asked to finalize the revision that is already the
+--         finalized one, it changes nothing and answers NULL, so the caller knows it wrote nothing (and tells
+--         nobody). No such document raises P0002.
 --   * prune_document_revisions() deletes the revisions a document no longer needs, every one but its head and
---     its finalized revision: once its sprint ended 7 days ago (a sprint's document) or once its class's last
---     day of classes was 30 days ago (a project's; a class with no end_date keeps them all). Days are UTC
---     dates. ../prod/2026-11/2026-11-17_document_revisions_cron.sql runs it every day.
+--     the ones handed in: once its sprint ended 7 days ago (a sprint's document) or once its class's last day
+--     of classes was 30 days ago (a project's; a class with no end_date keeps them all). Days are UTC dates.
+--     ../prod/2026-11/2026-11-17_document_revisions_cron.sql runs it every day.
+--   * sprint_burnup_days.story_ids and done_story_ids: which stories a sprint held on that day, and which of them
+--     were completed (at least one task, every task done). The board writes them with every snapshot it takes
+--     (scrum.controller._snapshot_burnup_safe), so a sprint report describes the sprint as it ended. Rows from
+--     before this file, and the rows the connector's import writes (scrum_fill_board's p_burnup), keep NULL.
 --   * RLS on and no policies, and the browser roles get nothing (2026-09-21 lock-down). The four functions are
 --     SECURITY INVOKER with search_path pinned, and executable by service_role only.
 --
--- EXPAND, idempotent, one transaction: a re-run skips the tables and the indexes, drops each CHECK and adds it
--- again by name, and replaces the functions. Nothing reads the tables before the code that uses them deploys,
--- and until this is applied the documents routes answer a database error while everything else works. Apply on
--- DEV before the branch is tested there, and on PROD before the release that ships it.
+-- EXPAND, idempotent, one transaction: a re-run skips the tables, the columns and the indexes, drops each
+-- CHECK and adds it again by name, and replaces the functions. Nothing reads the documents' tables before the
+-- code that uses them deploys, and until this is applied the documents routes answer a database error while
+-- everything else works: the board's snapshot writes the two story arrays only where the columns exist (it
+-- retries without them), and the class schedule's check for documents skips them while the table is missing.
+-- Apply on DEV before the branch is tested there, and on PROD before the release that ships it.
 --
 -- Applied: DEV — pending   PROD — pending
 --
--- PREFLIGHT (expect no rows. On a re-run, exactly the two tables and the four functions, with the arguments
--- written below; anything else of these names means something else got there first: stop and look):
+-- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the two sprint_burnup_days columns, uuid[],
+-- and the four functions, with the arguments written below; anything else of these names means something else
+-- got there first: stop and look):
 --
 --   SELECT table_name FROM information_schema.tables
 --    WHERE table_schema = 'public' AND table_name IN ('project_documents', 'project_document_revisions');
+--   SELECT column_name, data_type FROM information_schema.columns
+--    WHERE table_schema = 'public' AND table_name = 'sprint_burnup_days'
+--      AND column_name IN ('story_ids', 'done_story_ids');
 --   SELECT p.oid::regprocedure FROM pg_proc p
 --    WHERE p.pronamespace = 'public'::regnamespace
 --      AND p.proname IN ('document_create', 'document_save', 'document_finalize', 'prune_document_revisions');
@@ -51,7 +73,8 @@
 BEGIN;
 
 -- Fail fast rather than queue live traffic: adding the foreign keys briefly locks projects, sprints and
--- profiles against writes.
+-- profiles against writes, and adding the two columns locks sprint_burnup_days (no rewrite: they are nullable
+-- with no default).
 SET LOCAL lock_timeout = '5s';
 
 CREATE TABLE IF NOT EXISTS public.project_documents (
@@ -84,19 +107,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS project_documents_sprint_kind_uq
 CREATE UNIQUE INDEX IF NOT EXISTS project_documents_project_kind_uq
   ON public.project_documents (project_id, kind) WHERE sprint_id IS NULL;
 -- A team's documents (its Documents tab, a class's list, the cascade from projects), and the cascades from
--- profiles. The sprint's unique index serves the cascade from sprints.
+-- profiles. The sprint's unique index serves the cascade from sprints and the class schedule's check.
 CREATE INDEX IF NOT EXISTS project_documents_project_idx ON public.project_documents (project_id);
 CREATE INDEX IF NOT EXISTS project_documents_created_by_idx ON public.project_documents (created_by);
 CREATE INDEX IF NOT EXISTS project_documents_finalized_by_idx ON public.project_documents (finalized_by);
 
 CREATE TABLE IF NOT EXISTS public.project_document_revisions (
-  document_id uuid        NOT NULL REFERENCES public.project_documents (id) ON DELETE CASCADE,
-  number      integer     NOT NULL,
-  body        jsonb       NOT NULL,
-  snapshot    jsonb,
-  source      text        NOT NULL DEFAULT 'edit',
-  saved_by    uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
-  saved_at    timestamptz NOT NULL DEFAULT now(),
+  document_id  uuid        NOT NULL REFERENCES public.project_documents (id) ON DELETE CASCADE,
+  number       integer     NOT NULL,
+  body         jsonb       NOT NULL,
+  snapshot     jsonb,
+  source       text        NOT NULL DEFAULT 'edit',
+  saved_by     uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
+  saved_at     timestamptz NOT NULL DEFAULT now(),
+  finalized_at timestamptz,
+  finalized_by uuid        REFERENCES public.profiles (id) ON DELETE SET NULL,
   PRIMARY KEY (document_id, number)
 );
 
@@ -112,11 +137,17 @@ ALTER TABLE public.project_document_revisions ADD CONSTRAINT project_document_re
 
 CREATE INDEX IF NOT EXISTS project_document_revisions_saved_by_idx
   ON public.project_document_revisions (saved_by);
+CREATE INDEX IF NOT EXISTS project_document_revisions_finalized_by_idx
+  ON public.project_document_revisions (finalized_by) WHERE finalized_by IS NOT NULL;
 
 ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_document_revisions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.project_documents, public.project_document_revisions FROM anon, authenticated;
 GRANT ALL ON public.project_documents, public.project_document_revisions TO service_role;
+
+-- Which stories a sprint held on a snapshot's day, and which of them were completed. NULL: not recorded.
+ALTER TABLE public.sprint_burnup_days ADD COLUMN IF NOT EXISTS story_ids uuid[];
+ALTER TABLE public.sprint_burnup_days ADD COLUMN IF NOT EXISTS done_story_ids uuid[];
 
 -- A new draft: the document, with revision 1 (source 'seed') as its head. Answers the document's id.
 CREATE OR REPLACE FUNCTION public.document_create(
@@ -133,6 +164,13 @@ AS $$
 DECLARE
   v_id uuid;
 BEGIN
+  IF p_sprint_id IS NOT NULL THEN
+    -- The sprint must be the project's; held until commit, so it can't go between the check and the insert.
+    PERFORM 1 FROM sprints s WHERE s.id = p_sprint_id AND s.project_id = p_project_id FOR KEY SHARE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'sprint not found' USING ERRCODE = 'no_data_found';
+    END IF;
+  END IF;
   INSERT INTO project_documents (project_id, kind, sprint_id, head_revision, created_by)
   VALUES (p_project_id, p_kind, p_sprint_id, 1, p_user)
   RETURNING id INTO v_id;
@@ -193,8 +231,8 @@ $$;
 REVOKE ALL ON FUNCTION public.document_save(uuid, jsonb, uuid, text, integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.document_save(uuid, jsonb, uuid, text, integer) TO service_role;
 
--- Hands in the head revision: p_snapshot (the derived sections) goes on it, and the document is final at it.
--- Answers the revision.
+-- Hands in the head revision: p_snapshot (the derived sections), now() and p_user go on it, and the document is
+-- final at it. Answers the revision, or NULL when it was the finalized revision already (nothing written).
 CREATE OR REPLACE FUNCTION public.document_finalize(
   p_document_id uuid,
   p_revision integer,
@@ -210,7 +248,7 @@ DECLARE
   v_finalized integer;
 BEGIN
   -- The lock holds saves back until this commits: no revision can follow the head between the check and the
-  -- stamp.
+  -- stamp, and of two finalizers of one head, the second finds it finalized.
   SELECT d.head_revision, d.finalized_revision INTO v_head, v_finalized
     FROM project_documents d
    WHERE d.id = p_document_id
@@ -222,11 +260,11 @@ BEGIN
     RAISE EXCEPTION 'document changed' USING ERRCODE = 'unique_violation';
   END IF;
   IF v_finalized IS NOT DISTINCT FROM p_revision THEN
-    RETURN p_revision;  -- final at this revision already: its snapshot stays as it was handed in
+    RETURN NULL;  -- final at this revision already: its snapshot stays as it was handed in
   END IF;
 
   UPDATE project_document_revisions r
-     SET snapshot = p_snapshot
+     SET snapshot = p_snapshot, finalized_at = now(), finalized_by = p_user
    WHERE r.document_id = p_document_id AND r.number = p_revision;
   UPDATE project_documents d
      SET status = 'final', finalized_revision = p_revision, finalized_at = now(), finalized_by = p_user,
@@ -239,7 +277,8 @@ $$;
 REVOKE ALL ON FUNCTION public.document_finalize(uuid, integer, jsonb, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.document_finalize(uuid, integer, jsonb, uuid) TO service_role;
 
--- Deletes the revisions no document needs any more (see the header) and answers how many.
+-- Deletes the revisions no document needs any more (see the header) and answers how many. A hand-in (a
+-- revision with a snapshot) is never deleted.
 CREATE OR REPLACE FUNCTION public.prune_document_revisions()
 RETURNS integer
 LANGUAGE plpgsql
@@ -255,6 +294,7 @@ BEGIN
    WHERE r.document_id = d.id
      AND r.number <> d.head_revision
      AND r.number IS DISTINCT FROM d.finalized_revision
+     AND r.snapshot IS NULL
      AND (
        EXISTS (SELECT 1 FROM sprints s WHERE s.id = d.sprint_id AND s.ends_at <= v_today - 7)
        OR (d.sprint_id IS NULL
@@ -274,15 +314,17 @@ COMMIT;
 -- Check. Expected right after applying:
 --   1. on project_documents: the primary key, four foreign keys (created_by, finalized_by, project_id,
 --      sprint_id) and project_documents_kind_valid, _status_valid and _sprint_shape; on
---      project_document_revisions: the primary key (document_id, number), two foreign keys (document_id,
---      saved_by) and project_document_revisions_number_valid, _source_valid (seed, edit, import, export) and
---      _size;
+--      project_document_revisions: the primary key (document_id, number), three foreign keys (document_id,
+--      finalized_by, saved_by: project_document_revisions_saved_by_fkey among them) and
+--      project_document_revisions_number_valid, _source_valid (seed, edit, import, export) and _size;
 --   2. the indexes behind both primary keys, project_documents_sprint_kind_uq (UNIQUE, WHERE sprint_id IS NOT
 --      NULL), project_documents_project_kind_uq (UNIQUE, WHERE sprint_id IS NULL), project_documents_project_idx,
---      _created_by_idx, _finalized_by_idx and project_document_revisions_saved_by_idx;
---   3. four functions, plpgsql, not SECURITY DEFINER, search_path=public, executable by service_role and by
+--      _created_by_idx, _finalized_by_idx, project_document_revisions_saved_by_idx and _finalized_by_idx (WHERE
+--      finalized_by IS NOT NULL);
+--   3. sprint_burnup_days.story_ids and done_story_ids: ARRAY (_uuid), nullable, no default, NULL on every row;
+--   4. four functions, plpgsql, not SECURITY DEFINER, search_path=public, executable by service_role and by
 --      neither anon nor authenticated;
---   4. RLS on both tables, no policies, no anon or authenticated grants, and no rows yet.
+--   5. RLS on both tables, no policies, no anon or authenticated grants, and no rows yet.
 SELECT conrelid::regclass AS "table", conname, pg_get_constraintdef(oid) AS definition
   FROM pg_constraint
  WHERE conrelid IN ('public.project_documents'::regclass, 'public.project_document_revisions'::regclass)
@@ -290,6 +332,12 @@ SELECT conrelid::regclass AS "table", conname, pg_get_constraintdef(oid) AS defi
 SELECT tablename, indexname, indexdef FROM pg_indexes
  WHERE schemaname = 'public' AND tablename IN ('project_documents', 'project_document_revisions')
  ORDER BY tablename, indexname;
+SELECT column_name, data_type, udt_name, column_default, is_nullable FROM information_schema.columns
+ WHERE table_schema = 'public' AND table_name = 'sprint_burnup_days'
+   AND column_name IN ('story_ids', 'done_story_ids')
+ ORDER BY column_name;
+SELECT count(*) FILTER (WHERE story_ids IS NOT NULL OR done_story_ids IS NOT NULL) AS rows_with_stories
+  FROM public.sprint_burnup_days;
 SELECT p.oid::regprocedure AS function, l.lanname AS language, p.prosecdef AS security_definer,
        p.proconfig AS settings,
        has_function_privilege('service_role', p.oid, 'EXECUTE') AS service_role,
@@ -314,17 +362,20 @@ SELECT (SELECT count(*) FROM public.project_documents) AS documents,
 -- time). It takes the earliest-ending sprint, by ends_at then id, that has a team member, and acts as that
 -- member. Expected:
 --   1. document_create answers an id; a second sprint report for the same sprint fails with 23505;
---   2. a release summary with a sprint fails with 23514 (project_documents_sprint_shape);
+--   2. a release summary with a sprint fails with P0002 when the sprint is another project's (any project's
+--      first other sprint), and with 23514 (project_documents_sprint_shape) when it is this project's;
 --   3. the first save, from revision 1, answers (2, NULL, NULL); a second one, also from revision 1, answers
 --      (3, 2, the member's id);
 --   4. a save of a document that does not exist fails with P0002;
 --   5. finalizing revision 2, no longer the head, fails with 23505 "document changed";
 --   6. finalizing revision 3 answers 3; the document is final at 3 with its finalizer set, and revision 3 alone
---      holds the snapshot {"frozen": 1};
---   7. finalizing revision 3 again answers 3 and leaves the snapshot {"frozen": 1};
---   8. a save after that answers (4, NULL, NULL), and the document stays final at revision 3;
---   9. with the sprint moved to end 8 days ago, prune_document_revisions() answers at least 2, and the
---      document keeps revisions 3 (finalized) and 4 (the head) only.
+--      holds the snapshot {"frozen": 1}, with finalized_at and finalized_by set;
+--   7. finalizing revision 3 again answers NULL and leaves the snapshot {"frozen": 1};
+--   8. a save after that answers (4, NULL, NULL), and the document stays final at revision 3; finalizing 4
+--      answers 4: the document is final at 4, and revision 3 keeps {"frozen": 1} and its finalized_at;
+--   9. a save after that (5); then, with the sprint moved to end 8 days ago, prune_document_revisions()
+--      answers at least 2, and the document keeps revisions 3 and 4 (handed in) and 5 (the head) only;
+--  10. a burnup snapshot row takes the two story arrays.
 --
 --   BEGIN;
 --   CREATE TEMP TABLE target ON COMMIT DROP AS
@@ -338,6 +389,9 @@ SELECT (SELECT count(*) FROM public.project_documents) AS documents,
 --   SAVEPOINT refused;
 --   SELECT public.document_create(project_id, 'sprint_report', sprint_id, '{}', user_id) FROM target;
 --   ROLLBACK TO SAVEPOINT refused;
+--   SELECT public.document_create(t.project_id, 'release_summary', s.id, '{}', t.user_id)
+--     FROM target t JOIN public.sprints s ON s.project_id <> t.project_id LIMIT 1;
+--   ROLLBACK TO SAVEPOINT refused;
 --   SELECT public.document_create(project_id, 'release_summary', sprint_id, '{}', user_id) FROM target;
 --   ROLLBACK TO SAVEPOINT refused;
 --   SELECT * FROM public.document_save((SELECT id FROM doc), '{"stop": [1]}', (SELECT user_id FROM target), 'edit', 1);
@@ -350,16 +404,24 @@ SELECT (SELECT count(*) FROM public.project_documents) AS documents,
 --   SELECT public.document_finalize((SELECT id FROM doc), 3, '{"frozen": 1}', (SELECT user_id FROM target));
 --   SELECT status, head_revision, finalized_revision, finalized_by IS NOT NULL AS has_finalizer
 --     FROM public.project_documents WHERE id = (SELECT id FROM doc);
---   SELECT number, source, snapshot FROM public.project_document_revisions
---    WHERE document_id = (SELECT id FROM doc) ORDER BY number;
+--   SELECT number, source, snapshot, finalized_at IS NOT NULL AS handed_in, finalized_by
+--     FROM public.project_document_revisions WHERE document_id = (SELECT id FROM doc) ORDER BY number;
 --   SELECT public.document_finalize((SELECT id FROM doc), 3, '{"frozen": 2}', (SELECT user_id FROM target));
 --   SELECT number, snapshot FROM public.project_document_revisions
 --    WHERE document_id = (SELECT id FROM doc) AND number = 3;
 --   SELECT * FROM public.document_save((SELECT id FROM doc), '{"stop": [3]}', (SELECT user_id FROM target), 'edit', 3);
 --   SELECT status, head_revision, finalized_revision FROM public.project_documents WHERE id = (SELECT id FROM doc);
+--   SELECT public.document_finalize((SELECT id FROM doc), 4, '{"frozen": 4}', (SELECT user_id FROM target));
+--   SELECT number, snapshot, finalized_at IS NOT NULL AS handed_in FROM public.project_document_revisions
+--    WHERE document_id = (SELECT id FROM doc) ORDER BY number;
+--   SELECT * FROM public.document_save((SELECT id FROM doc), '{"stop": [5]}', (SELECT user_id FROM target), 'edit', 4);
 --   UPDATE public.sprints
 --      SET starts_at = (now() AT TIME ZONE 'UTC')::date - 14, ends_at = (now() AT TIME ZONE 'UTC')::date - 8
 --    WHERE id = (SELECT sprint_id FROM target);
 --   SELECT public.prune_document_revisions() AS pruned;
 --   SELECT number FROM public.project_document_revisions WHERE document_id = (SELECT id FROM doc) ORDER BY number;
+--   INSERT INTO public.sprint_burnup_days (sprint_id, day, scope_points, completed_points, story_ids, done_story_ids)
+--     SELECT sprint_id, (now() AT TIME ZONE 'UTC')::date, 0, 0, ARRAY[gen_random_uuid()], '{}' FROM target
+--   ON CONFLICT (sprint_id, day) DO UPDATE SET story_ids = excluded.story_ids, done_story_ids = excluded.done_story_ids
+--   RETURNING story_ids, done_story_ids;
 --   ROLLBACK;
