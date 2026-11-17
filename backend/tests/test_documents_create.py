@@ -27,6 +27,8 @@ from tests.documents_support import (
     documents_db,
     pin_today,
     revisions,
+    story,
+    task,
     writes,
 )
 
@@ -204,3 +206,26 @@ def test_the_new_document_is_a_draft_at_revision_1(db):
     assert [(r["number"], r["source"], r["saved_by"]) for r in revisions(db, row["id"])] == [
         (1, "seed", UID)
     ]
+
+
+def test_a_first_revision_too_long_to_store_is_422(db):
+    """60 completed stories whose criteria fill a scenario's steps with three-byte characters: the
+    seed is past the 200,000 bytes a revision can hold."""
+    many = [
+        story(
+            f"7c000000-0000-4000-8000-{n:012d}",
+            f"US-{n}",
+            S1,
+            criteria=tuple("漢" * 290 for _ in range(6)),
+        )
+        for n in range(60)
+    ]
+    tasks = [task(f"7d000000-0000-4000-8000-{n:012d}", s["id"], "done") for n, s in enumerate(many)]
+    db.store["user_stories"], db.store["tasks"] = many, tasks
+    db.reset_counter()
+
+    assert refused(lambda: controller.create_document(PID, UID, "test_report", None)) == (
+        422,
+        controller.DOCUMENT_TOO_LONG,
+    )
+    assert writes(db) == []

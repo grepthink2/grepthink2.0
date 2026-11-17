@@ -1296,11 +1296,6 @@ export interface ApiDocumentStoryLine {
   hours: number | null;
 }
 
-/** A story a body names, with its criteria; `missing` when it is no longer on the board. */
-export type ApiDocumentStoryRef =
-  | { id: string; key: string; title: string; acceptance_criteria: string[]; missing?: never }
-  | { id: string; missing: true };
-
 export interface ApiSprintReportDerived {
   /** The sprint's stories that have tasks, all done; then the others. Each in board order. */
   completed: ApiDocumentStoryLine[];
@@ -1328,8 +1323,16 @@ export interface ApiReleaseSummaryDerived {
   backlog: { id: string; key: string; title: string; points: number | null; in_sprint: string | null }[];
 }
 
+/** A story the scenarios name, with its criteria; `missing` when it is no longer on the board. */
+export type ApiTestReportStory =
+  | { key: string; title: string; acceptance_criteria: string[]; missing?: never }
+  | { missing: true };
+
 export interface ApiTestReportDerived {
-  scenarios: { id: string; stories: ApiDocumentStoryRef[] }[];
+  /** Each story the scenarios name, once, by its id. */
+  stories: Record<string, ApiTestReportStory>;
+  /** Each scenario's stories, by id, in its order. */
+  scenarios: { id: string; story_ids: string[] }[];
   /** The team's repository URLs, as suggestions for unit-test locations. */
   repositories: string[];
   /** Stories with criteria that no scenario covers, in board order. */

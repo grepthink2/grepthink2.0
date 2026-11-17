@@ -121,16 +121,15 @@ TEST_BODY = {
     "unit_tests_note": "Run them with npm test and pytest.",
 }
 TEST_DERIVED = {
+    "stories": {
+        "1": {"key": "US-1", "title": "Find a trail", "acceptance_criteria": []},
+        "3": {"key": "US-3", "title": "Filter trails", "acceptance_criteria": []},
+        "gone": {"missing": True},
+    },
     "scenarios": [
-        {
-            "id": "sc1",
-            "stories": [
-                {"id": "1", "key": "US-1", "title": "Find a trail", "acceptance_criteria": []},
-                {"id": "3", "key": "US-3", "title": "Filter trails", "acceptance_criteria": []},
-            ],
-        },
-        {"id": "sc2", "stories": [{"id": "gone", "missing": True}]},
-        {"id": "sc3", "stories": []},
+        {"id": "sc1", "story_ids": ["1", "3"]},
+        {"id": "sc2", "story_ids": ["gone"]},
+        {"id": "sc3", "story_ids": []},
     ],
     "repositories": ["https://github.com/team/trailhead"],
     "uncovered": [],
@@ -323,14 +322,8 @@ def test_no_student_text_adds_a_heading_or_leaves_its_place():
             "unit_tests_note": HOSTILE,
         },
         {
-            "scenarios": [
-                {
-                    "id": "sc",
-                    "stories": [
-                        {"id": "s", "key": HOSTILE, "title": HOSTILE, "acceptance_criteria": []}
-                    ],
-                }
-            ],
+            "stories": {"s": {"key": HOSTILE, "title": HOSTILE, "acceptance_criteria": []}},
+            "scenarios": [{"id": "sc", "story_ids": ["s"]}],
             "repositories": [HOSTILE],
             "uncovered": [],
         },

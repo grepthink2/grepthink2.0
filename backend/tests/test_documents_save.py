@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi import HTTPException
+from postgrest.exceptions import APIError
 
 from app.documents import controller
 from app.limiter import limiter
@@ -203,3 +204,41 @@ def test_saves_are_limited_per_person(db, client):
     # Another member keeps their own allowance.
     other = header_for("sam@ucsc.edu", sub=SM)
     assert client.put(url, json=body, headers=other).status_code == 200
+
+
+def test_a_body_too_long_to_store_is_422_and_nothing_is_saved(db):
+    """60 scenarios of 2000 three-byte characters: within every field's limit, past the 200,000
+    bytes a revision can hold."""
+    doc = add_document(db, "test_report")
+    scenarios = [
+        {"id": f"6b000000-0000-4000-8000-{n:012d}", "title": "Search", "steps_md": "漢" * 2000}
+        for n in range(60)
+    ]
+    db.reset_counter()
+
+    assert refused(lambda: controller.save_document(doc, UID, {"scenarios": scenarios}, 1)) == (
+        422,
+        controller.DOCUMENT_TOO_LONG,
+    )
+    assert writes(db) == []
+
+
+def test_a_save_the_database_finds_too_long_is_422(db):
+    """The size CHECK (23514) answers the same refusal as the check above."""
+    doc = add_document(db, "sprint_report", sprint_id=S2)
+
+    def too_long(params):
+        raise APIError(
+            {
+                "code": "23514",
+                "message": "project_document_revisions_size",
+                "details": None,
+                "hint": None,
+            }
+        )
+
+    db.rpcs["document_save"] = too_long
+    assert refused(lambda: controller.save_document(doc, UID, report(), 1)) == (
+        422,
+        controller.DOCUMENT_TOO_LONG,
+    )

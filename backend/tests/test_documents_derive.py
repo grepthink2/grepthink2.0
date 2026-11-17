@@ -237,39 +237,28 @@ def test_the_release_summary_backlog_is_the_unfinished_sprint_stories_then_the_b
 # --------------------------------------------------------------------- test report ----
 
 
-def test_the_test_report_names_each_scenarios_stories_and_the_uncovered_ones():
+def test_the_test_report_names_each_story_once_and_the_uncovered_ones():
+    """Two scenarios name US-7: its criteria are stored once, under its id."""
     body = {
         "scenarios": [
-            {"id": "sc-1", "story_ids": [sid(1)]},
+            {"id": "sc-1", "story_ids": [sid(1), sid(7)]},
             {"id": "sc-2", "story_ids": [sid(7), MISSING]},
         ]
     }
     out = derive.derive_test_report(ctx(), body)
 
+    assert out["stories"] == {
+        sid(1): {
+            "key": "US-1",
+            "title": "Story US-1",
+            "acceptance_criteria": ["Finds a trail by name"],
+        },
+        sid(7): {"key": "US-7", "title": "Story US-7", "acceptance_criteria": ["Shows elevation"]},
+        MISSING: {"missing": True},
+    }
     assert out["scenarios"] == [
-        {
-            "id": "sc-1",
-            "stories": [
-                {
-                    "id": sid(1),
-                    "key": "US-1",
-                    "title": "Story US-1",
-                    "acceptance_criteria": ["Finds a trail by name"],
-                }
-            ],
-        },
-        {
-            "id": "sc-2",
-            "stories": [
-                {
-                    "id": sid(7),
-                    "key": "US-7",
-                    "title": "Story US-7",
-                    "acceptance_criteria": ["Shows elevation"],
-                },
-                {"id": MISSING, "missing": True},
-            ],
-        },
+        {"id": "sc-1", "story_ids": [sid(1), sid(7)]},
+        {"id": "sc-2", "story_ids": [sid(7), MISSING]},
     ]
     assert out["repositories"] == [REPO]
     # Stories with criteria that no scenario covers, in board order (US-5, US-6 and US-9 have none).

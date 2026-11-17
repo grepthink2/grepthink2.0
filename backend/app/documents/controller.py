@@ -23,6 +23,7 @@ Logs and exception messages carry ids only: never a document's text, a name or a
 
 from __future__ import annotations
 
+import json
 import re
 import unicodedata
 from datetime import date
@@ -73,6 +74,8 @@ NO_SPRINT_FOR_KIND = "This document belongs to the project, not to a sprint"
 STORY_NOT_IN_PROJECT = "A story is not on this team's board"
 #: 403: a class's list of documents is for its staff.
 CLASS_STAFF_ONLY = "Only the instructor or a class TA can read the class's documents"
+#: 422 for a body, 409 for a finalize's snapshot: more than a revision can hold.
+DOCUMENT_TOO_LONG = "This document is too long"
 
 #: The team roles that finalize and delete a document.
 FINALIZE_ROLES = frozenset({ROLE_SCRUM_MASTER, ROLE_PRODUCT_OWNER, ROLE_OWNER, ROLE_ADMIN})
@@ -93,8 +96,13 @@ _DOCUMENT_SELECT = (
 _REVISION_COLUMNS = (
     f"number, body, snapshot, source, saved_by, saved_at, finalized_at, finalized_by, {_SAVER}"
 )
-#: Postgres' code for "no such row", raised by document_save and document_finalize.
+#: Postgres' code for "no such row", raised by document_create, document_save and document_finalize.
 _NO_DATA_FOUND = "P0002"
+#: Postgres' code for a CHECK that failed: on a revision, project_document_revisions_size.
+_CHECK_VIOLATION = "23514"
+#: The most a body or a snapshot may take as compact UTF-8 JSON. The database holds each to 256 kB in its
+#: stored form (project_document_revisions_size); this leaves room for jsonb's own overhead.
+_SIZE_MAX = 200_000
 
 
 # --------------------------------------------------------------------------- reads ----
@@ -177,6 +185,12 @@ def _context(reads: dict, document: dict, today: date) -> Ctx:
     return derive.build_context(
         reads, project_id=document["project_id"], sprint_id=document.get("sprint_id"), today=today
     )
+
+
+def _too_long(value) -> bool:
+    """Whether ``value`` takes more than :data:`_SIZE_MAX` bytes as compact UTF-8 JSON."""
+    encoded = json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return len(encoded) > _SIZE_MAX
 
 
 def _today_at(institution_id) -> date:
@@ -413,6 +427,8 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
         raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
 
     body = kind.body_model.model_validate(kind.seed(ctx)).model_dump(mode="json")
+    if _too_long(body):
+        raise HTTPException(status_code=422, detail=DOCUMENT_TOO_LONG)
     try:
         created = client.rpc(
             "document_create",
@@ -536,6 +552,9 @@ def save_document(document_id: UUID, user_id: str, body: dict, base_revision: in
             status_code=422,
             detail=[{**e, "loc": ["body", "body", *e["loc"]]} for e in errors],
         ) from None
+    stored = checked.model_dump(mode="json")
+    if _too_long(stored):
+        raise HTTPException(status_code=422, detail=DOCUMENT_TOO_LONG)
     story_ids = {str(i).lower() for i in checked.story_ids()}
     if story_ids:
         _story_ids_known(client, str(document["project_id"]), story_ids)
@@ -544,7 +563,7 @@ def save_document(document_id: UUID, user_id: str, body: dict, base_revision: in
             "document_save",
             {
                 "p_document_id": str(document["id"]),
-                "p_body": checked.model_dump(mode="json"),
+                "p_body": stored,
                 "p_user": str(user_id),
                 "p_source": "edit",
                 "p_base": base_revision,
@@ -554,6 +573,8 @@ def save_document(document_id: UUID, user_id: str, body: dict, base_revision: in
     except DatabaseError as exc:
         if exc.pg_code == _NO_DATA_FOUND:
             raise HTTPException(status_code=404, detail=DOCUMENT_NOT_FOUND) from exc
+        if exc.pg_code == _CHECK_VIOLATION:
+            raise HTTPException(status_code=422, detail=DOCUMENT_TOO_LONG) from exc
         raise
     row = saved.data[0] if isinstance(saved.data, list) else saved.data
     overwrote = None
@@ -666,6 +687,8 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
     failures = kind.blocking_checks(ctx, found["body"], derived)
     if failures:
         raise HTTPException(status_code=409, detail=failures[0])
+    if _too_long(derived):
+        raise HTTPException(status_code=409, detail=DOCUMENT_TOO_LONG)
     try:
         handed_in = client.rpc(
             "document_finalize",
@@ -682,6 +705,8 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
     except DatabaseError as exc:
         if exc.pg_code == _NO_DATA_FOUND:
             raise HTTPException(status_code=404, detail=DOCUMENT_NOT_FOUND) from exc
+        if exc.pg_code == _CHECK_VIOLATION:
+            raise HTTPException(status_code=409, detail=DOCUMENT_TOO_LONG) from exc
         raise
     if handed_in.data is None:
         # Another finalizer handed this revision in after our read: nothing was written. Answer what

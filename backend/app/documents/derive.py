@@ -340,13 +340,22 @@ def checks_release_summary(ctx: Ctx, body: dict, derived: dict) -> list[str]:
 
 
 def derive_test_report(ctx: Ctx, body: dict) -> dict:
-    """Each scenario's stories with their criteria (or ``missing``), the team's repositories, and the
-    stories with criteria that no scenario covers, in board order."""
+    """Each story the scenarios name, once, by id, with its criteria (or ``missing``); each scenario's
+    story ids; the team's repositories; and the stories with criteria that no scenario covers, in board
+    order. A story named by several scenarios is stored once, which keeps a snapshot small."""
     scenarios = body.get("scenarios") or []
-    covered = {str(i).lower() for sc in scenarios for i in sc.get("story_ids") or []}
+    stories: dict[str, dict] = {}
+    for scenario in scenarios:
+        for story_id in scenario.get("story_ids") or []:
+            if str(story_id) not in stories:
+                ref = _story_ref(ctx, story_id)
+                ref.pop("id")
+                stories[str(story_id)] = ref
+    covered = {key.lower() for key in stories}
     return {
+        "stories": stories,
         "scenarios": [
-            {"id": sc["id"], "stories": [_story_ref(ctx, i) for i in sc.get("story_ids") or []]}
+            {"id": sc["id"], "story_ids": [str(i) for i in sc.get("story_ids") or []]}
             for sc in scenarios
         ],
         "repositories": list(ctx.repos),

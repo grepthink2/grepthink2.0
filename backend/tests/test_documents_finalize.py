@@ -40,6 +40,7 @@ from tests.documents_support import (
     documents_db,
     pin_today,
     revisions,
+    story,
     writes,
 )
 from tests.scrum_support import pin_clock
@@ -398,3 +399,49 @@ def test_two_finalizers_of_one_head_tell_the_tas_once(db, monkeypatch):
     assert (second["derived"], second["derived_frozen"]) == (first["derived"], True)
     assert second["document"]["finalized_by"] == SM
     assert revisions(db, doc)[0]["finalized_by"] == SM
+
+
+def test_derived_sections_too_long_to_store_are_409(db):
+    """30 key stories with 20 criteria of 300 three-byte characters each: the snapshot would pass the
+    200,000 bytes a revision holds."""
+    for s in db.rows("user_stories"):
+        s["acceptance_criteria"] = ["漢" * 300] * 20
+    many = [
+        story(
+            f"7c000000-0000-4000-8000-{n:012d}",
+            f"US-{n}",
+            None,
+            criteria=tuple("漢" * 300 for _ in range(20)),
+        )
+        for n in range(30)
+    ]
+    db.store["user_stories"] += many
+    doc = add_document(db, "release_summary", body={"key_story_ids": [s["id"] for s in many]})
+    db.reset_counter()
+
+    assert refused(lambda: controller.finalize_document(doc, SM, 1)) == (
+        409,
+        controller.DOCUMENT_TOO_LONG,
+    )
+    assert writes(db) == []
+
+
+def test_a_snapshot_the_database_finds_too_long_is_409(db):
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+
+    def too_long(params):
+        raise APIError(
+            {
+                "code": "23514",
+                "message": "project_document_revisions_size",
+                "details": None,
+                "hint": None,
+            }
+        )
+
+    db.rpcs["document_finalize"] = too_long
+    assert refused(lambda: controller.finalize_document(doc, SM, 1)) == (
+        409,
+        controller.DOCUMENT_TOO_LONG,
+    )
+    assert db.rows("notifications") == []

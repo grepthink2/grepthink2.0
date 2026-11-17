@@ -244,13 +244,13 @@ def render_release_summary(heading: Heading, body: dict, derived: dict) -> str:
 def render_test_report(heading: Heading, body: dict, derived: dict) -> str:
     lines = _head("Test Plan and Report", heading)
     lines += ["## System test scenarios", ""]
-    stories = {sc["id"]: sc.get("stories") or [] for sc in derived.get("scenarios") or []}
+    stories = derived.get("stories") or {}
     scenarios = body.get("scenarios") or []
     if not scenarios:
         lines += ["None.", ""]
     for n, scenario in enumerate(scenarios, start=1):
         lines += [f"### Scenario {n}", ""]
-        refs = stories.get(scenario["id"], [])
+        refs = [stories.get(str(i), {"missing": True}) for i in scenario.get("story_ids") or []]
         if refs:
             letters = string.ascii_lowercase
             lines += [f"- {letters[i]}. {_ref(ref)}" for i, ref in enumerate(refs)] + [""]
