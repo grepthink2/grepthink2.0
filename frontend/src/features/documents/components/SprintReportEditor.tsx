@@ -1,0 +1,199 @@
+import { Input } from '@components/Input/Input';
+import { Table, type TableColumn } from '@components/Table/Table';
+import { Textarea } from '@components/Textarea/Textarea';
+import type { ApiDocumentStoryLine, ApiProjectDocument, ApiSprintAction, ApiSprintReportBody } from '@/lib/api';
+import BurnupChart from '@features/scrum/components/BurnupChart';
+import { ACTION_MAX, ACTIONS_MAX, REASON_MAX, SATISFIED_NOTE_MAX } from '../config/limits';
+import { formatDay } from '../utils/dates';
+import { ACTION_LISTS, newAction, type ActionListKey } from '../utils/documentBody';
+import { STORY_GONE } from '../utils/storyRefs';
+import EditableList from './EditableList';
+import FromBoard from './FromBoard';
+import '@features/scrum/scrum.scss';
+
+interface SprintReportEditorProps {
+  doc: ApiProjectDocument<'sprint_report'>;
+  body: ApiSprintReportBody;
+  editable: boolean;
+  onChange: (body: ApiSprintReportBody) => void;
+}
+
+/** "Pair on reviews" in quotes, or the place in its list while it has no words. */
+const actionName = (item: ApiSprintAction, index: number, list: string) =>
+  (item.action.trim() ? `“${item.action.trim()}”` : `${list} ${index + 1}`);
+
+interface ActionFieldsProps {
+  item: ApiSprintAction;
+  index: number;
+  list: string;
+  editable: boolean;
+  onChange: (item: ApiSprintAction) => void;
+}
+
+/** One action: what the team will do and why, or the two as text. */
+function ActionFields({ item, index, list, editable, onChange }: ActionFieldsProps) {
+  if (!editable) {
+    return (
+      <p className="document-action">
+        <strong>{item.action}</strong>
+        {item.reason && <>{' '}<span className="document-action__reason">{item.reason}</span></>}
+      </p>
+    );
+  }
+  // The hidden words make each field's name its own: "Action 2, Stop doing".
+  const where = <>{' '}<span className="gt-visually-hidden">{`${index + 1}, ${list}`}</span></>;
+  return (
+    <div className="document-action document-action--editing">
+      <Input
+        label={<>Action{where}</>}
+        value={item.action}
+        maxLength={ACTION_MAX}
+        onChange={(e) => onChange({ ...item, action: e.target.value })}
+      />
+      <Textarea
+        label={<>Reason{where}</>}
+        optional
+        rows={2}
+        value={item.reason}
+        maxLength={REASON_MAX}
+        onChange={(e) => onChange({ ...item, reason: e.target.value })}
+      />
+    </div>
+  );
+}
+
+/** One story of the sprint: key, title, points and hours, or the words for a deleted one. */
+function StoryLine({ story }: { story: ApiDocumentStoryLine }) {
+  if (story.missing) return <li className="document-story-line document-story-line--gone">{STORY_GONE}</li>;
+  const details = [
+    story.points != null ? `${story.points} ${story.points === 1 ? 'point' : 'points'}` : null,
+    story.hours != null ? `${story.hours} h` : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <li className="document-story-line">
+      <span className="document-story-line__key">{story.key}</span>{' '}
+      <span className="document-story-line__title">{story.title}</span>
+      {details && <>{' '}<span className="document-story-line__details">{details}</span></>}
+    </li>
+  );
+}
+
+function StoryLines({ stories, empty }: { stories: ApiDocumentStoryLine[]; empty: string }) {
+  if (stories.length === 0) return <p className="document-section__empty">{empty}</p>;
+  return <ul className="document-story-lines">{stories.map((s) => <StoryLine key={s.id} story={s} />)}</ul>;
+}
+
+interface RateRow {
+  id: string;
+  measure: string;
+  sprint: string;
+  toDate: string;
+}
+
+const RATE_COLUMNS: TableColumn<RateRow>[] = [
+  { key: 'measure', label: 'Measure', rowHeader: true },
+  { key: 'sprint', label: 'This sprint', className: 'document-rates__number' },
+  { key: 'toDate', label: 'To date', className: 'document-rates__number' },
+];
+
+const rate = (n: number) => n.toFixed(2);
+
+/**
+ * The sprint report's editor: the actions to stop, start and keep doing (each with its reason, at most
+ * ten a list, with the note for a team that has nothing to stop), then what the board says about the
+ * sprint as it ended: its stories, completed or not, its numbers and rates beside the averages to
+ * date, and its burnup.
+ */
+export default function SprintReportEditor({ doc, body, editable, onChange }: SprintReportEditorProps) {
+  const derived = doc.derived;
+  const setList = (key: ActionListKey, items: ApiSprintAction[]) => onChange({ ...body, [key]: items });
+  const asOf = derived.as_of === 'now'
+    ? 'Shown as the board is now: this sprint has no saved end-of-sprint record.'
+    : `As the sprint stood on ${formatDay(derived.as_of)}.`;
+  const sprints = derived.to_date.sprints_counted;
+  const rates: RateRow[] = [
+    { id: 'stories', measure: 'User stories completed', sprint: String(derived.stories_completed), toDate: '' },
+    { id: 'hours', measure: 'Ideal work hours completed', sprint: String(derived.hours_completed), toDate: '' },
+    { id: 'days', measure: 'Days in the sprint', sprint: String(derived.days), toDate: '' },
+    { id: 'stories-rate', measure: 'User stories per day', sprint: rate(derived.stories_per_day), toDate: rate(derived.to_date.stories_per_day) },
+    { id: 'hours-rate', measure: 'Ideal work hours per day', sprint: rate(derived.hours_per_day), toDate: rate(derived.to_date.hours_per_day) },
+  ];
+  const sprintName = doc.document.sprint?.name ?? 'Sprint';
+
+  return (
+    <div className="document-editor">
+      {ACTION_LISTS.map(({ key, label }) => (
+        <section key={key} className="document-section" aria-labelledby={`document-${key}`}>
+          <h2 className="document-section__title" id={`document-${key}`}>{label}</h2>
+          <EditableList
+            label={label}
+            items={body[key]}
+            itemKey={(item) => item.id}
+            itemName={(item, i) => actionName(item, i, label)}
+            editable={editable}
+            onChange={(items) => setList(key, items)}
+            max={ACTIONS_MAX}
+            newItem={newAction}
+            addLabel="Add an action"
+            emptyText={editable ? 'No actions yet.' : 'None.'}
+            limitText={`${ACTIONS_MAX} of ${ACTIONS_MAX}: a list holds no more`}
+            renderItem={(item, i) => (
+              <ActionFields
+                item={item}
+                index={i}
+                list={label}
+                editable={editable}
+                onChange={(next) => setList(key, body[key].map((a) => (a.id === next.id ? next : a)))}
+              />
+            )}
+          />
+          {key === 'stop' && (editable ? (
+            <Textarea
+              className="document-section__note"
+              label="Nothing to stop doing? Say why"
+              optional
+              rows={2}
+              value={body.satisfied_note}
+              maxLength={SATISFIED_NOTE_MAX}
+              onChange={(e) => onChange({ ...body, satisfied_note: e.target.value })}
+            />
+          ) : body.satisfied_note ? (
+            <p className="document-section__text">{body.satisfied_note}</p>
+          ) : null)}
+        </section>
+      ))}
+
+      <FromBoard frozen={doc.derived_frozen} note={asOf}>
+        <section className="document-section" aria-labelledby="document-work">
+          <h2 className="document-section__title" id="document-work">Work completed</h2>
+          <h3 className="document-section__subtitle">Completed</h3>
+          <StoryLines stories={derived.completed} empty="No story was completed." />
+          <h3 className="document-section__subtitle">Not completed</h3>
+          <StoryLines stories={derived.not_completed} empty="Every story was completed." />
+        </section>
+        <section className="document-section" aria-labelledby="document-rates">
+          <h2 className="document-section__title" id="document-rates">Work completion rate</h2>
+          <Table
+            className="document-rates"
+            caption={`Work completion rate: this sprint, and to date over ${sprints} ${sprints === 1 ? 'sprint' : 'sprints'}`}
+            columns={RATE_COLUMNS}
+            rows={rates}
+            dense
+          />
+          <p className="document-section__hint">
+            To date counts this sprint and every one before it ({sprints} {sprints === 1 ? 'sprint' : 'sprints'}).
+          </p>
+        </section>
+        <section className="document-section" aria-label={`${sprintName} burnup`}>
+          <BurnupChart
+            labels={derived.burnup.labels}
+            scope={derived.burnup.scope}
+            completed={derived.burnup.completed}
+            unit={derived.burnup.unit}
+            title={`${sprintName} burnup`}
+          />
+        </section>
+      </FromBoard>
+    </div>
+  );
+}
