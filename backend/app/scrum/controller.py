@@ -1742,3 +1742,17 @@ def ai_draft(
         on_conflict="user_id,used_on",
     ).execute()
     return {"draft": draft}
+
+
+# ------------------------------------------------------- shared with documents ----
+# The project documents (app/documents) read the board by the board's own rules: who may see it,
+# the school's day, which stories a list holds and in what order, and what a burnup counts. These
+# are the names they import.
+board_access = _board_access
+school_today = _today
+school_day = _school_day
+sprint_days = _sprint_days
+in_backlog = _in_backlog
+story_order = _story_order
+burnup_totals = _totals
+done_tasks = _done_tasks
