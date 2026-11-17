@@ -13,6 +13,8 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
+from postgrest.exceptions import APIError
+
 from app.assignments import deadlines
 from tests.fake_supabase import FakeSupabase
 
@@ -72,7 +74,10 @@ class ScrumFake(FakeSupabase):
     ``from_status`` and applies the move to the task. Both run as the fake's insert
     trigger, so a task embedded on the move's insert shows its status before the move,
     as in Postgres. ``scrum_next_key`` hands out 1, 2, 3… per project and kind, like the
-    counter table behind it.
+    counter table behind it. ``scrum_set_story_order`` (2026-11-16_story_rank_and_criteria.sql)
+    takes the project's stories of one sprint, or of the backlog when ``p_sprint_id`` is None (the
+    backlog rule of ``_in_backlog``), refuses with 23505 unless ``p_story_ids`` are exactly those,
+    each once, and otherwise ranks them by position and answers how many it ranked.
     """
 
     def __init__(self, **kwargs):
@@ -82,6 +87,27 @@ class ScrumFake(FakeSupabase):
             k = (params["p_project_id"], params["p_kind"])
             counters[k] = counters.get(k, 0) + 1
             return counters[k]
+
+        def set_story_order(params: dict) -> int:
+            sprint, ids = params["p_sprint_id"], [str(i) for i in params["p_story_ids"]]
+            listed = {
+                str(s["id"])
+                for s in self.rows("user_stories")
+                if s["project_id"] == params["p_project_id"]
+                and (
+                    (sprint is None and (s.get("sprint_id") is None or s.get("archived_at")))
+                    or (s.get("sprint_id") == sprint and not s.get("archived_at"))
+                )
+            }
+            if len(set(ids)) != len(ids) or set(ids) != listed:
+                raise APIError(
+                    {"code": "23505", "message": "stories changed", "details": None, "hint": None}
+                )
+            position = {sid: n for n, sid in enumerate(ids, start=1)}
+            for story in self.rows("user_stories"):
+                if str(story["id"]) in position:
+                    story["rank"] = position[str(story["id"])]
+            return len(ids)
 
         def apply_move(db: FakeSupabase, row: dict) -> None:
             task = next((t for t in db.rows("tasks") if t["id"] == row["task_id"]), None)
@@ -97,7 +123,7 @@ class ScrumFake(FakeSupabase):
             )
 
         super().__init__(
-            rpc={"scrum_next_key": next_key},
+            rpc={"scrum_next_key": next_key, "scrum_set_story_order": set_story_order},
             triggers={("task_moves", "insert"): apply_move},
             **kwargs,
         )

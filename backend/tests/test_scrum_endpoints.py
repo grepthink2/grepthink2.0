@@ -117,6 +117,27 @@ def test_the_sprint_routes_answer_the_sprint_itself(monkeypatch, client):
     assert res.json() == {"id": row["id"], "name": "Kickoff", **dates, "status": "active"}
 
 
+def test_creating_a_story_answers_the_story_itself(monkeypatch, client):
+    """Not wrapped in {message, story} (STYLE_GUIDE.md, Response Format): a new story, unranked,
+    with its criteria and no tasks yet."""
+    db = scrum_db(monkeypatch)
+    res = client.post(
+        f"/api/projects/{PID}/scrum/stories",
+        headers=header_for("tony@ucsc.edu", sub=UID),
+        json={"title": "Find a ride", "acceptance_criteria": ["Shows rides nearby"]},
+    )
+    assert res.status_code == 200
+    story = res.json()
+    [row] = db.rows("user_stories")
+    assert (story["id"], story["key"], story["title"]) == (row["id"], "US-1", "Find a ride")
+    assert (story["acceptance_criteria"], story["rank"], story["tasks"]) == (
+        ["Shows rides nearby"],
+        None,
+        [],
+    )
+    assert not {"message", "story"} & set(story)
+
+
 def test_the_story_and_task_edit_routes_answer_the_row_itself(monkeypatch, client):
     """Editing a story or a task answers the story or the task, not wrapped in {message, story}
     or {message, task} (STYLE_GUIDE.md, Response Format)."""

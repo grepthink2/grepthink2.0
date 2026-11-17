@@ -1,9 +1,10 @@
 import { Maximize2 } from 'lucide-react';
 import type { ApiScrumStory } from '@/lib/api';
-import type { MemberMap } from '../scrumTypes';
+import type { MemberMap, StoryOrderControl } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { storyHours, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
+import StoryOrderButtons from './StoryOrderButtons';
 
 interface Props {
   story: ApiScrumStory;
@@ -14,6 +15,8 @@ interface Props {
   /** Open the story's detail. Rendered as a sibling control, not nested —
    *  the card itself is a button (filter), and buttons can't contain buttons. */
   onOpen?: () => void;
+  /** Move up and Move down beside the card, for a team member: siblings too, for the same reason. */
+  order?: StoryOrderControl;
 }
 
 /**
@@ -25,7 +28,7 @@ interface Props {
  * what now opens the task itself instead.
  */
 export default function StoryCard({
-  story, members, active = false, onSelect, onOpen,
+  story, members, active = false, onSelect, onOpen, order,
 }: Props) {
   const { tasksDone, tasksTotal, pointsDone, points, percent } = storyRollup(story);
   const hours = storyHours(story);
@@ -59,19 +62,24 @@ export default function StoryCard({
     </button>
   );
 
-  if (!onOpen) return card;
+  if (!onOpen && !order) return card;
   return (
     <div className="story-slot">
+      {order && (
+        <StoryOrderButtons className="story-slot__order" storyId={story.id} storyKey={story.key} control={order} />
+      )}
       {card}
-      <button
-        type="button"
-        className="story-slot__open"
-        aria-label={`Open ${story.key}`}
-        title={`Open ${story.key}`}
-        onClick={onOpen}
-      >
-        <Maximize2 size={13} aria-hidden="true" />
-      </button>
+      {onOpen && (
+        <button
+          type="button"
+          className="story-slot__open"
+          aria-label={`Open ${story.key}`}
+          title={`Open ${story.key}`}
+          onClick={onOpen}
+        >
+          <Maximize2 size={13} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

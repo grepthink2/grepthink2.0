@@ -7,9 +7,10 @@ authoritative in the controller — Pydantic here is a fast pre-flight.
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 BoardStatus = Literal["todo", "in_progress", "done"]
 EstimateScale = Literal["linear", "exponential", "fibonacci"]
@@ -31,6 +32,15 @@ ESTIMATE_SCALES: dict[str, list[int]] = {
     "exponential": [1, 2, 4, 8, 16, 32],
     "fibonacci": [1, 2, 3, 5, 8, 13],
 }
+#: A story holds at most this many acceptance criteria (the database's
+#: user_stories_criteria_valid caps it too), each 1 to CRITERION_MAX characters once trimmed.
+CRITERIA_MAX = 20
+CRITERION_MAX = 300
+#: One acceptance criterion as a request sends it: trimmed, then 1 to CRITERION_MAX characters, so
+#: a blank one is refused.
+Criterion = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=CRITERION_MAX)
+]
 
 # ----- Requests -----
 
@@ -60,6 +70,7 @@ class CreateStoryRequest(BaseModel):
     points: int | None = Field(None, gt=0)
     assignee_id: str | None = None
     sprint_id: str | None = None
+    acceptance_criteria: list[Criterion] | None = Field(None, max_length=CRITERIA_MAX)
 
 
 class UpdateStoryRequest(BaseModel):
@@ -68,6 +79,23 @@ class UpdateStoryRequest(BaseModel):
     points: int | None = Field(None, gt=0)
     assignee_id: str | None = None
     sprint_id: str | None = None  # explicit null in JSON ⇒ move to backlog
+    #: The whole list, in order: it replaces the story's, and [] clears it (explicit null is a 422).
+    acceptance_criteria: list[Criterion] | None = Field(None, max_length=CRITERIA_MAX)
+
+
+class StoryOrderRequest(BaseModel):
+    """One list's stories in their new order: a sprint's live stories, or the backlog's when
+    ``sprint_id`` is null. Every story of the list, each once (the controller checks the list)."""
+
+    sprint_id: UUID | None  # required: null names the backlog
+    story_ids: list[UUID] = Field(..., min_length=1, max_length=200)
+
+    @field_validator("story_ids")
+    @classmethod
+    def _each_story_once(cls, ids: list[UUID]) -> list[UUID]:
+        if len(set(ids)) != len(ids):
+            raise ValueError("story_ids names a story more than once")
+        return ids
 
 
 class CreateTaskRequest(BaseModel):
@@ -194,6 +222,10 @@ class StoryOut(BaseModel):
     reporter_id: str
     assignee_id: str | None = None
     archived_at: str | None = None
+    #: Its place in its sprint's list or the backlog's, 1 first; None until the team orders it (a new
+    #: story, or one just moved to another list), and those come last, by key.
+    rank: int | None = None
+    acceptance_criteria: list[str] = Field(default_factory=list)
     comment_count: int = 0
     tasks: list[TaskOut] = Field(default_factory=list)
 
@@ -288,9 +320,10 @@ class BoardSummaryResponse(BaseModel):
     connector_ready: bool = False
 
 
-class StoryResponse(BaseModel):
-    message: str
-    story: StoryOut
+class StoryOrderResponse(BaseModel):
+    """The list's story ids in their saved order: ranks 1 to n."""
+
+    story_ids: list[str]
 
 
 class TaskResponse(BaseModel):

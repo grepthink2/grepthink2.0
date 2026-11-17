@@ -12,6 +12,7 @@ import {
   confirmMove, findStory, findTask, mapTask, mergeTaskResponse, rollbackMove, syncRefStatus,
 } from '../utils/boardReducer';
 import { blockedMessage, isBlocked } from '../utils/dependencies';
+import { sortStories } from '../utils/storyOrder';
 
 /** Transient user-facing message. F9 renders these as toasts. */
 export interface BoardNotice {
@@ -30,6 +31,11 @@ function noticeFor(err: unknown, fallback: string): BoardNotice {
 function changesEstimate(task: ApiScrumTask, body: ApiUpdateTaskBody): boolean {
   return (body.points !== undefined && body.points !== task.points)
     || (body.estimate_hours !== undefined && body.estimate_hours !== task.estimate_hours);
+}
+
+/** `stories` with the ranks `ranks` names (the others as they are), in the board's order. */
+function withRanks(stories: ApiScrumStory[], ranks: Map<string, number | null>): ApiScrumStory[] {
+  return sortStories(stories.map((s) => (ranks.has(s.id) ? { ...s, rank: ranks.get(s.id) } : s)));
 }
 
 /**
@@ -83,6 +89,8 @@ export function useScrumBoard(
   const prRefreshedFor = useRef<string | null>(null);
   /** Sprint currently being viewed; null = let the server pick the active one. */
   const sprintRef = useRef<string | null>(null);
+  /** The sprint the newest load asked for (null: the server's pick), which may not be on screen yet. */
+  const requestedSprint = useRef<string | null>(null);
   /**
    * The burnup unit asked for; null = the server's default (points when every task in the sprint has
    * them, else hours). A ref like `sprintRef`, not state: `load` reads it, and a `load` that changed
@@ -96,6 +104,7 @@ export function useScrumBoard(
     (sprintId: string | null): Promise<void> => {
       if (!projectId) return Promise.resolve();
       const seq = ++requestSeq.current;
+      requestedSprint.current = sprintId;
       // A promise chain, as classContext's loader: state changes only in its
       // callbacks, which react-hooks/set-state-in-effect accepts for the mount
       // effect below (it does not for an async function's catch/finally).
@@ -151,14 +160,21 @@ export function useScrumBoard(
       });
   }, [projectId, board]);
 
+  /**
+   * Load the board again: the sprint on screen, or, while a load is still unsettled (a sprint just
+   * picked), the sprint that load asked for, so a reload behind a write never takes the viewer back.
+   */
+  const refresh = useCallback(
+    () => load(requestSeq.current !== committedSeq.current ? requestedSprint.current : sprintRef.current),
+    [load],
+  );
+
   /** Pick up teammates' changes when the tab regains focus (no realtime in v1, D11). */
   useEffect(() => {
-    const onFocus = () => void load(sprintRef.current);
+    const onFocus = () => void refresh();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [load]);
-
-  const refresh = useCallback(() => load(sprintRef.current), [load]);
+  }, [refresh]);
 
   const selectSprint = useCallback(
     (sprintId: string) => {
@@ -249,12 +265,16 @@ export function useScrumBoard(
       : null;
     if (!snapshot) return null;
 
-    const local = (patch: Partial<ApiScrumStory>) =>
+    // An edit never moves a story: ranks change only through reorderStories and board loads, so
+    // neither the response nor the rollback writes one (either may be older than a reorder made since).
+    const local = (patch: Partial<ApiScrumStory>) => {
+      const { rank: _rank, ...fields } = patch;
       setBoard((prev) => (prev ? {
         ...prev,
-        stories: applyStoryPatch(prev.stories, storyId, patch),
-        backlog: applyStoryPatch(prev.backlog, storyId, patch),
+        stories: applyStoryPatch(prev.stories, storyId, fields),
+        backlog: applyStoryPatch(prev.backlog, storyId, fields),
       } : prev));
+    };
 
     const seq = nextWrite(storyId);
     local(body as Partial<ApiScrumStory>);
@@ -342,6 +362,47 @@ export function useScrumBoard(
     [mutate, patchStory],
   );
   /**
+   * Put a sprint's stories, or the backlog's (`sprintId` null), in a new order: `storyIds` is every
+   * story of that list. Optimistic: the list takes ranks 1 to n and is redrawn in that order at once.
+   * A refused save puts the ranks it changed back and says why, and reloads the board (a 409 means a
+   * teammate added, moved or deleted one of the list's stories since this board was loaded; any other
+   * failure leaves the copy in doubt too), except when the read-only preview refused it before it left
+   * the browser. A board load that landed during the save brought the server's ranks: those stay.
+   * Resolves whether the order was saved.
+   *
+   * A board load under way while the order saves (the focus refresh, say) read the old order, and
+   * landing after the redraw it puts that order back on screen. When there was one, the board loads
+   * again once the order is saved, so the newest load has it.
+   */
+  const reorderStories = useCallback(
+    async (sprintId: string | null, storyIds: string[]): Promise<boolean> => {
+      const current = boardRef.current;
+      if (!projectId || !current) return false;
+      const list = sprintId === null ? 'backlog' : 'stories';
+      const before = new Map(current[list].map((s) => [s.id, s.rank ?? null]));
+      const ranked = new Map<string, number | null>(storyIds.map((id, i) => [id, i + 1]));
+      const loadsAtStart = requestSeq.current;
+      const committedAtStart = committedSeq.current;
+      const loadPending = loadsAtStart !== committedAtStart;
+      setBoard((prev) => (prev ? { ...prev, [list]: withRanks(prev[list], ranked) } : prev));
+      try {
+        await api.setStoryOrder(projectId, sprintId, storyIds);
+        if (loadPending || requestSeq.current !== loadsAtStart) void refresh();
+        return true;
+      } catch (err) {
+        // Only the ranks go back, an edit saved meanwhile (a story's points) staying, and only when
+        // no load landed since: a load's ranks are the server's.
+        if (committedSeq.current === committedAtStart) {
+          setBoard((prev) => (prev ? { ...prev, [list]: withRanks(prev[list], before) } : prev));
+        }
+        setNotice(noticeFor(err, 'Couldn’t save the order'));
+        if (!(err instanceof ReadOnlyPreviewError)) void refresh();
+        return false;
+      }
+    },
+    [projectId, refresh],
+  );
+  /**
    * Delete a backlog story with its tasks. Resolves false when the write fails or is refused
    * (a story in a sprint, a read-only preview); the notice carries the reason.
    */
@@ -404,6 +465,7 @@ export function useScrumBoard(
     moveTask,
     createStory,
     updateStory,
+    reorderStories,
     deleteStory,
     createTask,
     updateTask,

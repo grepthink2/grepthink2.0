@@ -108,6 +108,8 @@ def test_app_token_lists_the_three_tools(mcp_client):
     assert tools["list_my_projects"]["annotations"]["readOnlyHint"] is True
     assert tools["get_board_context"]["annotations"]["readOnlyHint"] is True
     assert "explicit" in tools["fill_board"]["description"]
+    # Where a story's criteria are on the board, and where a new story's go until fill_board takes them.
+    assert "existing[].acceptance_criteria" in tools["get_board_context"]["description"]
 
 
 def test_list_my_projects_tool(mcp_client, monkeypatch):

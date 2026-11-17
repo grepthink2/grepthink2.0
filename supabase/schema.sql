@@ -1730,11 +1730,15 @@ CREATE TABLE IF NOT EXISTS user_stories (
   assignee_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
   archived_at    timestamptz,                                     -- set ⇒ archive view
   imported_at    timestamptz,                                     -- written during a move-in (app/mcp)
+  rank           integer,                                         -- place in its sprint or the backlog, 1 first; NULL ⇒ not ordered yet
+  acceptance_criteria text[] NOT NULL DEFAULT '{}',               -- each 1–300 chars (the API checks)
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT user_stories_key_uq UNIQUE (project_id, key)
+  CONSTRAINT user_stories_key_uq UNIQUE (project_id, key),
+  CONSTRAINT user_stories_criteria_valid CHECK (cardinality(acceptance_criteria) <= 20)
 );
 CREATE INDEX IF NOT EXISTS user_stories_project_sprint_idx ON user_stories (project_id, sprint_id);
+CREATE INDEX IF NOT EXISTS user_stories_project_rank_idx ON user_stories (project_id, sprint_id, rank);
 ALTER TABLE user_stories ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE user_stories TO anon, authenticated, service_role;
 
@@ -1993,6 +1997,47 @@ $$;
 
 REVOKE ALL ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.scrum_fill_board(uuid, uuid, jsonb, jsonb, jsonb, integer, integer) TO service_role;
+
+-- A sprint's or the backlog's story order (2026-11-16_story_rank_and_criteria.sql): it locks the list's
+-- stories, refuses (23505) unless p_story_ids are exactly them, each once, then rank = position.
+CREATE OR REPLACE FUNCTION public.scrum_set_story_order(
+  p_project_id uuid,
+  p_sprint_id uuid,
+  p_story_ids uuid[]
+) RETURNS integer
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  listed uuid[];
+  sent uuid[];
+  ranked integer;
+BEGIN
+  SELECT coalesce(array_agg(l.id ORDER BY l.id), '{}') INTO listed
+    FROM (
+      SELECT id FROM user_stories
+       WHERE project_id = p_project_id
+         AND ((p_sprint_id IS NULL AND (sprint_id IS NULL OR archived_at IS NOT NULL))
+              OR (sprint_id = p_sprint_id AND archived_at IS NULL))
+       ORDER BY id
+       FOR UPDATE
+    ) AS l;
+  SELECT coalesce(array_agg(DISTINCT u.id ORDER BY u.id), '{}') INTO sent
+    FROM unnest(p_story_ids) AS u(id);
+  IF cardinality(sent) <> cardinality(p_story_ids) OR sent IS DISTINCT FROM listed THEN
+    RAISE EXCEPTION 'stories changed' USING ERRCODE = 'unique_violation';
+  END IF;
+  UPDATE user_stories s SET rank = o.ord::integer
+    FROM unnest(p_story_ids) WITH ORDINALITY AS o(id, ord)
+   WHERE s.id = o.id AND s.project_id = p_project_id;
+  GET DIAGNOSTICS ranked = ROW_COUNT;
+  RETURN ranked;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.scrum_set_story_order(uuid, uuid, uuid[]) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.scrum_set_story_order(uuid, uuid, uuid[]) TO service_role;
 
 -- ============ 8) burnup snapshots ============
 CREATE TABLE IF NOT EXISTS sprint_burnup_days (

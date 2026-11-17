@@ -1,0 +1,12 @@
+@use '@styles/index.scss' as *;
+
+// A story's Move up and Move down (StoryOrderButtons): a pair before a backlog row's key, or a column
+// beside a story card (ScrumBoardPage.scss, .story-slot__order).
+.story-order {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+
+  // While the list's new order saves they stay focusable, so they dim rather than turn disabled.
+  .gt-icon-button[aria-disabled='true'] { opacity: var(--gt-opacity-disabled); cursor: progress; }
+}

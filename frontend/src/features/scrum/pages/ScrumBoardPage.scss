@@ -271,6 +271,13 @@
   .story-slot__open:focus-visible { opacity: 1; }
 }
 
+// A team member's Move up and Move down for the card (StoryOrderButtons), a column at its left.
+.story-slot__order {
+  flex-direction: column;
+  justify-content: center;
+  margin-right: 4px;
+}
+
 // Keep the card's top row (key, estimate, points) clear of the open control: 24px button
 // + 6px offset − 14px card padding + 8px gap. Scoped to the slot, so scrum.scss stays a 1:1
 // port; the button never reaches the title, which starts ~40px down.

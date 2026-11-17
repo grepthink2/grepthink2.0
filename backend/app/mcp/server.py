@@ -105,7 +105,9 @@ async def list_my_projects() -> list[dict[str, Any]]:
     description="""Everything needed to draft items for a project's scrum board. Call it before drafting.
 
 The board's model: stories hold tasks. A story is a user-facing outcome; describe it as
-"As a <user>, I want <goal> so that <reason>" followed by acceptance criteria, in markdown.
+"As a <user>, I want <goal> so that <reason>", in markdown. On the board a story's acceptance
+criteria are a list of their own (existing[].acceptance_criteria). fill_board can't set that list
+yet, so for now give a new story its acceptance criteria in its description, after that sentence.
 Tasks are the concrete work to deliver it, each small enough for one person in at most 15 hours.
 - points: only values in allowed_points (the project's estimate_scale). A story's points should
   equal the sum of its tasks' points. The burnup chart counts its tasks' points or hours, never a

@@ -171,6 +171,7 @@ const METHODS = [
   'setReviewTA',
   'setReviewWindow',
   'setReviewZoom',
+  'setStoryOrder',
   'staffingAssign',
   'staffingAutoAssign',
   'staffingUnassign',

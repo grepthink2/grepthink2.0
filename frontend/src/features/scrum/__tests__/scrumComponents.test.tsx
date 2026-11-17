@@ -5,6 +5,7 @@ import type { ApiScrumTask } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import TagBadge from '../components/TagBadge';
 import StoryCard from '../components/StoryCard';
+import StoryOrderButtons from '../components/StoryOrderButtons';
 import TaskCard from '../components/TaskCard';
 import BurnupChart from '../components/BurnupChart';
 import { seriesPoints } from '../utils/burnupGeometry';
@@ -105,6 +106,39 @@ describe('StoryCard', () => {
     await userEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
   });
+
+  it('offers a writer Move up and Move down beside the card, off at the ends of its list', async () => {
+    const onMove = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <StoryCard
+        story={story} members={members} onSelect={onSelect}
+        order={{ onMove, first: true, last: false }}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Move US-3 up' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-3 down' }));
+    expect(onMove).toHaveBeenCalledWith('down');
+    expect(onSelect).not.toHaveBeenCalled();                  // a sibling of the card, not inside it
+  });
+
+  it('shows no order buttons without an order (staff)', () => {
+    render(<StoryCard story={story} members={members} onOpen={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Move US-3/ })).toBeNull();
+  });
+});
+
+describe('StoryOrderButtons while the order saves', () => {
+  it('keep their focus and say they are unavailable, and a click does nothing', async () => {
+    const onMove = vi.fn();
+    render(<StoryOrderButtons storyId="s1" storyKey="US-1" control={{ onMove, first: false, last: false, busy: true }} />);
+    const up = screen.getByRole('button', { name: 'Move US-1 up' });
+    expect(up).toBeEnabled();
+    expect(up).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(up);
+    expect(up).toHaveFocus();
+    expect(onMove).not.toHaveBeenCalled();
+  });
 });
 
 describe('TaskCard', () => {
@@ -185,6 +219,26 @@ describe('BacklogRow', () => {
     });
     render(<BacklogRow story={story} members={members} sprintName="Sprint 2" />);
     expect(screen.getByText('5h')).toBeInTheDocument();
+  });
+
+  it('offers a writer Move up and Move down at the start of the row, off at the ends', async () => {
+    const onMove = vi.fn();
+    render(
+      <BacklogRow
+        story={makeStory({ key: 'US-4', sprint_id: null })} members={members} sprintName="Sprint 2"
+        order={{ onMove, first: false, last: true }}
+      />,
+    );
+    const up = screen.getByRole('button', { name: 'Move US-4 up' });
+    expect(screen.getByRole('button', { name: 'Move US-4 down' })).toBeDisabled();
+    expect(up.compareDocumentPosition(screen.getByText('US-4')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(up);
+    expect(onMove).toHaveBeenCalledWith('up');
+  });
+
+  it('shows no order buttons without an order (staff)', () => {
+    render(<BacklogRow story={makeStory({ key: 'US-4', sprint_id: null })} members={members} sprintName="Sprint 2" />);
+    expect(screen.queryByRole('button', { name: /Move US-4 (up|down)/ })).toBeNull();
   });
 
   it('shows no archive date for a legacy archived story', () => {

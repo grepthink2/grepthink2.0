@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Profiler } from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ApiBurnupSeries, ApiScrumBoard, ApiScrumBurnupUnit } from '@/lib/api';
+import { ApiError } from '@/lib/api/client';
 import type { ClassRole } from '@/lib/classContext';
 import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
 import { BOARD_VIEWS } from '../config/boardViews';
@@ -41,6 +42,7 @@ vi.mock('@/lib/api', () => ({
     createSprint: vi.fn(),
     addTaskDependency: vi.fn(),
     removeTaskDependency: vi.fn(),
+    setStoryOrder: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -111,6 +113,7 @@ beforeEach(() => {
   vi.mocked(api.addScrumRepo).mockReset();
   vi.mocked(api.addTaskDependency).mockReset();
   vi.mocked(api.removeTaskDependency).mockReset();
+  vi.mocked(api.setStoryOrder).mockReset();
 });
 
 describe('ScrumBoardPage tabs', () => {
@@ -326,7 +329,7 @@ describe('ScrumBoardPage create story (F13)', () => {
 
   it('creates the story and lands in it so tasks can be added next', async () => {
     const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
-    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.createStory).mockResolvedValue(created);
     vi.mocked(api.getScrumBoard).mockResolvedValue({
       ...boardFixture(), stories: [...boardFixture().stories, created],
     });
@@ -352,6 +355,137 @@ describe('ScrumBoardPage create story (F13)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
 
     expect(await screen.findByRole('dialog', { name: /new story/i })).toBeInTheDocument();
+  });
+});
+
+describe('ScrumBoardPage story order', () => {
+  /** The sprint's story cards, by key, in the order the strip shows them. */
+  const strip = () => screen.getAllByRole('button', { name: /^Open US-/ }).map((b) => b.getAttribute('aria-label')!.slice(5));
+  /** The backlog's rows, by key, in order. */
+  const backlogRows = () => screen.getAllByRole('button', { name: /^Move US-\d+ to / }).map((b) => b.getAttribute('aria-label')!.split(' ')[1]);
+  const backlogOfTwo = () => boardFixture({
+    backlog: [
+      makeStory({ id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null }),
+      makeStory({ id: 's10', key: 'US-10', title: 'Newer idea', sprint_id: null }),
+    ],
+  });
+
+  it("moves a story down at once, saves the sprint's new order, and keeps focus on the story", async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    renderAt();
+    await screen.findByText('Login flow');
+    expect(strip()).toEqual(['US-1', 'US-2']);
+    expect(screen.getByRole('button', { name: 'Move US-1 up' })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-1 down' }));
+
+    expect(api.setStoryOrder).toHaveBeenCalledWith('p1', 'sp1', ['s2', 's1']);
+    expect(strip()).toEqual(['US-2', 'US-1']);                    // before the save lands
+    // Last now, so its Move down is off: focus is on its Move up, which waits for the save.
+    const up = screen.getByRole('button', { name: 'Move US-1 up' });
+    expect(up).toHaveFocus();
+    expect(up).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(up);
+    expect(api.setStoryOrder).toHaveBeenCalledTimes(1);
+
+    await act(async () => { save({ story_ids: ['s2', 's1'] }); });
+    expect(up).not.toHaveAttribute('aria-disabled');
+    expect(up).toHaveFocus();
+    expect(strip()).toEqual(['US-2', 'US-1']);
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts the order back when the save is refused, says why, and reloads the board', async () => {
+    vi.mocked(api.setStoryOrder).mockRejectedValue(
+      new ApiError(409, 'Stories changed; reload and try again', 'Request failed'),
+    );
+    renderAt();
+    await screen.findByText('Login flow');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-2 up' }));
+
+    expect(await screen.findByText('Stories changed; reload and try again')).toBeInTheDocument();
+    expect(strip()).toEqual(['US-1', 'US-2']);
+    await waitFor(() => expect(api.getScrumBoard).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole('button', { name: 'Move US-2 up' })).toHaveFocus();
+  });
+
+  it("orders the backlog with a null sprint", async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(backlogOfTwo());
+    vi.mocked(api.setStoryOrder).mockResolvedValue({ story_ids: ['s10', 's9'] });
+    renderAt('/app/projects/p1/board?view=backlog');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Move US-10 up' }));
+
+    expect(api.setStoryOrder).toHaveBeenCalledWith('p1', null, ['s10', 's9']);
+    expect(backlogRows()).toEqual(['US-10', 'US-9']);
+    expect(screen.getByRole('button', { name: 'Move US-10 down' })).toHaveFocus();
+  });
+
+  it('leaves focus in a story the user opened while the order saved', async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    renderAt();
+    await screen.findByText('Login flow');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-1 down' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-2' }));
+    const close = await screen.findByRole('button', { name: 'Close story' });
+    await waitFor(() => expect(close).toHaveFocus());
+
+    await act(async () => { save({ story_ids: ['s2', 's1'] }); });
+    expect(close).toHaveFocus();
+  });
+
+  it('lets a keyboard user tab on while the order saves', async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    renderAt();
+    await screen.findByText('Login flow');
+
+    screen.getByRole('button', { name: 'Move US-2 up' }).focus();
+    await userEvent.keyboard('{Enter}');                      // US-2 moves to the top
+    expect(screen.getByRole('button', { name: 'Move US-2 down' })).toHaveFocus();
+    await userEvent.tab();
+    const next = document.activeElement;
+    expect(next).not.toBe(document.body);
+
+    await act(async () => { save({ story_ids: ['s2', 's1'] }); });
+    expect(document.activeElement).toBe(next);
+  });
+
+  it('announces a saved move to screen readers, and nothing for a refused one', async () => {
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValueOnce(new Promise((res) => { save = res; }));
+    const { container } = renderAt();
+    await screen.findByText('Login flow');
+    const live = container.querySelector('.scrum-board__order-status');
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent('');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-1 down' }));
+    expect(live).toHaveTextContent('');                         // not before it is saved
+    await act(async () => { save({ story_ids: ['s2', 's1'] }); });
+    expect(live).toHaveTextContent('US-1 moved to 2 of 2');
+
+    vi.mocked(api.setStoryOrder).mockRejectedValueOnce(
+      new ApiError(409, 'Stories changed; reload and try again', 'Request failed'),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Move US-1 up' }));
+    expect(await screen.findByText('Stories changed; reload and try again')).toBeInTheDocument();
+    expect(live).toHaveTextContent('US-1 moved to 2 of 2');     // the last saved move, unchanged
+  });
+
+  it('gives staff no order buttons, on the board or in the backlog', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue({ ...backlogOfTwo(), access: 'staff' });
+    renderAt();
+    await screen.findByText('Login flow');
+    expect(screen.queryByRole('button', { name: /^Move US-\d+ (up|down)$/ })).toBeNull();
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Backlog' }));
+    await screen.findByText('Newer idea');
+    expect(screen.queryByRole('button', { name: /^Move US-\d+ (up|down)$/ })).toBeNull();
   });
 });
 
@@ -934,7 +1068,7 @@ describe('ScrumBoardPage modal swaps never commit an empty screen', () => {
 
   it('a created story replaces the new-story editor in one commit', async () => {
     const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
-    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.createStory).mockResolvedValue(created);
     vi.mocked(api.getScrumBoard).mockResolvedValue({
       ...boardFixture(), stories: [...boardFixture().stories, created],
     });

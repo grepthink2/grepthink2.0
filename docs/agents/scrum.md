@@ -15,6 +15,14 @@ Read this before changing `backend/app/scrum`, `backend/app/mcp`, `frontend/src/
   (`_today`, as the burnup day is), and the board opens on today's sprint, else the latest one
   that has started, else the first (`_select_sprint`).
   Nothing writes or reads the stored `sprints.status` column: `update_sprint` drops a `status`.
+- **Stories have a priority order and acceptance criteria.** A sprint's stories, and the backlog, sort
+  by `user_stories.rank` (NULLs last), then by key: `scrum.controller._story_order`, mirrored by the web
+  client's `utils/storyOrder.ts`. `scrum_set_story_order` (behind `PUT /api/projects/{project_id}/scrum/stories/order`)
+  is the only writer of ranks: it locks the list and refuses (the route's 409) unless the ids are
+  exactly that list's live stories. A new story has none, and `update_story` sets it back to NULL
+  whenever the story moves to another sprint or the backlog. In the web client a story edit never
+  writes a rank. `acceptance_criteria` is a list on the story (at most 20, each 1–300 characters
+  trimmed); the connector reads it, and `fill_board` does not take it yet.
 - **The burnup counts tasks in hours or points.** Scope is the sum of the sprint's task estimates
   (`tasks.points` or `tasks.estimate_hours`) and completed the same sum over its done tasks; story
   points count nowhere, and points are drawn only when every task in the sprint has them

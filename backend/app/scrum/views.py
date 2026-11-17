@@ -26,8 +26,9 @@ from app.scrum.models import (
     ScrumRepoResponse,
     ScrumReposListResponse,
     SprintOut,
+    StoryOrderRequest,
+    StoryOrderResponse,
     StoryOut,
-    StoryResponse,
     SummaryCounts,
     TaskOut,
     TaskRef,
@@ -115,11 +116,12 @@ def update_sprint(
 
 def create_story(
     project_id: str, body: CreateStoryRequest, user_id: str = Depends(require_user)
-) -> StoryResponse:
+) -> StoryOut:
+    """Create a story. Answers the story as saved, without tasks."""
     row = controller.create_story(
         project_id=project_id, user_id=user_id, fields=body.model_dump(exclude_unset=True)
     )
-    return StoryResponse(message="Story created successfully", story=_story_out(row))
+    return _story_out(row)
 
 
 def update_story(
@@ -135,6 +137,19 @@ def update_story(
 def delete_story(story_id: str, user_id: str = Depends(require_user)) -> Response:
     controller.delete_story(story_id=story_id, user_id=user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def set_story_order(
+    project_id: str, body: StoryOrderRequest, user_id: str = Depends(require_user)
+) -> StoryOrderResponse:
+    """Order a sprint's stories, or the backlog's. Answers the ids in their saved order."""
+    ids = controller.set_story_order(
+        project_id=project_id,
+        user_id=user_id,
+        sprint_id=str(body.sprint_id) if body.sprint_id else None,
+        story_ids=[str(i) for i in body.story_ids],
+    )
+    return StoryOrderResponse(story_ids=ids)
 
 
 def create_task(

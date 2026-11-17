@@ -27,7 +27,7 @@ import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorM
 import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
-import { buildMemberMap } from '../scrumTypes';
+import { buildMemberMap, type StoryOrderControl } from '../scrumTypes';
 import { isBacklogStory } from '../utils/backlog';
 import { collectTasks } from '../utils/rollups';
 import { newSprintDraft } from '../utils/sprints';
@@ -101,8 +101,8 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, setBurnupUnit, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
-    deleteTask, addDependency, removeDependency, updateSettings, refresh, createSprint,
+    selectSprint, setBurnupUnit, moveTask, createStory, updateStory, reorderStories, deleteStory, createTask,
+    updateTask, deleteTask, addDependency, removeDependency, updateSettings, refresh, createSprint,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
   // Your role in the selected class. The board's payload names no class, and a team's board is
@@ -123,6 +123,13 @@ export default function ScrumBoardPage() {
   const [sprintDraft, setSprintDraft] = useState<SprintDraft | null>(null);
   const [savingSprint, setSavingSprint] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
+  /** A story list's new order is saving: its Move up and Move down wait (StoryOrderButtons). */
+  const [orderSaving, setOrderSaving] = useState(false);
+  /** What the board's polite live region last said about a saved move ("US-3 moved to 2 of 5"). */
+  const [orderStatus, setOrderStatus] = useState('');
+  /** The story whose Move up or Move down was pressed, and which: it keeps focus as its list redraws. */
+  const orderFocus = useRef<{ storyId: string; direction: 'up' | 'down' } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
   const connectRef = useRef<HTMLButtonElement>(null);
 
@@ -214,6 +221,32 @@ export default function ScrumBoardPage() {
     refocus.current = null;
     target?.focus({ preventScroll: true });
   }, [loading]);
+
+  // A moved story keeps the keyboard. Its list redraws at once in the new order, and again if the save
+  // is refused, and a redrawn list can drop the focus of the button pressed; one that reached its end
+  // is disabled, so focus takes the story's other button. Only while the keyboard is still with the
+  // story, or was dropped to the page: a viewer who tabbed on or opened a story while the order saved
+  // keeps what they went to, and the story lets go. Once the save settles, it lets go anyway.
+  useEffect(() => {
+    const target = orderFocus.current;
+    if (!target) return;
+    const group = [...(panelRef.current?.querySelectorAll<HTMLElement>('[data-order-story]') ?? [])]
+      .find((el) => el.dataset.orderStory === target.storyId);
+    const active = document.activeElement;
+    const dropped = !active || active === document.body;
+    if (!dropped && !(group?.contains(active) ?? false)) {
+      orderFocus.current = null;
+      return;
+    }
+    const buttons = [...(group?.querySelectorAll<HTMLButtonElement>('button[data-direction]') ?? [])];
+    // Within the story's buttons, an enabled one keeps focus: only a dropped focus, or one left on a
+    // button that reached its end, moves.
+    const stays = !dropped && buttons.some((b) => b === active && !b.disabled);
+    const next = buttons.find((b) => b.dataset.direction === target.direction && !b.disabled)
+      ?? buttons.find((b) => !b.disabled);
+    if (!stays && next) next.focus({ preventScroll: true });
+    if (!orderSaving) orderFocus.current = null;
+  }, [board, orderSaving]);
 
   /**
    * Patch ?task= / ?story= / ?sprint= in one navigation. setSearchParams does not queue like setState
@@ -332,14 +365,44 @@ export default function ScrumBoardPage() {
     const created = await createStory(body);
     setSavingStory(false);
     if (!created) return;              // the hook already raised the error toast
-    push('success', `${created.story.key} created`);
+    push('success', `${created.key} created`);
     // Continue the flow: land in the new story so its tasks can be added now. One transition closes
     // the editor and opens the story (the router navigates in one): never a commit with no modal.
     startTransition(() => {
       setCreatingStory(false);
-      setStoryParam(created.story.id);
+      setStoryParam(created.id);
     });
   };
+
+  /**
+   * Swap the story at `index` of `list` (the shown sprint's, `sprintId`, or the backlog's, null) with its
+   * neighbour. Once the order is saved, the live region says where the story went: the moved card is
+   * all a sighted viewer needs, but a screen reader hears nothing of a redraw.
+   */
+  const moveStory = async (list: ApiScrumStory[], sprintId: string | null, index: number, direction: 'up' | 'down') => {
+    const to = direction === 'up' ? index - 1 : index + 1;
+    if (orderSaving || to < 0 || to >= list.length) return;
+    const story = list[index];
+    const ids = list.map((s) => s.id);
+    [ids[index], ids[to]] = [ids[to], ids[index]];
+    orderFocus.current = { storyId: story.id, direction };
+    setOrderSaving(true);
+    const saved = await reorderStories(sprintId, ids);
+    setOrderSaving(false);
+    if (saved) setOrderStatus(`${story.key} moved to ${to + 1} of ${list.length}`);
+  };
+
+  /** A team member's Move up and Move down for the story at `index` of `list`; staff get none. */
+  const orderOf = (list: ApiScrumStory[], sprintId: string | null, index: number): StoryOrderControl | undefined => (
+    canWrite
+      ? {
+          onMove: (direction) => { void moveStory(list, sprintId, index, direction); },
+          first: index === 0,
+          last: index === list.length - 1,
+          busy: orderSaving,
+        }
+      : undefined
+  );
 
   /** Opens the header's connector popover, with focus on its ⓘ so the keyboard follows. */
   const openConnectAssistant = () => {
@@ -447,13 +510,13 @@ export default function ScrumBoardPage() {
         ))}
       </div>
 
-      <div className="scrum-board__panel" role="tabpanel" aria-label={VIEW_LABELS[view]}>
+      <div className="scrum-board__panel" role="tabpanel" aria-label={VIEW_LABELS[view]} ref={panelRef}>
         {view === 'board' && (
           hasSprint ? (
             <>
               {board.stories.length > 0 && (
                 <div className="scrum-board__stories">
-                  {board.stories.map((s) => (
+                  {board.stories.map((s, i) => (
                     <StoryCard
                       key={s.id}
                       story={s}
@@ -461,6 +524,7 @@ export default function ScrumBoardPage() {
                       active={storyFilter === s.id}
                       onSelect={() => setStoryFilter(storyFilter === s.id ? null : s.id)}
                       onOpen={() => setStoryParam(s.id)}
+                      order={orderOf(board.stories, board.sprint_id, i)}
                     />
                   ))}
                 </div>
@@ -495,7 +559,7 @@ export default function ScrumBoardPage() {
         {view === 'backlog' && (
           board.backlog.length > 0 ? (
             <div className="scrum-board__backlog">
-              {board.backlog.map((s) => (
+              {board.backlog.map((s, i) => (
                 <BacklogRow
                   key={s.id}
                   story={s}
@@ -505,6 +569,7 @@ export default function ScrumBoardPage() {
                     ? () => updateStory(s.id, { sprint_id: board.sprint_id })
                     : undefined}
                   sprintName={sprint?.name ?? ''}
+                  order={orderOf(board.backlog, null, i)}
                 />
               ))}
             </div>
@@ -667,6 +732,8 @@ export default function ScrumBoardPage() {
       )}
 
       <ToastStack toasts={toasts} onDismiss={dismiss} />
+      {/* In place before the first move, so a screen reader hears every change to it. */}
+      <p className="sr-only scrum-board__order-status" aria-live="polite">{orderStatus}</p>
     </div>
   );
 }

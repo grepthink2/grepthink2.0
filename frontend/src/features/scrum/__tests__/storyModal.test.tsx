@@ -113,6 +113,88 @@ describe('StoryModal — editing the story (maintainer 2026-09-25)', () => {
   });
 });
 
+describe('StoryModal — acceptance criteria', () => {
+  const criteria = ['Finds a trail by name', 'Says so when none match'];
+
+  it('lists them in order above the description, for staff too', () => {
+    setup({ acceptance_criteria: criteria }, { canWrite: false });
+    const list = screen.getByRole('list', { name: 'Acceptance criteria' });
+    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(criteria);
+    const description = screen.getByText('name');                     // inside the rendered **name**
+    expect(list.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Add acceptance criteria' })).toBeNull();
+  });
+
+  it('edits them with the story’s Edit and sends the whole list', async () => {
+    const p = setup({ acceptance_criteria: criteria });
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    const group = screen.getByRole('group', { name: 'Acceptance criteria' });
+    expect(within(group).getAllByRole('textbox').map((i) => (i as HTMLInputElement).value)).toEqual(criteria);
+    await userEvent.click(within(group).getByRole('button', { name: 'Move criterion 2 up' }));
+    await userEvent.click(within(group).getByRole('button', { name: 'Add criterion' }));
+    await userEvent.type(within(group).getByRole('textbox', { name: 'Criterion 3' }), ' Opens the trail ');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(p.onUpdateStory).toHaveBeenCalledWith({
+      acceptance_criteria: ['Says so when none match', 'Finds a trail by name', 'Opens the trail'],
+    });
+  });
+
+  it('sends none when they were left as they were, blank rows aside', async () => {
+    const p = setup({ acceptance_criteria: criteria });
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add criterion' }));
+    await userEvent.type(screen.getByLabelText('Story title'), '!');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(p.onUpdateStory).toHaveBeenCalledWith({ title: 'Trail search!' });
+  });
+
+  it('clears them with an empty list', async () => {
+    const p = setup({ acceptance_criteria: ['Finds a trail by name'] });
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove criterion 1' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(p.onUpdateStory).toHaveBeenCalledWith({ acceptance_criteria: [] });
+  });
+
+  it('will not save while one is past 300 characters', async () => {
+    const p = setup({ acceptance_criteria: ['x'.repeat(300)] });
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Criterion 1' }), 'y');
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Story title'), '{Enter}');
+    expect(p.onUpdateStory).not.toHaveBeenCalled();
+  });
+
+  it('offers to add them when there are none, with focus in the first', async () => {
+    const p = setup({ acceptance_criteria: [] });
+    await userEvent.click(screen.getByRole('button', { name: 'Add acceptance criteria' }));
+
+    const first = screen.getByRole('textbox', { name: 'Criterion 1' });
+    expect(first).toHaveFocus();
+    await userEvent.type(first, 'Finds a trail by name');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(p.onUpdateStory).toHaveBeenCalledWith({ acceptance_criteria: ['Finds a trail by name'] });
+  });
+
+  it('reads a story from an older backend, with no criteria field, as one without any', () => {
+    const { acceptance_criteria: _omitted, ...older } = makeStory({ key: 'US-1' });
+    setup(older);
+    expect(screen.queryByRole('list', { name: 'Acceptance criteria' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add acceptance criteria' })).toBeInTheDocument();
+  });
+
+  it('asks for notes in the description now that the criteria have their own list', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByLabelText('Description')).toHaveAttribute('placeholder', 'Notes, links, anything the team needs…');
+  });
+});
+
 describe('StoryModal — comments', () => {
   it("renders the story's comment thread", async () => {
     setup();

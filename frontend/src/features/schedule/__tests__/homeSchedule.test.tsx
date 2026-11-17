@@ -139,7 +139,7 @@ describe('HomeSchedule', () => {
     expect(lastRange()).toEqual(['2026-11-16T08:00:00.000Z', '2026-11-23T08:00:00.000Z']);
     const thursday = document.getElementById('gt-sched-day-2026-11-19');
     expect(thursday).toHaveTextContent('Thursday');
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce());
     // The day's section, whose scroll margin keeps its heading clear of the app's sticky header.
     expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toBe(thursday?.closest('.gt-sched__day'));
   });
@@ -148,7 +148,7 @@ describe('HomeSchedule', () => {
     api.getSchedule.mockResolvedValue(answer([item({ id: 'Retro', starts_at: '2026-11-13T18:00:00Z' })]));
     const { rerenderWith } = renderHome('/app/home?day=2026-11-13');
     expect(await screen.findByText('Retro')).toBeInTheDocument();
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce());
     // Wed Nov 11, 12:05 AM: the week now starts at Wednesday, so it is asked for again.
     rerenderWith({ now: new Date('2026-11-11T08:05:00Z') });
     await waitFor(() => expect(lastRange()).toEqual(['2026-11-11T08:00:00.000Z', '2026-11-16T08:00:00.000Z']));
@@ -162,7 +162,7 @@ describe('HomeSchedule', () => {
     renderHome('/app/home?day=2026-11-13');
     fireEvent.click(await screen.findByRole('button', { name: 'try again' }));
     expect(await screen.findByText('Retro')).toBeInTheDocument();
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce());
   });
 
   it('lists a live item that began before midnight under Today, with Join Zoom; one that ended stays out', async () => {
@@ -189,7 +189,7 @@ describe('HomeSchedule', () => {
     expect(await screen.findByText('Retro')).toBeInTheDocument();
     expect(screen.getByTestId('where')).toHaveTextContent('/app/home?day=2026-11-19');
     expect(lastRange()).toEqual(['2026-11-16T08:00:00.000Z', '2026-11-23T08:00:00.000Z']);
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce());
   });
 
   it('lands a bare /app/schedule on Home’s week', async () => {

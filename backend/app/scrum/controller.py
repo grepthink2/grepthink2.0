@@ -27,7 +27,7 @@ from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
-from app.core.errors import AppError
+from app.core.errors import AppError, DatabaseConflictError
 from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import (
@@ -75,6 +75,11 @@ SPRINT_LIMIT = "This class runs {count} sprints, and your team has all of them"
 #: holds the last day of classes (the latest day the class's own last sprint may end).
 SPRINT_OUTSIDE_CLASS = "A sprint must run between {first} and {last}"
 TITLE_REQUIRED = "title cannot be null"
+#: 422: a story's criteria are a list; [] clears them.
+CRITERIA_REQUIRED = "acceptance_criteria cannot be null"
+#: 409: an order names other stories than its list holds now (a teammate added, moved or deleted
+#: one since the board was loaded). Nothing is written.
+STORIES_CHANGED = "Stories changed; reload and try again"
 #: 422: the board's ``?unit=`` is not a unit the selected sprint's burnup can draw (spec D21):
 #: points while one of its tasks has none, or a value that is neither points nor hours.
 UNIT_UNAVAILABLE = "Burnup unit not available for this sprint"
@@ -440,6 +445,15 @@ def _in_backlog(story: dict) -> bool:
     return story.get("sprint_id") is None or bool(story.get("archived_at"))
 
 
+def _changes_list(story: dict, sprint_id: str | None) -> bool:
+    """Whether writing ``sprint_id`` (None: the backlog) moves ``story`` to another list: another
+    sprint, the backlog from a sprint, or a sprint from the backlog, a legacy archived story into
+    the sprint it still names included."""
+    if sprint_id is None:
+        return not _in_backlog(story)
+    return _in_backlog(story) or str(story["sprint_id"]).lower() != str(sprint_id).lower()
+
+
 def _get_task_or_404(client, task_id: str, columns: str = "*") -> dict:
     res = client.table("tasks").select(columns).eq("id", str(task_id)).maybe_single().execute()
     row = res.data if res else None
@@ -465,6 +479,11 @@ def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
     for k in ("title", "description_md", "points", "assignee_id", "sprint_id"):
         if fields.get(k) is not None:
             row[k] = fields[k]
+    # Named only when there are some: the column's default is the empty list, and a story without
+    # criteria is created on a database that has no such column yet. No rank: a new story comes
+    # last in its list, among the ones nobody has ordered.
+    if fields.get("acceptance_criteria"):
+        row["acceptance_criteria"] = fields["acceptance_criteria"]
     res = client.table("user_stories").insert(row).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create story")
@@ -480,8 +499,12 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     institution_id = _require_writer(client, project_id=story["project_id"], user_id=user_id)
     if "title" in fields and fields["title"] is None:
         raise HTTPException(status_code=422, detail=TITLE_REQUIRED)
+    if "acceptance_criteria" in fields and fields["acceptance_criteria"] is None:
+        raise HTTPException(status_code=422, detail=CRITERIA_REQUIRED)
     payload: dict = {}
-    for k in ("title", "description_md", "points", "assignee_id"):
+    # The criteria only when the request names them, so an edit that leaves them out works on a
+    # database without the column.
+    for k in ("title", "description_md", "points", "assignee_id", "acceptance_criteria"):
         if k in fields:
             payload[k] = fields[k]
     if "sprint_id" in fields:
@@ -490,6 +513,12 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
         payload["sprint_id"] = fields["sprint_id"]  # None ⇒ backlog
         # a sprint write also clears the legacy archive flag
         payload["archived_at"] = None
+        # A story that changes lists comes last in its new one, among the stories nobody has
+        # ordered: its rank was its place in the list it left. Sent whenever the row has the column,
+        # even when it read NULL, since a reorder of the old list may rank it before this write
+        # lands; a database without the column gets no such key (the read is select *).
+        if "rank" in story and _changes_list(story, fields["sprint_id"]):
+            payload["rank"] = None
     if not payload:
         return story
     payload["updated_at"] = datetime.now(UTC).isoformat()
@@ -520,6 +549,44 @@ def delete_story(*, story_id: str, user_id: str) -> None:
     if not _in_backlog(story):
         raise HTTPException(status_code=409, detail=STORY_IN_SPRINT)
     client.table("user_stories").delete().eq("id", str(story_id)).execute()
+
+
+def set_story_order(
+    *, project_id: str, user_id: str, sprint_id: str | None, story_ids: list[str]
+) -> list[str]:
+    """Order one list of stories: ``sprint_id``'s live stories, or the backlog's when it is None
+    (the rule of :func:`_in_backlog`). Each story takes its position in ``story_ids`` as its
+    ``rank``, 1 first.
+
+    ``scrum_set_story_order`` does it in one transaction: it locks the list's stories, refuses
+    (23505) unless ``story_ids`` are exactly those stories, each once, and only then writes. The
+    check sits where the lock is, so a story moved into or out of the list by a teammate can't slip
+    between a check and the write.
+
+    Who can call: team members. Returns the ids in their saved order. Raises 404
+    :data:`authz.PROJECT_NOT_FOUND`, 403 as :func:`_require_writer`, 404 :data:`SPRINT_NOT_FOUND`
+    for a sprint that is not the project's, and 409 :data:`STORIES_CHANGED`, with nothing written,
+    when the list is not the one the database holds (a story missing, an extra one, one of another
+    list or project). Round trips: the access check, the sprint's project when a sprint is named,
+    and the rpc. No burnup snapshot: the order moves no line.
+    """
+    client = get_client()
+    _require_writer(client, project_id=project_id, user_id=user_id)
+    if sprint_id is not None:
+        _require_sprint_in_project(client, sprint_id, project_id)
+    try:
+        client.rpc(
+            "scrum_set_story_order",
+            {
+                "p_project_id": str(project_id),
+                "p_sprint_id": sprint_id,
+                "p_story_ids": list(story_ids),
+            },
+            operation="write",
+        ).execute()
+    except DatabaseConflictError as exc:
+        raise HTTPException(status_code=409, detail=STORIES_CHANGED) from exc
+    return list(story_ids)
 
 
 def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
@@ -613,6 +680,14 @@ def _key_order(key: str) -> tuple:
         return (0, int(tail), key)
     except ValueError:
         return (1, 0, key)
+
+
+def _story_order(story: dict) -> tuple:
+    """Sort key for one list of stories (a sprint's, or the backlog's): by ``rank``, then the
+    stories nobody has ordered (``rank`` NULL, or no such column yet) by key. The web client
+    sorts the same way (``features/scrum/utils/storyOrder.ts``)."""
+    rank = story.get("rank")
+    return (rank is None, rank or 0, _key_order(story["key"]))
 
 
 def _has_unfinished_dependency(client, task_id: str) -> bool:
@@ -1220,12 +1295,15 @@ def get_board(
     task_index = sorted((ref(t) for t in tasks), key=lambda r: _key_order(r["key"]))
 
     sel_id = selected["id"] if selected else None
-    stories = (
-        [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
-        if sel_id
-        else []
+    stories = sorted(
+        (
+            [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
+            if sel_id
+            else []
+        ),
+        key=_story_order,
     )
-    backlog = [s for s in all_stories if _in_backlog(s)]
+    backlog = sorted((s for s in all_stories if _in_backlog(s)), key=_story_order)
 
     def live_stories(sid: str) -> list[dict]:
         return [s for s in all_stories if s.get("sprint_id") == sid and not s.get("archived_at")]
