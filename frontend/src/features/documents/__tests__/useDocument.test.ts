@@ -156,6 +156,43 @@ describe('useDocument: saving', () => {
     expect(api.saveDocument).toHaveBeenCalledTimes(1);
   });
 
+  it('asks the board about every story sent when the edit started from a hand-in', async () => {
+    const body: ApiReleaseSummaryBody = { key_story_ids: ['s1', 's2'], known_problems: [], follow_ups: [] };
+    const known = { title: 'A', acceptance_criteria: ['x'], completed: true };
+    // The load and the read of the base: the hand-in, whose sections say nothing of the board since.
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('release_summary', {
+      body,
+      document: { status: 'final', finalized_revision: 3 },
+      derived_frozen: true,
+      derived: releaseSummaryDerived({ key_stories: [{ id: 's1', key: 'US-1', ...known }, { id: 's2', key: 'US-2', ...known }] }),
+    }));
+    const findMissingStories = vi.fn().mockResolvedValue(['s2']);
+    const { result } = renderHook(() => useDocument('d1', { findMissingStories }));
+    await waitFor(() => expect(result.current.doc).not.toBeNull());
+
+    act(() => result.current.setWorking({ ...body, follow_ups: [{ id: 'f1', text: 'Dark mode' }] }));
+    vi.mocked(api.saveDocument).mockRejectedValueOnce(new ApiError(422, STORY_NOT_IN_PROJECT, 'x'));
+    await act(async () => { await result.current.save(); });
+    expect(findMissingStories).toHaveBeenCalledWith(['s1', 's2']);
+    expect((result.current.working as ApiReleaseSummaryBody).key_story_ids).toEqual(['s1']);
+  });
+
+  it('asks the board about every story sent when the base cannot be read', async () => {
+    const body: ApiReleaseSummaryBody = { key_story_ids: ['s1', 's2'], known_problems: [], follow_ups: [] };
+    vi.mocked(api.getDocument).mockResolvedValueOnce(makeDocument('release_summary', { body }));
+    const findMissingStories = vi.fn().mockResolvedValue([]);
+    const { result } = renderHook(() => useDocument('d1', { findMissingStories }));
+    await waitFor(() => expect(result.current.doc).not.toBeNull());
+
+    act(() => result.current.setWorking({ ...body, follow_ups: [{ id: 'f1', text: 'Dark mode' }] }));
+    vi.mocked(api.saveDocument).mockRejectedValueOnce(new ApiError(422, STORY_NOT_IN_PROJECT, 'x'));
+    vi.mocked(api.getDocument).mockRejectedValueOnce(new Error('offline'));
+    await act(async () => { await result.current.save(); });
+    expect(findMissingStories).toHaveBeenCalledWith(['s1', 's2']);
+    // Nothing the board can name is gone: the API's own sentence.
+    expect(result.current.notice).toEqual({ kind: 'error', message: STORY_NOT_IN_PROJECT });
+  });
+
   it('shows the API’s sentence for any other refusal, and the preview’s calmly', async () => {
     const { result } = await opened();
     act(() => result.current.setWorking(report({ satisfied_note: 'x' })));

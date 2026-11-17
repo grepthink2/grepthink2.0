@@ -158,13 +158,16 @@ export function useDocument(documentId: string | undefined, options: UseDocument
   ): Promise<DocumentNotice> => {
     if (!documentId) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
     const missing = new Set<string>();
-    // The revision the edit started from names the stories the API marks deleted since.
+    // The revision the edit started from marks the stories deleted from the board since, unless it is a
+    // hand-in: its sections are the board as it was then.
     const before = await api.getDocument(documentId, base).catch(() => null);
     if (before) for (const id of missingStories(before)) missing.add(id);
-    // A story this edit added is not in that revision: ask the board about it.
+    // The board is asked about every story that revision cannot vouch for: the ones this edit added, or
+    // all of them when it is a hand-in or could not be read.
     if (findMissingStories) {
-      const added = storyIdsOf(documentKind, sent).filter((id) => !before || !storyIdsOf(documentKind, before.body).includes(id));
-      for (const id of await findMissingStories(added).catch(() => [])) missing.add(id);
+      const vouched = new Set(before && !before.derived_frozen ? storyIdsOf(documentKind, before.body) : []);
+      const asked = [...new Set(storyIdsOf(documentKind, sent))].filter((id) => !vouched.has(id));
+      for (const id of await findMissingStories(asked).catch(() => [])) missing.add(id);
     }
     const current = editRef.current;
     if (!current) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
