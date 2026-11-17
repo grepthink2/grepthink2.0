@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import type { ApiClassDocument, ApiTAMeetingSchedule } from '@/lib/api';
@@ -71,7 +72,7 @@ describe("TAScheduleView — each team's documents, for staff", () => {
     </MemoryRouter>,
   );
 
-  it('shows how many each team handed in, from one request, linking to its Documents tab', async () => {
+  it('shows how many each team handed in, from one request for every week, linking to its Documents tab', async () => {
     api.getTAMeetingSchedule.mockResolvedValue(withTeams);
     api.getClassDocuments.mockResolvedValue({ documents: [doc('p1', 'final'), doc('p1', 'draft')] });
     renderView();
@@ -80,6 +81,11 @@ describe("TAScheduleView — each team's documents, for staff", () => {
     expect(link).toHaveAttribute('href', '/app/projects/p1/board?view=documents');
     // Lumen has made none: no count for it.
     expect(screen.getAllByRole('link', { name: /handed in/ })).toHaveLength(1);
+
+    // Another week reads its own schedule, and the documents read before still count.
+    await userEvent.click(screen.getByRole('button', { name: 'Next week' }));
+    await waitFor(() => expect(api.getTAMeetingSchedule).toHaveBeenLastCalledWith('c1', 2, undefined));
+    expect(await screen.findByRole('link', { name: '1 of 2 handed in: the documents of Trailhead' })).toBeInTheDocument();
     expect(api.getClassDocuments).toHaveBeenCalledTimes(1);
     expect(api.getClassDocuments).toHaveBeenCalledWith('c1');
   });
