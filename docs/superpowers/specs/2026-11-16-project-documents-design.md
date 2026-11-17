@@ -346,6 +346,26 @@ revision.
 - Web client methods in `lib/api/documents.ts`, catalog entries for every route, a harness page with
   mock data for the three editors.
 
+**Amended 2026-11-17** (while building PR 3):
+
+1. The Documents tab lists each sprint's report, then the release summary and the test plan and report;
+   the Release plan and sprint plan rows come with PRs 4 and 5. A made document opens from its row's
+   first cell, and one not made yet has a Start button for a team member outside the preview.
+2. The unsaved-changes guard holds in-app navigation by wrapping the router's navigator: the app's
+   `BrowserRouter` is not a data router, so `useBlocker` is not available. The browser's leaving gets
+   `beforeunload`; Back and Forward are not held.
+3. The staff badge is on TA Meetings, where an instructor and a class TA see a card per team: "n of m
+   handed in" counts the documents the team has made, and a team with none shows nothing.
+4. "The sprint has not ended yet" is read from the API's `sprint.status` (completed from the day after
+   the sprint's last day, at the school), so the page needs no zone of its own.
+5. No route lists every story of a project, so the story pickers read the board once per sprint, the
+   first time an editor that picks stories opens for a team member.
+6. Download Markdown saves the file under the name in the response's `Content-Disposition`: the API
+   client's `apiRequest` gains a `file` response type, and `getDocumentMarkdownFile` sits beside
+   `getDocumentMarkdown`.
+7. A hand-in older than the latest shows its date without a name: the API names only the latest
+   finalizer.
+
 ## Part 4 — Release plan (PR 4)
 
 - Kind `release_plan` (one per project). Body: `release_name` (≤ 120), `release_date`, `goals`: at
