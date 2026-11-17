@@ -71,7 +71,7 @@ hand. Student text in logs.
 ## Part 1 — Board groundwork (PR 1)
 
 Migration `backend/database/migrations/2026-11/2026-11-16_story_rank_and_criteria.sql` (expand,
-idempotent; no client grants):
+idempotent; no client grants; the function as amended below):
 
 ```sql
 ALTER TABLE public.user_stories ADD COLUMN IF NOT EXISTS rank integer;
@@ -81,36 +81,80 @@ ALTER TABLE public.user_stories ADD CONSTRAINT user_stories_criteria_valid
   CHECK (cardinality(acceptance_criteria) <= 20);
 CREATE INDEX IF NOT EXISTS user_stories_project_rank_idx ON public.user_stories (project_id, sprint_id, rank);
 
--- One statement orders a whole list: rank = position in p_story_ids. Stories of another project
--- are not touched.
-CREATE OR REPLACE FUNCTION public.scrum_set_story_order(p_project_id uuid, p_story_ids uuid[])
-RETURNS integer LANGUAGE sql SET search_path = public AS $$
-  WITH ordered AS (SELECT id, ord FROM unnest(p_story_ids) WITH ORDINALITY AS t(id, ord)),
-  done AS (
-    UPDATE user_stories s SET rank = o.ord::integer
-      FROM ordered o WHERE s.id = o.id AND s.project_id = p_project_id
-    RETURNING 1)
-  SELECT count(*)::integer FROM done;
+-- Orders one list: one sprint's live stories, or the backlog when p_sprint_id is NULL. Refuses (23505)
+-- unless p_story_ids are exactly the list's stories, each once; then rank = position in p_story_ids.
+CREATE OR REPLACE FUNCTION public.scrum_set_story_order(
+  p_project_id uuid,
+  p_sprint_id uuid,
+  p_story_ids uuid[]
+) RETURNS integer
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  listed uuid[];
+  sent uuid[];
+  ranked integer;
+BEGIN
+  -- The list's stories, locked in id order (the backlog rule of _in_backlog for a NULL sprint).
+  SELECT coalesce(array_agg(l.id ORDER BY l.id), '{}') INTO listed
+    FROM (
+      SELECT id FROM user_stories
+       WHERE project_id = p_project_id
+         AND ((p_sprint_id IS NULL AND (sprint_id IS NULL OR archived_at IS NOT NULL))
+              OR (sprint_id = p_sprint_id AND archived_at IS NULL))
+       ORDER BY id
+       FOR UPDATE
+    ) AS l;
+  SELECT coalesce(array_agg(DISTINCT u.id ORDER BY u.id), '{}') INTO sent
+    FROM unnest(p_story_ids) AS u(id);
+  IF cardinality(sent) <> cardinality(p_story_ids) OR sent IS DISTINCT FROM listed THEN
+    RAISE EXCEPTION 'stories changed' USING ERRCODE = 'unique_violation';
+  END IF;
+  UPDATE user_stories s SET rank = o.ord::integer
+    FROM unnest(p_story_ids) WITH ORDINALITY AS o(id, ord)
+   WHERE s.id = o.id AND s.project_id = p_project_id;
+  GET DIAGNOSTICS ranked = ROW_COUNT;
+  RETURN ranked;
+END;
 $$;
-REVOKE ALL ON FUNCTION public.scrum_set_story_order(uuid, uuid[]) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.scrum_set_story_order(uuid, uuid, uuid[]) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.scrum_set_story_order(uuid, uuid, uuid[]) TO service_role;
 ```
 
 - **Order.** Stories sort by `rank` (NULLs last), then by key as today, everywhere a list of stories
   is built (`get_board`'s sprint stories and backlog). A new story takes no rank and so lands last.
 - `PUT /api/projects/{project_id}/scrum/stories/order` (team members): `{sprint_id: uuid | null,
   story_ids: [uuid]}`. The ids must be exactly the live stories of that sprint (or of the backlog for
-  null), else 409 `Stories changed; reload and try again`. Answers `{"story_ids": [...]}`. The web
-  client gets up and down buttons on backlog rows and on story cards (keyboard-reachable; no drag in
-  this PR).
+  null), else 409 `Stories changed; reload and try again`; the function checks this under its lock.
+  Answers `{"story_ids": [...]}`. The web client gets up and down buttons on backlog rows and on story
+  cards (keyboard-reachable; no drag in this PR).
 - **Acceptance criteria.** `CreateStoryRequest` and `UpdateStoryRequest` take `acceptance_criteria:
   list[str]` (at most 20, each 1 to 300 characters after trimming); `StoryOut` returns it. The story
   editor and the story modal get an "Acceptance criteria" list editor (add, edit, remove, reorder with
   up and down) above the description, whose placeholder loses "Acceptance criteria".
-- **Connector.** `get_board_context` returns each story's criteria and `fill_board` accepts them on a
-  story, with the same limits; the tool description says to put criteria there, not in the
-  description.
-- Tests: order route (happy path, stale list, another project's id ignored), sort order on the board,
-  criteria validation, connector round trip; a rolled-back check of `scrum_set_story_order` on DEV.
+- **Connector.** `get_board_context` returns each story's criteria. `fill_board` does not take them in
+  this PR (amended below); the tool description says a story's criteria are their own list on the
+  board, and that a new story still carries its criteria in its description for now.
+- Tests: order route (happy path, stale list, another project's id refused), sort order on the board,
+  criteria validation, connector read; a rolled-back check of `scrum_set_story_order` on DEV.
+
+**Amended 2026-11-16** (while building PR 1, after its review):
+
+1. `scrum_set_story_order` takes the sprint (`p_sprint_id`, NULL for the backlog) and checks the list
+   itself: it locks the list's stories in id order and refuses with 23505 ("stories changed", the
+   API's 409) unless the ids are exactly those stories, each once, so no story can leave or join the
+   list between the check and the write. It is plpgsql, SECURITY INVOKER. The route keeps its access
+   check and the 404 for a sprint of another project. `update_story` clears a story's rank on every
+   move to another list, whenever the row has the column.
+2. The function is revoked from PUBLIC too, not only from `anon` and `authenticated`, and granted to
+   `service_role`, as every other function migration here does: PUBLIC holds EXECUTE on a new function
+   by default.
+3. `fill_board` does not take criteria in this PR. The connector reads them; writing them waits for a
+   connector tool that can update existing stories (`scrum_fill_board` only creates new ones).
+4. `POST /api/projects/{project_id}/scrum/stories` answers the story itself, not `{message, story}`:
+   the route was touched, so it moved to the current response shape, with a client that reads both.
 
 ## Part 2 — The engine (PR 2)
 
