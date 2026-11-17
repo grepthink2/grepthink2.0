@@ -301,6 +301,29 @@ revision.
 8. The in-app notification's `entity_id` is the document's id; the email links to
    `/app/projects/<project>/documents/<document>`.
 
+**Amended 2026-11-17, after the branch review:**
+
+1. **Every hand-in is kept.** `project_document_revisions` gains `finalized_at` and `finalized_by`, which
+   `document_finalize` stamps with the snapshot on the revision it hands in. A revision that carries a
+   snapshot answers it (`derived_frozen`) whichever hand-in is the document's latest; the revisions list marks
+   every hand-in (`finalized`, `finalized_at`) without reading snapshots; pruning never deletes a revision
+   with a snapshot. `document_finalize` answers NULL when it wrote nothing (the revision was finalized
+   already, by a request that won the lock), and the API then tells nobody and records nothing.
+2. **A document too long to store is refused, never a 500.** A body (create, save) or a snapshot (finalize)
+   over 200,000 bytes of compact UTF-8 JSON answers "This document is too long" (422 for a body, 409 for a
+   finalize), as does the database's size CHECK. The test report's derived sections hold each story its
+   scenarios name once, `stories: {<id>: {key, title, acceptance_criteria} | {missing: true}}`, and each
+   scenario lists its `story_ids`.
+3. **A sprint report describes the sprint as it ended.** `sprint_burnup_days` gains `story_ids` and
+   `done_story_ids` (nullable, no default; the same migration), which every board snapshot writes from the
+   rows it reads for its totals; on a database without them the snapshot is saved without them. The report
+   takes the sprint's stories and its completed ones from the last saved day on or before the sprint's end
+   that recorded them, each shown as it is now (`missing` once deleted), and names that day (`as_of`); with
+   no such day it falls back to the board now (`as_of: "now"`). The rates to date use the same rule for each
+   sprint, and the burnup replays the task moves for the days nobody saved, as the board does.
+4. Shrinking a class's sprint schedule refuses (409, "already uses Sprint k") when a sprint it would delete
+   holds a document, as it does for a story.
+
 ## Part 3 — The web client (PR 3)
 
 - `BOARD_VIEWS` gains `documents`. The tab lists, in order: Release plan (a link to its tab, from PR
