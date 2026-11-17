@@ -118,6 +118,29 @@ describe('getDocumentMarkdown', () => {
   });
 });
 
+describe('getDocumentMarkdownFile', () => {
+  it('GETs the Markdown with the file name the API gives it', async () => {
+    const text = '# Sprint Report\n';
+    fetchMock.mockResolvedValue(new Response(text, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="trailhead-sprint-2-report.md"',
+      },
+    }));
+
+    await expect(documentsApi.getDocumentMarkdownFile('d1')).resolves.toEqual({
+      text, filename: 'trailhead-sprint-2-report.md',
+    });
+    expect(sent()).toEqual({ url: '/api/documents/d1/markdown', method: 'GET', body: undefined });
+  });
+
+  it('answers no file name when the response gives none', async () => {
+    fetchMock.mockResolvedValue(new Response('# x', { status: 200 }));
+    await expect(documentsApi.getDocumentMarkdownFile('d1')).resolves.toEqual({ text: '# x', filename: null });
+  });
+});
+
 describe('getClassDocuments', () => {
   it("GETs every document of the class's teams", async () => {
     const rows = { documents: [{ id: 'd1', project_name: 'Trailhead' }] };

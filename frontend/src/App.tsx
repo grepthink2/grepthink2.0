@@ -47,6 +47,9 @@ const TSRViewPage = lazy(() => import('@features/app/pages/TSRViewPage'));
 const FeedbackViewPage = lazy(() => import('@features/app/pages/FeedbackViewPage'));
 const ProjectDetails = lazy(() => import('@features/app/pages/ProjectDetails'));
 const ScrumBoardPage = lazy(() => import('@features/scrum/pages/ScrumBoardPage'));
+// A team's document, and the address a link that knows only the document opens it by.
+const DocumentPage = lazy(() => import('@features/documents/pages/DocumentPage'));
+const DocumentRedirect = lazy(() => import('@features/documents/pages/DocumentRedirect'));
 const AnalyticsPage = lazy(() => import('@features/analytics/pages/AnalyticsPage'));
 const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
 // Assign is Staffing's sibling in the same folder/pattern — same size
@@ -126,6 +129,8 @@ function App() {
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:projectId" element={<ProjectDetails />} />
               <Route path="projects/:projectId/board" element={<ScrumBoardPage />} />
+              <Route path="projects/:projectId/documents/:documentId" element={<DocumentPage />} />
+              <Route path="documents/:documentId" element={<DocumentRedirect />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="roster" element={<Roster />} />
               <Route path="modules" element={<Modules />} />

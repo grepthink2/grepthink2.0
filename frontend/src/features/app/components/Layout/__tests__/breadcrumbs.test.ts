@@ -35,3 +35,24 @@ describe('buildBreadcrumbs — scrum board', () => {
     expect(crumbs?.some((c) => c.label === 'Scrum Board')).toBe(false);
   });
 });
+
+describe('buildBreadcrumbs — a project document', () => {
+  it('sits under the board’s Documents tab, with a link back to it and to the project', () => {
+    const crumbs = buildBreadcrumbs('/app/projects/p1/documents/d1', 'instructor', CLASS, {
+      projectName: 'Trailhead',
+      documentTitle: 'Sprint 2 report',
+    });
+    expect(crumbs).toEqual([
+      { label: CLASS, path: '/app/dashboard' },
+      { label: 'Projects', path: '/app/projects' },
+      { label: 'Trailhead', path: '/app/projects/p1' },
+      { label: 'Documents', path: '/app/projects/p1/board?view=documents' },
+      { label: 'Sprint 2 report' },
+    ]);
+  });
+
+  it('names the project and the document plainly when the link carried no names', () => {
+    const crumbs = buildBreadcrumbs('/app/projects/p1/documents/d1', 'student', CLASS, null);
+    expect(crumbs?.map((c) => c.label)).toEqual([CLASS, 'Browse Projects', 'Project', 'Documents', 'Document']);
+  });
+});

@@ -21,7 +21,7 @@ export function buildBreadcrumbs(
 ): BreadcrumbSegment[] | null {
   if (!className) return null;
 
-  const state = locationState as { projectName?: string; assignmentName?: string } | null;
+  const state = locationState as { projectName?: string; assignmentName?: string; documentTitle?: string } | null;
 
   // Class root segment — instructor links to Dashboard, students have no dedicated class home
   const classSegment: BreadcrumbSegment = {
@@ -40,6 +40,20 @@ export function buildBreadcrumbs(
       { label: parentLabel, path: parentPath },
       { label: state?.projectName ?? 'Project', path: `/app/projects/${projectId}` },
       { label: 'Scrum Board' },
+    ];
+  }
+
+  // A team's document sits under its board's Documents tab — also before the generic project case.
+  if (/^\/app\/projects\/[^/]+\/documents\/[^/]+$/.test(pathname)) {
+    const projectId = pathname.split('/')[3];
+    const parentLabel = role === 'instructor' ? 'Projects' : 'Browse Projects';
+    const parentPath = role === 'instructor' ? '/app/projects' : '/app/browse-projects';
+    return [
+      classSegment,
+      { label: parentLabel, path: parentPath },
+      { label: state?.projectName ?? 'Project', path: `/app/projects/${projectId}` },
+      { label: 'Documents', path: `/app/projects/${projectId}/board?view=documents` },
+      { label: state?.documentTitle ?? 'Document' },
     ];
   }
 

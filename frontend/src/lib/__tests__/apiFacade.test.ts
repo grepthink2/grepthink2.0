@@ -107,6 +107,7 @@ const METHODS = [
   'getConversations',
   'getDocument',
   'getDocumentMarkdown',
+  'getDocumentMarkdownFile',
   'getDocumentRevisions',
   'getEmailPreferences',
   'getFeedbackOverview',
