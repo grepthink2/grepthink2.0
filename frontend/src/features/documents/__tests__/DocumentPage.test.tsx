@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import type { ApiSprintReportBody } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import DocumentPage from '../pages/DocumentPage';
@@ -20,8 +20,8 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'tony@ucsc.edu' } }) }));
-const preview = vi.hoisted(() => ({ on: false }));
-vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: preview.on }) }));
+/** The read-only preview, as AppView hands it to its pages through the outlet context. */
+const preview = { on: false };
 const saveFile = vi.hoisted(() => vi.fn());
 vi.mock('../utils/saveFile', () => ({ saveFile }));
 const { api } = await import('@/lib/api');
@@ -43,9 +43,11 @@ function Where() {
 const renderAt = (entry = '/app/projects/p1/documents/d1') => render(
   <MemoryRouter initialEntries={[entry]}>
     <Routes>
-      <Route path="/app/projects/:projectId/documents/:documentId" element={<DocumentPage />} />
-      <Route path="/app/documents/:documentId" element={<DocumentRedirect />} />
-      <Route path="*" element={<p>Elsewhere</p>} />
+      <Route element={<Outlet context={{ openJoinClassModal: () => {}, isPreviewing: preview.on }} />}>
+        <Route path="/app/projects/:projectId/documents/:documentId" element={<DocumentPage />} />
+        <Route path="/app/documents/:documentId" element={<DocumentRedirect />} />
+        <Route path="*" element={<p>Elsewhere</p>} />
+      </Route>
     </Routes>
     <Where />
   </MemoryRouter>,

@@ -14,8 +14,6 @@ vi.mock('@/lib/api', () => ({
     deleteDocument: vi.fn(),
   },
 }));
-const preview = vi.hoisted(() => ({ on: false }));
-vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: preview.on }) }));
 const { api } = await import('@/lib/api');
 
 const report = (over: Partial<ApiSprintReportBody> = {}): ApiSprintReportBody => ({
@@ -23,7 +21,6 @@ const report = (over: Partial<ApiSprintReportBody> = {}): ApiSprintReportBody =>
 });
 
 beforeEach(() => {
-  preview.on = false;
   vi.mocked(api.getDocument).mockReset().mockResolvedValue(makeDocument('sprint_report', { body: report() }));
   vi.mocked(api.saveDocument).mockReset();
   vi.mocked(api.finalizeDocument).mockReset();
@@ -221,8 +218,8 @@ describe('useDocument: finalize and delete', () => {
 
 describe('useDocument: the read-only preview', () => {
   it('edits nothing and saves nothing', async () => {
-    preview.on = true;
-    const { result } = await opened();
+    const { result } = renderHook(() => useDocument('d1', { isPreviewing: true }));
+    await waitFor(() => expect(result.current.doc).not.toBeNull());
     expect(result.current.editable).toBe(false);
     act(() => result.current.setWorking(report({ satisfied_note: 'x' })));
     expect(result.current.dirty).toBe(false);

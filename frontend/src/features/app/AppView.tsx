@@ -153,7 +153,7 @@ const AppView: React.FC = () => {
               <ClassRouteGuard>
                 <Outlet
                   context={
-                    { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+                    { openJoinClassModal: handleOpenJoinClassModal, isPreviewing } satisfies AppOutletContext
                   }
                 />
               </ClassRouteGuard>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type { ApiDocumentBody, ApiDocumentKind, ApiProjectDocument, ApiTestReportDerived, ApiReleaseSummaryDerived } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
-import { usePreview } from '@/lib/previewContext';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import { bodyChanged, prepareBody, storyIdsOf, withoutStories } from '../utils/documentBody';
 
@@ -30,6 +29,8 @@ export interface UseDocumentOptions {
   findMissingStories?: (ids: string[]) => Promise<string[]>;
   /** The signed-in user, so a save that replaced their own revision (another tab) says so. */
   viewerId?: string;
+  /** The read-only preview is on: nothing is edited. */
+  isPreviewing?: boolean;
 }
 
 /** What is being edited: the body as typed, the body as last loaded or saved, and the revision it is. */
@@ -84,8 +85,7 @@ function joinPlaces(places: string[]): string {
  * `finalize` hands in the head; `remove` deletes a draft. Each reports through `notice`.
  */
 export function useDocument(documentId: string | undefined, options: UseDocumentOptions = {}) {
-  const { revision, findMissingStories, viewerId } = options;
-  const { isPreviewing } = usePreview();
+  const { revision, findMissingStories, viewerId, isPreviewing = false } = options;
   const key = `${documentId ?? ''}:${revision ?? ''}`;
 
   /** The newest document answered, and the request it answered. */

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileX } from 'lucide-react';
 import { Alert } from '@components/Alert/Alert';
 import { Button } from '@components/Button/Button';
@@ -12,8 +12,8 @@ import { api } from '@/lib/api';
 import type { ApiTestReportDerived } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth';
-import { usePreview } from '@/lib/previewContext';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
+import type { AppOutletContext } from '@features/app/appOutletContext';
 import ChecksPanel from '../components/ChecksPanel';
 import DocumentEditor from '../components/DocumentEditor';
 import DocumentShell from '../components/DocumentShell';
@@ -59,14 +59,15 @@ export default function DocumentPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isPreviewing } = usePreview();
+  // The preview's state comes from AppView (see AppOutletContext); a page rendered alone has none.
+  const isPreviewing = useOutletContext<AppOutletContext | undefined>()?.isPreviewing ?? false;
   const { toasts, push, dismiss } = useToasts();
 
   // A save the API refuses for a story off the board asks the board about the stories it added. The
   // board's reader comes after the document's hook, so it is read through a ref an effect keeps current.
   const findMissingRef = useRef<(ids: string[]) => Promise<string[]>>(async () => []);
   const findMissingStories = useCallback((ids: string[]) => findMissingRef.current(ids), []);
-  const page = useDocument(documentId, { revision, findMissingStories, viewerId: user?.id });
+  const page = useDocument(documentId, { revision, findMissingStories, viewerId: user?.id, isPreviewing });
   const { doc, working, editable, dirty } = page;
   const kind = doc?.document.kind;
   const board = useBoardStories(projectId, editable && (kind === 'release_summary' || kind === 'test_report'));
