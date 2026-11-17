@@ -1,7 +1,8 @@
 """Shared seed for the project documents tests: the scrum board's world (``tests.scrum_support``) with a
 team in every role, and a FakeSupabase that does what the documents migration's functions do.
 
-The world: project ``PID`` in class ``CLASS``, as in ``scrum_support``. ``UID`` is its owner; ``SM``, ``PO``
+The world: project ``PID`` as in ``scrum_support``, in class ``CLASS`` (a UUID here, as the class routes
+take). ``UID`` is its owner; ``SM``, ``PO``
 and ``ADMIN`` hold the other roles that may finalize, ``MEMBER`` holds the plain one and ``NO_ROLE`` none (a
 NULL role). ``INSTR``, ``TA`` and ``MEETING_TA`` are staff; ``REVIEW_TA`` is a class TA who is the team's
 Review TA. ``STUDENT`` is enrolled on another team and ``OUTSIDER`` in nothing.
@@ -22,7 +23,6 @@ from postgrest.exceptions import APIError
 
 from app.assignments import deadlines
 from tests.scrum_support import (
-    CLASS,
     INSTR,
     MEETING_TA,
     OTHER_PID,
@@ -61,6 +61,7 @@ __all__ = [
     "task",
 ]
 
+CLASS = "c1000000-0000-4000-8000-000000000001"
 SM = "00000000-0000-0000-0000-0000000000a1"
 PO = "00000000-0000-0000-0000-0000000000a2"
 ADMIN = "00000000-0000-0000-0000-0000000000a3"

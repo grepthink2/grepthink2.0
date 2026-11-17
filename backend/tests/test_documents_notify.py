@@ -8,9 +8,9 @@ from app.core.db import get_client
 from app.documents import notify
 from app.notifications.controller import NOTIFICATION_TYPES
 from app.outbox.kinds import get_kind
-from tests.documents_support import MEETING_TA, PID, REVIEW_TA, SM, documents_db
+from tests.documents_support import CLASS, MEETING_TA, PID, REVIEW_TA, SM, documents_db
 
-PROJECT = {"id": PID, "name": "Trailhead", "class_id": "class-1", "assigned_ta_id": MEETING_TA}
+PROJECT = {"id": PID, "name": "Trailhead", "class_id": CLASS, "assigned_ta_id": MEETING_TA}
 
 
 @pytest.mark.parametrize(

@@ -300,3 +300,35 @@ def test_a_document_finalized_while_deleting_is_409(db, monkeypatch):
     monkeypatch.setattr(controller, "_load_document", stale)
     assert refused(lambda: controller.delete_document(doc, SM)) == (409, controller.DOCUMENT_FINAL)
     assert len(db.rows("project_documents")) == 1
+
+
+def test_a_document_deleted_while_finalizing_is_404(db):
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+    real = db.rpcs["document_finalize"]
+
+    def gone(params):
+        db.store["project_documents"] = []
+        return real(params)
+
+    db.rpcs["document_finalize"] = gone
+    assert refused(lambda: controller.finalize_document(doc, SM, 1)) == (
+        404,
+        controller.DOCUMENT_NOT_FOUND,
+    )
+    assert db.rows("notifications") == []
+
+
+def test_a_document_deleted_while_deleting_is_404(db, monkeypatch):
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+    real = controller._load_document
+
+    def stale(client, document_id):
+        row = real(client, document_id)
+        db.store["project_documents"] = []
+        return row
+
+    monkeypatch.setattr(controller, "_load_document", stale)
+    assert refused(lambda: controller.delete_document(doc, SM)) == (
+        404,
+        controller.DOCUMENT_NOT_FOUND,
+    )

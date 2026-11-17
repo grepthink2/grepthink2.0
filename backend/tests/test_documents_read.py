@@ -343,3 +343,54 @@ def test_a_class_ta_costs_one_more_read(db):
     db.reset_counter()
     controller.list_class_documents(CLASS, TA)
     assert db.executes <= 3
+
+
+# ------------------------------------------------------------------------- the routes ----
+
+
+def test_the_read_routes_answer_through_http(db, client):
+    doc = final_then_edited(db)
+    member, staff = header_for("t@ucsc.edu", sub=UID), header_for("i@ucsc.edu", sub=INSTR)
+
+    tab = client.get(f"/api/projects/{PID}/documents", headers=member)
+    one = client.get(f"/api/documents/{doc}?revision=1", headers=staff)
+    revisions = client.get(f"/api/documents/{doc}/revisions", headers=staff)
+    classes = client.get(f"/api/classes/{CLASS}/documents", headers=staff)
+
+    assert [r.status_code for r in (tab, one, revisions, classes)] == [200] * 4
+    assert [s["kind"] for s in tab.json()["documents"]][-2:] == ["release_summary", "test_report"]
+    assert (one.json()["revision"]["number"], one.json()["access"]) == (1, "staff")
+    assert [r["number"] for r in revisions.json()["revisions"]] == [3, 2, 1]
+    assert [d["id"] for d in classes.json()["documents"]] == [doc]
+
+
+def test_a_revision_number_below_1_is_422(db, client):
+    doc = add_document(db, "test_report")
+    response = client.get(
+        f"/api/documents/{doc}?revision=0", headers=header_for("t@ucsc.edu", sub=UID)
+    )
+    assert response.status_code == 422
+
+
+def test_a_kind_the_api_does_not_serve_yet_is_left_out_and_answers_422(db):
+    """A sprint plan the database holds (made by a later version, say): not on the tab, not in the
+    class's list, and 422 when asked for."""
+    doc = add_document(db, "test_report")
+    db.rows("project_documents")[0]["kind"] = "sprint_plan"
+    db.rows("project_documents")[0]["sprint_id"] = S1
+
+    assert all(
+        s["document"] is None for s in controller.list_project_documents(PID, UID)["documents"]
+    )
+    assert controller.list_class_documents(CLASS, INSTR)["documents"] == []
+    assert refused(lambda: controller.get_document(doc, UID)) == (
+        422,
+        controller.KIND_NOT_AVAILABLE,
+    )
+
+
+def test_a_revision_whose_author_is_gone_names_nobody(db):
+    doc = add_document(db, "test_report")
+    db.rows("project_document_revisions")[0]["saved_by"] = None  # the profile was deleted
+    out = controller.get_document(doc, UID)
+    assert (out["revision"]["saved_by"], out["revision"]["saved_by_name"]) == (None, None)
