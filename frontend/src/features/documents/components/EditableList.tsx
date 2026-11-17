@@ -6,6 +6,9 @@ import { IconButton } from '@components/IconButton/IconButton';
 /** What a row or the foot hands focus to: its first link, button or field. */
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)';
 
+/** Ends an announcement that repeats the one before, so the live region's text changes and is spoken again. */
+const NBSP = String.fromCharCode(0xa0);
+
 /** Where focus goes once the list is drawn again: a row's first control, one of its moves, or the foot. */
 type FocusTarget = { key: string; part: 'first' | 'up' | 'down' } | 'foot';
 
@@ -73,7 +76,8 @@ export default function EditableList<T>({
 
   const change = (next: T[], focus: FocusTarget, announcement = '') => {
     pendingFocus.current = focus;
-    setSaid(announcement);
+    // A second "known problem 1 removed" must differ from the first, or a screen reader stays quiet.
+    setSaid((before) => (announcement && announcement === before ? `${announcement}${NBSP}` : announcement));
     onChange?.(next);
   };
   const move = (i: number, part: 'up' | 'down') => {
@@ -158,7 +162,7 @@ export default function EditableList<T>({
           </span>
         </div>
       )}
-      <p className="gt-visually-hidden" aria-live="polite">{said}</p>
+      <p className="gt-visually-hidden" aria-live="polite" aria-atomic="true">{said}</p>
     </div>
   );
 }

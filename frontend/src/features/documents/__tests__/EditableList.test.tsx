@@ -63,6 +63,17 @@ describe('EditableList', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add a thing' }));
   });
 
+  it('says each removal, even one that reads like the one before', async () => {
+    render(<Harness initial={rows('same', 'same', 'other')} />);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Remove “same”' })[0]);
+    const region = screen.getByText('“same” removed');
+    const first = region.textContent;
+    await userEvent.click(screen.getByRole('button', { name: 'Remove “same”' }));
+    // The same words again: the region's text must still change for a screen reader to speak it.
+    expect(region.textContent).not.toBe(first);
+    expect(region.textContent?.trim()).toBe('“same” removed');
+  });
+
   it('adds a row and puts the cursor in it', async () => {
     render(<Harness initial={[]} />);
     await userEvent.click(screen.getByRole('button', { name: 'Add a thing' }));
