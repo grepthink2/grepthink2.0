@@ -32,7 +32,7 @@
 -- the row it read has the column). Apply on DEV before the branch is tested there, and on PROD before the
 -- release that ships it.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-11-16 (by Claude, via the Supabase connector, after a rolled-back rehearsal)   PROD — pending
 --
 -- PREFLIGHT (expect no rows, or on a re-run exactly: acceptance_criteria ARRAY, rank integer, and the one
 -- function public.scrum_set_story_order(uuid,uuid,uuid[]). A column of either name with another type, or a
