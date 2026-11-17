@@ -108,6 +108,21 @@ describe('diffBodies: items matched by id', () => {
     ]);
   });
 
+  it('reports no change for a text whose spacing alone changed', () => {
+    const older = report({
+      keep: [{ id: 'a', action: 'Daily standup', reason: 'keeps us in sync' }],
+      satisfied_note: 'All went well',
+    });
+    const newer = report({
+      keep: [{ id: 'a', action: 'Daily  standup ', reason: 'keeps us\nin sync' }],
+      satisfied_note: ' All went  well',
+    });
+    expect(diffBodies('sprint_report', older, newer)).toEqual([]);
+    const steps = tests({ scenarios: [scenario({ steps_md: '1. Open the map\n2. Search' })] });
+    const respaced = tests({ scenarios: [scenario({ steps_md: '1. Open the map\n\n2. Search\n' })] });
+    expect(diffBodies('test_report', steps, respaced)).toEqual([]);
+  });
+
   it('finds nothing between equal bodies', () => {
     const body = tests({ scenarios: [scenario()] });
     expect(diffBodies('test_report', body, structuredClone(body))).toEqual([]);

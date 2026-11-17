@@ -81,6 +81,9 @@ function outOfOrder<T>(a: readonly T[], b: readonly T[]): Set<T> {
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean);
 
+/** Two texts with the same words: a change of spacing alone, which a word diff has nothing to show for. */
+const sameWords = (a: string, b: string) => words(a).join(' ') === words(b).join(' ');
+
 /** Adds a word to the parts, joining it to the run before when that run has the same op. */
 function push(parts: WordPart[], op: WordPart['op'], word: string) {
   const last = parts[parts.length - 1];
@@ -222,8 +225,8 @@ function fieldChange<T>(field: FieldSpec<T>, older: T, newer: T): FieldChange | 
     const removed = was.filter((id) => !now.includes(id));
     return added.length || removed.length ? { kind: 'stories', added, removed } : null;
   }
-  if (before === after) return null;
-  if (field.kind === 'value') return { kind: 'value', from: before as string, to: after as string };
+  if (field.kind === 'value') return before === after ? null : { kind: 'value', from: before as string, to: after as string };
+  if (sameWords(before as string, after as string)) return null;
   return { kind: 'text', parts: wordDiff(before as string, after as string) };
 }
 
@@ -268,7 +271,7 @@ const list = <B, T>(spec: ListSpec<B, T>): Differ => (older, newer) => diffList(
 const scalar = <B,>(section: string, field: string, read: (body: B) => string): Differ => (older, newer) => {
   const before = read(older as B);
   const after = read(newer as B);
-  if (before === after) return [];
+  if (sameWords(before, after)) return [];
   return [{
     type: 'changed', section, itemId: null, label: null, field,
     change: { kind: 'text', parts: wordDiff(before, after) },
