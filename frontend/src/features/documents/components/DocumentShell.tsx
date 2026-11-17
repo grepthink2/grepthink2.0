@@ -62,11 +62,28 @@ function handInLine(doc: ApiProjectDocument): string | null {
 }
 
 /**
+ * What Download Markdown and Copy give when it is not the revision on screen: the API renders the
+ * latest hand-in of a document handed in, else the head.
+ */
+function markdownNote(doc: ApiProjectDocument): string | null {
+  const info = doc.document;
+  if (info.finalized_revision != null) {
+    return doc.revision.number === info.finalized_revision
+      ? null
+      : `Download Markdown and Copy give the handed-in version (revision ${info.finalized_revision}).`;
+  }
+  return doc.revision.number === info.head_revision
+    ? null
+    : `Download Markdown and Copy give the latest draft (revision ${info.head_revision}).`;
+}
+
+/**
  * A document page's head: its title and state, the revision on screen and who saved it, the hand-in
  * line of a final document with a link to its other version, and the actions. Save (the primary,
  * busy while saving) and Finalize are a team member's on the head; Finalize waits while the body is
  * unsaved or a check fails, and says why beside it. Download Markdown, Copy and Revisions are every
- * reader's. Delete, for a draft never handed in, sits in the overflow menu.
+ * reader's, with a note under them when they give another revision than the one on screen. Delete,
+ * for a draft never handed in, sits in the overflow menu.
  */
 export default function DocumentShell({
   doc, editable, dirty, saving, finalizing, finalizeHold, otherVersion, canDelete, downloading, copying,
@@ -81,6 +98,7 @@ export default function DocumentShell({
   const head = info.head_revision;
   const onScreen = doc.revision.number;
   const handIn = handInLine(doc);
+  const markdown = markdownNote(doc);
   // Finalize hands in the head; a final document not saved since has nothing new to hand in.
   const finalizable = editable && doc.can_finalize && !(info.status === 'final' && !info.edited_since);
 
@@ -141,7 +159,7 @@ export default function DocumentShell({
             iconLeft={<Download size={14} />}
             loading={downloading}
             loadingLabel="Downloading…"
-            aria-describedby={info.status === 'final' ? markdownId : undefined}
+            aria-describedby={markdown ? markdownId : undefined}
             onClick={onDownload}
           >
             Download Markdown
@@ -152,7 +170,7 @@ export default function DocumentShell({
             iconLeft={<Copy size={14} />}
             loading={copying}
             loadingLabel="Copying…"
-            aria-describedby={info.status === 'final' ? markdownId : undefined}
+            aria-describedby={markdown ? markdownId : undefined}
             onClick={onCopy}
           >
             Copy
@@ -191,12 +209,8 @@ export default function DocumentShell({
             </Popover>
           )}
         </span>
-        {info.status === 'final' && (
-          <span className="gt-visually-hidden" id={markdownId}>
-            The Markdown is the handed-in revision {info.finalized_revision}.
-          </span>
-        )}
       </div>
+      {markdown && <p className="document-page__markdown-note" id={markdownId}>{markdown}</p>}
     </header>
   );
 }

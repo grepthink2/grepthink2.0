@@ -116,6 +116,16 @@
     @media (max-width: 600px) { margin-left: 0; }
   }
 
+  // Under the tools it is about, at the row's end like them.
+  &__markdown-note {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+    text-align: right;
+
+    @media (max-width: 600px) { text-align: left; }
+  }
+
   &__problems {
     margin: 0;
     padding-left: 18px;

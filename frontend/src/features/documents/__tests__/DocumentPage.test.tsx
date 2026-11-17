@@ -80,6 +80,21 @@ describe('DocumentPage: a team member on the head', () => {
     expect(screen.getByText('All changes saved')).toBeInTheDocument();
     expect(screen.getByText('Every check passes: the document can be handed in.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Finalize' })).toBeEnabled();
+    // The Markdown is this revision: nothing to say about it.
+    expect(screen.queryByText(/Download Markdown and Copy give/)).not.toBeInTheDocument();
+  });
+
+  it('says Download and Copy give the hand-in on a draft saved since it', async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('sprint_report', {
+      body: ready(),
+      document: { status: 'final', head_revision: 5, finalized_revision: 3, finalized_at: '2026-11-15T18:00:00Z', edited_since: true },
+      revision: { number: 5 },
+    }));
+    renderAt();
+    const note = 'Download Markdown and Copy give the handed-in version (revision 3).';
+    expect(await screen.findByText(note)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Download Markdown' })).toHaveAccessibleDescription(note);
+    expect(screen.getByRole('button', { name: 'Copy' })).toHaveAccessibleDescription(note);
   });
 
   it('saves an edit as a revision and says so; Finalize waits for the save', async () => {
@@ -276,9 +291,19 @@ describe('DocumentPage: readers', () => {
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Finalize/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    // The hand-in is what the Markdown gives: nothing to say about it here.
+    expect(screen.queryByText(/Download Markdown and Copy give/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'Latest draft (revision 5)' }));
     expect(where()).toBe('/app/projects/p1/documents/d1?revision=5');
     await waitFor(() => expect(api.getDocument).toHaveBeenLastCalledWith('d1', 5));
+  });
+
+  it("says Download and Copy give a draft's latest revision on an older one", async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('sprint_report', { body: ready(), revision: { number: 2 } }));
+    renderAt('/app/projects/p1/documents/d1?revision=2');
+    const note = 'Download Markdown and Copy give the latest draft (revision 3).';
+    expect(await screen.findByText(note)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Download Markdown' })).toHaveAccessibleDescription(note);
   });
 
   it('gives the read-only preview its calm notice and no write controls', async () => {
