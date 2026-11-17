@@ -81,6 +81,16 @@ describe('useLeaveGuard', () => {
     expect(where()).toBe('/away');
   });
 
+  it('makes a held navigation once the changes are saved under it', async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole('link', { name: 'Away' }));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    // A save in flight lands while the dialog asks: nothing is unsaved, so the reader goes where they meant.
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(where()).toBe('/away');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
   it('holds nothing once the changes are saved', async () => {
     renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));

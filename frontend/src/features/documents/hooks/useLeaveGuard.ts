@@ -40,13 +40,16 @@ function wrapNavigator(navigator: unknown, hold: (original: Go) => Go): () => vo
  * data router, so React Router's `useBlocker` is not available, and the guard wraps the router's
  * navigator instead (`push` and `replace`, which every Link and `navigate()` call). A navigation to the
  * page's own path and query passes. `blocked` says one is held: `proceed` makes it, `stay` drops it.
- * `leave(go)` runs a navigation the page means to make whatever is unsaved (after a delete). The
- * browser's Back and Forward are not held.
+ * When `when` turns false with one held (a save in flight lands), there is nothing left to ask about,
+ * so the held navigation is made. `leave(go)` runs a navigation the page means to make whatever is
+ * unsaved (after a delete). The browser's Back and Forward are not held.
  */
 export function useLeaveGuard(when: boolean) {
   const { navigator } = useContext(UNSAFE_NavigationContext);
   const location = useLocation();
   const [held, setHeld] = useState<{ go: () => void } | null>(null);
+  // The same navigation for the effect that makes it once the page is clean: state is for the dialog.
+  const heldRef = useRef<{ go: () => void } | null>(null);
   const here = useRef('');
   const allowNext = useRef(false);
   useEffect(() => {
@@ -72,18 +75,33 @@ export function useLeaveGuard(when: boolean) {
         original(...args);
         return;
       }
-      setHeld({ go: () => original(...args) });
+      const go = { go: () => original(...args) };
+      heldRef.current = go;
+      setHeld(go);
     };
     return wrapNavigator(navigator, hold);
   }, [when, navigator]);
 
+  // Clean again with a navigation held: the dialog goes, and the effect below makes the navigation.
+  if (!when && held !== null) setHeld(null);
+  useEffect(() => {
+    if (when) return;
+    const pending = heldRef.current;
+    heldRef.current = null;
+    pending?.go();
+  }, [when]);
+
   // The held navigation calls the navigator's own method, past the guard.
   const proceed = useCallback(() => {
     if (!held) return;
+    heldRef.current = null;
     setHeld(null);
     held.go();
   }, [held]);
-  const stay = useCallback(() => setHeld(null), []);
+  const stay = useCallback(() => {
+    heldRef.current = null;
+    setHeld(null);
+  }, []);
   const leave = useCallback((go: () => void) => {
     allowNext.current = true;
     go();
