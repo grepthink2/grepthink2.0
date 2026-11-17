@@ -65,11 +65,7 @@ export const documentsApi = {
 
   /** The document as Markdown: the finalized revision of a final document, else the head. */
   getDocumentMarkdown: async (documentId: string) =>
-    apiRequest<string>(
-      `/api/documents/${documentId}/markdown`,
-      { headers: { Accept: 'text/markdown' } },
-      'text',
-    ),
+    apiRequest<string>(`/api/documents/${documentId}/markdown`, {}, 'text'),
 
   /** Every document of the class's teams, for the class's instructor and TAs. */
   getClassDocuments: async (classId: string) =>
