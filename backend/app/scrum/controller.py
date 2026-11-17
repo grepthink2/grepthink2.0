@@ -112,21 +112,28 @@ def _board_access(client, *, project_id: str, user_id: str) -> tuple[str, str | 
     :data:`authz.NOT_PROJECT_MEMBER` when it exists but the caller is neither on the
     team nor staff for its class. One round trip for a member, the common case.
     """
+    access, institution_id, _ = _board_place(client, project_id=project_id, user_id=user_id)
+    return access, institution_id
+
+
+def _board_place(client, *, project_id: str, user_id: str) -> tuple[str, str | None, str | None]:
+    """:func:`_board_access`, and the project's class id, from the same reads."""
     # Row existence rather than ``authz.get_project_role``: ``project_members.role``
     # is nullable, and a member whose role is NULL is still on the team.
     member = (
         client.table("project_members")
-        .select("id, projects(classes(institution_id))")
+        .select("id, projects(class_id, classes(institution_id))")
         .eq("project_id", str(project_id))
         .eq("user_id", str(user_id))
         .limit(1)
         .execute()
     )
     if member.data:  # a membership row means the project exists
-        return "member", _institution_of(member.data[0].get("projects"))
+        project = member.data[0].get("projects") or {}
+        return "member", _institution_of(project), project.get("class_id")
     project = authz.load_project(client, project_id, class_columns="created_by, institution_id")
     if _staff_among(client, project, {str(user_id)}):
-        return "staff", _institution_of(project)
+        return "staff", _institution_of(project), project.get("class_id")
     raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
 
 
@@ -1812,6 +1819,7 @@ def ai_draft(
 # the school's day, which stories a list holds and in what order, and what a burnup counts. These
 # are the names they import.
 board_access = _board_access
+board_place = _board_place
 school_today = _today
 school_day = _school_day
 sprint_days = _sprint_days

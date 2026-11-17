@@ -46,6 +46,7 @@ from app.scrum.controller import (
     MEMBERS_ONLY,
     SPRINT_NOT_FOUND,
     board_access,
+    board_place,
     school_day,
     school_today,
     sprint_days,
@@ -130,19 +131,6 @@ def _kind_of(document: dict) -> Kind:
     if kind is None:
         raise HTTPException(status_code=422, detail=KIND_NOT_AVAILABLE)
     return kind
-
-
-def _role_of(client, project_id, user_id) -> str | None:
-    """The caller's ``project_members.role`` (None for a member without one, or no member)."""
-    rows = (
-        client.table("project_members")
-        .select("role")
-        .eq("project_id", str(project_id))
-        .eq("user_id", str(user_id))
-        .limit(1)
-        .execute()
-    ).data or []
-    return rows[0].get("role") if rows else None
 
 
 def _revision(client, document_id, number: int) -> dict | None:
@@ -413,7 +401,7 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
         raise HTTPException(status_code=422, detail=NO_SPRINT_FOR_KIND)
     client = get_client()
     pid = str(project_id)
-    access, institution_id = board_access(client, project_id=pid, user_id=user_id)
+    access, institution_id, class_id = board_place(client, project_id=pid, user_id=user_id)
     _require_member(access)
     if kind.per_sprint and sprint_id is None:
         raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
@@ -421,8 +409,7 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
     jobs = derive.context_jobs(
         client, pid, sprint_id, burnup=kind.reads_burnup, repos=kind.reads_repos
     )
-    jobs["project"] = lambda: authz.load_project(client, pid, columns="id, class_id")
-    jobs["role"] = lambda: _role_of(client, pid, user_id)
+    jobs["role"] = lambda: authz.get_project_role(client, pid, user_id)
     reads = fan_out(jobs)
     ctx = derive.build_context(
         reads, project_id=pid, sprint_id=sprint_id, today=school_today(zone), zone=zone
@@ -447,6 +434,10 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
         ).execute()
     except DatabaseConflictError as exc:
         raise HTTPException(status_code=409, detail=DOCUMENT_EXISTS) from exc
+    except DatabaseError as exc:
+        if exc.pg_code == _NO_DATA_FOUND:  # the sprint left the project since the read
+            raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND) from exc
+        raise
     document_id = created.data if isinstance(created.data, str) else (created.data or [None])[0]
 
     back = fan_out(
@@ -455,7 +446,6 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
             "revision": lambda: _revision(client, document_id, 1),
         }
     )
-    class_id = reads["project"].get("class_id")
     events.record(
         "document_created",
         actor_id=str(user_id),
@@ -498,7 +488,7 @@ def get_document(document_id: UUID, user_id: str, revision: int | None = None) -
 
     jobs = {"revision": lambda: _revision(client, document["id"], revision)}
     if access == "member":
-        jobs["role"] = lambda: _role_of(client, document["project_id"], user_id)
+        jobs["role"] = lambda: authz.get_project_role(client, document["project_id"], user_id)
     jobs.update(_context_jobs(client, document, kind, board=not frozen))
     reads = fan_out(jobs)
     found = reads["revision"]
@@ -634,7 +624,7 @@ def _require_team_role(client, document: dict, user_id: str, denied: str) -> tup
         client, project_id=document["project_id"], user_id=user_id
     )
     _require_member(access)
-    role = _role_of(client, document["project_id"], user_id)
+    role = authz.get_project_role(client, document["project_id"], user_id)
     if role not in FINALIZE_ROLES:
         raise HTTPException(status_code=403, detail=denied)
     return institution_id, role

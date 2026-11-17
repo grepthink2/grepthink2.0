@@ -135,6 +135,14 @@ def test_cors_answers_preflights_from_the_allowlist_only(
         assert response.headers.get("Access-Control-Allow-Credentials") == "true"
 
 
+def test_a_download_names_its_file_across_origins(client: TestClient):
+    """A document's Markdown comes from the API's origin: the page reads its file name only if CORS
+    exposes Content-Disposition."""
+    response = client.get("/health", headers={"Origin": "http://localhost:5173"})
+    exposed = response.headers.get("Access-Control-Expose-Headers", "")
+    assert "content-disposition" in exposed.lower()
+
+
 def test_the_vercel_entrypoint_exposes_this_app():
     # Vercel's Python runtime loads the top-level ``app`` of backend/api/index.py (see
     # backend/vercel.json). A ruff auto-fix once deleted that import as unused, and every

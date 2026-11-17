@@ -106,6 +106,8 @@ app.add_middleware(
     allow_credentials=settings.CORS_CREDENTIALS,
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
+    # A download's file name (a document's Markdown) is readable across origins only when exposed.
+    expose_headers=["Content-Disposition"],
 )
 # Defensive security headers on every response.
 app.add_middleware(SecurityHeadersMiddleware)

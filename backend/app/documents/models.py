@@ -29,6 +29,9 @@ DocumentKind = Literal[
 
 # ----- limits -----
 
+#: The largest revision number: revisions are an integer column.
+REVISION_MAX = 2_147_483_647
+
 ACTIONS_MAX = 10
 ACTION_MAX = 200
 REASON_MAX = 400
@@ -196,9 +199,9 @@ class SaveDocumentRequest(BaseModel):
     #: The whole body, in the shape of the document's kind (checked once the document is known).
     body: dict
     #: The revision the edit started from: when another one has been saved since, the answer says so.
-    base_revision: int | None = Field(None, ge=1)
+    base_revision: int | None = Field(None, ge=1, le=REVISION_MAX)
 
 
 class FinalizeDocumentRequest(BaseModel):
     #: The revision the caller is looking at; it must still be the head.
-    revision: int = Field(..., ge=1)
+    revision: int = Field(..., ge=1, le=REVISION_MAX)

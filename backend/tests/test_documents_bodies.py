@@ -229,3 +229,14 @@ def test_ids_are_stored_as_lowercase_text():
     upper = "9D0B3C1E-0000-4000-8000-00000000000A"
     body = RELEASE.model_validate({"key_story_ids": [upper]}).model_dump(mode="json")
     assert body["key_story_ids"] == [upper.lower()]
+
+
+@pytest.mark.parametrize(
+    ("model", "field"),
+    [(models.SaveDocumentRequest, "base_revision"), (models.FinalizeDocumentRequest, "revision")],
+)
+def test_a_revision_number_fits_the_databases_integer(model, field):
+    extra = {"body": {}} if field == "base_revision" else {}
+    model.model_validate({field: 2147483647, **extra})
+    with pytest.raises(ValidationError):
+        model.model_validate({field: 2147483648, **extra})

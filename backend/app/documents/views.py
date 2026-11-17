@@ -12,6 +12,7 @@ from slowapi.util import get_remote_address
 from app.dependencies import require_user
 from app.documents import controller
 from app.documents.models import (
+    REVISION_MAX,
     CreateDocumentRequest,
     FinalizeDocumentRequest,
     SaveDocumentRequest,
@@ -44,7 +45,7 @@ def create_document(
 
 def get_document(
     document_id: UUID,
-    revision: int | None = Query(None, ge=1),
+    revision: int | None = Query(None, ge=1, le=REVISION_MAX),
     user_id: str = Depends(require_user),
 ) -> dict:
     return controller.get_document(document_id, user_id, revision)

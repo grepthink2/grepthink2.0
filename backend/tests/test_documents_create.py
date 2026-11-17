@@ -229,3 +229,30 @@ def test_a_first_revision_too_long_to_store_is_422(db):
         controller.DOCUMENT_TOO_LONG,
     )
     assert writes(db) == []
+
+
+def test_a_sprint_that_left_the_project_while_creating_is_404(db):
+    """The function holds the sprint and checks it is the project's (P0002 otherwise): a sprint gone
+    between the read and the insert answers as a missing one."""
+    real = db.rpcs["document_create"]
+
+    def moved(params):
+        db.store["sprints"] = [s for s in db.rows("sprints") if s["id"] != S2]
+        return real(params)
+
+    db.rpcs["document_create"] = moved
+    assert refused(lambda: controller.create_document(PID, UID, "sprint_report", S2)) == (
+        404,
+        SPRINT_NOT_FOUND,
+    )
+    assert db.rows("project_documents") == []
+
+
+def test_creating_reads_the_project_once(db):
+    """The access check brings the project's class (for the event) with the caller's membership: no
+    second project read. The access check; the board and the role; the create; the new document
+    and its revision; the event."""
+    db.reset_counter()
+    controller.create_document(PID, UID, "sprint_report", S2)
+    assert [q["table"] for q in db.queries].count("projects") == 0
+    assert db.executes <= 9
