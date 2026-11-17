@@ -778,3 +778,45 @@
     text-decoration: line-through;
   }
 }
+
+// ----- The board's Documents tab ---------------------------------------------------------------------
+
+.documents-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--gt-text-body-lg);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__open {
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-link);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
+  }
+
+  &__sprint {
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-regular);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__action { text-align: right; white-space: nowrap; }
+}

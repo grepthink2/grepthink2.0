@@ -31,6 +31,7 @@ function deferred<T>() {
 
 const section = () => screen.getByRole('region', { name: 'Sprint progress' });
 const boardLink = () => screen.queryByRole('link', { name: /open board/i });
+const documentsLink = () => screen.queryByRole('link', { name: /documents/i });
 /** The number beside a count's label: the <dd> after its <dt>. */
 const countFor = (label: string) => screen.getByText(label, { selector: 'dt' }).nextElementSibling;
 
@@ -91,12 +92,21 @@ describe('SprintProgressCard', () => {
     expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
   });
 
+  it("links to the team's documents on the board's Documents tab, beside the board", async () => {
+    getScrumSummary.mockResolvedValue(activeSummary());
+    render(card());
+
+    await screen.findByText('Sprint 2');
+    expect(documentsLink()).toHaveAttribute('href', '/app/projects/p1/board?view=documents');
+  });
+
   it('tells someone outside the team and staff why there is nothing to see, with no link', async () => {
     getScrumSummary.mockRejectedValue(new ApiError(403, 'Forbidden', 'Forbidden'));
     render(card());
 
     expect(await screen.findByText('Only the team and class staff can see the board.')).toBeInTheDocument();
     expect(boardLink()).not.toBeInTheDocument();
+    expect(documentsLink()).not.toBeInTheDocument();
   });
 
   it('says when the summary fails to load, and still links to the board', async () => {
