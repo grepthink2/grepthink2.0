@@ -488,6 +488,35 @@ def test_a_story_that_stays_in_its_list_keeps_its_rank(monkeypatch, fields):
     assert db.rows("user_stories")[0]["rank"] == 2
 
 
+def test_a_reorder_landing_between_the_read_and_the_move_leaves_no_rank(monkeypatch):
+    """The story was unranked when update_story read it, and a teammate's reorder of its old list
+    ranked it before the move was written: the move still clears the rank, so the story comes last
+    in its new list rather than taking a place from the old one."""
+    db = scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT), dict(SPRINT_2)],
+        user_stories=[{**STORY, "sprint_id": "sp1", "rank": None}],
+    )
+    table = db.table
+
+    def reorder_lands_first(name):
+        query = table(name)
+        if name == "user_stories":
+            update = query.update
+
+            def after_the_reorder(payload, *args, **kwargs):
+                db.rows("user_stories")[0]["rank"] = 2
+                return update(payload, *args, **kwargs)
+
+            query.update = after_the_reorder
+        return query
+
+    monkeypatch.setattr(db, "table", reorder_lands_first)
+    controller.update_story(story_id="st1", user_id=UID, fields={"sprint_id": "sp2"})
+    [row] = db.rows("user_stories")
+    assert (row["sprint_id"], row["rank"]) == ("sp2", None)
+
+
 def test_moving_an_unranked_story_names_no_rank_column(monkeypatch):
     """Nothing to clear, so the move also works on a database without the column."""
     db = scrum_db(monkeypatch, sprints=[dict(SPRINT)], user_stories=[dict(STORY)])

@@ -514,9 +514,10 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
         # a sprint write also clears the legacy archive flag
         payload["archived_at"] = None
         # A story that changes lists comes last in its new one, among the stories nobody has
-        # ordered: its rank was its place in the list it left. Sent only when it holds one, so a
-        # move also works on a database without the column.
-        if story.get("rank") is not None and _changes_list(story, fields["sprint_id"]):
+        # ordered: its rank was its place in the list it left. Sent whenever the row has the column,
+        # even when it read NULL, since a reorder of the old list may rank it before this write
+        # lands; a database without the column gets no such key (the read is select *).
+        if "rank" in story and _changes_list(story, fields["sprint_id"]):
             payload["rank"] = None
     if not payload:
         return story
