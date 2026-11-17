@@ -61,9 +61,16 @@ def test_a_ta_without_an_email_address_is_told_in_the_app_only(monkeypatch):
     assert [e["user_id"] for e in db.rows("email_outbox")] == [MEETING_TA]
 
 
-def test_one_finalized_revision_is_emailed_once(monkeypatch):
-    """A retried notice queues nothing new: the dedupe key names the document, revision and TA."""
-    db = documents_db(monkeypatch)
+def test_a_retried_notice_names_the_same_keys(monkeypatch):
+    """The outbox turns away a dedupe key it holds (its unique key, an upsert that ignores duplicates):
+    a second notice of one revision names the same keys, so it queues nothing new."""
+    documents_db(monkeypatch)
+    queued: list[list[str]] = []
+
+    def enqueue(client, rows, **options):
+        queued.append(sorted(row.dedupe_key for row in rows))
+
+    monkeypatch.setattr("app.outbox.controller.enqueue", enqueue)
     for _ in range(2):
         notify.notify_finalized(
             get_client(),
@@ -73,7 +80,15 @@ def test_one_finalized_revision_is_emailed_once(monkeypatch):
             revision=3,
             finalizer_id=SM,
         )
-    assert len(db.rows("email_outbox")) == 2  # two TAs, once each
+    assert (
+        queued
+        == [
+            sorted(
+                [f"document_finalized:d1:3:{MEETING_TA}", f"document_finalized:d1:3:{REVIEW_TA}"]
+            )
+        ]
+        * 2
+    )
 
 
 def test_the_email_names_the_team_and_the_document_and_links_to_it():

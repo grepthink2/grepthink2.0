@@ -33,8 +33,10 @@ from tests.documents_support import (
     UID,
     add_document,
     board_tables,
+    document,
     documents_db,
     pin_today,
+    revisions,
     writes,
 )
 
@@ -82,10 +84,20 @@ WRITE_ROUTES = {
 }
 
 
-@pytest.mark.parametrize("route", sorted(READS))
-@pytest.mark.parametrize("user", [UID, MEMBER, NO_ROLE, *STAFF])
-def test_members_and_staff_read(db, route, user):
-    READS[route](db, user)  # no raise
+MEMBERS = [UID, MEMBER, NO_ROLE]
+
+
+@pytest.mark.parametrize("user", MEMBERS + STAFF)
+def test_members_and_staff_read_and_only_members_may_write(db, user):
+    member = user in MEMBERS
+    out = controller.get_document(db.report, user)
+    assert (out["access"], out["can_write"]) == (("member", True) if member else ("staff", False))
+    assert (out["revision"]["number"], out["body"]) == (1, REPORT)
+    assert out["can_finalize"] is (user == UID)  # of these, only the owner holds a finalizing role
+    tab = controller.list_project_documents(PID, user)["documents"]
+    assert [s["document"]["id"] for s in tab if s["document"]] == [db.report]
+    assert [r["number"] for r in controller.list_revisions(db.report, user)["revisions"]] == [1]
+    assert controller.document_markdown(db.report, user)[0] == "trailhead-sprint-2-report.md"
 
 
 @pytest.mark.parametrize("route", sorted(READS) + sorted(WRITE_ROUTES))
@@ -103,10 +115,16 @@ def test_staff_never_write(db, route, user):
     assert writes(db) == []
 
 
-@pytest.mark.parametrize("user", [UID, MEMBER, NO_ROLE])
+@pytest.mark.parametrize("user", MEMBERS)
 def test_every_member_creates_and_saves(db, user):
-    controller.save_document(db.report, user, REPORT, None)
-    controller.create_document(PID, user, "release_summary", None)
+    assert controller.save_document(db.report, user, REPORT, None)["revision"] == 2
+    [saved] = [r for r in revisions(db, db.report) if r["number"] == 2]
+    assert (saved["saved_by"], saved["source"], saved["body"]) == (user, "edit", REPORT)
+
+    created = controller.create_document(PID, user, "release_summary", None)
+    assert (created["access"], created["can_write"]) == ("member", True)
+    assert document(db, created["document"]["id"])["created_by"] == user
+    assert revisions(db, created["document"]["id"])[0]["saved_by"] == user
 
 
 @pytest.mark.parametrize(
@@ -121,7 +139,14 @@ def test_a_member_without_a_team_role_neither_finalizes_nor_deletes(db, route, d
 
 @pytest.mark.parametrize("user", FINALIZERS)
 def test_the_scrum_master_product_owner_owner_and_admin_finalize(db, user):
-    assert controller.finalize_document(db.report, user, 1)["document"]["status"] == "final"
+    out = controller.finalize_document(db.report, user, 1)
+    assert (out["document"]["status"], out["can_finalize"], out["derived_frozen"]) == (
+        "final",
+        True,
+        True,
+    )
+    [handed_in] = revisions(db, db.report)
+    assert (handed_in["finalized_by"], handed_in["snapshot"]) == (user, out["derived"])
 
 
 @pytest.mark.parametrize("user", FINALIZERS)

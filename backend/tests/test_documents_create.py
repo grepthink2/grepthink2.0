@@ -23,7 +23,6 @@ from tests.documents_support import (
     UID,
     add_document,
     board_tables,
-    document,
     documents_db,
     pin_today,
     revisions,
@@ -199,13 +198,21 @@ def test_a_kind_the_database_does_not_know_is_422(db, client):
     assert db.rows("project_documents") == []
 
 
-def test_the_new_document_is_a_draft_at_revision_1(db):
+def test_the_new_document_is_made_by_one_call_with_its_seed(db):
+    """What the controller asks document_create for (the function itself makes the draft at revision
+    1: the migration's rehearsal shows that)."""
+    db.reset_counter()
     out = controller.create_document(PID, UID, "release_summary", None)
-    row = document(db, out["document"]["id"])
-    assert (row["status"], row["head_revision"], row["created_by"]) == ("draft", 1, UID)
-    assert [(r["number"], r["source"], r["saved_by"]) for r in revisions(db, row["id"])] == [
-        (1, "seed", UID)
-    ]
+
+    [call] = [q["filters"][0] for q in db.queries if q["table"] == "rpc:document_create"]
+    assert call == {
+        "p_project_id": PID,
+        "p_kind": "release_summary",
+        "p_sprint_id": None,
+        "p_body": out["body"],
+        "p_user": UID,
+    }
+    assert (out["document"]["status"], out["revision"]["source"]) == ("draft", "seed")
 
 
 def test_a_first_revision_too_long_to_store_is_422(db):
