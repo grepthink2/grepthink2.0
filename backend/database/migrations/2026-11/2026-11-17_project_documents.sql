@@ -125,6 +125,10 @@ CREATE TABLE IF NOT EXISTS public.project_document_revisions (
   PRIMARY KEY (document_id, number)
 );
 
+-- The two hand-in columns again, for a database that created the table from an earlier text of this file.
+ALTER TABLE public.project_document_revisions ADD COLUMN IF NOT EXISTS finalized_at timestamptz;
+ALTER TABLE public.project_document_revisions ADD COLUMN IF NOT EXISTS finalized_by uuid
+  REFERENCES public.profiles (id) ON DELETE SET NULL;
 ALTER TABLE public.project_document_revisions DROP CONSTRAINT IF EXISTS project_document_revisions_number_valid;
 ALTER TABLE public.project_document_revisions ADD CONSTRAINT project_document_revisions_number_valid
   CHECK (number >= 1);
