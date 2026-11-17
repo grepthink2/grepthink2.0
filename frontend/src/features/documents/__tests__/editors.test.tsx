@@ -53,6 +53,8 @@ describe('SprintReportEditor', () => {
     expect(screen.getByText('Offline maps')).toBeInTheDocument();
     const rates = screen.getByRole('table', { name: /Work completion rate/ });
     expect(within(rates).getByRole('row', { name: /User stories per day 0\.07 0\.11/ })).toBeInTheDocument();
+    expect(within(rates).getByRole('row', { name: /Hours in completed stories 6/ })).toBeInTheDocument();
+    expect(screen.getByText('The burnup counts every finished task, so its last point can be higher.')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Burnup: 6 of 12 hours complete' })).toBeInTheDocument();
     expect(screen.getAllByText('None.')).toHaveLength(3);
   });

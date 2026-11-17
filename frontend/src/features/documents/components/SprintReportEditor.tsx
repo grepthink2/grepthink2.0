@@ -111,7 +111,7 @@ export default function SprintReportEditor({ doc, body, editable, onChange }: Sp
   const sprints = derived.to_date.sprints_counted;
   const rates: RateRow[] = [
     { id: 'stories', measure: 'User stories completed', sprint: String(derived.stories_completed), toDate: '' },
-    { id: 'hours', measure: 'Ideal work hours completed', sprint: String(derived.hours_completed), toDate: '' },
+    { id: 'hours', measure: 'Hours in completed stories', sprint: String(derived.hours_completed), toDate: '' },
     { id: 'days', measure: 'Days in the sprint', sprint: String(derived.days), toDate: '' },
     { id: 'stories-rate', measure: 'User stories per day', sprint: rate(derived.stories_per_day), toDate: rate(derived.to_date.stories_per_day) },
     { id: 'hours-rate', measure: 'Ideal work hours per day', sprint: rate(derived.hours_per_day), toDate: rate(derived.to_date.hours_per_day) },
@@ -180,6 +180,9 @@ export default function SprintReportEditor({ doc, body, editable, onChange }: Sp
           />
           <p className="document-section__hint">
             To date counts this sprint and every one before it ({sprints} {sprints === 1 ? 'sprint' : 'sprints'}).
+          </p>
+          <p className="document-section__hint">
+            The burnup counts every finished task, so its last point can be higher.
           </p>
         </section>
         <section className="document-section" aria-label={`${sprintName} burnup`}>
