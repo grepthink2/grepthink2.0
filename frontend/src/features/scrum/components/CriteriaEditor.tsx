@@ -18,11 +18,16 @@ interface Props {
 /** Where focus goes once the rows are drawn again: a row's text or one of its moves, or Add. */
 type FocusTarget = { row: number; part: 'text' | 'up' | 'down' } | 'add';
 
+/** A row's length as a story saves it: trimmed, as `criteriaFit` and the API count it. */
+const savedLength = (row: string) => row.trim().length;
+
 /**
  * A story's acceptance criteria as an ordered list of short statements: add one (the button, or Enter
- * in the last one), edit it in place, move it up or down, remove it. Each row is a kit Input whose
- * 300 characters are a soft limit (flagged past it, never cut), so a form saves only when
- * `criteriaFit` says the rows fit; at 20 rows Add is off and a hint says why.
+ * in the last one), edit it in place, move it up or down, remove it. A row is trimmed when it loses
+ * focus, and everything here counts the trimmed text, as `criteriaFit` (which gates a form's Save) and
+ * the API do: a row past 300 characters is flagged on the kit Input (its error line, invalid) and
+ * kept, never cut, with its count shown from 240; at 20 criteria Add is off and a hint, in a polite
+ * live region, says why. Blank rows count for nothing: a form drops them.
  *
  * Rows are keyed by position: a move swaps two rows' text. Focus follows the moved criterion to its
  * new row, or takes the row's other move when this one reached an end and is disabled; after a remove
@@ -34,7 +39,13 @@ export default function CriteriaEditor({ value, onChange, autoFocus = false }: P
   const listRef = useRef<HTMLOListElement>(null);
   const addRef = useRef<HTMLButtonElement>(null);
   const pendingFocus = useRef<FocusTarget | null>(null);
-  const atLimit = value.length >= CRITERIA_MAX;
+  const filled = value.filter((row) => row.trim()).length;
+  const atLimit = filled >= CRITERIA_MAX;
+  const hint = !atLimit
+    ? ''
+    : filled > CRITERIA_MAX
+      ? `${filled} of ${CRITERIA_MAX}: remove one to save`
+      : `${CRITERIA_MAX} of ${CRITERIA_MAX}: a story holds no more`;
 
   // After every draw: hand focus to where the last change asked for it, if anywhere.
   useEffect(() => {
@@ -74,12 +85,23 @@ export default function CriteriaEditor({ value, onChange, autoFocus = false }: P
     [rows[i], rows[to]] = [rows[to], rows[i]];
     change(rows, { row: to, part });
   };
-  /** Enter in the last row starts the next one, unless that row is still blank. */
+  /** Enter in the last row starts the next one, unless that row is still blank or the list is full. */
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>, i: number) => {
     if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
     if (i !== value.length - 1 || !value[i].trim() || atLimit) return;
     e.preventDefault();
     add();
+  };
+  /** The row as a story saves it, once the cursor leaves it. */
+  const trim = (i: number) => {
+    if (value[i] !== value[i].trim()) onChange(value.map((row, j) => (j === i ? row.trim() : row)));
+  };
+  /** The row's count, from 80% of the limit: a help line, or past the limit its error. */
+  const countOf = (row: string) => {
+    const length = savedLength(row);
+    const count = `${length} of ${CRITERION_MAX} characters`;
+    if (length > CRITERION_MAX) return { error: count };
+    return length >= CRITERION_MAX * 0.8 ? { helperText: count } : {};
   };
 
   return (
@@ -96,10 +118,11 @@ export default function CriteriaEditor({ value, onChange, autoFocus = false }: P
                 hideLabel
                 compact
                 value={text}
-                maxLength={CRITERION_MAX}
+                {...countOf(text)}
                 placeholder={i === 0 ? 'The user can…' : undefined}
                 autoFocus={autoFocus && i === 0}
                 onChange={(e) => onChange(value.map((row, j) => (j === i ? e.target.value : row)))}
+                onBlur={() => trim(i)}
                 onKeyDown={(e) => onKeyDown(e, i)}
               />
               <span className="criteria-editor__moves">
@@ -148,11 +171,8 @@ export default function CriteriaEditor({ value, onChange, autoFocus = false }: P
         >
           Add criterion
         </Button>
-        {atLimit && (
-          <span className="criteria-editor__hint" id={hintId}>
-            {`${CRITERIA_MAX} of ${CRITERIA_MAX}: a story holds no more`}
-          </span>
-        )}
+        {/* Always in place, so its text is spoken when the list fills. */}
+        <span className="criteria-editor__hint" id={hintId} aria-live="polite">{hint}</span>
       </div>
     </div>
   );
