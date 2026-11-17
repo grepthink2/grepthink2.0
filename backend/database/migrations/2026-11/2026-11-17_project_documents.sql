@@ -55,7 +55,7 @@
 -- retries without them), and the class schedule's check for documents skips them while the table is missing.
 -- Apply on DEV before the branch is tested there, and on PROD before the release that ships it.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal)   PROD — pending
 --
 -- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the two sprint_burnup_days columns, uuid[],
 -- and the four functions, with the arguments written below; anything else of these names means something else
