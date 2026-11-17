@@ -6,7 +6,8 @@ import type { ApiSprintReportBody } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import DocumentPage from '../pages/DocumentPage';
 import DocumentRedirect from '../pages/DocumentRedirect';
-import { makeDocument } from './fixtures';
+import { makeBoard, makeSprint, makeStory } from '@features/scrum/__tests__/fixtures';
+import { makeDocument, releaseSummaryDerived } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -179,6 +180,42 @@ describe('DocumentPage: a team member on the head', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Copy' }));
     expect(await screen.findByText('Copied the Markdown')).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith('# Sprint 2 Report');
+  });
+});
+
+describe('DocumentPage: the kinds that pick stories', () => {
+  it("reads the board's stories for a member's release summary, for its picker and its links", async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('release_summary', {
+      body: { key_story_ids: ['s1'], known_problems: [], follow_ups: [] },
+      derived: releaseSummaryDerived({
+        key_stories: [{ id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail'], completed: true }],
+      }),
+    }));
+    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({
+      sprints: [makeSprint()],
+      sprint_id: 'sp1',
+      stories: [makeStory({ id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail'] })],
+      backlog: [makeStory({ id: 's2', key: 'US-2', title: 'Offline maps', sprint_id: null })],
+    }));
+    renderAt();
+    // The board's sprint is known once its stories are read: the link opens the story in it.
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Edit on the board' }))
+      .toHaveAttribute('href', '/app/projects/p1/board?sprint=sp1&story=s1'));
+    expect(api.getScrumBoard).toHaveBeenCalledWith('p1');
+    await userEvent.click(screen.getByRole('button', { name: 'Add a key story' }));
+    expect(await screen.findByRole('button', { name: /US-2 Offline maps Backlog/ })).toBeInTheDocument();
+  });
+
+  it("shows a test report's scenarios, and reads no board for staff", async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('test_report', {
+      access: 'staff',
+      can_finalize: false,
+      body: { scenarios: [{ id: 'sc1', title: 'Log in', story_ids: [], steps_md: '', result: 'pass', note: '' }], unit_tests: [], unit_tests_note: '' },
+    }));
+    renderAt();
+    expect(await screen.findByRole('heading', { name: /Scenario 1 Log in/ })).toBeInTheDocument();
+    expect(screen.getByText('Passed')).toBeInTheDocument();
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
   });
 });
 
