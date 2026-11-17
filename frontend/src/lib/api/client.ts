@@ -58,12 +58,14 @@ async function failure(response: Response, action: 'Request' | 'Upload'): Promis
 }
 
 /**
- * Make an authenticated JSON request to the backend. Throws `ApiError` for a
+ * Make an authenticated request to the backend and read its JSON answer, or its text with
+ * `responseType` 'text' (a file such as a document's Markdown). Throws `ApiError` for a
  * non-2xx response; a 401 is also announced so the auth provider can sign out.
  */
 export async function apiRequest<T = unknown>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  responseType: 'json' | 'text' = 'json',
 ): Promise<T> {
   // Read-only preview: refuse mutating requests before they leave the browser.
   assertWritableRequest(options.method, isSilentWrite(endpoint));
@@ -80,6 +82,10 @@ export async function apiRequest<T = unknown>(
 
   if (!response.ok) {
     throw await failure(response, 'Request');
+  }
+
+  if (responseType === 'text') {
+    return (await response.text()) as T;
   }
 
   // 204 No Content / empty body — return undefined cast to T.

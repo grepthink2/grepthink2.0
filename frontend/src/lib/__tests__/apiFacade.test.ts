@@ -7,6 +7,7 @@ import { analyticsApi } from '../api/analytics';
 import { assignmentsApi } from '../api/assignments';
 import { authApi } from '../api/auth';
 import { classesApi } from '../api/classes';
+import { documentsApi } from '../api/documents';
 import { emailApi } from '../api/email';
 import { institutionsApi } from '../api/institutions';
 import { interestApi } from '../api/interest';
@@ -26,6 +27,7 @@ const DOMAINS: Record<string, object> = {
   assignmentsApi,
   authApi,
   classesApi,
+  documentsApi,
   emailApi,
   institutionsApi,
   interestApi,
@@ -62,6 +64,7 @@ const METHODS = [
   'confirmUnsubscribe',
   'createAssignment',
   'createClass',
+  'createDocument',
   'createProject',
   'createProjectMeeting',
   'createProjectTsr',
@@ -73,6 +76,7 @@ const METHODS = [
   'createUser',
   'deleteAssignment',
   'deleteConversation',
+  'deleteDocument',
   'deleteManualRosterEntry',
   'deleteProject',
   'deleteProjectMeeting',
@@ -83,10 +87,12 @@ const METHODS = [
   'demoteTA',
   'disconnectMcpConnection',
   'dismissJoinRequest',
+  'finalizeDocument',
   'getAnalyticsDashboard',
   'getAnalyticsScope',
   'getAssignmentTsrOverview',
   'getAssignments',
+  'getClassDocuments',
   'getClassProjects',
   'getClassProjectsOverview',
   'getClassRoster',
@@ -99,6 +105,9 @@ const METHODS = [
   'getClassesAttentionSummary',
   'getContacts',
   'getConversations',
+  'getDocument',
+  'getDocumentMarkdown',
+  'getDocumentRevisions',
   'getEmailPreferences',
   'getFeedbackOverview',
   'getFinalReviewDetail',
@@ -120,6 +129,7 @@ const METHODS = [
   'getNotifications',
   'getPendingTeamInvites',
   'getProject',
+  'getProjectDocuments',
   'getProjectJoinRequests',
   'getProjectMeetings',
   'getProjectMembers',
@@ -163,6 +173,7 @@ const METHODS = [
   'removeStudentFromClass',
   'removeTaskDependency',
   'requestJoinProject',
+  'saveDocument',
   'saveFinalReviewNotes',
   'saveFinalReviewScores',
   'sendMessage',

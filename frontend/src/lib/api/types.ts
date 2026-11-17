@@ -1120,6 +1120,250 @@ export interface ApiUpdateTaskBody {
   pr_url?: string | null;
 }
 
+// ----- Project documents (app/documents backend) ----------------------------
+
+/**
+ * The documents the API serves: a sprint report per sprint, a release summary and a test plan and
+ * report per project. (The database also allows a sprint plan and a release plan, refused for now.)
+ */
+export type ApiDocumentKind = 'sprint_report' | 'release_summary' | 'test_report';
+/** Final once handed in, for good: a later save leaves it final at its finalized revision. */
+export type ApiDocumentStatus = 'draft' | 'final';
+/** What wrote a revision: a new document's first one, an edit; import and export are for later kinds. */
+export type ApiDocumentRevisionSource = 'seed' | 'edit' | 'import' | 'export';
+
+/** A document as its team's Documents tab and the class's list summarize it. */
+export interface ApiDocumentSummary {
+  id: string;
+  status: ApiDocumentStatus;
+  head_revision: number;
+  finalized_revision: number | null;
+  /** Final, and saved again after its finalized revision. */
+  edited_since: boolean;
+  updated_at: string;
+  /** Who saved the head revision. */
+  saved_by_name: string | null;
+}
+
+/** One place on a team's Documents tab: a document it can have, made (`document`) or not (null). */
+export interface ApiDocumentSlot {
+  kind: ApiDocumentKind;
+  /** "Sprint 2 report", "Release summary", "Test plan and report". */
+  title: string;
+  /** A sprint report's sprint; null for a project's document. */
+  sprint: ApiScrumSprint | null;
+  document: ApiDocumentSummary | null;
+}
+
+/** GET /api/classes/{class_id}/documents: one row per document of the class's teams. */
+export interface ApiClassDocument {
+  id: string;
+  kind: ApiDocumentKind;
+  title: string;
+  project_id: string;
+  project_name: string;
+  sprint_name: string | null;
+  status: ApiDocumentStatus;
+  head_revision: number;
+  finalized_revision: number | null;
+  edited_since: boolean;
+  updated_at: string;
+}
+
+export interface ApiDocumentInfo {
+  id: string;
+  project_id: string;
+  kind: ApiDocumentKind;
+  title: string;
+  sprint: ApiScrumSprint | null;
+  status: ApiDocumentStatus;
+  head_revision: number;
+  finalized_revision: number | null;
+  finalized_at: string | null;
+  finalized_by: string | null;
+  finalized_by_name: string | null;
+  edited_since: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiDocumentRevision {
+  number: number;
+  saved_by: string | null;
+  saved_by_name: string | null;
+  saved_at: string;
+  source: ApiDocumentRevisionSource;
+}
+
+/** A revision as the revisions list names it (no body). `finalized`: the document's finalized revision. */
+export interface ApiDocumentRevisionEntry extends ApiDocumentRevision {
+  finalized: boolean;
+}
+
+// Bodies: what the team types. Every item carries an id the client makes (a UUID).
+
+export interface ApiSprintAction {
+  id: string;
+  /** 1–200 characters. */
+  action: string;
+  /** At most 400 characters. */
+  reason: string;
+}
+
+export interface ApiSprintReportBody {
+  /** Each list holds at most 10. */
+  stop: ApiSprintAction[];
+  start: ApiSprintAction[];
+  keep: ApiSprintAction[];
+  /** Why there is nothing to stop doing (at most 600); finalize takes it in place of a stop action. */
+  satisfied_note: string;
+}
+
+export type ApiKnownProblemKind = 'bug' | 'omission' | 'shortcut';
+
+export interface ApiKnownProblem {
+  id: string;
+  kind: ApiKnownProblemKind;
+  /** 1–400 characters. */
+  text: string;
+}
+
+export interface ApiFollowUp {
+  id: string;
+  /** 1–300 characters. */
+  text: string;
+}
+
+export interface ApiReleaseSummaryBody {
+  /** At most 30 board stories, each once, in the team's order. */
+  key_story_ids: string[];
+  /** At most 40. */
+  known_problems: ApiKnownProblem[];
+  /** At most 20. */
+  follow_ups: ApiFollowUp[];
+}
+
+export interface ApiTestScenario {
+  id: string;
+  /** 1–120 characters. */
+  title: string;
+  /** At most 5 board stories, each once. */
+  story_ids: string[];
+  /** Markdown, at most 2000 characters. */
+  steps_md: string;
+  /** null until the scenario has been run. */
+  result: 'pass' | 'fail' | null;
+  /** At most 300 characters. */
+  note: string;
+}
+
+export interface ApiUnitTestEntry {
+  id: string;
+  /** A path or a URL, 1–300 characters. */
+  location: string;
+  /** At most 300 characters. */
+  note: string;
+  failing: boolean;
+}
+
+export interface ApiTestReportBody {
+  /** At most 60. */
+  scenarios: ApiTestScenario[];
+  /** At most 20. */
+  unit_tests: ApiUnitTestEntry[];
+  /** At most 600 characters. */
+  unit_tests_note: string;
+}
+
+export interface ApiDocumentBodies {
+  sprint_report: ApiSprintReportBody;
+  release_summary: ApiReleaseSummaryBody;
+  test_report: ApiTestReportBody;
+}
+
+export type ApiDocumentBody = ApiDocumentBodies[ApiDocumentKind];
+
+// Derived sections: what the board supplies, live on a draft and frozen on a finalized revision.
+
+/** A story of a sprint report: its hours are the sum of its tasks' estimates, null when none has one. */
+export interface ApiDocumentStoryLine {
+  id: string;
+  key: string;
+  title: string;
+  points: number | null;
+  hours: number | null;
+}
+
+/** A story a body names, with its criteria; `missing` when it is no longer on the board. */
+export type ApiDocumentStoryRef =
+  | { id: string; key: string; title: string; acceptance_criteria: string[]; missing?: never }
+  | { id: string; missing: true };
+
+export interface ApiSprintReportDerived {
+  /** The sprint's stories that have tasks, all done; then the others. Each in board order. */
+  completed: ApiDocumentStoryLine[];
+  not_completed: ApiDocumentStoryLine[];
+  stories_completed: number;
+  /** The estimate hours of the sprint's done tasks, whatever their story's state. */
+  hours_completed: number;
+  /** The sprint's length, both end days counted. */
+  days: number;
+  stories_per_day: number;
+  hours_per_day: number;
+  /** The same rates over this sprint and every earlier one (stories, then hours, over all their days). */
+  to_date: { sprints_counted: number; stories_per_day: number; hours_per_day: number };
+  /** The sprint's burnup in the unit the board opens it in. */
+  burnup: { unit: ApiScrumBurnupUnit; labels: string[]; scope: number[]; completed: number[] };
+}
+
+export interface ApiReleaseSummaryDerived {
+  /** In the body's order. */
+  key_stories: (
+    | { id: string; key: string; title: string; acceptance_criteria: string[]; completed: boolean; missing?: never }
+    | { id: string; missing: true }
+  )[];
+  /** The sprints' unfinished stories, sprint by sprint, then the backlog's; each list in board order. */
+  backlog: { id: string; key: string; title: string; points: number | null; in_sprint: string | null }[];
+}
+
+export interface ApiTestReportDerived {
+  scenarios: { id: string; stories: ApiDocumentStoryRef[] }[];
+  /** The team's repository URLs, as suggestions for unit-test locations. */
+  repositories: string[];
+  /** Stories with criteria that no scenario covers, in board order. */
+  uncovered: { id: string; key: string; title: string }[];
+}
+
+export interface ApiDocumentDerivedSections {
+  sprint_report: ApiSprintReportDerived;
+  release_summary: ApiReleaseSummaryDerived;
+  test_report: ApiTestReportDerived;
+}
+
+/**
+ * GET /api/documents/{document_id}: one document at one revision. A member reads the head by default,
+ * staff the finalized revision of a final document. `derived` is that revision's snapshot when it is
+ * the finalized one (`derived_frozen`), else the board now. `ApiProjectDocument<'sprint_report'>`
+ * names one kind's body and derived sections.
+ */
+export interface ApiProjectDocument<K extends ApiDocumentKind = ApiDocumentKind> {
+  document: ApiDocumentInfo & { kind: K };
+  revision: ApiDocumentRevision;
+  body: ApiDocumentBodies[K];
+  derived: ApiDocumentDerivedSections[K];
+  derived_frozen: boolean;
+  access: 'member' | 'staff';
+  can_write: boolean;
+  /** The caller is the team's Scrum Master, Product Owner, owner or admin. */
+  can_finalize: boolean;
+}
+
+/** PUT /api/documents/{document_id}: the new revision, and the one it replaced unseen, if any. */
+export interface ApiDocumentSaved {
+  revision: number;
+  overwrote: { number: number; by: string | null; by_name: string | null } | null;
+}
+
 // ── Analytics (spec §6.3; handoff brief §5 is the contract) ───────────────────────────────────────
 export type AnalyticsRangePreset = '7d' | '30d' | '90d' | 'class' | 'all' | 'custom';
 export type AnalyticsBoardStatus = 'todo' | 'in_progress' | 'done';

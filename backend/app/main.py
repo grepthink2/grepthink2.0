@@ -27,6 +27,7 @@ from app.config import settings
 from app.contact.url import router as contact_router
 from app.core.errors import install_exception_handlers
 from app.core.sentry import SentryFlushMiddleware, init_sentry
+from app.documents.url import router as documents_router
 from app.health.url import router as health_router
 from app.institutions.url import router as institutions_router
 from app.issues.url import router as issues_router
@@ -136,6 +137,7 @@ for router in (
     attendance_router,
     email_router,
     scrum_router,
+    documents_router,
     schedule_router,
     search_router,
     mcp_router,
