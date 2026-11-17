@@ -181,6 +181,28 @@ describe('DocumentPage: a team member on the head', () => {
     expect(await screen.findByText('Copied the Markdown')).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith('# Sprint 2 Report');
   });
+
+  it('hands the clipboard the text to come where the browser takes it, so the click still counts', async () => {
+    vi.mocked(api.getDocumentMarkdownFile).mockResolvedValue({ text: '# Release Summary', filename: 'x.md' });
+    class FakeClipboardItem {
+      items: Record<string, Promise<Blob>>;
+      constructor(items: Record<string, Promise<Blob>>) {
+        this.items = items;
+      }
+    }
+    vi.stubGlobal('ClipboardItem', FakeClipboardItem);
+    const write = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { write, writeText: vi.fn() }, configurable: true });
+    try {
+      renderAt();
+      await userEvent.click(await screen.findByRole('button', { name: 'Copy' }));
+      expect(await screen.findByText('Copied the Markdown')).toBeInTheDocument();
+      const [[[item]]] = write.mock.calls as unknown as [[[FakeClipboardItem]]];
+      expect(await (await item.items['text/plain']).text()).toBe('# Release Summary');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe('DocumentPage: the kinds that pick stories', () => {

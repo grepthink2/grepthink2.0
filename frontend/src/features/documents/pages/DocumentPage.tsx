@@ -161,8 +161,15 @@ export default function DocumentPage() {
     if (!documentId) return;
     setBusyTool('copy');
     try {
-      const file = await api.getDocumentMarkdownFile(documentId);
-      await navigator.clipboard.writeText(file.text);
+      const file = api.getDocumentMarkdownFile(documentId);
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+        // Handed the clipboard while the click is still the reason, with the text to come: Safari
+        // refuses a write made after the read has finished.
+        const text = file.then((f) => new Blob([f.text], { type: 'text/plain' }));
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text })]);
+      } else {
+        await navigator.clipboard.writeText((await file).text);
+      }
       push('success', 'Copied the Markdown');
     } catch (err) {
       push('error', err instanceof ApiError ? err.message : 'Couldn’t copy the Markdown.');
