@@ -315,15 +315,49 @@ revision.
    finalize), as does the database's size CHECK. The test report's derived sections hold each story its
    scenarios name once, `stories: {<id>: {key, title, acceptance_criteria} | {missing: true}}`, and each
    scenario lists its `story_ids`.
-3. **A sprint report describes the sprint as it ended.** `sprint_burnup_days` gains `story_ids` and
-   `done_story_ids` (nullable, no default; the same migration), which every board snapshot writes from the
-   rows it reads for its totals; on a database without them the snapshot is saved without them. The report
+3. *(Superseded by the counting rules below.)* **A sprint report describes the sprint as it ended.**
+   `sprint_burnup_days` gains `story_ids` and `done_story_ids` (nullable, no default; the same migration),
+   which every board snapshot writes from the rows it reads for its totals; on a database without them the
+   snapshot is saved without them. The report
    takes the sprint's stories and its completed ones from the last saved day on or before the sprint's end
    that recorded them, each shown as it is now (`missing` once deleted), and names that day (`as_of`); with
    no such day it falls back to the board now (`as_of: "now"`). The rates to date use the same rule for each
    sprint, and the burnup replays the task moves for the days nobody saved, as the board does.
 4. Shrinking a class's sprint schedule refuses (409, "already uses Sprint k") when a sprint it would delete
    holds a document, as it does for a story.
+
+**Amended 2026-11-17, the maintainer's counting rules** (this supersedes item 3 of the amendment above):
+
+1. **Each saved burnup day records its sprint's stories with their numbers.** `sprint_burnup_days.stories`
+   (jsonb, nullable, no default; `sprint_burnup_days_stories_valid` holds it to NULL or a JSON array) lists
+   one `{id, done, hours, points}` per live story of the sprint that day, in board order: `done` by the
+   documents' rule (a task, and every task done), `hours` the sum of its tasks' estimate hours (0 when none
+   has one). It replaces `story_ids` and `done_story_ids`: the migration no longer adds them and drops them
+   where an earlier text of it did. The board writes it with every snapshot it takes, from the rows it reads
+   for its totals and with no round trip of its own; on a database without the column the day is saved
+   without it. A story points edit still takes no snapshot.
+2. **A sprint report reads the sprint's end record:** the last saved day on or before the sprint's last day
+   that has `stories` (`as_of`, that day), else the board now (`as_of: "now"`).
+3. **Stories.** `completed` and `not_completed` list the record's stories that still exist, each with its
+   key and title as they are now and its points and hours from the record. A story deleted since is left
+   out everywhere: no line, not counted. Without a record, the lines and numbers come from the board now.
+4. **Hours count only completed stories.** `hours_completed` is the sum of the record's hours over the
+   stories it marks done. An unfinished story adds nothing to its sprint, and its hours count in the sprint
+   where it is completed. Without a record: the task hours of the stories completed now.
+   `stories_completed`, the per-day rates and `to_date` use the same rule for every counted sprint, each
+   from its own end record or the board now.
+5. **After the sprint ended** (`after_sprint`, null without a record, empty while the sprint runs). Among
+   the record's stories that still exist and are still in the sprint (a story moved to another sprint shows
+   in that sprint's report): `stories`, those the record marks not done that are completed now (id, key,
+   title, points, hours, as they are now); `tasks`, the tasks of those and of the record's done stories
+   that are done now and were last moved to done after the sprint's last day at the school (id, story key,
+   title, hours, `done_on`; a task with no recorded move to done is left out), by `done_on` and then story
+   order, at most 100; `hours`, the hours of every such task. None of it enters the sprint's numbers or
+   rates.
+6. **The burnup is unchanged:** it counts every done task, so `hours_completed` can be below its last
+   point. The page and the Markdown name the figure "Hours in completed stories", and both show an "After
+   the sprint ended" section when `after_sprint` holds anything. Finalize freezes `after_sprint` with the
+   other derived sections; the connector's import still rebuilds days without a record.
 
 ## Part 3 — The web client (PR 3)
 

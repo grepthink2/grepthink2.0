@@ -71,6 +71,7 @@ export const sprintReportDerived = (over: Partial<ApiSprintReportDerived> = {}):
   stories_per_day: 0.07,
   hours_per_day: 0.43,
   to_date: { sprints_counted: 2, stories_per_day: 0.11, hours_per_day: 0.5 },
+  after_sprint: null,
   burnup: { unit: 'hours', labels: ['Oct 5', 'Oct 18'], scope: [10, 12], completed: [0, 6] },
   ...over,
 });

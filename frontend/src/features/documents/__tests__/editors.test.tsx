@@ -45,15 +45,12 @@ describe('SprintReportEditor', () => {
   });
 
   it("shows the board's sprint as it ended: stories, rates to date and the burnup", () => {
-    const doc = makeDocument('sprint_report', {
-      derived: sprintReportDerived({ not_completed: [{ id: 's9', missing: true }] }),
-      derived_frozen: true,
-    });
+    const doc = makeDocument('sprint_report', { derived: sprintReportDerived(), derived_frozen: true });
     render(<SprintReportEditor doc={doc} body={doc.body} editable={false} onChange={vi.fn()} />);
     expect(screen.getByText('From the board, as handed in')).toBeInTheDocument();
     expect(screen.getByText('As the sprint stood on Oct 18, 2026.')).toBeInTheDocument();
     expect(screen.getByText('Trail search')).toBeInTheDocument();
-    expect(screen.getByText('A story that was deleted')).toBeInTheDocument();
+    expect(screen.getByText('Offline maps')).toBeInTheDocument();
     const rates = screen.getByRole('table', { name: /Work completion rate/ });
     expect(within(rates).getByRole('row', { name: /User stories per day 0\.07 0\.11/ })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Burnup: 6 of 12 hours complete' })).toBeInTheDocument();

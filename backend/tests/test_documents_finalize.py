@@ -31,6 +31,7 @@ from tests.documents_support import (
     S2,
     SM,
     ST1,
+    ST3,
     ST4,
     ST5,
     UID,
@@ -41,6 +42,7 @@ from tests.documents_support import (
     pin_today,
     revisions,
     story,
+    task,
     writes,
 )
 from tests.scrum_support import pin_clock
@@ -104,6 +106,50 @@ def test_the_snapshot_is_what_readers_get_after_the_board_changes(db):
     assert controller.get_document(doc, MEETING_TA)["derived"] == handed_in
     live = derive.load_context(get_client(), PID, S2, today=AFTER_SPRINT_2)
     assert derive.derive_sprint_report(live, REPORT)["completed"] == []
+
+
+def test_a_sprint_reports_end_record_and_what_followed_are_frozen_with_it(db):
+    """Sprint 2 ended with US-3 completed and US-4 without a task; on Sep 29 US-4 got a task, done that
+    day. The hand-in keeps both as they were when it was handed in, whatever the board does next."""
+    late = "5d000000-0000-4000-8000-000000000005"
+    db.rows("sprint_burnup_days").append(
+        {
+            "sprint_id": S2,
+            "day": "2026-09-27",
+            "scope_points": 0,
+            "completed_points": 0,
+            "scope_hours": 5,
+            "completed_hours": 5,
+            "stories": [
+                {"id": ST3, "done": True, "hours": 5, "points": 5},
+                {"id": ST4, "done": False, "hours": 0, "points": None},
+            ],
+        }
+    )
+    db.rows("tasks").append(task(late, ST4, "done", hours=2))
+    db.store["task_moves"] = [
+        {"task_id": late, "to_status": "done", "moved_at": "2026-09-29T20:00:00+00:00"}
+    ]
+    doc = add_document(db, "sprint_report", sprint_id=S2, body=REPORT)
+
+    handed_in = controller.finalize_document(doc, SM, 1)["derived"]
+    assert (handed_in["as_of"], handed_in["hours_completed"]) == ("2026-09-27", 5)
+    assert handed_in["after_sprint"] == {
+        "stories": [{"id": ST4, "key": "US-4", "title": "Story US-4", "points": None, "hours": 2}],
+        "tasks": [
+            {
+                "id": late,
+                "story_key": "US-4",
+                "title": "Task 05",
+                "hours": 2,
+                "done_on": "2026-09-29",
+            }
+        ],
+        "hours": 2,
+    }
+
+    db.rows("tasks")[-1]["estimate_hours"] = 4  # re-estimated after the hand-in
+    assert controller.get_document(doc, MEETING_TA)["derived"] == handed_in
 
 
 @pytest.mark.parametrize(

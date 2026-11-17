@@ -6,7 +6,6 @@ import BurnupChart from '@features/scrum/components/BurnupChart';
 import { ACTION_MAX, ACTIONS_MAX, REASON_MAX, SATISFIED_NOTE_MAX } from '../config/limits';
 import { formatDay } from '../utils/dates';
 import { ACTION_LISTS, newAction, type ActionListKey } from '../utils/documentBody';
-import { STORY_GONE } from '../utils/storyRefs';
 import EditableList from './EditableList';
 import FromBoard from './FromBoard';
 import '@features/scrum/scrum.scss';
@@ -62,9 +61,8 @@ function ActionFields({ item, index, list, editable, onChange }: ActionFieldsPro
   );
 }
 
-/** One story of the sprint: key, title, points and hours, or the words for a deleted one. */
+/** One story of the sprint: key, title, points and hours. */
 function StoryLine({ story }: { story: ApiDocumentStoryLine }) {
-  if (story.missing) return <li className="document-story-line document-story-line--gone">{STORY_GONE}</li>;
   const details = [
     story.points != null ? `${story.points} ${story.points === 1 ? 'point' : 'points'}` : null,
     story.hours != null ? `${story.hours} h` : null,

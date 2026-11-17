@@ -2047,9 +2047,10 @@ CREATE TABLE IF NOT EXISTS sprint_burnup_days (
   completed_points integer NOT NULL,
   scope_hours      integer NOT NULL DEFAULT 0,
   completed_hours  integer NOT NULL DEFAULT 0,
-  story_ids        uuid[],                 -- the sprint's stories that day (2026-11-17_project_documents.sql)
-  done_story_ids   uuid[],                 -- those of them completed; both NULL when not recorded
-  PRIMARY KEY (sprint_id, day)
+  stories          jsonb,                  -- the sprint's stories that day, in board order: [{id, done, hours,
+                                           -- points}] (2026-11-17_project_documents.sql); NULL when not recorded
+  PRIMARY KEY (sprint_id, day),
+  CONSTRAINT sprint_burnup_days_stories_valid CHECK (stories IS NULL OR jsonb_typeof(stories) = 'array')
 );
 ALTER TABLE sprint_burnup_days ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE sprint_burnup_days TO anon, authenticated, service_role;

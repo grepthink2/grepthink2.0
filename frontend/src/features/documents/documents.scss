@@ -343,8 +343,6 @@
   font-size: var(--gt-text-body);
   color: var(--gt-text-primary);
 
-  &--gone { font-style: italic; color: var(--gt-text-tertiary); }
-
   &__key {
     font-family: var(--gt-font-mono);
     font-size: 11px;

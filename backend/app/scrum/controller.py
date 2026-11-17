@@ -997,31 +997,35 @@ def _sprint_progress(stories: list[dict]) -> dict:
 
 def _live_sprint_stories(client, sprint_id: str) -> list[dict]:
     """The sprint's live stories with their tasks embedded, straight from the database, for writes
-    that have no board loaded: one read."""
+    that have no board loaded: one read. Every story column, as the board reads them: the snapshot
+    lists the stories in board order, and ``rank`` exists only where
+    2026-11-16_story_rank_and_criteria.sql has been applied."""
     return (
         client.table("user_stories")
-        .select("id, tasks(points, estimate_hours, status)")
+        .select("*, tasks(points, estimate_hours, status)")
         .eq("sprint_id", str(sprint_id))
         .is_("archived_at", "null")
         .execute()
     ).data or []
 
 
-def _story_lists(stories: list[dict]) -> dict[str, list[str]]:
-    """What a snapshot records of the sprint's live ``stories`` (``tasks`` embedded): their ids, and the
-    ids of the completed ones, which have a task and every task done. A sprint report reads the sprint
-    as it ended from these (app/documents)."""
-    return {
-        "story_ids": [s["id"] for s in stories],
-        "done_story_ids": [
-            s["id"]
-            for s in stories
-            if s.get("tasks") and all(t.get("status") == "done" for t in s["tasks"])
-        ],
-    }
+def _story_record(stories: list[dict]) -> list[dict]:
+    """What a snapshot records of the sprint's live ``stories`` (``tasks`` embedded), in board order:
+    each one's id, whether it is completed (a task, and every task done), the sum of its tasks'
+    estimate hours (0 when none has one) and its points. A sprint report reads the sprint as it ended
+    from it (app/documents)."""
+    return [
+        {
+            "id": s["id"],
+            "done": bool(s.get("tasks")) and all(t.get("status") == "done" for t in s["tasks"]),
+            "hours": sum(t.get("estimate_hours") or 0 for t in s.get("tasks") or []),
+            "points": s.get("points"),
+        }
+        for s in sorted(stories, key=_story_order)
+    ]
 
 
-#: A column the table does not have, as PostgREST and Postgres say it: the snapshot's story arrays on a
+#: A column the table does not have, as PostgREST and Postgres say it: the snapshot's ``stories`` on a
 #: database 2026-11-17_project_documents.sql has not reached yet.
 _MISSING_COLUMN_CODES = frozenset({"PGRST204", "42703"})
 
@@ -1033,11 +1037,12 @@ def _snapshot_burnup_safe(
     totals: Totals | None = None,
     stories: list[dict] | None = None,
 ) -> None:
-    """Best-effort daily snapshot in both units, with the sprint's stories and its completed ones, filed
-    under the day at the project's school (``institution_id``); never fails the triggering write, an
-    unreadable school included. Pass the sprint's live ``stories`` (``tasks`` embedded) the caller has
-    loaded, and their ``totals``, to skip the read. Without the story columns (their migration not
-    applied yet) the day is saved again without them, one more round trip."""
+    """Best-effort daily snapshot in both units, with the sprint's stories as they stand
+    (:func:`_story_record`), filed under the day at the project's school (``institution_id``); never
+    fails the triggering write, an unreadable school included. Pass the sprint's live ``stories``
+    (``tasks`` embedded) the caller has loaded, and their ``totals``, to skip the read. Without the
+    ``stories`` column (its migration not applied yet) the day is saved again without it, one more
+    round trip."""
     try:
         day = _today(institution_timezone(institution_id))
         if stories is None:
@@ -1046,7 +1051,7 @@ def _snapshot_burnup_safe(
             totals = _totals(stories, _done_tasks(stories))
         row = {"sprint_id": str(sprint_id), "day": day.isoformat(), **totals.values()}
         try:
-            _upsert_snapshot(client, {**row, **_story_lists(stories)})
+            _upsert_snapshot(client, {**row, "stories": _story_record(stories)})
         except DatabaseError as exc:
             if exc.pg_code not in _MISSING_COLUMN_CODES:
                 raise

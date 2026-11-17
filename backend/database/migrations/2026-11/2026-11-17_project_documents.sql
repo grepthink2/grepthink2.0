@@ -41,31 +41,37 @@
 --     the ones handed in: once its sprint ended 7 days ago (a sprint's document) or once its class's last day
 --     of classes was 30 days ago (a project's; a class with no end_date keeps them all). Days are UTC dates.
 --     ../prod/2026-11/2026-11-17_document_revisions_cron.sql runs it every day.
---   * sprint_burnup_days.story_ids and done_story_ids: which stories a sprint held on that day, and which of them
---     were completed (at least one task, every task done). The board writes them with every snapshot it takes
---     (scrum.controller._snapshot_burnup_safe), so a sprint report describes the sprint as it ended. Rows from
---     before this file, and the rows the connector's import writes (scrum_fill_board's p_burnup), keep NULL.
+--   * sprint_burnup_days.stories: the stories a sprint held on that day, as a JSON array in board order of
+--     {"id": uuid, "done": bool, "hours": int, "points": int | null}, one per live story: done when it had at
+--     least one task and every task was done, hours the sum of its tasks' estimate hours (0 when none had any),
+--     points the story's. The board writes it with every snapshot it takes (scrum.controller._snapshot_burnup_safe),
+--     so a sprint report describes the sprint as it ended. Rows from before this file, and the rows the
+--     connector's import writes (scrum_fill_board's p_burnup), keep NULL. sprint_burnup_days_stories_valid holds
+--     it to NULL or an array. An earlier text of this file added story_ids and done_story_ids in its place (DEV
+--     only); this text drops them where they exist.
 --   * RLS on and no policies, and the browser roles get nothing (2026-09-21 lock-down). The four functions are
 --     SECURITY INVOKER with search_path pinned, and executable by service_role only.
 --
 -- EXPAND, idempotent, one transaction: a re-run skips the tables, the columns and the indexes, drops each
--- CHECK and adds it again by name, and replaces the functions. Nothing reads the documents' tables before the
+-- CHECK and adds it again by name, replaces the functions, and drops the two columns of the earlier text, which
+-- nothing reads or writes any more (they never reached PROD). Nothing reads the documents' tables before the
 -- code that uses them deploys, and until this is applied the documents routes answer a database error while
--- everything else works: the board's snapshot writes the two story arrays only where the columns exist (it
--- retries without them), and the class schedule's check for documents skips them while the table is missing.
--- Apply on DEV before the branch is tested there, and on PROD before the release that ships it.
+-- everything else works: the board's snapshot writes its stories only where the column exists (it retries
+-- without it), and the class schedule's check for documents skips them while the table is missing. Apply on
+-- DEV before the branch is tested there, and on PROD before the release that ships it.
 --
--- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal)   PROD — pending
+-- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal), the earlier
+-- text with story_ids and done_story_ids: run this text there again   PROD — pending
 --
--- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the two sprint_burnup_days columns, uuid[],
--- and the four functions, with the arguments written below; anything else of these names means something else
--- got there first: stop and look):
+-- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the sprint_burnup_days column stories (jsonb)
+-- or, where only the earlier text ran, story_ids and done_story_ids (ARRAY), and the four functions, with the
+-- arguments written below; anything else of these names means something else got there first: stop and look):
 --
 --   SELECT table_name FROM information_schema.tables
 --    WHERE table_schema = 'public' AND table_name IN ('project_documents', 'project_document_revisions');
 --   SELECT column_name, data_type FROM information_schema.columns
 --    WHERE table_schema = 'public' AND table_name = 'sprint_burnup_days'
---      AND column_name IN ('story_ids', 'done_story_ids');
+--      AND column_name IN ('stories', 'story_ids', 'done_story_ids');
 --   SELECT p.oid::regprocedure FROM pg_proc p
 --    WHERE p.pronamespace = 'public'::regnamespace
 --      AND p.proname IN ('document_create', 'document_save', 'document_finalize', 'prune_document_revisions');
@@ -73,8 +79,8 @@
 BEGIN;
 
 -- Fail fast rather than queue live traffic: adding the foreign keys briefly locks projects, sprints and
--- profiles against writes, and adding the two columns locks sprint_burnup_days (no rewrite: they are nullable
--- with no default).
+-- profiles against writes, and the column changes lock sprint_burnup_days (no rewrite: the new column is
+-- nullable with no default, a dropped one is only marked dropped, and the CHECK reads the table once).
 SET LOCAL lock_timeout = '5s';
 
 CREATE TABLE IF NOT EXISTS public.project_documents (
@@ -149,9 +155,14 @@ ALTER TABLE public.project_document_revisions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.project_documents, public.project_document_revisions FROM anon, authenticated;
 GRANT ALL ON public.project_documents, public.project_document_revisions TO service_role;
 
--- Which stories a sprint held on a snapshot's day, and which of them were completed. NULL: not recorded.
-ALTER TABLE public.sprint_burnup_days ADD COLUMN IF NOT EXISTS story_ids uuid[];
-ALTER TABLE public.sprint_burnup_days ADD COLUMN IF NOT EXISTS done_story_ids uuid[];
+-- The stories a sprint held on a snapshot's day, with their numbers (see the header). NULL: not recorded.
+ALTER TABLE public.sprint_burnup_days ADD COLUMN IF NOT EXISTS stories jsonb;
+ALTER TABLE public.sprint_burnup_days DROP CONSTRAINT IF EXISTS sprint_burnup_days_stories_valid;
+ALTER TABLE public.sprint_burnup_days ADD CONSTRAINT sprint_burnup_days_stories_valid
+  CHECK (stories IS NULL OR jsonb_typeof(stories) = 'array');
+-- The two arrays the earlier text added in its place (DEV only).
+ALTER TABLE public.sprint_burnup_days DROP COLUMN IF EXISTS story_ids;
+ALTER TABLE public.sprint_burnup_days DROP COLUMN IF EXISTS done_story_ids;
 
 -- A new draft: the document, with revision 1 (source 'seed') as its head. Answers the document's id.
 CREATE OR REPLACE FUNCTION public.document_create(
@@ -325,7 +336,9 @@ COMMIT;
 --      NULL), project_documents_project_kind_uq (UNIQUE, WHERE sprint_id IS NULL), project_documents_project_idx,
 --      _created_by_idx, _finalized_by_idx, project_document_revisions_saved_by_idx and _finalized_by_idx (WHERE
 --      finalized_by IS NOT NULL);
---   3. sprint_burnup_days.story_ids and done_story_ids: ARRAY (_uuid), nullable, no default, NULL on every row;
+--   3. sprint_burnup_days.stories: jsonb, nullable, no default, NULL on every row, held by
+--      sprint_burnup_days_stories_valid (stories IS NULL OR jsonb_typeof(stories) = 'array'); no story_ids or
+--      done_story_ids;
 --   4. four functions, plpgsql, not SECURITY DEFINER, search_path=public, executable by service_role and by
 --      neither anon nor authenticated;
 --   5. RLS on both tables, no policies, no anon or authenticated grants, and no rows yet.
@@ -338,10 +351,11 @@ SELECT tablename, indexname, indexdef FROM pg_indexes
  ORDER BY tablename, indexname;
 SELECT column_name, data_type, udt_name, column_default, is_nullable FROM information_schema.columns
  WHERE table_schema = 'public' AND table_name = 'sprint_burnup_days'
-   AND column_name IN ('story_ids', 'done_story_ids')
+   AND column_name IN ('stories', 'story_ids', 'done_story_ids')
  ORDER BY column_name;
-SELECT count(*) FILTER (WHERE story_ids IS NOT NULL OR done_story_ids IS NOT NULL) AS rows_with_stories
-  FROM public.sprint_burnup_days;
+SELECT conname, pg_get_constraintdef(oid) AS definition FROM pg_constraint
+ WHERE conrelid = 'public.sprint_burnup_days'::regclass AND conname = 'sprint_burnup_days_stories_valid';
+SELECT count(*) FILTER (WHERE stories IS NOT NULL) AS rows_with_stories FROM public.sprint_burnup_days;
 SELECT p.oid::regprocedure AS function, l.lanname AS language, p.prosecdef AS security_definer,
        p.proconfig AS settings,
        has_function_privilege('service_role', p.oid, 'EXECUTE') AS service_role,
@@ -379,7 +393,8 @@ SELECT (SELECT count(*) FROM public.project_documents) AS documents,
 --      answers 4: the document is final at 4, and revision 3 keeps {"frozen": 1} and its finalized_at;
 --   9. a save after that (5); then, with the sprint moved to end 8 days ago, prune_document_revisions()
 --      answers at least 2, and the document keeps revisions 3 and 4 (handed in) and 5 (the head) only;
---  10. a burnup snapshot row takes the two story arrays.
+--  10. a burnup snapshot row takes a stories array and answers it, and an object there fails with 23514
+--      (sprint_burnup_days_stories_valid).
 --
 --   BEGIN;
 --   CREATE TEMP TABLE target ON COMMIT DROP AS
@@ -424,8 +439,14 @@ SELECT (SELECT count(*) FROM public.project_documents) AS documents,
 --    WHERE id = (SELECT sprint_id FROM target);
 --   SELECT public.prune_document_revisions() AS pruned;
 --   SELECT number FROM public.project_document_revisions WHERE document_id = (SELECT id FROM doc) ORDER BY number;
---   INSERT INTO public.sprint_burnup_days (sprint_id, day, scope_points, completed_points, story_ids, done_story_ids)
---     SELECT sprint_id, (now() AT TIME ZONE 'UTC')::date, 0, 0, ARRAY[gen_random_uuid()], '{}' FROM target
---   ON CONFLICT (sprint_id, day) DO UPDATE SET story_ids = excluded.story_ids, done_story_ids = excluded.done_story_ids
---   RETURNING story_ids, done_story_ids;
+--   INSERT INTO public.sprint_burnup_days (sprint_id, day, scope_points, completed_points, stories)
+--     SELECT sprint_id, (now() AT TIME ZONE 'UTC')::date, 0, 0,
+--            jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'done', true, 'hours', 3, 'points', NULL))
+--       FROM target
+--   ON CONFLICT (sprint_id, day) DO UPDATE SET stories = excluded.stories
+--   RETURNING stories;
+--   SAVEPOINT shaped;
+--   UPDATE public.sprint_burnup_days SET stories = '{"id": 1}'
+--    WHERE sprint_id = (SELECT sprint_id FROM target) AND day = (now() AT TIME ZONE 'UTC')::date;
+--   ROLLBACK TO SAVEPOINT shaped;
 --   ROLLBACK;
