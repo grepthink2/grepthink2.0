@@ -43,6 +43,16 @@ describe('getProjectDocuments', () => {
   });
 });
 
+describe('getDocumentStories', () => {
+  it("GETs the board's live stories for the documents' pickers", async () => {
+    const stories = { stories: [{ id: 's1', key: 'US-1', sprint_id: null }] };
+    fetchMock.mockResolvedValue(jsonResponse(200, stories));
+
+    await expect(documentsApi.getDocumentStories('p1')).resolves.toEqual(stories);
+    expect(sent()).toEqual({ url: '/api/projects/p1/documents/stories', method: 'GET', body: undefined });
+  });
+});
+
 describe('createDocument', () => {
   it.each<[string, ApiDocumentKind, string | undefined, object]>([
     ['a sprint report, with its sprint', 'sprint_report', 's1', { kind: 'sprint_report', sprint_id: 's1' }],
@@ -115,6 +125,29 @@ describe('getDocumentMarkdown', () => {
 
     await expect(documentsApi.getDocumentMarkdown('d1')).resolves.toBe(text);
     expect(sent()).toEqual({ url: '/api/documents/d1/markdown', method: 'GET', body: undefined });
+  });
+});
+
+describe('getDocumentMarkdownFile', () => {
+  it('GETs the Markdown with the file name the API gives it', async () => {
+    const text = '# Sprint Report\n';
+    fetchMock.mockResolvedValue(new Response(text, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="trailhead-sprint-2-report.md"',
+      },
+    }));
+
+    await expect(documentsApi.getDocumentMarkdownFile('d1')).resolves.toEqual({
+      text, filename: 'trailhead-sprint-2-report.md',
+    });
+    expect(sent()).toEqual({ url: '/api/documents/d1/markdown', method: 'GET', body: undefined });
+  });
+
+  it('answers no file name when the response gives none', async () => {
+    fetchMock.mockResolvedValue(new Response('# x', { status: 200 }));
+    await expect(documentsApi.getDocumentMarkdownFile('d1')).resolves.toEqual({ text: '# x', filename: null });
   });
 });
 

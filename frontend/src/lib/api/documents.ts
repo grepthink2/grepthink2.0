@@ -1,5 +1,5 @@
 /** Project documents: endpoint methods spread into the `api` object in lib/api.ts. */
-import { apiRequest } from './client';
+import { apiRequest, type ApiFile } from './client';
 import type {
   ApiClassDocument,
   ApiDocumentBody,
@@ -7,6 +7,7 @@ import type {
   ApiDocumentRevisionEntry,
   ApiDocumentSaved,
   ApiDocumentSlot,
+  ApiDocumentStory,
   ApiProjectDocument,
 } from './types';
 
@@ -17,6 +18,13 @@ export const documentsApi = {
   /** The team's Documents tab: every document it can have, made or not, in the tab's order. */
   getProjectDocuments: async (projectId: string) =>
     apiRequest<{ documents: ApiDocumentSlot[] }>(`/api/projects/${projectId}/documents`),
+
+  /**
+   * Every live story of the team's board in board order, for a document's story pickers and its links
+   * to the board (team members and class staff). Unlike the board's own read it records nothing.
+   */
+  getDocumentStories: async (projectId: string) =>
+    apiRequest<{ stories: ApiDocumentStory[] }>(`/api/projects/${projectId}/documents/stories`),
 
   /**
    * Make one of the team's documents (team members): a sprint report names its sprint, a project's
@@ -66,6 +74,10 @@ export const documentsApi = {
   /** The document as Markdown: the finalized revision of a final document, else the head. */
   getDocumentMarkdown: async (documentId: string) =>
     apiRequest<string>(`/api/documents/${documentId}/markdown`, {}, 'text'),
+
+  /** The same Markdown as a file to save: its text and the name the API gives it ("trailhead-sprint-2-report.md"). */
+  getDocumentMarkdownFile: async (documentId: string) =>
+    apiRequest<ApiFile>(`/api/documents/${documentId}/markdown`, {}, 'file'),
 
   /** Every document of the class's teams, for the class's instructor and TAs. */
   getClassDocuments: async (classId: string) =>

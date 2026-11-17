@@ -40,6 +40,10 @@ function notificationPath(notification: {
   if (notification.entity_type === 'project' && notification.entity_id) {
     return `/app/projects/${notification.entity_id}`;
   }
+  // A hand-in names only its document: that address opens it under its project.
+  if (notification.type === 'document_finalized' && notification.entity_id) {
+    return `/app/documents/${notification.entity_id}`;
+  }
   return null;
 }
 

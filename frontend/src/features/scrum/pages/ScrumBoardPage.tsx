@@ -7,6 +7,7 @@ import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
 import { useSelectedClassRole } from '@/lib/classContext';
+import { usePreview } from '@/lib/previewContext';
 import type {
   ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumBurnupUnit, ApiScrumStory, ApiScrumTask, ApiTaskRef,
   ApiUpdateTaskBody,
@@ -21,6 +22,7 @@ import BoardSettingsModal from '../components/BoardSettingsModal';
 import ConnectAssistant from '../components/ConnectAssistant';
 import ImportNudge from '../components/ImportNudge';
 import { MOVE_IN_NUDGE_ON } from '@features/connector/config/moveInNudge';
+import DocumentsTab from '@features/documents/components/DocumentsTab';
 import { Button } from '@components/Button/Button';
 import SprintPicker from '../components/SprintPicker';
 import SprintEditorModal, { type SprintDraft } from '../components/SprintEditorModal';
@@ -39,6 +41,7 @@ const VIEW_LABELS: Record<BoardView, string> = {
   board: 'Board',
   backlog: 'Backlog',
   burnup: 'Burnup',
+  documents: 'Documents',
 };
 
 function parseView(raw: string | null): BoardView {
@@ -108,6 +111,7 @@ export default function ScrumBoardPage() {
   // Your role in the selected class. The board's payload names no class, and a team's board is
   // normally opened from its own class, so the selected class stands in for the board's.
   const classRole = useSelectedClassRole();
+  const { isPreviewing } = usePreview();
 
   const view = parseView(searchParams.get('view'));
   const openTaskId = searchParams.get('task');
@@ -632,6 +636,10 @@ export default function ScrumBoardPage() {
               <p>Burnup appears once the team has a sprint underway.</p>
             </div>
           )
+        )}
+
+        {view === 'documents' && projectId && (
+          <DocumentsTab projectId={projectId} canStart={canWrite && !isPreviewing} projectName={projectName} />
         )}
       </div>
 

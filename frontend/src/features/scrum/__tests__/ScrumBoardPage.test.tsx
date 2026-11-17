@@ -43,6 +43,8 @@ vi.mock('@/lib/api', () => ({
     addTaskDependency: vi.fn(),
     removeTaskDependency: vi.fn(),
     setStoryOrder: vi.fn(),
+    getProjectDocuments: vi.fn(),
+    createDocument: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -117,11 +119,11 @@ beforeEach(() => {
 });
 
 describe('ScrumBoardPage tabs', () => {
-  it('renders the three full-width sub-views (L2)', async () => {
+  it('renders the full-width sub-views (L2), the documents among them', async () => {
     renderAt();
     await screen.findByRole('tab', { name: 'Board' });
-    expect(BOARD_VIEWS).toEqual(['board', 'backlog', 'burnup']);
-    ['Board', 'Backlog', 'Burnup'].forEach((label) => {
+    expect(BOARD_VIEWS).toEqual(['board', 'backlog', 'burnup', 'documents']);
+    ['Board', 'Backlog', 'Burnup', 'Documents'].forEach((label) => {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
     });
   });
@@ -145,6 +147,28 @@ describe('ScrumBoardPage tabs', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: 'Burnup' }));
     expect(await screen.findByText('Cumulative burnup')).toBeInTheDocument();
+  });
+
+  it("lists the team's documents on ?view=documents, with Start for a team member", async () => {
+    vi.mocked(api.getProjectDocuments).mockResolvedValue({
+      documents: [{ kind: 'release_summary', title: 'Release summary', sprint: null, document: null }],
+    });
+    renderAt('/app/projects/p1/board?view=documents');
+    const panel = await screen.findByRole('tabpanel', { name: 'Documents' });
+    expect(await within(panel).findByRole('rowheader', { name: 'Release summary' })).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Start Release summary' })).toBeInTheDocument();
+    expect(api.getProjectDocuments).toHaveBeenCalledWith('p1');
+  });
+
+  it('offers staff no Start', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({ access: 'staff' }));
+    vi.mocked(api.getProjectDocuments).mockResolvedValue({
+      documents: [{ kind: 'release_summary', title: 'Release summary', sprint: null, document: null }],
+    });
+    renderAt('/app/projects/p1/board?view=documents');
+    const panel = await screen.findByRole('tabpanel', { name: 'Documents' });
+    await within(panel).findByRole('rowheader', { name: 'Release summary' });
+    expect(within(panel).queryByRole('button', { name: /Start/ })).not.toBeInTheDocument();
   });
 });
 

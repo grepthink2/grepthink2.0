@@ -38,7 +38,18 @@ describe('Badge', () => {
       ['live', 'info', 'Live'], ['release.new', 'info', 'New'],
     ];
     for (const [key, tone, label] of expected) expect(BADGE_STATUS[key]).toEqual([tone, label]);
-    expect(Object.keys(BADGE_STATUS)).toHaveLength(56);
+    expect(Object.keys(BADGE_STATUS)).toHaveLength(65);
+  });
+
+  it("carries a project document's states and its revisions' sources", () => {
+    const expected: [BadgeStatus, BadgeTone, string][] = [
+      ['document.not_started', 'neutral', 'Not started'], ['document.draft', 'info', 'Draft'],
+      ['document.final', 'success', 'Final'], ['document.edited_since', 'warning', 'Final · edited since'],
+      ['revision.seed', 'neutral', 'Started'], ['revision.edit', 'neutral', 'Edited'],
+      ['revision.import', 'neutral', 'Imported'], ['revision.export', 'neutral', 'Exported'],
+      ['revision.handed_in', 'success', 'Handed in'],
+    ];
+    for (const [key, tone, label] of expected) expect(BADGE_STATUS[key]).toEqual([tone, label]);
   });
 
   it('every status tone has its colours in the stylesheet', () => {

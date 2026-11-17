@@ -37,6 +37,10 @@ def list_project_documents(project_id: UUID, user_id: str = Depends(require_user
     return controller.list_project_documents(project_id, user_id)
 
 
+def list_project_stories(project_id: UUID, user_id: str = Depends(require_user)) -> dict:
+    return controller.list_project_stories(project_id, user_id)
+
+
 def create_document(
     project_id: UUID, data: CreateDocumentRequest, user_id: str = Depends(require_user)
 ) -> dict:

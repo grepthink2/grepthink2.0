@@ -2,6 +2,8 @@ import React from 'react';
 import { Clock, Video, Plus, Users, CircleCheck, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { getInitials } from '@features/app/utils/memberUtils';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import HandInLink from '@features/documents/components/HandInLink';
+import type { HandIns } from '@features/documents/utils/handIns';
 import {
   ATTENDANCE_OPTIONS,
   STATUS_LABEL,
@@ -39,6 +41,8 @@ interface TeamMeetingCardProps {
   onAddZoom?: () => void;
   onMark?: (personId: string, status: 'present' | 'late' | 'absent') => void;
   onMarkAllPresent?: () => void;
+  /** Staff: the team's documents, made and handed in, as a link to its Documents tab; none for a team with none. */
+  documents?: HandIns;
 }
 
 /** Small circular initials avatar (self-contained; mirrors the app's avatar look). */
@@ -88,6 +92,7 @@ const TeamMeetingCard: React.FC<TeamMeetingCardProps> = ({
   onAddZoom,
   onMark,
   onMarkAllPresent,
+  documents,
 }) => {
   const meeting = formatMeeting(item.meetingDay, item.meetingTime);
   const hasZoom = !!item.zoomUrl;
@@ -102,6 +107,9 @@ const TeamMeetingCard: React.FC<TeamMeetingCardProps> = ({
           <span className="ta-card__sub">
             {item.total} {item.total === 1 ? 'member' : 'members'}
           </span>
+          {documents && documents.total > 0 && (
+            <HandInLink projectId={item.projectId} teamName={item.teamName} counts={documents} />
+          )}
         </div>
         {hasZoom ? (
           <span className="ta-card__pill ta-card__pill--ok">Meets weekly</span>

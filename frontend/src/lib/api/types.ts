@@ -692,6 +692,8 @@ export interface ApiNotification {
    * `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for.
    * `join_request_unreviewed`: a join request nobody on the team can review (no member left, or
    * none with a reviewing role) went to the class instructor; `entity_id` is the project.
+   * `document_finalized`: a team the reader is a TA of handed in a document; `entity_id` is the
+   * document.
    */
   type:
     | 'join_request'
@@ -702,7 +704,8 @@ export interface ApiNotification {
     | 'complete_profile'
     | 'upload_roster'
     | 'member_removed'
-    | 'email_undeliverable';
+    | 'email_undeliverable'
+    | 'document_finalized';
   title: string;
   body: string;
   entity_type: string | null;
@@ -1168,6 +1171,23 @@ export interface ApiClassDocument {
   finalized_revision: number | null;
   edited_since: boolean;
   updated_at: string;
+}
+
+/**
+ * GET /api/projects/{project_id}/documents/stories: a live story of the team's board, as a document's
+ * story pickers and its links to the board need it. The list comes in board order: each sprint's
+ * stories (sprints by start), then the backlog's.
+ */
+export interface ApiDocumentStory {
+  id: string;
+  key: string;
+  title: string;
+  acceptance_criteria: string[];
+  /** Its sprint, or null in the backlog. */
+  sprint_id: string | null;
+  sprint_name: string | null;
+  /** At least one task, and every task done. */
+  completed: boolean;
 }
 
 export interface ApiDocumentInfo {

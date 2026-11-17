@@ -386,6 +386,29 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
     return {"documents": slots}
 
 
+def list_project_stories(project_id: UUID, user_id: str) -> dict:
+    """Every live story of the team's board, for a document's story pickers and its links to the board.
+
+    Who can call: team members and class staff, as the board. Returns ``{"stories": [{id, key, title,
+    acceptance_criteria, sprint_id, sprint_name, completed}]}``: each sprint's stories (sprints by
+    start), then the backlog's, each list in board order; a legacy archived story is left out
+    (:func:`derive.project_stories`). Unlike the board's own read it writes nothing, records no event
+    and snapshots no burnup. Raises 404 for no such project, 403 for anyone else. Round trips: the
+    access check, then the sprints, the stories and the tasks together.
+    """
+    client = get_client()
+    pid = str(project_id)
+    _, institution_id = board_access(client, project_id=pid, user_id=user_id)
+    reads = fan_out(derive.context_jobs(client, pid, None))
+    ctx = derive.build_context(
+        reads,
+        project_id=pid,
+        sprint_id=None,
+        today=school_today(institution_timezone(institution_id)),
+    )
+    return {"stories": derive.project_stories(ctx)}
+
+
 def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -> dict:
     """Make one of the team's documents: a draft whose first revision is the kind's seed.
 

@@ -1,0 +1,870 @@
+@use '@styles/index.scss' as *;
+
+// A team's project documents: the document page (shell, checks, the three editors, the revisions
+// drawer's content) and the board's Documents tab. Kit components are adjusted only from this
+// feature's own classes.
+
+// ----- The page --------------------------------------------------------------------------------------
+
+.document-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-md);
+  max-width: 960px;
+  padding: 20px 24px 32px;
+  font-family: $primary-font;
+  @include bottom-clearance-for-message-widget(20px);
+
+  @media (max-width: 600px) {
+    padding: 16px 16px 24px;
+  }
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-tertiary);
+    text-decoration: none;
+    @include gt-transition(color);
+
+    &:hover { color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 4px; }
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gt-space-sm);
+  }
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gt-space-sm);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__meta {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+  }
+
+  &__meta--hand-in { color: var(--gt-text-primary); }
+
+  &__version {
+    align-self: flex-start;
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gt-space-sm);
+    margin-top: 6px;
+  }
+
+  &__save-state {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__finalize {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__hold {
+    max-width: 280px;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-warning-text);
+  }
+
+  // The reader's tools sit at the end of the row, and wrap as one group.
+  &__tools {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+
+    @media (max-width: 600px) { margin-left: 0; }
+  }
+
+  // Under the tools it is about, at the row's end like them.
+  &__markdown-note {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+    text-align: right;
+
+    @media (max-width: 600px) { text-align: left; }
+  }
+
+  &__problems {
+    margin: 0;
+    padding-left: 18px;
+  }
+}
+
+// ----- Checks ----------------------------------------------------------------------------------------
+
+.document-checks {
+  padding: 12px 14px;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-md);
+  background: var(--gt-surface-muted);
+
+  &__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__count {
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-regular);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__ok {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: var(--gt-text-body);
+    color: var(--gt-success-text);
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-primary);
+
+    svg { flex-shrink: 0; margin-top: 2px; }
+  }
+
+  &__item--blocking svg { color: var(--gt-error-text); }
+  &__item--warning svg { color: var(--gt-warning-text); }
+
+  &__severity { font-weight: var(--gt-weight-semibold); }
+}
+
+// ----- Sections and lists ----------------------------------------------------------------------------
+
+.document-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+}
+
+.document-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__title {
+    margin: 0;
+    font-size: var(--gt-text-body-lg);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__subtitle {
+    margin: 6px 0 0;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-secondary);
+  }
+
+  &__hint,
+  &__empty {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__text {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-primary);
+    white-space: pre-line;
+  }
+
+  &__note { margin-top: 4px; }
+}
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__empty {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    background: var(--gt-gray-0);
+
+    @media (max-width: 520px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__controls {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2px;
+
+    @media (max-width: 520px) { align-self: flex-end; }
+  }
+
+  &__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: var(--gt-text-tertiary);
+  }
+}
+
+// ----- What the board says ---------------------------------------------------------------------------
+
+.document-from-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-md);
+  padding: 12px 14px;
+  border: 1px dashed var(--gt-border-strong);
+  border-radius: var(--gt-radius-md);
+  background: var(--gt-surface-muted);
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__note {
+    margin: -8px 0 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+  }
+}
+
+.document-story-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-story-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: var(--gt-text-body);
+  color: var(--gt-text-primary);
+
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 11px;
+    color: var(--gt-primary);
+  }
+
+  &__details {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  // The day a task was finished, ahead of it in the list of what was finished after the sprint ended.
+  &__day {
+    font-size: var(--gt-text-caption);
+    font-variant-numeric: tabular-nums;
+    color: var(--gt-text-secondary);
+  }
+}
+
+// A table's numbers, header and cells, on the right. From the section, so it outranks the kit table's
+// own alignment.
+.document-section .document-rates__number { text-align: right; font-variant-numeric: tabular-nums; }
+
+// ----- Sprint report ---------------------------------------------------------------------------------
+
+.document-action {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--gt-text-body);
+  color: var(--gt-text-primary);
+
+  &--editing { gap: 8px; }
+
+  &__reason { color: var(--gt-text-secondary); }
+}
+
+// ----- Release summary -------------------------------------------------------------------------------
+
+.document-key-story {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--gt-text-body);
+  color: var(--gt-text-primary);
+
+  &--gone { font-style: italic; color: var(--gt-text-tertiary); }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    margin: 0;
+  }
+
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 11px;
+    color: var(--gt-primary);
+  }
+
+  &__title { font-weight: var(--gt-weight-medium); }
+
+  &__state {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-warning-text);
+  }
+
+  &__criteria {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--gt-text-secondary);
+  }
+
+  &__none {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__edit {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 4px;
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-link);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
+  }
+}
+
+.document-problem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--gt-text-body);
+
+  &--editing {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    align-items: start;
+
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+}
+
+// ----- Story picker (inside its Popover) -------------------------------------------------------------
+
+.story-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(360px, calc(100vw - 48px));
+  padding: 10px;
+
+  &__note {
+    margin: 0;
+    padding: 4px 2px;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__retry {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--gt-text-link);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    max-height: 260px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  &__option {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 8px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    font-family: $primary-font;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-primary);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: var(--gt-surface-muted); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+  }
+
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 11px;
+    color: var(--gt-primary);
+  }
+
+  &__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__where {
+    font-size: 11px;
+    color: var(--gt-text-tertiary);
+  }
+}
+
+// ----- Test plan and report --------------------------------------------------------------------------
+
+.document-scenario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__title {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__number { color: var(--gt-text-tertiary); }
+
+  &__stories {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__none,
+  &__hint {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__criteria {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--gt-text-body);
+
+    ol {
+      margin: 4px 0 0;
+      padding-left: 20px;
+      color: var(--gt-text-secondary);
+    }
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__steps-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__preview {
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+  }
+
+  &__result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__result-text {
+    margin: 0;
+    font-size: var(--gt-text-body);
+  }
+}
+
+.document-uncovered {
+  padding: 10px 12px;
+  border-radius: var(--gt-radius-md);
+  background: var(--gt-info-soft);
+  color: var(--gt-info-text);
+
+  &__intro {
+    margin: 0 0 6px;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-medium);
+  }
+
+  &__wait {
+    margin: 0 0 6px;
+    font-size: var(--gt-text-caption);
+  }
+
+  &__retry {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--gt-text-body);
+
+    li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 10px;
+    }
+  }
+}
+
+.document-unit-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--gt-text-body);
+
+  &--editing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+
+  &__state {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+  }
+}
+
+.document-repositories {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--gt-text-body);
+  overflow-wrap: anywhere;
+}
+
+// ----- Revisions drawer ------------------------------------------------------------------------------
+
+.document-revisions {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--gt-space-lg);
+  padding: 0;
+  list-style: none;
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gt-border-subtle);
+  }
+
+  &__number {
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__who {
+    grid-column: 1;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+  }
+
+  &__badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    grid-column: 1;
+  }
+
+  &__compare {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+
+  &__pickers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  &__subtitle {
+    margin: var(--gt-space-md) 0 8px;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__note {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-secondary);
+  }
+}
+
+.document-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__none {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-secondary);
+  }
+}
+
+.document-change {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--gt-text-body);
+  line-height: var(--gt-leading-normal);
+  color: var(--gt-text-primary);
+
+  &__type {
+    flex-shrink: 0;
+    min-width: 64px;
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__text { min-width: 0; overflow-wrap: anywhere; }
+  &__where,
+  &__field { font-weight: var(--gt-weight-medium); }
+
+  // Underlined and struck through, as well as tinted: never by colour alone.
+  &__ins {
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+    text-decoration: underline;
+  }
+
+  &__del {
+    background: var(--gt-error-soft);
+    color: var(--gt-error-text);
+    text-decoration: line-through;
+  }
+}
+
+// ----- The board's Documents tab ---------------------------------------------------------------------
+
+.documents-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--gt-text-body-lg);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  // Wide enough on a phone for a name and its dates to read on two lines; the table scrolls past it.
+  &__name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 9rem;
+  }
+
+  &__open {
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-link);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
+  }
+
+  &__sprint {
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-regular);
+    color: var(--gt-text-tertiary);
+  }
+
+  // Positioned, so the column's visually hidden name stays inside the table's scrolling wrapper.
+  &__action { position: relative; text-align: right; white-space: nowrap; }
+
+  // The two tables share their columns' widths, so their columns line up and the document's name takes
+  // the rest. On a phone the columns size to their content, and the table scrolls sideways in its own
+  // wrapper when it must, as the kit's tables do.
+  @media (min-width: 601px) {
+    .gt-table { table-layout: fixed; }
+    .documents-tab__status { width: 11rem; }
+    .documents-tab__revision { width: 7rem; }
+    .documents-tab__saved { width: 13rem; }
+    .documents-tab__action { width: 7rem; }
+  }
+}

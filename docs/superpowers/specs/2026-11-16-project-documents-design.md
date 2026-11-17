@@ -217,6 +217,7 @@ save function before the branch is tested there.
 | --- | --- | --- |
 | `GET /projects/{project_id}/documents` | member, staff | the Documents tab: one row per possible document (existing or not), with status, revisions and who saved last |
 | `POST /projects/{project_id}/documents` | member | `{kind, sprint_id?}`; seeds; 409 when it exists |
+| `GET /projects/{project_id}/documents/stories` | member, staff | added in PR 3 (its amendment, item 5): every live story of the board in board order, for the story pickers; writes nothing |
 | `GET /documents/{document_id}` | member, staff | `?revision=`; body, derived sections (live, or the snapshot when final and the reader asks for the finalized revision; staff default to it), access flags |
 | `PUT /documents/{document_id}` | member | `{body, base_revision}` → `{revision, overwrote}` |
 | `GET /documents/{document_id}/revisions`, `…/revisions/{number}` | member, staff | |
@@ -379,6 +380,48 @@ revision.
 - TA schedule view: a documents badge per team from the class list, linking to the Documents tab.
 - Web client methods in `lib/api/documents.ts`, catalog entries for every route, a harness page with
   mock data for the three editors.
+
+**Amended 2026-11-17** (while building PR 3):
+
+1. The Documents tab lists each sprint's report, then the release summary and the test plan and report;
+   the Release plan and sprint plan rows come with PRs 4 and 5. A made document opens from its row's
+   first cell, and one not made yet has a Start button for a team member outside the preview.
+2. The unsaved-changes guard holds in-app navigation by wrapping the router's navigator: the app's
+   `BrowserRouter` is not a data router, so `useBlocker` is not available. The browser's leaving gets
+   `beforeunload`; Back and Forward are not held. A navigation held when the page turns clean (a save
+   landing under the dialog) is made.
+3. The staff badge is on TA Meetings, where an instructor and a class TA see a card per team: "n of m
+   handed in" counts the documents the team has made, and a team with none shows nothing.
+4. "The sprint has not ended yet" is read from the API's `sprint.status` (completed from the day after
+   the sprint's last day, at the school), so the page needs no zone of its own.
+5. The story pickers read `GET /api/projects/{project_id}/documents/stories`: every live story of the
+   team's board in board order (each sprint's, sprints by start, then the backlog's; a legacy archived
+   story left out), each `{id, key, title, acceptance_criteria, sprint_id, sprint_name, completed}`.
+   Members and class staff read it as they read the board (403 and 404 as the other document reads). It
+   derives from the sprints, stories and tasks the documents already read and writes nothing: no burnup
+   snapshot and no event, unlike the board's own read. The page reads it once for the document's own
+   project, the first time an editor that picks stories opens for a team member, and keeps it; a save
+   refused because a story left the board reads it again. No documents code reads the scrum board.
+6. Download Markdown saves the file under the name in the response's `Content-Disposition`: the API
+   client's `apiRequest` gains a `file` response type, and `getDocumentMarkdownFile` sits beside
+   `getDocumentMarkdown`.
+7. A hand-in older than the latest shows its date without a name: the API names only the latest
+   finalizer.
+
+**Amended 2026-11-17, after the branch review:**
+
+1. The stories route (item 5) is PR 3's one backend change, with its client method
+   (`getDocumentStories`) and catalog entry (`list_document_stories`).
+2. Download Markdown and Copy give a document's latest hand-in, else its head, as the API renders it.
+   When that is not the revision on screen, a note under them says which.
+3. A save refused because a story left the board asks about every story it sent when the revision the
+   edit began from is a hand-in (whose sections are frozen) or cannot be read, else about the ones the
+   edit added.
+4. Loading the revision being edited again (a finalize refused because someone saved first reloads it)
+   keeps what was typed and not saved, with the revision it began from. A save's, its refetch's or a
+   finalize's answer that lands after the page moved to another revision changes nothing on screen.
+5. The revisions diff does not report a change of spacing alone. "Add a scenario for it" waits until
+   the board's stories are read, since the scenario's steps are the story's criteria.
 
 ## Part 4 — Release plan (PR 4)
 
