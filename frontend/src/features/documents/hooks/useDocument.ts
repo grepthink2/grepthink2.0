@@ -35,6 +35,8 @@ export interface UseDocumentOptions {
 
 /** What is being edited: the body as typed, the body as last loaded or saved, and the revision it is. */
 interface Edit {
+  /** The document and revision asked for when it began (the hook's key). */
+  key: string;
   working: ApiDocumentBody;
   saved: ApiDocumentBody;
   /** The revision the edit started from: the one loaded, or the one this page last saved. */
@@ -77,12 +79,14 @@ function joinPlaces(places: string[]): string {
  * One document on its page: the revision on screen, the body being edited, and the writes.
  *
  * Loads `documentId` at `revision` (else where the API opens it for this reader) and keeps the newest
- * answer. A team member edits the head, only when no revision is asked for and never in the read-only
- * preview (`editable`); `dirty` says the body would save something new. There is no autosave: `save`
- * stores a revision (the last writer wins), says when it replaced one this page never saw, and
- * refetches what it saved so the board's sections follow the body. A save the API refuses because a
- * story left the board drops the stories that are gone and leaves the body to be saved again.
- * `finalize` hands in the head; `remove` deletes a draft. Each reports through `notice`.
+ * answer; loading the revision being edited again keeps what is typed and not saved. A team member
+ * edits the head, only when no revision is asked for and never in the read-only preview (`editable`);
+ * `dirty` says the body would save something new. There is no autosave: `save` stores a revision (the
+ * last writer wins), says when it replaced one this page never saw, and refetches what it saved so the
+ * board's sections follow the body. A save the API refuses because a story left the board drops the
+ * stories that are gone and leaves the body to be saved again. `finalize` hands in the head; `remove`
+ * deletes a draft. Each reports through `notice`. A write's answer that lands after the page moved to
+ * another revision changes nothing on screen.
  */
 export function useDocument(documentId: string | undefined, options: UseDocumentOptions = {}) {
   const { revision, findMissingStories, viewerId, isPreviewing = false } = options;
@@ -100,6 +104,10 @@ export function useDocument(documentId: string | undefined, options: UseDocument
   const [refused, setRefused] = useState(false);
   const [notice, setNotice] = useState<DocumentNotice | null>(null);
 
+  // The key the page is on now, which a write's answer checks before it shows anything.
+  const keyRef = useRef(key);
+  useEffect(() => { keyRef.current = key; }, [key]);
+
   // Only the newest request may commit, so a slow answer for another revision is dropped.
   const requestSeq = useRef(0);
   useEffect(() => {
@@ -111,7 +119,11 @@ export function useDocument(documentId: string | undefined, options: UseDocument
       .then((doc) => {
         if (seq !== requestSeq.current) return;
         setLoaded({ key, doc });
-        setEdit({ working: doc.body, saved: doc.body, base: doc.revision.number });
+        // Loaded again under typing not saved yet (a refused finalize reloads the page), the edit stays,
+        // with its base: saving it says what it replaces. Any other load starts the edit afresh.
+        setEdit((e) => (e && e.key === key && bodyChanged(doc.document.kind, e.working, e.saved)
+          ? e
+          : { key, working: doc.body, saved: doc.body, base: doc.revision.number }));
         setFailure(null);
         setRefused(false);
       })
@@ -154,7 +166,7 @@ export function useDocument(documentId: string | undefined, options: UseDocument
 
   /** After a save the API refused for a story off the board: drop the stories that are gone. */
   const dropMissingStories = useCallback(async (
-    documentKind: ApiDocumentKind, base: number, sent: ApiDocumentBody,
+    documentKind: ApiDocumentKind, editKey: string, base: number, sent: ApiDocumentBody,
   ): Promise<DocumentNotice> => {
     if (!documentId) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
     const missing = new Set<string>();
@@ -170,7 +182,7 @@ export function useDocument(documentId: string | undefined, options: UseDocument
       for (const id of await findMissingStories(asked).catch(() => [])) missing.add(id);
     }
     const current = editRef.current;
-    if (!current) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
+    if (!current || current.key !== editKey) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
     const { body, changed } = withoutStories(documentKind, current.working, missing);
     if (changed.length === 0) return { kind: 'error', message: STORY_NOT_IN_PROJECT };
     setEdit({ ...current, working: body });
@@ -193,8 +205,6 @@ export function useDocument(documentId: string | undefined, options: UseDocument
     try {
       const saved = await api.saveDocument(documentId, prepared.body, current.base);
       setRefused(false);
-      // Stored: this is the base now, whatever the refetch below does. Typing since the save began stays.
-      setEdit((e) => (e ? { ...e, saved: prepared.body, base: saved.revision } : e));
       const { overwrote } = saved;
       if (overwrote) {
         const whose = overwrote.by && overwrote.by === viewerId ? 'your ' : overwrote.by_name ? `${overwrote.by_name}’s ` : '';
@@ -206,19 +216,29 @@ export function useDocument(documentId: string | undefined, options: UseDocument
       } else {
         setNotice({ kind: 'success', message: `Saved as revision ${saved.revision}` });
       }
+      // The page moved to another revision while this saved: that revision's own load shows it.
+      if (keyRef.current !== key) return true;
+      // Stored: this is the base now, whatever the refetch below does. Typing since the save began stays.
+      setEdit((e) => (e && e.key === key ? { ...e, saved: prepared.body, base: saved.revision } : e));
       // The board's sections follow the body: read the revision just saved, derived from the board now.
+      // A load that starts after this read (another revision, a reload) wins over it.
+      const seq = ++requestSeq.current;
       try {
         const fresh = await api.getDocument(documentId, saved.revision);
-        setLoaded({ key, doc: fresh });
-        // The stored body (trimmed, blank rows gone) replaces the one typed, unless typing went on.
-        setEdit((e) => (e && e.working === current.working ? { working: fresh.body, saved: fresh.body, base: saved.revision } : e));
+        if (seq === requestSeq.current) {
+          setLoaded({ key, doc: fresh });
+          // The stored body (trimmed, blank rows gone) replaces the one typed, unless typing went on.
+          setEdit((e) => (e && e.key === key && e.working === current.working
+            ? { key, working: fresh.body, saved: fresh.body, base: saved.revision }
+            : e));
+        }
       } catch {
         // Saved all the same; the sections show the board as it was until the page loads again.
       }
       return true;
     } catch (err) {
       if (err instanceof ApiError && err.status === 422 && err.detail === STORY_NOT_IN_PROJECT) {
-        setNotice(await dropMissingStories(kind, current.base, prepared.body));
+        setNotice(await dropMissingStories(kind, key, current.base, prepared.body));
       } else {
         setNotice(failureNotice(err, 'Couldn’t save the document.'));
       }
@@ -235,9 +255,13 @@ export function useDocument(documentId: string | undefined, options: UseDocument
     setFinalizing(true);
     try {
       const handedIn = await api.finalizeDocument(documentId, current.base);
-      setLoaded({ key, doc: handedIn });
-      setEdit({ working: handedIn.body, saved: handedIn.body, base: handedIn.revision.number });
       setNotice({ kind: 'success', message: `Handed in revision ${handedIn.revision.number}. The team’s TAs are told.` });
+      // As for a save: a page that moved to another revision shows the hand-in when it comes back.
+      if (keyRef.current === key) {
+        requestSeq.current += 1; // a load that started before this answer must not replace it
+        setLoaded({ key, doc: handedIn });
+        setEdit({ key, working: handedIn.body, saved: handedIn.body, base: handedIn.revision.number });
+      }
       return true;
     } catch (err) {
       if (err instanceof ApiError && err.status === 409 && err.detail === DOCUMENT_CHANGED) {

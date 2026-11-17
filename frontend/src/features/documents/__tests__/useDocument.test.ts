@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ApiReleaseSummaryBody, ApiSprintReportBody } from '@/lib/api';
+import type { ApiDocumentSaved, ApiProjectDocument, ApiReleaseSummaryBody, ApiSprintReportBody } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import { DOCUMENT_CHANGED, STORY_NOT_IN_PROJECT, useDocument } from '../hooks/useDocument';
@@ -26,6 +26,13 @@ beforeEach(() => {
   vi.mocked(api.finalizeDocument).mockReset();
   vi.mocked(api.deleteDocument).mockReset();
 });
+
+/** A promise and the function that settles it, for an answer that lands when the test says. */
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((r) => { resolve = r; });
+  return { promise, resolve };
+}
 
 async function opened(revision?: number) {
   const hook = renderHook((props: { revision?: number }) => useDocument('d1', props), { initialProps: { revision } });
@@ -92,6 +99,73 @@ describe('useDocument: saving', () => {
     expect(result.current.baseRevision).toBe(4);
     expect(result.current.working).toEqual(report({ satisfied_note: 'All good' }));
     expect(result.current.dirty).toBe(false);
+  });
+
+  it('keeps what is typed while the save is out, and stays dirty with it', async () => {
+    const { result } = await opened();
+    act(() => result.current.setWorking(report({ satisfied_note: 'All good' })));
+    const stored = deferred<ApiDocumentSaved>();
+    vi.mocked(api.saveDocument).mockReturnValueOnce(stored.promise);
+    vi.mocked(api.getDocument).mockResolvedValueOnce(makeDocument('sprint_report', {
+      body: report({ satisfied_note: 'All good' }), document: { head_revision: 4 }, revision: { number: 4 },
+    }));
+    let saving: Promise<boolean> = Promise.resolve(false);
+    act(() => { saving = result.current.save(); });
+    act(() => result.current.setWorking(report({ satisfied_note: 'All good, mostly' })));
+    await act(async () => {
+      stored.resolve({ revision: 4, overwrote: null });
+      await saving;
+    });
+    // The revision saved is on screen, and the keystrokes since are still being edited, against it.
+    expect(api.getDocument).toHaveBeenLastCalledWith('d1', 4);
+    expect(result.current.doc?.revision.number).toBe(4);
+    expect(result.current.working).toEqual(report({ satisfied_note: 'All good, mostly' }));
+    expect(result.current.baseRevision).toBe(4);
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("leaves a revision the page moved to alone when the save's read lands late", async () => {
+    const hook = await opened();
+    act(() => hook.result.current.setWorking(report({ satisfied_note: 'x' })));
+    vi.mocked(api.saveDocument).mockResolvedValueOnce({ revision: 4, overwrote: null });
+    const fresh = deferred<ApiProjectDocument>();
+    vi.mocked(api.getDocument).mockReturnValueOnce(fresh.promise);
+    let saving: Promise<boolean> = Promise.resolve(false);
+    act(() => { saving = hook.result.current.save(); });
+    await waitFor(() => expect(api.getDocument).toHaveBeenLastCalledWith('d1', 4));
+
+    vi.mocked(api.getDocument).mockResolvedValueOnce(makeDocument('sprint_report', { revision: { number: 2 } }));
+    hook.rerender({ revision: 2 });
+    await waitFor(() => expect(hook.result.current.doc?.revision.number).toBe(2));
+    await act(async () => {
+      fresh.resolve(makeDocument('sprint_report', { document: { head_revision: 4 }, revision: { number: 4 } }));
+      await saving;
+    });
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.doc?.revision.number).toBe(2);
+  });
+
+  it('reads nothing for a save that lands after the page moved to another revision', async () => {
+    const hook = await opened();
+    act(() => hook.result.current.setWorking(report({ satisfied_note: 'x' })));
+    const stored = deferred<ApiDocumentSaved>();
+    vi.mocked(api.saveDocument).mockReturnValueOnce(stored.promise);
+    let saving: Promise<boolean> = Promise.resolve(false);
+    act(() => { saving = hook.result.current.save(); });
+
+    vi.mocked(api.getDocument).mockResolvedValueOnce(makeDocument('sprint_report', { revision: { number: 2 } }));
+    hook.rerender({ revision: 2 });
+    await waitFor(() => expect(hook.result.current.doc?.revision.number).toBe(2));
+    vi.mocked(api.getDocument).mockResolvedValueOnce(makeDocument('sprint_report', { document: { head_revision: 4 }, revision: { number: 4 } }));
+    let ok = false;
+    await act(async () => {
+      stored.resolve({ revision: 4, overwrote: null });
+      ok = await saving;
+    });
+    expect(ok).toBe(true);
+    expect(hook.result.current.notice).toEqual({ kind: 'success', message: 'Saved as revision 4' });
+    expect(api.getDocument).toHaveBeenCalledTimes(2);
+    expect(hook.result.current.doc?.revision.number).toBe(2);
   });
 
   it('refuses a body the API would refuse, naming the fields, and sends nothing', async () => {
@@ -228,6 +302,23 @@ describe('useDocument: finalize and delete', () => {
     await waitFor(() => expect(result.current.baseRevision).toBe(4));
     expect(api.getDocument).toHaveBeenCalledTimes(2);
     expect(result.current.notice?.message).toMatch(/newer revision, so the document was reloaded/);
+  });
+
+  it('keeps what is typed after a refused finalize when the reload lands', async () => {
+    const { result } = await opened();
+    vi.mocked(api.finalizeDocument).mockRejectedValueOnce(new ApiError(409, DOCUMENT_CHANGED, 'x'));
+    const reloaded = deferred<ApiProjectDocument>();
+    vi.mocked(api.getDocument).mockReturnValueOnce(reloaded.promise);
+    await act(async () => { await result.current.finalize(); });
+    act(() => result.current.setWorking(report({ satisfied_note: 'Typed meanwhile' })));
+    await act(async () => {
+      reloaded.resolve(makeDocument('sprint_report', { body: report(), document: { head_revision: 4 }, revision: { number: 4 } }));
+    });
+    // The newer revision is on screen, under the typing, which still saves against the revision it began from.
+    expect(result.current.doc?.revision.number).toBe(4);
+    expect(result.current.working).toEqual(report({ satisfied_note: 'Typed meanwhile' }));
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.baseRevision).toBe(3);
   });
 
   it("shows the server's sentence for a check that fails", async () => {
