@@ -55,7 +55,10 @@ function handInLine(doc: ApiProjectDocument): string | null {
   }
   const by = info.finalized_by_name ? ` by ${info.finalized_by_name}` : '';
   const line = `Handed in ${formatDate(info.finalized_at)}${by}, revision ${info.finalized_revision}`;
-  return onScreen === info.finalized_revision ? line : `${line}. This draft has changes since.`;
+  // The head of a document saved again since the hand-in is a draft beyond it.
+  return onScreen === info.head_revision && onScreen !== info.finalized_revision
+    ? `${line}. This draft has changes since.`
+    : line;
 }
 
 /**
