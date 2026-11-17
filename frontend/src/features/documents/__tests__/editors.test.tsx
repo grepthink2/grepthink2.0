@@ -57,6 +57,7 @@ describe('SprintReportEditor', () => {
     expect(screen.getByText('The burnup counts every finished task, so its last point can be higher.')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Burnup: 6 of 12 hours complete' })).toBeInTheDocument();
     expect(screen.getAllByText('None.')).toHaveLength(3);
+    expect(screen.queryByRole('region', { name: 'After the sprint ended' })).not.toBeInTheDocument();
   });
 
   it('says when no end-of-sprint record was saved and the board stands in', () => {
@@ -64,6 +65,60 @@ describe('SprintReportEditor', () => {
     render(<SprintReportEditor doc={doc} body={doc.body} editable={false} onChange={vi.fn()} />);
     expect(screen.getByText('Shown as the board is now: this sprint has no saved end-of-sprint record.')).toBeInTheDocument();
     expect(screen.getByText('From the board')).toBeInTheDocument();
+  });
+
+  it('lists what was finished after the sprint ended, apart from its numbers', () => {
+    const doc = makeDocument('sprint_report', {
+      derived: sprintReportDerived({
+        after_sprint: {
+          stories: [{ id: 's2', key: 'US-2', title: 'Offline maps', points: 8, hours: 3 }],
+          tasks: [
+            { id: 't1', story_key: 'US-2', title: 'Cache the tiles', hours: 3, done_on: '2026-10-20' },
+            { id: 't2', story_key: 'US-1', title: 'Fix the search box', hours: null, done_on: '2026-10-21' },
+          ],
+          hours: 3,
+        },
+      }),
+    });
+    render(<SprintReportEditor doc={doc} body={doc.body} editable={false} onChange={vi.fn()} />);
+
+    const after = screen.getByRole('region', { name: 'After the sprint ended' });
+    expect(within(after).getByText(/It is not counted in this sprint’s numbers or rates\./)).toBeInTheDocument();
+    const [stories, tasks] = within(after).getAllByRole('list');
+    expect(within(stories).getByRole('listitem')).toHaveTextContent('US-2 Offline maps 8 points · 3 h');
+    expect(within(tasks).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Oct 20, 2026 US-2 Cache the tiles 3 h',
+      'Oct 21, 2026 US-1 Fix the search box',
+    ]);
+    expect(within(after).getByText('Hours in those tasks: 3')).toBeInTheDocument();
+    // The sprint's own numbers stay as it ended.
+    const rates = screen.getByRole('table', { name: /Work completion rate/ });
+    expect(within(rates).getByRole('row', { name: /User stories completed 1/ })).toBeInTheDocument();
+  });
+
+  it('says so when only one part of what followed the sprint holds anything', () => {
+    const doc = makeDocument('sprint_report', {
+      derived: sprintReportDerived({
+        after_sprint: {
+          stories: [],
+          tasks: [{ id: 't1', story_key: 'US-1', title: 'Fix the search box', hours: 1, done_on: '2026-10-21' }],
+          hours: 1,
+        },
+      }),
+    });
+    render(<SprintReportEditor doc={doc} body={doc.body} editable={false} onChange={vi.fn()} />);
+    const after = screen.getByRole('region', { name: 'After the sprint ended' });
+    expect(within(after).getByText('No story was completed since.')).toBeInTheDocument();
+    expect(within(after).getByText('Hours in those tasks: 1')).toBeInTheDocument();
+  });
+
+  it('shows nothing after the sprint when nothing was finished since', () => {
+    const doc = makeDocument('sprint_report', {
+      derived: sprintReportDerived({ after_sprint: { stories: [], tasks: [], hours: 0 } }),
+    });
+    render(<SprintReportEditor doc={doc} body={doc.body} editable={false} onChange={vi.fn()} />);
+    expect(screen.queryByRole('region', { name: 'After the sprint ended' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Hours in those tasks/)).not.toBeInTheDocument();
   });
 });
 

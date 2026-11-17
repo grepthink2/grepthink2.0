@@ -353,6 +353,13 @@
     font-size: var(--gt-text-caption);
     color: var(--gt-text-tertiary);
   }
+
+  // The day a task was finished, ahead of it in the list of what was finished after the sprint ended.
+  &__day {
+    font-size: var(--gt-text-caption);
+    font-variant-numeric: tabular-nums;
+    color: var(--gt-text-secondary);
+  }
 }
 
 // A table's numbers, header and cells, on the right. From the section, so it outranks the kit table's

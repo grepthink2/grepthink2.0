@@ -1,7 +1,14 @@
 import { Input } from '@components/Input/Input';
 import { Table, type TableColumn } from '@components/Table/Table';
 import { Textarea } from '@components/Textarea/Textarea';
-import type { ApiDocumentStoryLine, ApiProjectDocument, ApiSprintAction, ApiSprintReportBody } from '@/lib/api';
+import type {
+  ApiDocumentStoryLine,
+  ApiProjectDocument,
+  ApiSprintAction,
+  ApiSprintReportAfterSprint,
+  ApiSprintReportBody,
+  ApiSprintReportLateTask,
+} from '@/lib/api';
 import BurnupChart from '@features/scrum/components/BurnupChart';
 import { ACTION_MAX, ACTIONS_MAX, REASON_MAX, SATISFIED_NOTE_MAX } from '../config/limits';
 import { formatDay } from '../utils/dates';
@@ -81,6 +88,42 @@ function StoryLines({ stories, empty }: { stories: ApiDocumentStoryLine[]; empty
   return <ul className="document-story-lines">{stories.map((s) => <StoryLine key={s.id} story={s} />)}</ul>;
 }
 
+/** A task finished after the sprint ended: the day, its story's key, its title and its hours. */
+function LateTask({ task }: { task: ApiSprintReportLateTask }) {
+  return (
+    <li className="document-story-line">
+      <span className="document-story-line__day">{formatDay(task.done_on)}</span>{' '}
+      <span className="document-story-line__key">{task.story_key}</span>{' '}
+      <span className="document-story-line__title">{task.title}</span>
+      {task.hours != null && <>{' '}<span className="document-story-line__details">{`${task.hours} h`}</span></>}
+    </li>
+  );
+}
+
+/**
+ * What the team finished after the sprint ended, read only and apart from its numbers: the stories it
+ * ended with unfinished that are completed now, the tasks finished since with their day, and those
+ * tasks' hours. Nothing at all when there is none.
+ */
+function AfterSprint({ after }: { after: ApiSprintReportAfterSprint | null }) {
+  if (!after || (after.stories.length === 0 && after.tasks.length === 0)) return null;
+  return (
+    <section className="document-section" aria-labelledby="document-after-sprint">
+      <h2 className="document-section__title" id="document-after-sprint">After the sprint ended</h2>
+      <p className="document-section__hint">
+        Work finished after the sprint’s last day. It is not counted in this sprint’s numbers or rates.
+      </p>
+      <h3 className="document-section__subtitle">Stories completed since</h3>
+      <StoryLines stories={after.stories} empty="No story was completed since." />
+      <h3 className="document-section__subtitle">Tasks finished since</h3>
+      {after.tasks.length === 0
+        ? <p className="document-section__empty">No task was finished since.</p>
+        : <ul className="document-story-lines">{after.tasks.map((t) => <LateTask key={t.id} task={t} />)}</ul>}
+      <p className="document-section__text">{`Hours in those tasks: ${after.hours}`}</p>
+    </section>
+  );
+}
+
 interface RateRow {
   id: string;
   measure: string;
@@ -99,8 +142,8 @@ const rate = (n: number) => n.toFixed(2);
 /**
  * The sprint report's editor: the actions to stop, start and keep doing (each with its reason, at most
  * ten a list, with the note for a team that has nothing to stop), then what the board says about the
- * sprint as it ended: its stories, completed or not, its numbers and rates beside the averages to
- * date, and its burnup.
+ * sprint as it ended: its stories, completed or not, what was finished after it ended, its numbers and
+ * rates beside the averages to date, and its burnup.
  */
 export default function SprintReportEditor({ doc, body, editable, onChange }: SprintReportEditorProps) {
   const derived = doc.derived;
@@ -169,6 +212,7 @@ export default function SprintReportEditor({ doc, body, editable, onChange }: Sp
           <h3 className="document-section__subtitle">Not completed</h3>
           <StoryLines stories={derived.not_completed} empty="Every story was completed." />
         </section>
+        <AfterSprint after={derived.after_sprint} />
         <section className="document-section" aria-labelledby="document-rates">
           <h2 className="document-section__title" id="document-rates">Work completion rate</h2>
           <Table
