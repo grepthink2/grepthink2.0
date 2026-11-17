@@ -667,6 +667,32 @@ describe('useScrumBoard story order', () => {
     await waitFor(() => expect(api.getScrumBoard).toHaveBeenCalledTimes(2));
   });
 
+  it('loads the board again once the order is saved when a load under way read the old order', async () => {
+    // A focus refresh starts just before the move, and lands after the list is redrawn.
+    let stale: (b: ApiScrumBoard) => void = () => {};
+    let save: (v: { story_ids: string[] }) => void = () => {};
+    vi.mocked(api.setStoryOrder).mockReturnValue(new Promise((res) => { save = res; }));
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard)
+      .mockReturnValueOnce(new Promise((res) => { stale = res; }))
+      .mockResolvedValueOnce(makeBoard({
+        ...orderBoard(),
+        stories: ['s2', 's3', 's1'].map((id, i) => makeStory({ id, key: `US-${id.slice(1)}`, rank: i + 1 })),
+      }));
+    act(() => { window.dispatchEvent(new Event('focus')); });
+
+    let saved: Promise<boolean> = Promise.resolve(false);
+    act(() => { saved = result.current.reorderStories('sp1', ['s2', 's3', 's1']); });
+    await act(async () => { stale(orderBoard()); });
+    expect(ids(result.current.board!.stories)).toEqual(['s1', 's2', 's3']);   // the old order, for now
+
+    await act(async () => { save({ story_ids: ['s2', 's3', 's1'] }); });
+    await expect(saved).resolves.toBe(true);
+    await waitFor(() => expect(ids(result.current.board!.stories)).toEqual(['s2', 's3', 's1']));
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(3);
+  });
+
   it("keeps a story edit's list in the board's order", async () => {
     // The response carries the rank a teammate gave it since this board was loaded.
     vi.mocked(api.updateStory).mockResolvedValue(makeStory({ id: 's3', key: 'US-3', title: 'Renamed', rank: 1 }));

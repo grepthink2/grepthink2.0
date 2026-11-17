@@ -354,6 +354,10 @@ export function useScrumBoard(
    * A refused save puts the ranks it changed back and says why; a 409 (a teammate added, moved or
    * deleted one of the list's stories since this board was loaded) also reloads the board. Resolves
    * whether the order was saved.
+   *
+   * A board load under way while the order saves (the focus refresh, say) read the old order, and
+   * landing after the redraw it puts that order back on screen. When there was one, the board loads
+   * again once the order is saved, so the newest load has it.
    */
   const reorderStories = useCallback(
     async (sprintId: string | null, storyIds: string[]): Promise<boolean> => {
@@ -362,9 +366,12 @@ export function useScrumBoard(
       const list = sprintId === null ? 'backlog' : 'stories';
       const before = new Map(current[list].map((s) => [s.id, s.rank ?? null]));
       const ranked = new Map<string, number | null>(storyIds.map((id, i) => [id, i + 1]));
+      const loadsAtStart = requestSeq.current;
+      const loadPending = loadsAtStart !== committedSeq.current;
       setBoard((prev) => (prev ? { ...prev, [list]: withRanks(prev[list], ranked) } : prev));
       try {
         await api.setStoryOrder(projectId, sprintId, storyIds);
+        if (loadPending || requestSeq.current !== loadsAtStart) void refresh();
         return true;
       } catch (err) {
         // Only the ranks go back: an edit saved meanwhile (a story's points) stays.
