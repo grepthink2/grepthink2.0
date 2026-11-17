@@ -5,7 +5,7 @@ import type {
   ApiSprintReportBody,
   ApiTestReportBody,
 } from '@/lib/api';
-import type { BoardStoriesStatus, BoardStory } from '../hooks/useBoardStories';
+import type { ProjectStories } from '../hooks/useProjectStories';
 import type { StoryRef } from '../utils/storyRefs';
 import ReleaseSummaryEditor from './ReleaseSummaryEditor';
 import SprintReportEditor from './SprintReportEditor';
@@ -18,7 +18,7 @@ interface DocumentEditorProps {
   editable: boolean;
   onChange: (body: ApiDocumentBody) => void;
   story: (id: string) => StoryRef;
-  board: { status: BoardStoriesStatus; stories: BoardStory[]; byId: ReadonlyMap<string, BoardStory>; retry: () => void };
+  board: ProjectStories;
 }
 
 /** The editor for the document's kind, read only when the revision on screen is not being edited. */

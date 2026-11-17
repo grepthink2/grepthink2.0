@@ -6,7 +6,6 @@ import type { ApiSprintReportBody } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import DocumentPage from '../pages/DocumentPage';
 import DocumentRedirect from '../pages/DocumentRedirect';
-import { makeBoard, makeSprint, makeStory } from '@features/scrum/__tests__/fixtures';
 import { makeDocument, releaseSummaryDerived } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
@@ -17,6 +16,8 @@ vi.mock('@/lib/api', () => ({
     deleteDocument: vi.fn(),
     getDocumentRevisions: vi.fn(),
     getDocumentMarkdownFile: vi.fn(),
+    getDocumentStories: vi.fn(),
+    // Never called: a document reads the board's stories through its own route.
     getScrumBoard: vi.fn(),
   },
 }));
@@ -63,6 +64,7 @@ beforeEach(() => {
   vi.mocked(api.deleteDocument).mockReset();
   vi.mocked(api.getDocumentRevisions).mockReset().mockResolvedValue({ revisions: [] });
   vi.mocked(api.getDocumentMarkdownFile).mockReset();
+  vi.mocked(api.getDocumentStories).mockReset().mockResolvedValue({ stories: [] });
   vi.mocked(api.getScrumBoard).mockReset();
   saveFile.mockReset();
 });
@@ -213,22 +215,32 @@ describe('DocumentPage: the kinds that pick stories', () => {
         key_stories: [{ id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail'], completed: true }],
       }),
     }));
-    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({
-      sprints: [makeSprint()],
-      sprint_id: 'sp1',
-      stories: [makeStory({ id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail'] })],
-      backlog: [makeStory({ id: 's2', key: 'US-2', title: 'Offline maps', sprint_id: null })],
-    }));
+    vi.mocked(api.getDocumentStories).mockResolvedValue({
+      stories: [
+        { id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail'], sprint_id: 'sp1', sprint_name: 'Sprint 1', completed: true },
+        { id: 's2', key: 'US-2', title: 'Offline maps', acceptance_criteria: [], sprint_id: null, sprint_name: null, completed: false },
+      ],
+    });
     renderAt();
-    // The board's sprint is known once its stories are read: the link opens the story in it.
+    // The story's sprint is known once the stories are read: the link opens the story in it.
     await waitFor(() => expect(screen.getByRole('link', { name: 'Edit on the board' }))
       .toHaveAttribute('href', '/app/projects/p1/board?sprint=sp1&story=s1'));
-    expect(api.getScrumBoard).toHaveBeenCalledWith('p1');
+    expect(api.getDocumentStories).toHaveBeenCalledTimes(1);
+    expect(api.getDocumentStories).toHaveBeenCalledWith('p1');
     await userEvent.click(screen.getByRole('button', { name: 'Add a key story' }));
     expect(await screen.findByRole('button', { name: /US-2 Offline maps Backlog/ })).toBeInTheDocument();
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
   });
 
-  it("shows a test report's scenarios, and reads no board for staff", async () => {
+  it("reads the stories of the document's own project, whatever the address says", async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(makeDocument('release_summary', { document: { project_id: 'p2' } }));
+    renderAt('/app/projects/p1/documents/d1');
+    await waitFor(() => expect(where()).toBe('/app/projects/p2/documents/d1'));
+    await waitFor(() => expect(api.getDocumentStories).toHaveBeenCalledWith('p2'));
+    expect(api.getDocumentStories).not.toHaveBeenCalledWith('p1');
+  });
+
+  it("shows a test report's scenarios, and reads no stories for staff", async () => {
     vi.mocked(api.getDocument).mockResolvedValue(makeDocument('test_report', {
       access: 'staff',
       can_finalize: false,
@@ -237,6 +249,7 @@ describe('DocumentPage: the kinds that pick stories', () => {
     renderAt();
     expect(await screen.findByRole('heading', { name: /Scenario 1 Log in/ })).toBeInTheDocument();
     expect(screen.getByText('Passed')).toBeInTheDocument();
+    expect(api.getDocumentStories).not.toHaveBeenCalled();
     expect(api.getScrumBoard).not.toHaveBeenCalled();
   });
 });
@@ -298,7 +311,6 @@ describe('DocumentPage: readers', () => {
 describe('DocumentRedirect', () => {
   it('opens the document under its project in place of the address', async () => {
     vi.mocked(api.getDocument).mockResolvedValue(makeDocument('release_summary', { document: { project_id: 'p7' } }));
-    vi.mocked(api.getScrumBoard).mockRejectedValue(new Error('not needed'));
     renderAt('/app/documents/d1');
     await waitFor(() => expect(where()).toBe('/app/projects/p7/documents/d1'));
   });

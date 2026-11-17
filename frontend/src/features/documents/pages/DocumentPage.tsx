@@ -18,9 +18,9 @@ import ChecksPanel from '../components/ChecksPanel';
 import DocumentEditor from '../components/DocumentEditor';
 import DocumentShell from '../components/DocumentShell';
 import RevisionsDrawer from '../components/RevisionsDrawer';
-import { useBoardStories } from '../hooks/useBoardStories';
 import { useDocument } from '../hooks/useDocument';
 import { useLeaveGuard } from '../hooks/useLeaveGuard';
+import { useProjectStories } from '../hooks/useProjectStories';
 import { documentChecks, firstBlocking } from '../utils/checks';
 import { boardDocumentsPath, documentPath, parseRevision } from '../utils/documentLinks';
 import { saveFile } from '../utils/saveFile';
@@ -63,14 +63,15 @@ export default function DocumentPage() {
   const isPreviewing = useOutletContext<AppOutletContext | undefined>()?.isPreviewing ?? false;
   const { toasts, push, dismiss } = useToasts();
 
-  // A save the API refuses for a story off the board asks the board about the stories it added. The
-  // board's reader comes after the document's hook, so it is read through a ref an effect keeps current.
+  // A save the API refuses for a story off the board asks the board's stories which ones it lost. Their
+  // reader comes after the document's hook, so it is read through a ref an effect keeps current.
   const findMissingRef = useRef<(ids: string[]) => Promise<string[]>>(async () => []);
   const findMissingStories = useCallback((ids: string[]) => findMissingRef.current(ids), []);
   const page = useDocument(documentId, { revision, findMissingStories, viewerId: user?.id, isPreviewing });
   const { doc, working, editable, dirty } = page;
   const kind = doc?.document.kind;
-  const board = useBoardStories(projectId, editable && (kind === 'release_summary' || kind === 'test_report'));
+  // The document's own project, not the address's: an old link may name another one until it is moved.
+  const board = useProjectStories(doc?.document.project_id, editable && (kind === 'release_summary' || kind === 'test_report'));
   useEffect(() => { findMissingRef.current = board.findMissing; }, [board.findMissing]);
 
   const [deleted, setDeleted] = useState(false);

@@ -3,16 +3,17 @@ import { Plus } from 'lucide-react';
 import { Button } from '@components/Button/Button';
 import { Popover } from '@components/Popover/Popover';
 import { SearchField } from '@components/SearchField/SearchField';
-import type { BoardStoriesStatus, BoardStory } from '../hooks/useBoardStories';
+import type { ApiDocumentStory } from '@/lib/api';
+import type { ProjectStoriesStatus } from '../hooks/useProjectStories';
 
 interface StoryPickerProps {
   /** The trigger's words, which also name the panel: "Add a key story". */
   label: string;
   /** The stories it offers: the board's, minus the ones already picked. */
-  stories: BoardStory[];
-  status: BoardStoriesStatus;
+  stories: ApiDocumentStory[];
+  status: ProjectStoriesStatus;
   onRetry: () => void;
-  onPick: (story: BoardStory) => void;
+  onPick: (story: ApiDocumentStory) => void;
   disabled?: boolean;
   /** The id of the text that says why the trigger is off (a list at its limit). */
   describedBy?: string;
@@ -21,7 +22,7 @@ interface StoryPickerProps {
 /** How many matches the panel lists; the search narrows the rest. */
 const SHOWN = 50;
 
-const matches = (story: BoardStory, query: string) => {
+const matches = (story: ApiDocumentStory, query: string) => {
   const q = query.trim().toLowerCase();
   return !q || story.key.toLowerCase().includes(q) || story.title.toLowerCase().includes(q);
 };
@@ -74,7 +75,7 @@ export default function StoryPicker({ label, stories, status, onRetry, onPick, d
             >
               <span className="story-picker__key">{story.key}</span>{' '}
               <span className="story-picker__title">{story.title}</span>{' '}
-              <span className="story-picker__where">{story.sprintName ?? 'Backlog'}</span>
+              <span className="story-picker__where">{story.sprint_name ?? 'Backlog'}</span>
             </button>
           </li>
         ))}

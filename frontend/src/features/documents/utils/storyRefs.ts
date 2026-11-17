@@ -1,5 +1,4 @@
-import type { ApiProjectDocument, ApiReleaseSummaryDerived, ApiTestReportDerived } from '@/lib/api';
-import type { BoardStory } from '../hooks/useBoardStories';
+import type { ApiDocumentStory, ApiProjectDocument, ApiReleaseSummaryDerived, ApiTestReportDerived } from '@/lib/api';
 import type { StoryFacts } from './checks';
 
 /** A board story a body names, as the page can tell it. */
@@ -17,7 +16,10 @@ export const STORY_GONE = 'A story that was deleted';
  * How the page tells the stories a body names: the revision's derived sections first (what the API
  * read, or froze at hand-in), then the board's stories this page read (a story an edit just added).
  */
-export function storyLookup(doc: ApiProjectDocument, board: ReadonlyMap<string, BoardStory>): (id: string) => StoryRef {
+export function storyLookup(
+  doc: ApiProjectDocument,
+  board: ReadonlyMap<string, ApiDocumentStory>,
+): (id: string) => StoryRef {
   const fromDerived = new Map<string, StoryRef>();
   if (doc.document.kind === 'release_summary') {
     for (const story of (doc.derived as ApiReleaseSummaryDerived).key_stories) {

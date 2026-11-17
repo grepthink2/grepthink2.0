@@ -7,6 +7,7 @@ import { Table, type TableColumn } from '@components/Table/Table';
 import { Tag } from '@components/Tag/Tag';
 import { Textarea } from '@components/Textarea/Textarea';
 import type {
+  ApiDocumentStory,
   ApiFollowUp,
   ApiKnownProblem,
   ApiKnownProblemKind,
@@ -15,7 +16,7 @@ import type {
   ApiReleaseSummaryDerived,
 } from '@/lib/api';
 import { FOLLOW_UP_MAX, FOLLOW_UPS_MAX, KEY_STORIES_MAX, KNOWN_PROBLEMS_MAX, PROBLEM_MAX } from '../config/limits';
-import type { BoardStoriesStatus, BoardStory } from '../hooks/useBoardStories';
+import type { ProjectStories } from '../hooks/useProjectStories';
 import { newFollowUp, newKnownProblem, PROBLEM_KIND_LABELS } from '../utils/documentBody';
 import { storyBoardPath } from '../utils/documentLinks';
 import { STORY_GONE, storyLabel, type StoryRef } from '../utils/storyRefs';
@@ -31,7 +32,7 @@ interface ReleaseSummaryEditorProps {
   /** The stories the body names, as the page can tell them. */
   story: (id: string) => StoryRef;
   /** The board's stories, for the picker and the links to the board. */
-  board: { status: BoardStoriesStatus; stories: BoardStory[]; byId: ReadonlyMap<string, BoardStory>; retry: () => void };
+  board: ProjectStories;
 }
 
 const KIND_OPTIONS = (Object.keys(PROBLEM_KIND_LABELS) as ApiKnownProblemKind[])
@@ -41,7 +42,8 @@ interface KeyStoryProps {
   story: StoryRef;
   editable: boolean;
   projectId: string;
-  boardStory: BoardStory | undefined;
+  /** The story as the board's stories answered for it, which says where it sits on the board. */
+  boardStory: ApiDocumentStory | undefined;
 }
 
 /** A key story with its criteria, and for an editor a link to edit it on the board. */
@@ -63,7 +65,7 @@ function KeyStory({ story, editable, projectId, boardStory }: KeyStoryProps) {
         <p className="document-key-story__none">No acceptance criteria yet: add them on the board.</p>
       )}
       {editable && (
-        <Link className="document-key-story__edit" to={storyBoardPath(projectId, story.id, boardStory ? boardStory.sprintId : undefined)}>
+        <Link className="document-key-story__edit" to={storyBoardPath(projectId, story.id, boardStory ? boardStory.sprint_id : undefined)}>
           Edit on the board <ArrowRight size={12} aria-hidden="true" />
         </Link>
       )}

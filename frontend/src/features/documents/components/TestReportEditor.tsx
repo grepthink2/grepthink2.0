@@ -18,19 +18,12 @@ import {
   UNIT_TESTS_MAX,
   UNIT_TESTS_NOTE_MAX,
 } from '../config/limits';
-import type { BoardStoriesStatus, BoardStory } from '../hooks/useBoardStories';
+import type { ProjectStories } from '../hooks/useProjectStories';
 import { newScenario, newUnitTest, scenarioFor } from '../utils/documentBody';
 import { STORY_GONE, storyLabel, type StoryRef } from '../utils/storyRefs';
 import EditableList from './EditableList';
 import FromBoard from './FromBoard';
 import StoryPicker from './StoryPicker';
-
-interface BoardStories {
-  status: BoardStoriesStatus;
-  stories: BoardStory[];
-  byId: ReadonlyMap<string, BoardStory>;
-  retry: () => void;
-}
 
 interface TestReportEditorProps {
   doc: ApiProjectDocument<'test_report'>;
@@ -38,7 +31,7 @@ interface TestReportEditorProps {
   editable: boolean;
   onChange: (body: ApiTestReportBody) => void;
   story: (id: string) => StoryRef;
-  board: BoardStories;
+  board: ProjectStories;
 }
 
 type Result = 'pass' | 'fail' | 'not_run';
@@ -61,7 +54,7 @@ interface ScenarioCardProps {
   frozen: boolean;
   onChange: (scenario: ApiTestScenario) => void;
   story: (id: string) => StoryRef;
-  board: BoardStories;
+  board: ProjectStories;
 }
 
 /** One system test scenario: its title, the stories it covers with their criteria, its steps, result and note. */

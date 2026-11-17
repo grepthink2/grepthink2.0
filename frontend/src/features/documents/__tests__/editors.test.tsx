@@ -3,19 +3,18 @@ import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import type { ApiReleaseSummaryBody, ApiSprintReportBody, ApiTestReportBody } from '@/lib/api';
+import type { ApiDocumentStory, ApiReleaseSummaryBody, ApiSprintReportBody, ApiTestReportBody } from '@/lib/api';
 import ReleaseSummaryEditor from '../components/ReleaseSummaryEditor';
 import SprintReportEditor from '../components/SprintReportEditor';
 import TestReportEditor from '../components/TestReportEditor';
-import type { BoardStory } from '../hooks/useBoardStories';
 import { storyLookup } from '../utils/storyRefs';
 import { makeDocument, releaseSummaryDerived, sprintReportDerived, testReportDerived } from './fixtures';
 
-const boardStory = (over: Partial<BoardStory> = {}): BoardStory => ({
-  id: 's1', key: 'US-1', title: 'Trail search', points: 5, acceptance_criteria: ['Finds a trail by name'],
-  sprintId: 'sp1', sprintName: 'Sprint 1', completed: true, ...over,
+const boardStory = (over: Partial<ApiDocumentStory> = {}): ApiDocumentStory => ({
+  id: 's1', key: 'US-1', title: 'Trail search', acceptance_criteria: ['Finds a trail by name'],
+  sprint_id: 'sp1', sprint_name: 'Sprint 1', completed: true, ...over,
 });
-const board = (stories: BoardStory[] = []) => ({
+const board = (stories: ApiDocumentStory[] = []) => ({
   status: 'ready' as const, stories, byId: new Map(stories.map((s) => [s.id, s])), retry: vi.fn(),
 });
 
@@ -80,7 +79,7 @@ describe('ReleaseSummaryEditor', () => {
     key_story_ids: ['s1', 's2'], known_problems: [{ id: 'p1', kind: 'bug', text: 'Crash on Safari' }], follow_ups: [],
   };
 
-  function Editing({ stories, onBody }: { stories: BoardStory[]; onBody: (b: ApiReleaseSummaryBody) => void }) {
+  function Editing({ stories, onBody }: { stories: ApiDocumentStory[]; onBody: (b: ApiReleaseSummaryBody) => void }) {
     const [current, setCurrent] = useState(body);
     const doc = makeDocument('release_summary', { body, derived });
     const lookup = storyLookup(doc, new Map(stories.map((s) => [s.id, s])));
@@ -109,7 +108,7 @@ describe('ReleaseSummaryEditor', () => {
 
   it("adds a key story from the board's stories, searching by key or title", async () => {
     const onBody = vi.fn();
-    render(<Editing stories={[boardStory(), boardStory({ id: 's3', key: 'US-3', title: 'Offline maps', sprintId: null, sprintName: null })]} onBody={onBody} />);
+    render(<Editing stories={[boardStory(), boardStory({ id: 's3', key: 'US-3', title: 'Offline maps', sprint_id: null, sprint_name: null })]} onBody={onBody} />);
     await userEvent.click(screen.getByRole('button', { name: 'Add a key story' }));
     const panel = screen.getByRole('dialog', { name: 'Add a key story' });
     // US-1 is a key story already: only US-3 is offered.
@@ -154,7 +153,7 @@ describe('TestReportEditor', () => {
   });
   const body: ApiTestReportBody = { scenarios: [scenario], unit_tests: [], unit_tests_note: '' };
 
-  function Editing({ onBody, stories = [] }: { onBody: (b: ApiTestReportBody) => void; stories?: BoardStory[] }) {
+  function Editing({ onBody, stories = [] }: { onBody: (b: ApiTestReportBody) => void; stories?: ApiDocumentStory[] }) {
     const [current, setCurrent] = useState(body);
     const doc = makeDocument('test_report', { body, derived });
     return (
