@@ -3,6 +3,7 @@ import { UserCog } from 'lucide-react';
 import { api, type ApiTAMeetingSchedule, type ApiAttendanceEntry } from '@/lib/api';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { useClass } from '@/lib/classContext';
+import { handInsByTeam, type HandIns } from '@features/documents/utils/handIns';
 import TeamMeetingCard from './TeamMeetingCard';
 import WeekNavigator from './WeekNavigator';
 import AddZoomModal from './AddZoomModal';
@@ -106,6 +107,23 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       });
     return () => { active = false; };
   }, [classId, scope, week, meeting, scheduleKey]);
+
+  // Staff: every document of the class's teams, in one request for the page, counted per team for
+  // each card's hand-in link. Never asked for a student's own team; a refusal (403) shows nothing.
+  const [documents, setDocuments] = useState<{ classId: string; byTeam: Map<string, HandIns> } | null>(null);
+  useEffect(() => {
+    if (!classId || scope === 'my-team') return;
+    let active = true;
+    api.getClassDocuments(classId)
+      .then((res) => {
+        if (active) setDocuments({ classId, byTeam: handInsByTeam(res.documents) });
+      })
+      .catch(() => {
+        if (active) setDocuments({ classId, byTeam: new Map() });
+      });
+    return () => { active = false; };
+  }, [classId, scope]);
+  const handIns = documents?.classId === classId ? documents.byTeam : null;
 
   // A cadence change keeps its select disabled until the schedule it reloads has landed.
   if (cadenceSave === 'reloading' && !loading) {
@@ -382,6 +400,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
               onAddZoom={() => setZoomTeam(team)}
               onMark={(personId, status) => handleMark(team.projectId, personId, status)}
               onMarkAllPresent={() => handleMarkAll(team.projectId)}
+              documents={handIns?.get(team.projectId)}
             />
           ))}
         </div>

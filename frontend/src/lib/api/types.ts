@@ -692,6 +692,8 @@ export interface ApiNotification {
    * `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for.
    * `join_request_unreviewed`: a join request nobody on the team can review (no member left, or
    * none with a reviewing role) went to the class instructor; `entity_id` is the project.
+   * `document_finalized`: a team the reader is a TA of handed in a document; `entity_id` is the
+   * document.
    */
   type:
     | 'join_request'
@@ -702,7 +704,8 @@ export interface ApiNotification {
     | 'complete_profile'
     | 'upload_roster'
     | 'member_removed'
-    | 'email_undeliverable';
+    | 'email_undeliverable'
+    | 'document_finalized';
   title: string;
   body: string;
   entity_type: string | null;

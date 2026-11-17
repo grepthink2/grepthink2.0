@@ -210,6 +210,27 @@ describe('Header — opening a join-request notification', () => {
   });
 });
 
+describe('Header — a document finalized', () => {
+  it('opens the document by its id, which opens it under its project', async () => {
+    state.notifications = [
+      {
+        id: 'n-doc',
+        type: 'document_finalized',
+        title: 'Document finalized',
+        body: 'Trailhead finalized its Sprint 2 report',
+        entity_type: 'document',
+        entity_id: 'd1',
+        read_at: null,
+        created_at: '2026-11-17T10:00:00Z',
+      },
+    ];
+    renderAt('/app/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    fireEvent.click(screen.getByText('Document finalized'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/app/documents/d1'));
+  });
+});
+
 describe('Header — a message notification', () => {
   it('quotes the message without its formatting marks', async () => {
     state.notifications = [
