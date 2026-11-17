@@ -26,7 +26,7 @@ from fastapi import HTTPException
 from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
-from app.core.db import fan_out, get_client
+from app.core.db import MISSING_TABLE_CODES, fan_out, get_client
 from app.core.errors import AppError, DatabaseConflictError, DatabaseError
 from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
@@ -341,6 +341,27 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
 
 # ----------------------------------------------------------- class schedule ----
 
+#: A database without the documents' table (2026-11-17_project_documents.sql not applied yet): PostgREST
+#: knows no relationship from sprints to it (PGRST200), or no table at all.
+_NO_DOCUMENTS_CODES = frozenset({"PGRST200"}) | MISSING_TABLE_CODES
+
+
+def sprints_with_work(read) -> list[dict]:
+    """``read(embeds)``'s sprints, each with what keeps it from being deleted embedded: its stories and
+    its documents (a sprint report goes with its sprint). On a database without the documents' table
+    yet, the stories alone, one more round trip."""
+    try:
+        return read("user_stories(id), project_documents(id)")
+    except DatabaseError as exc:
+        if exc.pg_code not in _NO_DOCUMENTS_CODES:
+            raise
+        return read("user_stories(id)")
+
+
+def sprint_in_use(row: dict) -> bool:
+    """Whether a sprint read by :func:`sprints_with_work` holds a story or a document."""
+    return bool(row.get("user_stories") or row.get("project_documents"))
+
 
 def ensure_project_sprints(
     client, *, project_id: str, project_name: str, schedule: Schedule
@@ -350,8 +371,8 @@ def ensure_project_sprints(
     Sprint k of ``schedule`` is the team's sprint whose ``sequence`` is k, named "Sprint k"
     (:data:`~app.scrum.schedule.SPRINT_NAME`) and dated by the k-th window of
     :func:`~app.scrum.schedule.sprint_windows`. One read takes the team's sequenced sprints with
-    the ids of their stories, archived ones included. Then, each only when there is something to
-    write, it deletes the sprints beyond ``schedule.count`` in one delete, inserts the missing ones
+    the ids of their stories, archived ones included, and of their documents. Then, each only when
+    there is something to write, it deletes the sprints beyond ``schedule.count`` in one delete, inserts the missing ones
     in one insert, and rewrites the ones whose name or dates differ in one upsert on ``id``, in
     place, so their stories stay in them. Neither write sends ``status``: a new sprint takes the
     column default, a rewritten one keeps its stored value, and the API derives it from the dates.
@@ -361,20 +382,27 @@ def ensure_project_sprints(
     Who can call: the callers authorize (a team's creation, its class instructor's schedule
     change); nothing here checks a user. Returns ``{"created", "updated", "deleted"}`` counts.
     Raises 409 :data:`SPRINTS_IN_USE`, naming ``project_name`` and the lowest such k, when a story
-    is in a sprint beyond the count; nothing is written then. Round trips: the read and at most
-    one of each write. The schedule's own writes leave a team's sequences running from 1 with no
-    gap, so its count either grows (the insert) or shrinks (the delete): three at most.
+    or a document is in a sprint beyond the count (deleting the sprint would take a sprint report with
+    it); nothing is written then. Round trips: the read and at most one of each write. The schedule's
+    own writes leave a team's sequences running from 1 with no gap, so its count either grows (the
+    insert) or shrinks (the delete): three at most, and one more read on a database without the
+    documents' table yet (:func:`sprints_with_work`).
     """
-    rows = (
-        client.table("sprints")
-        .select("id, name, starts_at, ends_at, sequence, user_stories(id)")
-        .eq("project_id", str(project_id))
-        .not_.is_("sequence", "null")
-        .execute()
-    ).data or []
+    rows = sprints_with_work(
+        lambda embeds: (
+            (
+                client.table("sprints")
+                .select(f"id, name, starts_at, ends_at, sequence, {embeds}")
+                .eq("project_id", str(project_id))
+                .not_.is_("sequence", "null")
+                .execute()
+            ).data
+            or []
+        )
+    )
     by_sequence = {row["sequence"]: row for row in rows}
     extras = {k: row for k, row in by_sequence.items() if k > schedule.count}
-    in_use = [k for k, row in extras.items() if row.get("user_stories")]
+    in_use = [k for k, row in extras.items() if sprint_in_use(row)]
     if in_use:
         detail = SPRINTS_IN_USE.format(team=project_name, k=min(in_use))
         raise HTTPException(status_code=409, detail=detail)

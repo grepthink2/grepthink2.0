@@ -31,6 +31,7 @@ OUTSIDER = "outsider-1"
 RELATIONS = {
     ("projects", "classes"): ("class_id", "id", False),
     ("sprints", "user_stories"): ("id", "sprint_id", True),  # the stories in each sprint
+    ("sprints", "project_documents"): ("id", "sprint_id", True),  # and the documents of each
     ("project_members", "projects"): ("project_id", "id", False),  # the access check's school
     ("tasks", "user_stories"): ("story_id", "id", False),  # a dependency's story key and sprint
     ("user_stories", "tasks"): ("id", "story_id", True),  # the live burnup totals
