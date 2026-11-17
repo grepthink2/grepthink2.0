@@ -186,6 +186,29 @@ class TestReportBody(_Body):
         return {story for scenario in self.scenarios for story in scenario.story_ids}
 
 
+# ----- responses -----
+
+
+class DocumentStoryResponse(BaseModel):
+    """A story of the team's board, as a document's pickers and links need it."""
+
+    id: UUID
+    key: str
+    title: str
+    acceptance_criteria: list[str]
+    #: Its sprint, or None in the backlog.
+    sprint_id: UUID | None
+    sprint_name: str | None
+    #: At least one task, and every task done.
+    completed: bool
+
+
+class DocumentStoriesResponse(BaseModel):
+    """GET /projects/{project_id}/documents/stories: the board's live stories in board order."""
+
+    stories: list[DocumentStoryResponse]
+
+
 # ----- requests -----
 
 

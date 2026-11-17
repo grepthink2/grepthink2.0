@@ -212,6 +212,27 @@ def _hours(tasks: list[dict]) -> int | None:
     return sum(t.get("estimate_hours") or 0 for t in tasks) or None
 
 
+def project_stories(ctx: Ctx) -> list[dict]:
+    """Every live story of the project, what a document's story pickers offer: each sprint's (sprints
+    by start), then the backlog's, each list in board order. A legacy archived story, which the board
+    lists in its backlog, is left out. Each names its sprint (None in the backlog), its criteria, and
+    whether it is completed (:func:`story_completed`)."""
+    return [
+        {
+            "id": story["id"],
+            "key": story["key"],
+            "title": story["title"],
+            "acceptance_criteria": list(story.get("acceptance_criteria") or []),
+            "sprint_id": sprint["id"] if sprint else None,
+            "sprint_name": sprint["name"] if sprint else None,
+            "completed": story_completed(story, ctx.tasks_of(story)),
+        }
+        for sprint, stories in _lists(ctx)
+        for story in stories
+        if not story.get("archived_at")
+    ]
+
+
 def _story_line(ctx: Ctx, story: dict) -> dict:
     return {
         "id": story["id"],

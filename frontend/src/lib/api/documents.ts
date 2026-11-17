@@ -7,6 +7,7 @@ import type {
   ApiDocumentRevisionEntry,
   ApiDocumentSaved,
   ApiDocumentSlot,
+  ApiDocumentStory,
   ApiProjectDocument,
 } from './types';
 
@@ -17,6 +18,13 @@ export const documentsApi = {
   /** The team's Documents tab: every document it can have, made or not, in the tab's order. */
   getProjectDocuments: async (projectId: string) =>
     apiRequest<{ documents: ApiDocumentSlot[] }>(`/api/projects/${projectId}/documents`),
+
+  /**
+   * Every live story of the team's board in board order, for a document's story pickers and its links
+   * to the board (team members and class staff). Unlike the board's own read it records nothing.
+   */
+  getDocumentStories: async (projectId: string) =>
+    apiRequest<{ stories: ApiDocumentStory[] }>(`/api/projects/${projectId}/documents/stories`),
 
   /**
    * Make one of the team's documents (team members): a sprint report names its sprint, a project's

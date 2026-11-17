@@ -43,6 +43,16 @@ describe('getProjectDocuments', () => {
   });
 });
 
+describe('getDocumentStories', () => {
+  it("GETs the board's live stories for the documents' pickers", async () => {
+    const stories = { stories: [{ id: 's1', key: 'US-1', sprint_id: null }] };
+    fetchMock.mockResolvedValue(jsonResponse(200, stories));
+
+    await expect(documentsApi.getDocumentStories('p1')).resolves.toEqual(stories);
+    expect(sent()).toEqual({ url: '/api/projects/p1/documents/stories', method: 'GET', body: undefined });
+  });
+});
+
 describe('createDocument', () => {
   it.each<[string, ApiDocumentKind, string | undefined, object]>([
     ['a sprint report, with its sprint', 'sprint_report', 's1', { kind: 'sprint_report', sprint_id: 's1' }],

@@ -1173,6 +1173,23 @@ export interface ApiClassDocument {
   updated_at: string;
 }
 
+/**
+ * GET /api/projects/{project_id}/documents/stories: a live story of the team's board, as a document's
+ * story pickers and its links to the board need it. The list comes in board order: each sprint's
+ * stories (sprints by start), then the backlog's.
+ */
+export interface ApiDocumentStory {
+  id: string;
+  key: string;
+  title: string;
+  acceptance_criteria: string[];
+  /** Its sprint, or null in the backlog. */
+  sprint_id: string | null;
+  sprint_name: string | null;
+  /** At least one task, and every task done. */
+  completed: boolean;
+}
+
 export interface ApiDocumentInfo {
   id: string;
   project_id: string;
