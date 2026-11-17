@@ -248,12 +248,14 @@ function UnitTestFields({ item, index, editable, suggestionsId, onChange }: Unit
 /**
  * The test plan and report's editor: the system test scenarios (each with the stories it covers and
  * their criteria from the board, its steps in Markdown with a preview, its result and a note), the
- * stories with criteria that no scenario covers yet, each with a button that adds a scenario for it,
- * and the unit tests, with the team's repositories offered for a location.
+ * stories with criteria that no scenario covers yet, each with a button that adds a scenario for it
+ * (its steps are the story's criteria, so it waits for the board's stories), and the unit tests, with
+ * the team's repositories offered for a location.
  */
 export default function TestReportEditor({ doc, body, editable, onChange, story, board }: TestReportEditorProps) {
   const suggestionsId = useId();
   const uncoveredId = useId();
+  const waitId = useId();
   const editorRef = useRef<HTMLDivElement>(null);
   /** A scenario added from the uncovered list, whose title takes focus once it is drawn. */
   const focusScenario = useRef<string | null>(null);
@@ -273,6 +275,8 @@ export default function TestReportEditor({ doc, body, editable, onChange, story,
     return derived.uncovered.filter((s) => !covered.has(s.id));
   }, [derived.uncovered, body.scenarios]);
   const scenariosFull = body.scenarios.length >= SCENARIOS_MAX;
+  // A scenario added for a story takes its criteria as steps: the board's stories must be read first.
+  const criteriaRead = board.status === 'ready';
 
   const setScenario = (next: ApiTestScenario) =>
     onChange({ ...body, scenarios: body.scenarios.map((s) => (s.id === next.id ? next : s)) });
@@ -316,11 +320,27 @@ export default function TestReportEditor({ doc, body, editable, onChange, story,
             <p className="document-uncovered__intro" id={uncoveredId}>
               These stories have acceptance criteria that no scenario covers:
             </p>
+            {!criteriaRead && (
+              <p className="document-uncovered__wait" id={waitId}>
+                {board.status === 'error' ? (
+                  <>
+                    Couldn’t load the stories’ criteria.{' '}
+                    <button type="button" className="document-uncovered__retry" onClick={board.retry}>Try again</button>
+                  </>
+                ) : 'Loading the stories’ criteria…'}
+              </p>
+            )}
             <ul className="document-uncovered__list">
               {uncovered.map((s) => (
                 <li key={s.id}>
                   <span><span className="document-key-story__key">{s.key}</span> {s.title}</span>
-                  <Button variant="ghost" size="sm" disabled={scenariosFull} onClick={() => addScenarioFor(s)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={scenariosFull || !criteriaRead}
+                    aria-describedby={criteriaRead ? undefined : waitId}
+                    onClick={() => addScenarioFor(s)}
+                  >
                     Add a scenario for it<span className="gt-visually-hidden">{`: ${s.key}`}</span>
                   </Button>
                 </li>

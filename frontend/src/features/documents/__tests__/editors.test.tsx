@@ -190,6 +190,26 @@ describe('TestReportEditor', () => {
     expect(screen.queryByRole('button', { name: 'Add a scenario for it: US-4' })).not.toBeInTheDocument();
   });
 
+  it("waits for the board's stories before it adds a scenario for a story, and offers to read them again", async () => {
+    const doc = makeDocument('test_report', { body, derived });
+    const retry = vi.fn();
+    const { rerender } = render(
+      <TestReportEditor doc={doc} body={body} editable onChange={vi.fn()} story={storyLookup(doc, new Map())} board={{ ...board(), status: 'loading' }} />,
+    );
+    const add = screen.getByRole('button', { name: 'Add a scenario for it: US-4' });
+    expect(add).toBeDisabled();
+    expect(add).toHaveAccessibleDescription('Loading the stories’ criteria…');
+
+    rerender(<TestReportEditor doc={doc} body={body} editable onChange={vi.fn()} story={storyLookup(doc, new Map())} board={{ ...board(), status: 'error', retry }} />);
+    expect(screen.getByRole('button', { name: 'Add a scenario for it: US-4' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+
+    rerender(<TestReportEditor doc={doc} body={body} editable onChange={vi.fn()} story={storyLookup(doc, new Map())} board={board()} />);
+    expect(screen.getByRole('button', { name: 'Add a scenario for it: US-4' })).toBeEnabled();
+    expect(screen.queryByText('Loading the stories’ criteria…')).not.toBeInTheDocument();
+  });
+
   it('lists unit tests with the repositories as suggestions, and marks failing ones', async () => {
     const onBody = vi.fn();
     render(<Editing onBody={onBody} />);
