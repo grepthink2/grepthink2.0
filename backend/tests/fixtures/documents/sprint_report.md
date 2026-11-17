@@ -29,6 +29,21 @@
 - US-7: Show elevation (8 points, 3 hours)
 - US-3: Story without tasks
 
+### After the sprint ended
+
+Work finished after the sprint's last day. It is not counted in this sprint's numbers or rates.
+
+Stories completed since:
+
+- US-7: Show elevation (8 points, 3 hours)
+
+Tasks finished since:
+
+- September 29, 2026: Elevation query (US-7, 3 hours)
+- October 2, 2026: Fix the save button (US-4)
+
+Hours in those tasks: 3
+
 ## Work completion rate
 
 - User stories completed: 2

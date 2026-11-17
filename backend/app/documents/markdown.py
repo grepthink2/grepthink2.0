@@ -159,6 +159,35 @@ def _ref(ref: dict) -> str:
     return f"{inline(ref['key'])}: {inline(ref['title'])}"
 
 
+def _after_sprint(after: dict | None) -> list[str]:
+    """What the team finished after the sprint ended (``after_sprint``, None without an end record),
+    when there is any: the stories completed since, the tasks finished since by day, and their
+    hours."""
+    if not after or not (after.get("stories") or after.get("tasks")):
+        return []
+    tasks = []
+    for task in after.get("tasks") or []:
+        details = [inline(task["story_key"])]
+        if task.get("hours") is not None:
+            details.append(_count(task["hours"], "hour"))
+        day = day_label(date.fromisoformat(task["done_on"]))
+        tasks.append(f"- {day}: {inline(task['title'])} ({', '.join(details)})")
+    return [
+        "### After the sprint ended",
+        "",
+        "Work finished after the sprint's last day. It is not counted in this sprint's numbers or rates.",
+        "",
+        "Stories completed since:",
+        "",
+        *_section([_story(s) for s in after.get("stories") or []]),
+        "Tasks finished since:",
+        "",
+        *_section(tasks),
+        f"Hours in those tasks: {after.get('hours') or 0}",
+        "",
+    ]
+
+
 def _text(lines: list[str]) -> str:
     return "\n".join(lines).rstrip("\n") + "\n"
 
@@ -191,6 +220,7 @@ def render_sprint_report(heading: Heading, body: dict, derived: dict) -> str:
     lines += _section([_story(s) for s in derived["completed"]])
     lines += ["### Not completed", ""]
     lines += _section([_story(s) for s in derived["not_completed"]])
+    lines += _after_sprint(derived.get("after_sprint"))
 
     to_date = derived["to_date"]
     lines += [

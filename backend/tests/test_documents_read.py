@@ -418,6 +418,7 @@ def test_a_sprint_report_reads_the_stories_its_sprint_ended_with(db):
     assert [s["key"] for s in derived["completed"]] == ["US-3"]
     assert derived["not_completed"] == []  # US-4 was not in the sprint that day
     assert derived["hours_completed"] == 5
+    assert derived["after_sprint"] == {"stories": [], "tasks": [], "hours": 0}
 
 
 def test_a_revision_number_past_the_databases_integer_is_422(db, client):

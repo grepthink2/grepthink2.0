@@ -3,19 +3,23 @@
 One board serves every test: three sprints and a backlog. Sprint 1 (Sep 7-13, 7 days) holds US-1 (done),
 US-2 (one task not done) and US-3 (no task). Sprint 2 (Sep 14-27, 14 days) holds US-5 (rank 1, done),
 US-7 (rank 2, under way), US-4 (unranked, done) and, as a legacy archived row, US-6, which the board lists
-in the backlog. Sprint 3 holds US-8. The backlog holds US-10 (rank 1) and US-9.
+in the backlog. Sprint 3 holds US-8. The backlog holds US-10 (rank 1) and US-9. The school's zone is a
+fixed UTC-8.
 """
 
 from __future__ import annotations
 
 import dataclasses
 from datetime import date
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from app.documents import derive
 from app.documents.derive import Ctx
 from tests.documents_support import PID, documents_db, sprint, story, task
+
+ZONE = ZoneInfo("Etc/GMT+8")
 
 S1, S2, S3 = (f"5b000000-0000-4000-8000-00000000000{n}" for n in (1, 2, 3))
 SPRINTS = [
@@ -103,6 +107,7 @@ def ctx(sprint_id: str | None = None, *, today: date = AFTER_SPRINT_2, **changes
         today=today,
         burnup_days=changes.pop("burnup_days", BURNUP_S2),
         repos=changes.pop("repos", [REPO]),
+        zone=ZONE,
     )
 
 
@@ -144,6 +149,7 @@ def test_the_sprint_report_splits_the_sprint_and_works_out_its_rates():
     assert (out["stories_per_day"], out["hours_per_day"]) == (0.14, 0.71)
     assert out["to_date"] == {"sprints_counted": 2, "stories_per_day": 0.14, "hours_per_day": 0.76}
     assert out["as_of"] == "now"  # no saved day records the sprint's stories: the board as it is
+    assert out["after_sprint"] is None  # and nothing to tell apart from the sprint as it ended
 
 
 def test_hours_count_only_the_completed_stories():
@@ -299,6 +305,166 @@ def test_the_burnup_counts_every_done_task_so_it_can_end_above_the_hours():
 
     assert out["hours_completed"] == 10
     assert out["burnup"]["completed"][-1] == 12
+
+
+# --------------------------------------------------------------- after the sprint ended ----
+
+
+def done_at(n: int, story_n: int, *moved_at: str, hours: int | None = None) -> dict:
+    """Task ``n`` of story ``story_n``, done, moved to done at each of ``moved_at`` (UTC)."""
+    moves = [{"to_status": "done", "moved_at": at} for at in moved_at]
+    return {**task(tid(n), sid(story_n), "done", hours=hours), "task_moves": moves}
+
+
+def after_the_end(**changes) -> Ctx:
+    """Sprint 2 on Oct 1, as it ended on Sep 27: :data:`END_OF_S2`."""
+    return ctx(S2, burnup_days=[recorded(S2, "2026-09-27", END_OF_S2)], **changes)
+
+
+def test_a_story_completed_after_the_sprint_ended_shows_apart_and_counts_nowhere():
+    """US-7 ended Sprint 2 under way, and its task was done on Sep 29 at the school: the story shows as
+    completed since, with that task and its hours, outside the sprint's numbers."""
+    tasks = [
+        done_at(8, 7, "2026-09-29T18:00:00+00:00", hours=3) if t["id"] == tid(8) else t
+        for t in TASKS
+    ]
+
+    out = derive.derive_sprint_report(after_the_end(tasks=tasks), {})
+
+    assert out["after_sprint"] == {
+        "stories": [line(7, "US-7", 8, 3)],
+        "tasks": [
+            {
+                "id": tid(8),
+                "story_key": "US-7",
+                "title": "Task 08",
+                "hours": 3,
+                "done_on": "2026-09-29",
+            }
+        ],
+        "hours": 3,
+    }
+    assert out["not_completed"] == [line(7, "US-7", 8, 3)]  # as the sprint ended
+    assert (out["stories_completed"], out["hours_completed"], out["hours_per_day"]) == (2, 10, 0.71)
+    assert out["to_date"]["hours_per_day"] == 0.76  # (6 + 10) / 21, as without it
+
+
+def test_a_task_finished_after_the_last_day_at_the_school_shows_apart():
+    """US-4 ended Sprint 2 completed, and two tasks were added to it and done: one at 23:30 on Sep 27 at
+    the school (07:30 UTC on the 28th), the sprint's last day, and one half an hour later, on the 28th.
+    Only the second was finished after the sprint ended."""
+    tasks = [
+        *TASKS,
+        done_at(11, 4, "2026-09-28T07:30:00+00:00", hours=1),
+        done_at(12, 4, "2026-09-28T08:00:00+00:00", hours=2),
+    ]
+
+    out = derive.derive_sprint_report(after_the_end(tasks=tasks), {})
+
+    assert out["after_sprint"] == {
+        "stories": [],
+        "tasks": [
+            {
+                "id": tid(12),
+                "story_key": "US-4",
+                "title": "Task 12",
+                "hours": 2,
+                "done_on": "2026-09-28",
+            }
+        ],
+        "hours": 2,
+    }
+
+
+def test_a_task_counts_by_its_latest_move_to_done():
+    """US-4's first task was done on Sep 18, reopened on Sep 29 and done again on Sep 30."""
+    moves = [
+        {"to_status": "done", "moved_at": "2026-09-18T20:00:00+00:00"},
+        {"to_status": "in_progress", "moved_at": "2026-09-29T20:00:00+00:00"},
+        {"to_status": "done", "moved_at": "2026-09-30T20:00:00+00:00"},
+    ]
+    tasks = [{**t, "task_moves": moves} if t["id"] == tid(5) else t for t in TASKS]
+
+    out = derive.derive_sprint_report(after_the_end(tasks=tasks), {})
+
+    assert [(t["id"], t["done_on"]) for t in out["after_sprint"]["tasks"]] == [
+        (tid(5), "2026-09-30")
+    ]
+    assert out["after_sprint"]["hours"] == 5
+
+
+def test_a_task_with_no_move_to_done_and_a_story_moved_on_are_left_out():
+    """US-5's task is done with no move recorded (as old rows and some imports have it). US-7 was
+    completed after the sprint ended, but it was moved into Sprint 3 first: it shows in that sprint's
+    report, not here."""
+    stories = [{**s, "sprint_id": S3} if s["id"] == sid(7) else s for s in STORIES]
+    tasks = [
+        *[t for t in TASKS if t["id"] != tid(8)],
+        done_at(8, 7, "2026-09-29T18:00:00+00:00", hours=3),
+        task(tid(13), sid(5), "done", hours=2),  # done, no move
+    ]
+
+    out = derive.derive_sprint_report(after_the_end(stories=stories, tasks=tasks), {})
+
+    assert out["after_sprint"] == {"stories": [], "tasks": [], "hours": 0}
+
+
+def test_tasks_finished_after_the_end_are_listed_by_day_then_by_story():
+    """By the day each was finished, then in the order the sprint ended with its stories: US-5, US-7,
+    US-4. A task without hours adds none."""
+    tasks = [
+        *[t for t in TASKS if t["id"] != tid(8)],
+        done_at(8, 7, "2026-09-30T18:00:00+00:00", hours=3),
+        done_at(11, 4, "2026-09-29T18:00:00+00:00"),
+        done_at(12, 4, "2026-09-30T17:00:00+00:00", hours=1),
+        done_at(13, 5, "2026-09-30T19:00:00+00:00", hours=2),
+    ]
+
+    out = derive.derive_sprint_report(after_the_end(tasks=tasks), {})
+
+    assert [(t["done_on"], t["story_key"], t["id"]) for t in out["after_sprint"]["tasks"]] == [
+        ("2026-09-29", "US-4", tid(11)),
+        ("2026-09-30", "US-5", tid(13)),
+        ("2026-09-30", "US-7", tid(8)),
+        ("2026-09-30", "US-4", tid(12)),
+    ]
+    assert out["after_sprint"]["tasks"][0]["hours"] is None
+    assert out["after_sprint"]["hours"] == 6
+
+
+def test_at_most_100_tasks_are_listed_and_every_ones_hours_count():
+    many = [
+        {
+            **task(f"5e000000-0000-4000-8000-{n:012d}", sid(4), "done", hours=1),
+            "task_moves": [{"to_status": "done", "moved_at": "2026-09-29T18:00:00+00:00"}],
+        }
+        for n in range(101)
+    ]
+
+    out = derive.derive_sprint_report(after_the_end(tasks=[*TASKS, *many]), {})
+
+    assert len(out["after_sprint"]["tasks"]) == derive.AFTER_SPRINT_TASKS_MAX == 100
+    assert out["after_sprint"]["hours"] == 101
+
+
+def test_nothing_is_after_the_sprint_while_it_runs():
+    """On Sep 21 the last saved day (Sep 20) has US-7 unfinished, and it was completed since without a
+    snapshot: nothing is after the end of a sprint that has not ended."""
+    tasks = [
+        done_at(8, 7, "2026-09-21T18:00:00+00:00", hours=3) if t["id"] == tid(8) else t
+        for t in TASKS
+    ]
+    board = ctx(
+        S2,
+        tasks=tasks,
+        burnup_days=[recorded(S2, "2026-09-20", END_OF_S2)],
+        today=date(2026, 9, 21),
+    )
+
+    out = derive.derive_sprint_report(board, {})
+
+    assert out["as_of"] == "2026-09-20"
+    assert out["after_sprint"] == {"stories": [], "tasks": [], "hours": 0}
 
 
 def test_the_burnup_replays_the_task_moves_for_days_nobody_saved():

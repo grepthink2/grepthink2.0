@@ -1299,6 +1299,35 @@ export interface ApiDocumentStoryLine {
   hours: number | null;
 }
 
+/** A task finished after its sprint ended. */
+export interface ApiSprintReportLateTask {
+  id: string;
+  /** Its story's key, as it is now. */
+  story_key: string;
+  title: string;
+  hours: number | null;
+  /** The day (YYYY-MM-DD, at the school) of its latest move to done. */
+  done_on: string;
+}
+
+/**
+ * What the team finished after the sprint ended, among the stories it ended with that are still in it (a
+ * story moved to another sprint shows in that sprint's report). None of it counts in the sprint's numbers
+ * or rates. Empty while the sprint runs.
+ */
+export interface ApiSprintReportAfterSprint {
+  /** Stories the sprint ended with unfinished that are completed now, as they are now. */
+  stories: ApiDocumentStoryLine[];
+  /**
+   * The tasks of those stories, and of the ones the sprint ended with completed, that are done now and
+   * were last moved to done after its last day: by that day, then the stories' order. At most 100; a
+   * task with no recorded move to done is left out.
+   */
+  tasks: ApiSprintReportLateTask[];
+  /** The estimate hours of every such task, listed or not. */
+  hours: number;
+}
+
 export interface ApiSprintReportDerived {
   /**
    * The sprint's stories as it ended: completed ones (a task, every task done), then the others, each
@@ -1324,6 +1353,8 @@ export interface ApiSprintReportDerived {
   hours_per_day: number;
   /** The same rates over this sprint and every earlier one, each as it ended (stories, then hours, over all their days). */
   to_date: { sprints_counted: number; stories_per_day: number; hours_per_day: number };
+  /** What was finished after the sprint ended, outside its numbers; null when the board now stands in (`as_of` "now"). */
+  after_sprint: ApiSprintReportAfterSprint | null;
   /** The sprint's burnup in the unit the board opens it in; days nobody saved are replayed from the task moves. */
   burnup: { unit: ApiScrumBurnupUnit; labels: string[]; scope: number[]; completed: number[] };
 }

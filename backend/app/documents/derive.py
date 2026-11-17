@@ -12,8 +12,10 @@ recorded the sprint's stories (``sprint_burnup_days.stories``: each one's id, wh
 tasks' hours and its points, in board order). The report lists the recorded stories that still exist, by
 their key and title now and with the points and hours they ended with; a story deleted since is left out
 everywhere. It counts the completed ones and the hours in them, so a story finished in a later sprint
-counts there, once; the burnup still counts every done task. A sprint no saved day describes that way (days saved before the board recorded stories, or rebuilt by an
-import) falls back to the board as it is now, and says so (``as_of``: ``"now"``).
+counts there, once; the burnup still counts every done task. What the team finished after the sprint
+ended, among the recorded stories still in it, is listed apart (``after_sprint``) and counts nowhere. A
+sprint no saved day describes that way (days saved before the board recorded stories, or rebuilt by an
+import) falls back to the board as it is now, and says so (``as_of``: ``"now"``, ``after_sprint``: None).
 """
 
 from __future__ import annotations
@@ -45,14 +47,19 @@ NEED_RESULTS = "Mark every scenario as passed or failed"
 #: 2026-11-16_story_rank_and_criteria.sql, which the documents migration requires.
 _STORY_COLUMNS = "id, key, title, points, sprint_id, archived_at, rank, acceptance_criteria"
 _TASK_COLUMNS = "id, story_id, status, estimate_hours, points"
-#: A sprint report's tasks carry their moves, for the burnup's days that no snapshot saved.
-_TASK_MOVES = "task_moves!task_moves_task_id_fkey(to_status, moved_at)"
+#: A sprint report's tasks also carry their title and their moves: a task finished after the sprint
+#: ended is listed by its title and day, and the burnup replays the moves for the days no snapshot saved.
+_REPORT_TASK_COLUMNS = (
+    f"{_TASK_COLUMNS}, title, task_moves!task_moves_task_id_fkey(to_status, moved_at)"
+)
 #: Each sprint's saved days, with the stories they recorded (a sprint report: its sprint, and the
 #: earlier ones for the rates to date).
 _SPRINT_DAYS = (
     "sprint_burnup_days(sprint_id, day, scope_points, completed_points, scope_hours, "
     "completed_hours, stories)"
 )
+#: The most tasks ``after_sprint`` lists, so a snapshot stays small.
+AFTER_SPRINT_TASKS_MAX = 100
 #: The task column that holds a task's value in each burnup unit (the board's).
 _UNIT_COLUMN = {"points": "points", "hours": "estimate_hours"}
 
@@ -69,7 +76,7 @@ class Ctx:
     #: Every story of the project (:data:`_STORY_COLUMNS`).
     stories: list[dict]
     #: Every task of the project: ``id, story_id, status, estimate_hours, points``, and for a sprint
-    #: report its ``task_moves``.
+    #: report its ``title`` and ``task_moves``.
     tasks: list[dict]
     #: Today at the project's school.
     today: date
@@ -114,8 +121,8 @@ def context_jobs(
     client, project_id, sprint_id, *, burnup: bool = False, repos: bool = False
 ) -> dict[str, Callable[[], list[dict]]]:
     """The reads behind a :class:`Ctx`, for ``fan_out`` (a caller adds its own beside them). With
-    ``burnup``, every sprint's saved days ride on the sprints and every task's moves on the tasks; the
-    team's repository URLs are read only with ``repos``.
+    ``burnup`` (a sprint report), every sprint's saved days ride on the sprints, and every task's
+    title and moves on the tasks; the team's repository URLs are read only with ``repos``.
     """
     pid = str(project_id)
 
@@ -123,7 +130,7 @@ def context_jobs(
         return query.execute().data or []
 
     sprint_columns = "id, name, starts_at, ends_at" + (f", {_SPRINT_DAYS}" if burnup else "")
-    task_columns = _TASK_COLUMNS + (f", {_TASK_MOVES}" if burnup else "")
+    task_columns = _REPORT_TASK_COLUMNS if burnup else _TASK_COLUMNS
     jobs: dict[str, Callable[[], list[dict]]] = {
         "sprints": lambda: rows(
             client.table("sprints").select(sprint_columns).eq("project_id", pid).order("starts_at")
@@ -187,12 +194,14 @@ def story_completed(story: dict, tasks: list[dict]) -> bool:
     return bool(tasks) and all(t.get("status") == "done" for t in tasks)
 
 
+def _in_sprint(story: dict, sprint: dict) -> bool:
+    """Whether the board lists ``story`` in ``sprint``: it names the sprint and is not archived."""
+    return story.get("sprint_id") == sprint["id"] and not story.get("archived_at")
+
+
 def _sprint_stories(ctx: Ctx, sprint: dict) -> list[dict]:
     """A sprint's live stories in board order."""
-    return sorted(
-        (s for s in ctx.stories if s.get("sprint_id") == sprint["id"] and not s.get("archived_at")),
-        key=story_order,
-    )
+    return sorted((s for s in ctx.stories if _in_sprint(s, sprint)), key=story_order)
 
 
 def _lists(ctx: Ctx) -> list[tuple[dict | None, list[dict]]]:
@@ -248,6 +257,10 @@ class _Members:
 
     entries: list[_Member]
     as_of: str
+
+    @property
+    def recorded(self) -> bool:
+        return self.as_of != "now"
 
 
 def _day_of(row: dict) -> date:
@@ -308,6 +321,58 @@ def _sprint_numbers(ctx: Ctx, sprint: dict) -> tuple[int, int, int]:
 
 def _instant(value) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
+def _finished_at(task: dict) -> datetime | None:
+    """When a task was last moved to done; None when no such move is recorded."""
+    moves = task.get("task_moves") or []
+    return max(
+        (_instant(m["moved_at"]) for m in moves if m.get("to_status") == "done"), default=None
+    )
+
+
+def _after_sprint(ctx: Ctx, sprint: dict, members: _Members) -> dict | None:
+    """What the team finished after the sprint ended, counted nowhere in its numbers. Among the end
+    record's stories still in the sprint (a story moved to another sprint shows in that one's report):
+    those it ended unfinished that are completed now, as they are now; and the tasks of those and of the
+    ones it ended completed that are done now and were last moved to done after its last day at the
+    school (a task with no move to done is left out), by that day and then the story's order, at most
+    :data:`AFTER_SPRINT_TASKS_MAX`; and the hours of every such task. Empty before the sprint has
+    ended; None without an end record."""
+    if not members.recorded:
+        return None
+    last_day = sprint_days(sprint)[1]
+    ended = ctx.today > last_day
+    still_here = [m for m in members.entries if _in_sprint(m.story, sprint)] if ended else []
+    stories: list[dict] = []
+    # (the day at the school, the story's place, the instant, the task's id, the task, its story)
+    late: list[tuple[date, int, datetime, str, dict, dict]] = []
+    for place, member in enumerate(still_here):
+        story, now = member.story, _member_now(ctx, member.story)
+        if not member.done:
+            if not now.done:
+                continue
+            stories.append(_member_line(now))
+        for task in ctx.tasks_of(story):
+            at = _finished_at(task) if task.get("status") == "done" else None
+            day = at.astimezone(ctx.zone).date() if at else None
+            if day is not None and day > last_day:
+                late.append((day, place, at, str(task["id"]), task, story))
+    late.sort(key=lambda entry: entry[:4])
+    return {
+        "stories": stories,
+        "tasks": [
+            {
+                "id": task["id"],
+                "story_key": story["key"],
+                "title": task.get("title"),
+                "hours": task.get("estimate_hours"),
+                "done_on": day.isoformat(),
+            }
+            for day, _, _, _, task, story in late[:AFTER_SPRINT_TASKS_MAX]
+        ],
+        "hours": sum(entry[4].get("estimate_hours") or 0 for entry in late),
+    }
 
 
 def _replayed(ctx: Ctx, sprint: dict, stories: list[dict], unit: str) -> dict[str, int] | None:
@@ -373,7 +438,8 @@ def derive_sprint_report(ctx: Ctx, body: dict) -> dict:
     key and title now with the points and hours it ended with; its numbers and rates, which count the
     completed stories and the hours in them; the same rates to date (this sprint and every one that
     started before it, each from its own end record or the board now, pooled: stories over days, hours
-    over days); its burnup; and ``as_of``, the saved day the stories come from or ``"now"``."""
+    over days); what was finished after it ended (``after_sprint``); its burnup; and ``as_of``, the
+    saved day the stories come from or ``"now"``."""
     sprint = ctx.sprint
     members = _members(ctx, sprint)
     done, hours, days = _numbers(sprint, members)
@@ -394,6 +460,7 @@ def derive_sprint_report(ctx: Ctx, body: dict) -> dict:
             "stories_per_day": _rate(sum(n[0] for n in numbers), all_days),
             "hours_per_day": _rate(sum(n[1] for n in numbers), all_days),
         },
+        "after_sprint": _after_sprint(ctx, sprint, members),
         "burnup": _burnup(ctx, sprint, [m.story for m in members.entries]),
         "as_of": members.as_of,
     }

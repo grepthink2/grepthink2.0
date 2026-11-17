@@ -45,6 +45,26 @@ SPRINT_DERIVED = {
     "stories_per_day": 0.14,
     "hours_per_day": 0.71,
     "to_date": {"sprints_counted": 2, "stories_per_day": 0.14, "hours_per_day": 0.9},
+    "after_sprint": {
+        "stories": [{"id": "7", "key": "US-7", "title": "Show elevation", "points": 8, "hours": 3}],
+        "tasks": [
+            {
+                "id": "t8",
+                "story_key": "US-7",
+                "title": "Elevation query",
+                "hours": 3,
+                "done_on": "2026-09-29",
+            },
+            {
+                "id": "t12",
+                "story_key": "US-4",
+                "title": "Fix the save button",
+                "hours": None,
+                "done_on": "2026-10-02",
+            },
+        ],
+        "hours": 3,
+    },
     "burnup": {"unit": "hours", "labels": [], "scope": [], "completed": []},
 }
 
@@ -190,6 +210,36 @@ def test_an_empty_section_says_none():
     assert "Burnup" not in text  # no link without the board's address
 
 
+@pytest.mark.parametrize(
+    "after_sprint",
+    [
+        pytest.param(None, id="no end record"),
+        pytest.param({"stories": [], "tasks": [], "hours": 0}, id="nothing finished since"),
+        pytest.param("absent", id="a hand-in without the section"),
+    ],
+)
+def test_the_after_sprint_section_shows_only_when_something_was_finished(after_sprint):
+    heading = Heading(project_name="Trailhead", date=date(2026, 9, 28), sprint_name="Sprint 2")
+    derived = {**SPRINT_DERIVED, "after_sprint": after_sprint}
+    if after_sprint == "absent":
+        del derived["after_sprint"]
+    text = markdown.render_sprint_report(heading, SPRINT_BODY, derived)
+
+    assert "After the sprint ended" not in text
+    assert "### Not completed\n\n- US-7: Show elevation (8 points, 3 hours)\n" in text
+    assert "\n\n## Work completion rate\n" in text
+
+
+def test_the_after_sprint_section_says_none_for_an_empty_part():
+    heading = Heading(project_name="Trailhead", date=date(2026, 9, 28), sprint_name="Sprint 2")
+    after = {**SPRINT_DERIVED["after_sprint"], "stories": []}
+    text = markdown.render_sprint_report(
+        heading, SPRINT_BODY, {**SPRINT_DERIVED, "after_sprint": after}
+    )
+
+    assert "Stories completed since:\n\nNone.\n\nTasks finished since:\n\n- September 29" in text
+
+
 # --------------------------------------------------------------------------- escaping ----
 
 HOSTILE = (
@@ -255,6 +305,19 @@ def test_no_student_text_adds_a_heading_or_leaves_its_place():
         {
             **SPRINT_DERIVED,
             "completed": [{"id": "x", "key": HOSTILE, "title": HOSTILE, "points": 1, "hours": 1}],
+            "after_sprint": {
+                "stories": [{"id": "y", "key": HOSTILE, "title": HOSTILE, "points": 1, "hours": 1}],
+                "tasks": [
+                    {
+                        "id": "z",
+                        "story_key": HOSTILE,
+                        "title": HOSTILE,
+                        "hours": 1,
+                        "done_on": "2026-09-29",
+                    }
+                ],
+                "hours": 1,
+            },
         },
     )
     assert _headings(sprint) == [
@@ -265,6 +328,7 @@ def test_no_student_text_adds_a_heading_or_leaves_its_place():
         "## Work completed / not completed",
         "### Completed",
         "### Not completed",
+        "### After the sprint ended",
         "## Work completion rate",
     ]
     assert re.fullmatch(r"# Sprint .* Report", sprint.split("\n")[0])
