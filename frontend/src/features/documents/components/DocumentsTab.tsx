@@ -113,15 +113,17 @@ export default function DocumentsTab({ projectId, canStart, projectName }: Docum
         </span>
       ),
     },
-    { key: 'status', label: 'Status', render: (row) => <Badge status={STATE_BADGE[documentState(row.document)]} /> },
+    { key: 'status', label: 'Status', className: 'documents-tab__status', render: (row) => <Badge status={STATE_BADGE[documentState(row.document)]} /> },
     {
       key: 'revision',
       label: 'Revision',
+      className: 'documents-tab__revision',
       render: (row) => (row.document ? `Revision ${row.document.head_revision}` : ''),
     },
     {
       key: 'saved',
       label: 'Last saved',
+      className: 'documents-tab__saved',
       render: (row) => (row.document
         ? `${formatDate(row.document.updated_at)}${row.document.saved_by_name ? ` by ${row.document.saved_by_name}` : ''}`
         : ''),

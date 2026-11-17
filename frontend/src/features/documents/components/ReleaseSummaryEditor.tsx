@@ -1,6 +1,6 @@
 import { useId, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Input } from '@components/Input/Input';
 import { Select } from '@components/Select/Select';
 import { Table, type TableColumn } from '@components/Table/Table';
@@ -64,7 +64,7 @@ function KeyStory({ story, editable, projectId, boardStory }: KeyStoryProps) {
       )}
       {editable && (
         <Link className="document-key-story__edit" to={storyBoardPath(projectId, story.id, boardStory ? boardStory.sprintId : undefined)}>
-          Edit on the board <ExternalLink size={12} aria-hidden="true" />
+          Edit on the board <ArrowRight size={12} aria-hidden="true" />
         </Link>
       )}
     </div>

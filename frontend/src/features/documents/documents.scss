@@ -347,7 +347,9 @@
   }
 }
 
-.document-rates__number { text-align: right; font-variant-numeric: tabular-nums; }
+// A table's numbers, header and cells, on the right. From the section, so it outranks the kit table's
+// own alignment.
+.document-section .document-rates__number { text-align: right; font-variant-numeric: tabular-nums; }
 
 // ----- Sprint report ---------------------------------------------------------------------------------
 
@@ -799,10 +801,12 @@
     color: var(--gt-text-primary);
   }
 
+  // Wide enough on a phone for a name and its dates to read on two lines; the table scrolls past it.
   &__name {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 9rem;
   }
 
   &__open {
@@ -818,5 +822,17 @@
     color: var(--gt-text-tertiary);
   }
 
-  &__action { text-align: right; white-space: nowrap; }
+  // Positioned, so the column's visually hidden name stays inside the table's scrolling wrapper.
+  &__action { position: relative; text-align: right; white-space: nowrap; }
+
+  // The two tables share their columns' widths, so their columns line up and the document's name takes
+  // the rest. On a phone the columns size to their content, and the table scrolls sideways in its own
+  // wrapper when it must, as the kit's tables do.
+  @media (min-width: 601px) {
+    .gt-table { table-layout: fixed; }
+    .documents-tab__status { width: 11rem; }
+    .documents-tab__revision { width: 7rem; }
+    .documents-tab__saved { width: 13rem; }
+    .documents-tab__action { width: 7rem; }
+  }
 }

@@ -108,7 +108,7 @@ export default function DocumentShell({
       <div className="document-page__actions">
         {editable && (
           <>
-            <Button onClick={onSave} disabled={!dirty} loading={saving} loadingLabel="Saving…">Save</Button>
+            <Button size="sm" onClick={onSave} disabled={!dirty} loading={saving} loadingLabel="Saving…">Save</Button>
             {/* In place from the start, so a screen reader hears the change from saved to not. */}
             <span className="document-page__save-state" aria-live="polite">
               {dirty ? 'Unsaved changes' : 'All changes saved'}
@@ -119,6 +119,7 @@ export default function DocumentShell({
           <span className="document-page__finalize">
             <Button
               variant="outline"
+              size="sm"
               disabled={finalizeHold !== null}
               aria-describedby={finalizeHold !== null ? holdId : undefined}
               loading={finalizing}
