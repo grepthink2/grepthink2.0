@@ -4,6 +4,7 @@ by key, and PUT /api/projects/{project_id}/scrum/stories/order sets one list's r
 from datetime import date
 
 import pytest
+from postgrest.exceptions import APIError
 
 from app.core import authz
 from app.scrum import controller
@@ -139,15 +140,16 @@ def test_ordering_a_sprint_ranks_its_stories_from_one(monkeypatch, client):
     assert res.status_code == 200, res.text
     assert res.json() == {"story_ids": [ST[3], ST[1], ST[2]]}
     assert _ranks(db, ST[3], ST[1], ST[2]) == [1, 2, 3]
-    # The access check, the sprint with its stories, and one rpc with the project and the ids in
-    # their new order. No burnup snapshot: the order moves no line.
+    # The access check, the sprint's project, and one rpc with the project, the sprint and the ids
+    # in their new order: the function checks the list under a lock. No burnup snapshot: the order
+    # moves no line.
     assert [q["table"] for q in db.queries] == [
         "project_members",
         "sprints",
         "rpc:scrum_set_story_order",
     ]
     [params] = db.queries[-1]["filters"]
-    assert params == {"p_project_id": PID, "p_story_ids": [ST[3], ST[1], ST[2]]}
+    assert params == {"p_project_id": PID, "p_sprint_id": SP, "p_story_ids": [ST[3], ST[1], ST[2]]}
     assert db.executes == 3
 
 
@@ -159,7 +161,11 @@ def test_ordering_the_backlog_takes_its_legacy_archived_story_too(monkeypatch, c
     assert res.status_code == 200, res.text
     assert _ranks(db, ST[6], ST[5], ST[4]) == [1, 2, 3]
     assert _ranks(db, ST[1], ST[7], THEIRS) == [1, None, None]  # the other lists stay as they were
-    assert db.executes == 3
+    # No sprint to check: the access check and the rpc, with a null sprint for the backlog.
+    assert [q["table"] for q in db.queries] == ["project_members", "rpc:scrum_set_story_order"]
+    [params] = db.queries[-1]["filters"]
+    order = [ST[6], ST[5], ST[4]]
+    assert params == {"p_project_id": PID, "p_sprint_id": None, "p_story_ids": order}
 
 
 def test_ids_are_matched_whatever_their_case(monkeypatch, client):
@@ -191,10 +197,53 @@ def test_a_list_that_is_not_the_live_one_is_refused_and_nothing_is_written(
 
     res = _put(client, {"sprint_id": sprint, "story_ids": ids})
 
+    # The function compares the ids with the list it locked and refuses (23505): nothing written.
     assert res.status_code == 409
     assert res.json()["detail"] == controller.STORIES_CHANGED
-    assert not [q for q in db.queries if q["op"] == "rpc"]
     assert _ranks(db, ST[1], ST[2], ST[3], ST[4], ST[5], ST[6]) == [1, 2, 3, None, None, None]
+
+
+def test_a_story_moved_out_of_the_list_before_the_save_is_refused(monkeypatch, client):
+    """A teammate moves US-3 to Sprint 2 after this client read the board and before its order
+    reaches the database: the list is checked where it is locked, so the order is refused rather
+    than ranking US-3 in a list it has left."""
+    db = _seed_lists(monkeypatch)
+    order = db.rpcs["scrum_set_story_order"]
+
+    def moved_first(params):
+        next(s for s in db.rows("user_stories") if s["id"] == ST[3])["sprint_id"] = SP2
+        return order(params)
+
+    db.rpcs["scrum_set_story_order"] = moved_first
+
+    res = _put(client, {"sprint_id": SP, "story_ids": [ST[3], ST[1], ST[2]]})
+
+    assert (res.status_code, res.json()["detail"]) == (409, controller.STORIES_CHANGED)
+    assert _ranks(db, ST[1], ST[2], ST[3]) == [1, 2, 3]
+
+
+def test_a_failing_order_save_answers_the_database_error(monkeypatch, client):
+    """Before the migration the function does not exist: the route answers PostgREST's refusal as
+    a failed write, and nothing is written."""
+    db = _seed_lists(monkeypatch)
+
+    def missing(_params):
+        raise APIError(
+            {
+                "code": "PGRST202",
+                "message": "Could not find the function public.scrum_set_story_order",
+                "details": None,
+                "hint": None,
+            }
+        )
+
+    db.rpcs["scrum_set_story_order"] = missing
+
+    res = _put(client, {"sprint_id": SP, "story_ids": [ST[3], ST[1], ST[2]]})
+
+    assert res.status_code == 500
+    assert res.json()["code"] == "database_write_failed"
+    assert _ranks(db, ST[1], ST[2], ST[3]) == [1, 2, 3]
 
 
 @pytest.mark.parametrize(

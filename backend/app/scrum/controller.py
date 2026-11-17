@@ -27,7 +27,7 @@ from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
-from app.core.errors import AppError
+from app.core.errors import AppError, DatabaseConflictError
 from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import (
@@ -555,56 +555,38 @@ def set_story_order(
     *, project_id: str, user_id: str, sprint_id: str | None, story_ids: list[str]
 ) -> list[str]:
     """Order one list of stories: ``sprint_id``'s live stories, or the backlog's when it is None
-    (:func:`_in_backlog`). Each story takes its position in ``story_ids`` as its ``rank``, 1 first,
-    in one ``scrum_set_story_order`` call.
+    (the rule of :func:`_in_backlog`). Each story takes its position in ``story_ids`` as its
+    ``rank``, 1 first.
+
+    ``scrum_set_story_order`` does it in one transaction: it locks the list's stories, refuses
+    (23505) unless ``story_ids`` are exactly those stories, each once, and only then writes. The
+    check sits where the lock is, so a story moved into or out of the list by a teammate can't slip
+    between a check and the write.
 
     Who can call: team members. Returns the ids in their saved order. Raises 404
     :data:`authz.PROJECT_NOT_FOUND`, 403 as :func:`_require_writer`, 404 :data:`SPRINT_NOT_FOUND`
     for a sprint that is not the project's, and 409 :data:`STORIES_CHANGED`, with nothing written,
-    unless ``story_ids`` are exactly the list's stories (one missing, an extra one, one of another
-    sprint or project). Three round trips: the access check, the list's stories, the rpc. No burnup
-    snapshot: the order moves no line.
+    when the list is not the one the database holds (a story missing, an extra one, one of another
+    list or project). Round trips: the access check, the sprint's project when a sprint is named,
+    and the rpc. No burnup snapshot: the order moves no line.
     """
     client = get_client()
     _require_writer(client, project_id=project_id, user_id=user_id)
-    pid = str(project_id).lower()
-    if sprint_id is None:
-        rows = (
-            client.table("user_stories")
-            .select("id, sprint_id, archived_at")
-            .eq("project_id", str(project_id))
-            .execute()
-        ).data or []
-        stories = [s for s in rows if _in_backlog(s)]
-    else:
-        # The sprint and its stories in one read: its project says whether it is this one's.
-        res = (
-            client.table("sprints")
-            .select("project_id, user_stories(id, project_id, archived_at)")
-            .eq("id", str(sprint_id))
-            .maybe_single()
-            .execute()
-        )
-        sprint = res.data if res else None
-        if not sprint or str(sprint["project_id"]).lower() != pid:
-            raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
-        stories = [
-            s
-            for s in sprint.get("user_stories") or []
-            if str(s["project_id"]).lower() == pid and not s.get("archived_at")
-        ]
-    # The database's ids, so an id sent in other letters still matches.
-    by_id = {str(s["id"]).lower(): s["id"] for s in stories}
-    wanted = [str(i).lower() for i in story_ids]
-    if sorted(wanted) != sorted(by_id):
-        raise HTTPException(status_code=409, detail=STORIES_CHANGED)
-    ordered = [by_id[i] for i in wanted]
-    client.rpc(
-        "scrum_set_story_order",
-        {"p_project_id": str(project_id), "p_story_ids": ordered},
-        operation="write",
-    ).execute()
-    return ordered
+    if sprint_id is not None:
+        _require_sprint_in_project(client, sprint_id, project_id)
+    try:
+        client.rpc(
+            "scrum_set_story_order",
+            {
+                "p_project_id": str(project_id),
+                "p_sprint_id": sprint_id,
+                "p_story_ids": list(story_ids),
+            },
+            operation="write",
+        ).execute()
+    except DatabaseConflictError as exc:
+        raise HTTPException(status_code=409, detail=STORIES_CHANGED) from exc
+    return list(story_ids)
 
 
 def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
