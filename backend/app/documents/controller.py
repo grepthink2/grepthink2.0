@@ -28,6 +28,7 @@ import re
 import unicodedata
 from datetime import date
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -181,9 +182,13 @@ def _context_jobs(client, document: dict, kind: Kind, *, board: bool = True) -> 
     return jobs if board else {"sprints": jobs["sprints"]}
 
 
-def _context(reads: dict, document: dict, today: date) -> Ctx:
+def _context(reads: dict, document: dict, zone: ZoneInfo) -> Ctx:
     return derive.build_context(
-        reads, project_id=document["project_id"], sprint_id=document.get("sprint_id"), today=today
+        reads,
+        project_id=document["project_id"],
+        sprint_id=document.get("sprint_id"),
+        today=school_today(zone),
+        zone=zone,
     )
 
 
@@ -191,10 +196,6 @@ def _too_long(value) -> bool:
     """Whether ``value`` takes more than :data:`_SIZE_MAX` bytes as compact UTF-8 JSON."""
     encoded = json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return len(encoded) > _SIZE_MAX
-
-
-def _today_at(institution_id) -> date:
-    return school_today(institution_timezone(institution_id))
 
 
 def _require_member(access: str) -> None:
@@ -305,6 +306,7 @@ def _derived(
             document["project_id"],
             document.get("sprint_id"),
             today=ctx.today,
+            zone=ctx.zone,
             burnup=kind.reads_burnup,
             repos=kind.reads_repos,
         )
@@ -327,7 +329,7 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
     client = get_client()
     pid = str(project_id)
     _, institution_id = board_access(client, project_id=pid, user_id=user_id)
-    today = _today_at(institution_id)
+    today = school_today(institution_timezone(institution_id))
     reads = fan_out(
         {
             "sprints": lambda: (
@@ -415,14 +417,16 @@ def create_document(project_id: UUID, user_id: str, kind_name: str, sprint_id) -
     _require_member(access)
     if kind.per_sprint and sprint_id is None:
         raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
-    today = _today_at(institution_id)
+    zone = institution_timezone(institution_id)
     jobs = derive.context_jobs(
         client, pid, sprint_id, burnup=kind.reads_burnup, repos=kind.reads_repos
     )
     jobs["project"] = lambda: authz.load_project(client, pid, columns="id, class_id")
     jobs["role"] = lambda: _role_of(client, pid, user_id)
     reads = fan_out(jobs)
-    ctx = derive.build_context(reads, project_id=pid, sprint_id=sprint_id, today=today)
+    ctx = derive.build_context(
+        reads, project_id=pid, sprint_id=sprint_id, today=school_today(zone), zone=zone
+    )
     if kind.per_sprint and ctx.sprint is None:
         raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
 
@@ -486,7 +490,7 @@ def get_document(document_id: UUID, user_id: str, revision: int | None = None) -
         client, project_id=document["project_id"], user_id=user_id
     )
     kind = _kind_of(document)
-    today = _today_at(institution_id)
+    zone = institution_timezone(institution_id)
     final = document.get("finalized_revision")
     if revision is None:
         revision = final if access == "staff" and final is not None else document["head_revision"]
@@ -500,7 +504,7 @@ def get_document(document_id: UUID, user_id: str, revision: int | None = None) -
     found = reads["revision"]
     if found is None:
         raise HTTPException(status_code=404, detail=REVISION_NOT_FOUND)
-    ctx = _context(reads, document, today)
+    ctx = _context(reads, document, zone)
     derived, is_frozen = _derived(client, document, kind, found, ctx, board_read=not frozen)
     return _view(
         document,
@@ -655,7 +659,7 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
     kind = _kind_of(document)
     if revision != document["head_revision"]:
         raise HTTPException(status_code=409, detail=DOCUMENT_CHANGED)
-    today = _today_at(institution_id)
+    zone = institution_timezone(institution_id)
     already = document.get("finalized_revision") == revision
     pid = str(document["project_id"])
 
@@ -669,7 +673,7 @@ def finalize_document(document_id: UUID, user_id: str, revision: int) -> dict:
     found = reads["revision"]
     if found is None:
         raise HTTPException(status_code=404, detail=REVISION_NOT_FOUND)
-    ctx = _context(reads, document, today)
+    ctx = _context(reads, document, zone)
     if already:
         derived, frozen = _derived(client, document, kind, found, ctx, board_read=False)
         return _view(
@@ -823,7 +827,7 @@ def document_markdown(document_id: UUID, user_id: str) -> tuple[str, str]:
     found = reads["revision"]
     if found is None:
         raise HTTPException(status_code=404, detail=REVISION_NOT_FOUND)
-    ctx = _context(reads, document, today)
+    ctx = _context(reads, document, zone)
     derived, _ = _derived(client, document, kind, found, ctx, board_read=final is None)
     finalized_at = document.get("finalized_at")
     project_name = reads["project"].get("name") or ""

@@ -139,7 +139,10 @@ def _head(title: str, heading: Heading) -> list[str]:
 
 
 def _story(item: dict, *extra: str) -> str:
-    """A story line: its key and title, and its points, hours or sprint when it has them."""
+    """A story line: its key and title, and its points, hours or sprint when it has them; a story no
+    longer on the board says so."""
+    if item.get("missing"):
+        return f"- {_GONE}"
     details = []
     if item.get("points") is not None:
         details.append(_count(item["points"], "point"))

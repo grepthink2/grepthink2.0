@@ -141,6 +141,7 @@ def test_the_sprint_report_splits_the_sprint_and_works_out_its_rates():
     assert (out["stories_completed"], out["hours_completed"], out["days"]) == (2, 10, 14)
     assert (out["stories_per_day"], out["hours_per_day"]) == (0.14, 0.71)
     assert out["to_date"] == {"sprints_counted": 2, "stories_per_day": 0.14, "hours_per_day": 0.9}
+    assert out["as_of"] == "now"  # no saved day records the sprint's stories: the board as it is
 
 
 def test_hours_completed_counts_every_done_task_of_the_sprint_whatever_its_story():
@@ -152,6 +153,100 @@ def test_hours_completed_counts_every_done_task_of_the_sprint_whatever_its_story
     assert (out["stories_completed"], out["hours_completed"], out["days"]) == (1, 9, 7)
     assert (out["stories_per_day"], out["hours_per_day"]) == (0.14, 1.29)
     assert out["to_date"] == {"sprints_counted": 1, "stories_per_day": 0.14, "hours_per_day": 1.29}
+
+
+def recorded(sprint_id: str, day: str, story_ids: list[str], done: list[str]) -> dict:
+    """A saved burnup day that records the sprint's stories (and nothing in either unit)."""
+    return {
+        "sprint_id": sprint_id,
+        "day": day,
+        "scope_points": 0,
+        "completed_points": 0,
+        "scope_hours": 0,
+        "completed_hours": 0,
+        "story_ids": story_ids,
+        "done_story_ids": done,
+    }
+
+
+AFTER_SPRINT_3 = date(2026, 10, 20)
+
+
+def moved_after_the_end() -> Ctx:
+    """Sprint 2 ended on Sep 27 with US-5, US-7 and US-4 (US-7 unfinished), and Sprint 3 on Oct 11 with
+    US-8; then, on Oct 15, US-7 was moved into Sprint 3. A day saved after Sprint 2 ended (Sep 30, a
+    board view) recorded Sprint 2 as it is now."""
+    stories = [{**s, "sprint_id": S3} if s["id"] == sid(7) else s for s in STORIES]
+    days = [
+        recorded(S2, "2026-09-20", [sid(5), sid(7)], [sid(5)]),
+        recorded(S2, "2026-09-27", [sid(5), sid(7), sid(4)], [sid(5), sid(4)]),
+        recorded(S2, "2026-09-30", [sid(5), sid(4)], [sid(5), sid(4)]),
+        recorded(S3, "2026-10-11", [sid(8)], []),
+    ]
+    return ctx(stories=stories, burnup_days=days, today=AFTER_SPRINT_3)
+
+
+def test_a_story_moved_on_after_the_sprint_ended_stays_unfinished_in_it():
+    board = moved_after_the_end()
+    out = derive.derive_sprint_report(Ctx(**{**board.__dict__, "sprint": SPRINTS[1]}), {})
+
+    assert (
+        out["as_of"] == "2026-09-27"
+    )  # the last day on or before the end that recorded the stories
+    assert out["completed"] == [line(5, "US-5", 1, None), line(4, "US-4", 5, 10)]
+    assert out["not_completed"] == [line(7, "US-7", 8, 3)]
+    assert (out["stories_completed"], out["hours_completed"]) == (2, 10)
+
+
+def test_and_does_not_count_in_the_next_sprints_report():
+    board = moved_after_the_end()
+    out = derive.derive_sprint_report(Ctx(**{**board.__dict__, "sprint": SPRINTS[2]}), {})
+
+    assert out["as_of"] == "2026-10-11"
+    assert out["completed"] == [] and out["not_completed"] == [line(8, "US-8", None, 2)]
+    assert (out["stories_completed"], out["hours_completed"], out["days"]) == (0, 0, 14)
+    # To date, each sprint by the same rule: Sprint 1 as it is (nothing recorded: 1 story, 9 hours in
+    # 7 days), Sprints 2 and 3 as they ended (2 stories and 10 hours, then none, in 14 days each).
+    assert out["to_date"] == {"sprints_counted": 3, "stories_per_day": 0.09, "hours_per_day": 0.54}
+
+
+def test_a_story_deleted_since_the_sprint_ended_is_named_missing():
+    board = ctx(
+        S2,
+        burnup_days=[
+            recorded(
+                S2,
+                "2026-09-27",
+                [sid(5), "5c000000-0000-4000-8000-0000000000dd"],
+                ["5c000000-0000-4000-8000-0000000000dd"],
+            )
+        ],
+    )
+    out = derive.derive_sprint_report(board, {})
+
+    assert out["completed"] == [{"id": "5c000000-0000-4000-8000-0000000000dd", "missing": True}]
+    assert out["not_completed"] == [line(5, "US-5", 1, None)]
+    assert out["stories_completed"] == 1
+
+
+def test_the_burnup_replays_the_task_moves_for_days_nobody_saved():
+    """Two saved days in fourteen: the days between take their completed hours from the moves, as
+    the board's own chart does."""
+    tasks = [
+        {**t, "task_moves": [{"to_status": "done", "moved_at": at}]}
+        if (
+            t["id"],
+            at := {tid(5): "2026-09-18T20:00:00+00:00", tid(6): "2026-09-22T20:00:00+00:00"}.get(
+                t["id"]
+            ),
+        )[1]
+        else t
+        for t in TASKS
+    ]
+    days = [BURNUP_S2[0], BURNUP_S2[2]]  # Sep 14 (0 done) and Sep 27 (10 done)
+    out = derive.derive_sprint_report(ctx(S2, tasks=tasks, burnup_days=days), {})
+
+    assert out["burnup"]["completed"] == [0] * 4 + [5] * 4 + [10] * 6
 
 
 def test_the_sprint_report_draws_the_sprints_burnup_from_its_saved_days():
@@ -450,7 +545,7 @@ def test_the_check_messages_are_the_ones_the_page_shows():
 
 @pytest.mark.parametrize(
     ("burnup", "repos", "executes"),
-    [(False, False, 3), (True, False, 4), (False, True, 4)],
+    [(False, False, 3), (True, False, 3), (False, True, 4)],
 )
 def test_the_context_reads_the_board_once_and_only_what_the_kind_needs(
     monkeypatch, burnup, repos, executes
@@ -481,5 +576,8 @@ def test_the_context_reads_the_board_once_and_only_what_the_kind_needs(
     assert board.sprint["name"] == "Sprint 2"
     assert [s["id"] for s in board.sprints] == [S1, S2, S3]
     assert len(board.stories) == len(STORIES) and len(board.tasks) == len(TASKS)
-    assert board.burnup_days == (BURNUP_S2 if burnup else [])
+    # With the burnup, every sprint's saved days, read with the sprints (Sprint 2 has three).
+    assert [{k: d[k] for k in BURNUP_S2[0]} for d in board.burnup_days] == (
+        BURNUP_S2 if burnup else []
+    )
     assert board.repos == ([REPO] if repos else [])  # the URLs alone, never a token

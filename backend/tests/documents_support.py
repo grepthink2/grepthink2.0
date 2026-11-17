@@ -81,6 +81,9 @@ RELATIONS = {
     ),
     ("projects", "project_documents"): ("id", "project_id", True),
     ("project_documents", "sprints"): ("sprint_id", "id", False),
+    # A sprint report's reads: every sprint's saved days, every task's moves.
+    ("sprints", "sprint_burnup_days"): ("id", "sprint_id", True),
+    ("tasks", "task_moves!task_moves_task_id_fkey"): ("id", "task_id", True),
     ("project_documents", "profiles!project_documents_finalized_by_fkey"): (
         "finalized_by",
         "id",

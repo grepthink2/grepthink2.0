@@ -395,3 +395,26 @@ def test_a_revision_whose_author_is_gone_names_nobody(db):
     db.rows("project_document_revisions")[0]["saved_by"] = None  # the profile was deleted
     out = controller.get_document(doc, UID)
     assert (out["revision"]["saved_by"], out["revision"]["saved_by_name"]) == (None, None)
+
+
+def test_a_sprint_report_reads_the_stories_its_sprint_ended_with(db):
+    """A saved day of Sprint 2 recorded its stories: the report reads them, through the same reads."""
+    db.rows("sprint_burnup_days").append(
+        {
+            "sprint_id": S2,
+            "day": "2026-09-27",
+            "scope_points": 0,
+            "completed_points": 0,
+            "scope_hours": 5,
+            "completed_hours": 5,
+            "story_ids": [ST3],
+            "done_story_ids": [ST3],
+        }
+    )
+    doc = add_document(db, "sprint_report", sprint_id=S2)
+
+    derived = controller.get_document(doc, UID)["derived"]
+
+    assert derived["as_of"] == "2026-09-27"
+    assert [s["key"] for s in derived["completed"]] == ["US-3"]
+    assert derived["not_completed"] == []  # US-4 was not in the sprint that day

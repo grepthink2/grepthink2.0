@@ -1287,29 +1287,36 @@ export type ApiDocumentBody = ApiDocumentBodies[ApiDocumentKind];
 
 // Derived sections: what the board supplies, live on a draft and frozen on a finalized revision.
 
-/** A story of a sprint report: its hours are the sum of its tasks' estimates, null when none has one. */
-export interface ApiDocumentStoryLine {
-  id: string;
-  key: string;
-  title: string;
-  points: number | null;
-  hours: number | null;
-}
+/**
+ * A story of a sprint report, as it is now: its hours are the sum of its tasks' estimates, null when
+ * none has one. `missing` for a story the sprint ended with that has been deleted since.
+ */
+export type ApiDocumentStoryLine =
+  | { id: string; key: string; title: string; points: number | null; hours: number | null; missing?: never }
+  | { id: string; missing: true };
 
 export interface ApiSprintReportDerived {
-  /** The sprint's stories that have tasks, all done; then the others. Each in board order. */
+  /**
+   * The sprint's stories as it ended: completed ones (a task, every task done), then the others, each
+   * in board order. See `as_of`.
+   */
   completed: ApiDocumentStoryLine[];
   not_completed: ApiDocumentStoryLine[];
+  /**
+   * The saved day (YYYY-MM-DD) the stories come from: the last one on or before the sprint's end that
+   * recorded them. "now" when none did, and the board as it is now stands in.
+   */
+  as_of: string;
   stories_completed: number;
-  /** The estimate hours of the sprint's done tasks, whatever their story's state. */
+  /** The estimate hours of those stories' done tasks, whatever their story's state. */
   hours_completed: number;
   /** The sprint's length, both end days counted. */
   days: number;
   stories_per_day: number;
   hours_per_day: number;
-  /** The same rates over this sprint and every earlier one (stories, then hours, over all their days). */
+  /** The same rates over this sprint and every earlier one, each as it ended (stories, then hours, over all their days). */
   to_date: { sprints_counted: number; stories_per_day: number; hours_per_day: number };
-  /** The sprint's burnup in the unit the board opens it in. */
+  /** The sprint's burnup in the unit the board opens it in; days nobody saved are replayed from the task moves. */
   burnup: { unit: ApiScrumBurnupUnit; labels: string[]; scope: number[]; completed: number[] };
 }
 

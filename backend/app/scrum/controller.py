@@ -27,7 +27,7 @@ from app.assignments import deadlines
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
-from app.core.errors import AppError, DatabaseConflictError
+from app.core.errors import AppError, DatabaseConflictError, DatabaseError
 from app.institutions.controller import institution_timezone
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import (
@@ -960,35 +960,68 @@ def _sprint_progress(stories: list[dict]) -> dict:
     }
 
 
-def _live_burnup_totals(client, sprint_id: str) -> Totals:
-    """Totals straight from the database, for writes that have no board loaded: the sprint's
-    live stories with their tasks embedded, in one read."""
-    stories = (
+def _live_sprint_stories(client, sprint_id: str) -> list[dict]:
+    """The sprint's live stories with their tasks embedded, straight from the database, for writes
+    that have no board loaded: one read."""
+    return (
         client.table("user_stories")
         .select("id, tasks(points, estimate_hours, status)")
         .eq("sprint_id", str(sprint_id))
         .is_("archived_at", "null")
         .execute()
     ).data or []
-    return _totals(stories, _done_tasks(stories))
+
+
+def _story_lists(stories: list[dict]) -> dict[str, list[str]]:
+    """What a snapshot records of the sprint's live ``stories`` (``tasks`` embedded): their ids, and the
+    ids of the completed ones, which have a task and every task done. A sprint report reads the sprint
+    as it ended from these (app/documents)."""
+    return {
+        "story_ids": [s["id"] for s in stories],
+        "done_story_ids": [
+            s["id"]
+            for s in stories
+            if s.get("tasks") and all(t.get("status") == "done" for t in s["tasks"])
+        ],
+    }
+
+
+#: A column the table does not have, as PostgREST and Postgres say it: the snapshot's story arrays on a
+#: database 2026-11-17_project_documents.sql has not reached yet.
+_MISSING_COLUMN_CODES = frozenset({"PGRST204", "42703"})
 
 
 def _snapshot_burnup_safe(
-    client, sprint_id: str, institution_id: str | None, totals: Totals | None = None
+    client,
+    sprint_id: str,
+    institution_id: str | None,
+    totals: Totals | None = None,
+    stories: list[dict] | None = None,
 ) -> None:
-    """Best-effort daily snapshot in both units, filed under the day at the project's school
-    (``institution_id``); never fails the triggering write, an unreadable school included.
-    Pass the sprint's precomputed `totals` to skip the recompute."""
+    """Best-effort daily snapshot in both units, with the sprint's stories and its completed ones, filed
+    under the day at the project's school (``institution_id``); never fails the triggering write, an
+    unreadable school included. Pass the sprint's live ``stories`` (``tasks`` embedded) the caller has
+    loaded, and their ``totals``, to skip the read. Without the story columns (their migration not
+    applied yet) the day is saved again without them, one more round trip."""
     try:
         day = _today(institution_timezone(institution_id))
+        if stories is None:
+            stories = _live_sprint_stories(client, sprint_id)
         if totals is None:
-            totals = _live_burnup_totals(client, sprint_id)
-        client.table("sprint_burnup_days").upsert(
-            {"sprint_id": str(sprint_id), "day": day.isoformat(), **totals.values()},
-            on_conflict="sprint_id,day",
-        ).execute()
+            totals = _totals(stories, _done_tasks(stories))
+        row = {"sprint_id": str(sprint_id), "day": day.isoformat(), **totals.values()}
+        try:
+            _upsert_snapshot(client, {**row, **_story_lists(stories)})
+        except DatabaseError as exc:
+            if exc.pg_code not in _MISSING_COLUMN_CODES:
+                raise
+            _upsert_snapshot(client, row)
     except Exception:
         logger.exception("scrum: burnup snapshot failed | sprint=%s", sprint_id)
+
+
+def _upsert_snapshot(client, row: dict) -> None:
+    client.table("sprint_burnup_days").upsert(row, on_conflict="sprint_id,day").execute()
 
 
 def _completed_by_day_from_moves(
@@ -1342,7 +1375,9 @@ def get_board(
 
     sprint_series = None
     if selected:
-        _snapshot_burnup_safe(client, selected["id"], institution_id, totals=totals)
+        _snapshot_burnup_safe(
+            client, selected["id"], institution_id, totals=totals, stories=stories
+        )
         starts = date.fromisoformat(str(selected["starts_at"]))
         ends = date.fromisoformat(str(selected["ends_at"]))
         snaps = snaps_by_sprint.get(selected["id"], [])
