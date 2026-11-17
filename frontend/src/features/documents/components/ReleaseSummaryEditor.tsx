@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Input } from '@components/Input/Input';
@@ -73,6 +73,12 @@ function KeyStory({ story, editable, projectId, boardStory }: KeyStoryProps) {
   );
 }
 
+/** Focus the first control of a key story's row: its link to the board, else one of its moves. */
+function focusKeyStory(section: HTMLElement | null, id: string) {
+  const row = [...(section?.querySelectorAll<HTMLElement>('[data-item-key]') ?? [])].find((el) => el.dataset.itemKey === id);
+  row?.querySelector<HTMLElement>('a[href], button:not(:disabled)')?.focus();
+}
+
 interface ProblemFieldsProps {
   item: ApiKnownProblem;
   index: number;
@@ -136,6 +142,7 @@ export default function ReleaseSummaryEditor({ doc, body, editable, onChange, st
   const derived: ApiReleaseSummaryDerived = doc.derived;
   const projectId = doc.document.project_id;
   const keyHintId = useId();
+  const keyStoriesRef = useRef<HTMLElement>(null);
   const picked = useMemo(() => new Set(body.key_story_ids), [body.key_story_ids]);
   const candidates = useMemo(() => board.stories.filter((s) => !picked.has(s.id)), [board.stories, picked]);
   const backlog: BacklogRow[] = derived.backlog.map((s) => ({
@@ -145,7 +152,7 @@ export default function ReleaseSummaryEditor({ doc, body, editable, onChange, st
 
   return (
     <div className="document-editor">
-      <section className="document-section" aria-labelledby="document-key-stories">
+      <section className="document-section" aria-labelledby="document-key-stories" ref={keyStoriesRef}>
         <h2 className="document-section__title" id="document-key-stories">Key user stories and acceptance criteria</h2>
         <EditableList
           label="Key stories"
@@ -169,6 +176,7 @@ export default function ReleaseSummaryEditor({ doc, body, editable, onChange, st
               disabled={atLimit}
               describedBy={atLimit ? keyHintId : undefined}
               onPick={(s) => onChange({ ...body, key_story_ids: [...body.key_story_ids, s.id] })}
+              onFilled={(s) => focusKeyStory(keyStoriesRef.current, s.id)}
             />
           )}
           renderItem={(id) => (

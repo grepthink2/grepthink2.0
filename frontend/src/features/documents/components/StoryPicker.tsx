@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@components/Button/Button';
 import { Popover } from '@components/Popover/Popover';
@@ -17,6 +17,11 @@ interface StoryPickerProps {
   disabled?: boolean;
   /** The id of the text that says why the trigger is off (a list at its limit). */
   describedBy?: string;
+  /**
+   * Takes focus after a pick that filled the list and so turned the trigger off: the parent knows where
+   * the story it picked now is.
+   */
+  onFilled?: (story: ApiDocumentStory) => void;
 }
 
 /** How many matches the panel lists; the search narrows the rest. */
@@ -30,13 +35,25 @@ const matches = (story: ApiDocumentStory, query: string) => {
 /**
  * Picks one of the board's stories: a trigger that opens a panel with a search over the stories' keys
  * and titles and a list of the matches, each with its sprint (or the backlog). Picking one closes the
- * panel and gives focus back to the trigger, so several can be added in a row; Esc and a click outside
- * close it too.
+ * panel and gives focus back to the trigger, so several can be added in a row, or, when the pick
+ * filled the list and turned the trigger off, to `onFilled`. Esc and a click outside close it too.
  */
-export default function StoryPicker({ label, stories, status, onRetry, onPick, disabled = false, describedBy }: StoryPickerProps) {
+export default function StoryPicker({
+  label, stories, status, onRetry, onPick, disabled = false, describedBy, onFilled,
+}: StoryPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const triggerRef = useRef<HTMLButtonElement>(null);
+  /** The story just picked, whose focus waits for the parent to draw the pick (and maybe turn us off). */
+  const picked = useRef<ApiDocumentStory | null>(null);
+
+  useEffect(() => {
+    const story = picked.current;
+    if (!story) return;
+    picked.current = null;
+    if (disabled) onFilled?.(story);
+    else triggerRef.current?.focus({ preventScroll: true });
+  });
 
   // Focus inside the panel would go down with it, so it goes back to the trigger. Stable, so Popover
   // keeps its listeners.
@@ -69,8 +86,10 @@ export default function StoryPicker({ label, stories, status, onRetry, onPick, d
               type="button"
               className="story-picker__option"
               onClick={() => {
+                picked.current = story;
                 onPick(story);
-                close();
+                setOpen(false);
+                setQuery('');
               }}
             >
               <span className="story-picker__key">{story.key}</span>{' '}

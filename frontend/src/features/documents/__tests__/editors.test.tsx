@@ -120,6 +120,35 @@ describe('ReleaseSummaryEditor', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add a key story' }));
   });
 
+  it('hands focus to the new row when a pick fills the key stories, not to the picker it turned off', async () => {
+    const full: ApiReleaseSummaryBody = { key_story_ids: Array.from({ length: 29 }, (_, i) => `k${i}`), known_problems: [], follow_ups: [] };
+    const stories = [boardStory({ id: 's9', key: 'US-9', title: 'Last one' })];
+    function Filling() {
+      const [current, setCurrent] = useState(full);
+      const doc = makeDocument('release_summary', { body: full, derived: releaseSummaryDerived({ key_stories: [] }) });
+      return (
+        <MemoryRouter>
+          <ReleaseSummaryEditor
+            doc={doc}
+            body={current}
+            editable
+            onChange={setCurrent}
+            story={storyLookup(doc, new Map(stories.map((st) => [st.id, st])))}
+            board={board(stories)}
+          />
+        </MemoryRouter>
+      );
+    }
+    render(<Filling />);
+    await userEvent.click(screen.getByRole('button', { name: 'Add a key story' }));
+    await userEvent.click(screen.getByRole('button', { name: /US-9 Last one/ }));
+    expect(screen.getByRole('button', { name: 'Add a key story' })).toBeDisabled();
+    // The only story the board answered for is the one just picked: its row's link to the board.
+    const link = screen.getByRole('link', { name: 'Edit on the board' });
+    expect(link).toHaveAttribute('href', '/app/projects/p1/board?sprint=sp1&story=s9');
+    expect(document.activeElement).toBe(link);
+  });
+
   it("sets a known problem's kind and shows the backlog the board holds", async () => {
     const onBody = vi.fn();
     render(<Editing stories={[]} onBody={onBody} />);
@@ -219,6 +248,29 @@ describe('TestReportEditor', () => {
     expect(list?.querySelector('option')?.getAttribute('value')).toBe('https://github.com/team/trailhead');
     await userEvent.click(screen.getByRole('checkbox', { name: 'Some of these tests fail' }));
     expect(onBody).toHaveBeenLastCalledWith(expect.objectContaining({ unit_tests: [expect.objectContaining({ failing: true })] }));
+  });
+
+  it('hands focus to the story a pick added when it fills the scenario', async () => {
+    const stories = [boardStory({ id: 's5', key: 'US-5', title: 'Fifth' })];
+    function Filling() {
+      const [current, setCurrent] = useState<ApiTestReportBody>({ ...body, scenarios: [{ ...scenario, story_ids: ['s1', 'a', 'b', 'c'] }] });
+      const doc = makeDocument('test_report', { body: current, derived });
+      return (
+        <TestReportEditor
+          doc={doc}
+          body={current}
+          editable
+          onChange={setCurrent}
+          story={storyLookup(doc, new Map(stories.map((st) => [st.id, st])))}
+          board={board(stories)}
+        />
+      );
+    }
+    render(<Filling />);
+    await userEvent.click(screen.getByRole('button', { name: 'Add a story' }));
+    await userEvent.click(screen.getByRole('button', { name: /US-5 Fifth/ }));
+    expect(screen.getByRole('button', { name: 'Add a story' })).toBeDisabled();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Remove US-5 from scenario 1' }));
   });
 
   it('caps a scenario at five stories', () => {

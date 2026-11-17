@@ -43,6 +43,12 @@ const RESULT_OPTIONS: SegmentedOption<Result>[] = [
 ];
 const RESULT_WORDS: Record<Result, string> = { pass: 'Passed', fail: 'Failed', not_run: 'Not run' };
 
+/** Focus the remove button of the tag a scenario shows for a story. */
+function focusStoryTag(group: HTMLElement | null, id: string) {
+  const tag = [...(group?.querySelectorAll<HTMLElement>('[data-story-id]') ?? [])].find((el) => el.dataset.storyId === id);
+  tag?.querySelector<HTMLElement>('button')?.focus();
+}
+
 const scenarioName = (scenario: ApiTestScenario, index: number) =>
   (scenario.title.trim() ? `scenario “${scenario.title.trim()}”` : `scenario ${index + 1}`);
 
@@ -61,6 +67,7 @@ interface ScenarioCardProps {
 function ScenarioCard({ scenario, index, editable, frozen, onChange, story, board }: ScenarioCardProps) {
   const [preview, setPreview] = useState(false);
   const hintId = useId();
+  const storiesRef = useRef<HTMLDivElement>(null);
   const n = index + 1;
   const refs = scenario.story_ids.map(story);
   const result: Result = scenario.result ?? 'not_run';
@@ -84,12 +91,13 @@ function ScenarioCard({ scenario, index, editable, frozen, onChange, story, boar
         </h3>
       )}
 
-      <div className="document-scenario__stories" role="group" aria-label={`Stories scenario ${n} covers`}>
+      <div className="document-scenario__stories" role="group" aria-label={`Stories scenario ${n} covers`} ref={storiesRef}>
         <span className="document-scenario__label" aria-hidden="true">Stories</span>
         {refs.length === 0 && <span className="document-scenario__none">No story yet.</span>}
         {refs.map((ref) => (
           <Tag
             key={ref.id}
+            data-story-id={ref.id}
             tone={ref.state === 'missing' ? 'neutral' : 'green'}
             onRemove={editable ? () => onChange({ ...scenario, story_ids: scenario.story_ids.filter((id) => id !== ref.id) }) : undefined}
             removeLabel={`Remove ${ref.state === 'known' ? ref.key : ref.state === 'missing' ? 'the deleted story' : 'this story'} from scenario ${n}`}
@@ -106,6 +114,7 @@ function ScenarioCard({ scenario, index, editable, frozen, onChange, story, boar
             disabled={full}
             describedBy={full ? hintId : undefined}
             onPick={(s) => onChange({ ...scenario, story_ids: [...scenario.story_ids, s.id] })}
+            onFilled={(s) => focusStoryTag(storiesRef.current, s.id)}
           />
         )}
         {editable && full && <span className="document-scenario__hint" id={hintId}>A scenario covers at most {SCENARIO_STORIES_MAX} stories.</span>}
