@@ -5,7 +5,7 @@ vi.mock('@/lib/supabaseClient', () => ({ supabase: { auth: { getSession } } }));
 vi.mock('@/lib/previewGuard', () => ({ assertWritableRequest: vi.fn() }));
 
 import { AUTH_UNAUTHORIZED_EVENT } from '@/lib/authEvents';
-import { ApiError, apiRequest, apiUpload } from '../client';
+import { ApiError, apiRequest, apiUpload, filenameOf } from '../client';
 
 const fetchMock = vi.fn();
 
@@ -90,6 +90,20 @@ describe('apiRequest', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it('answers the text of a file when asked for text', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('# Title\n', { status: 200, headers: { 'Content-Type': 'text/markdown; charset=utf-8' } }),
+    );
+    await expect(apiRequest<string>('/api/x/markdown', {}, 'text')).resolves.toBe('# Title\n');
+  });
+
+  it('still refuses a failed text request with the server detail', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(404, { detail: 'Document not found' }));
+    const err = await failureOf(apiRequest('/api/x/markdown', {}, 'text'));
+    expect(err.message).toBe('Document not found');
+    expect(err.status).toBe(404);
+  });
+
   it('returns undefined for 204 No Content', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
     await expect(apiRequest('/api/x', { method: 'DELETE' })).resolves.toBeUndefined();
@@ -109,5 +123,19 @@ describe('apiUpload', () => {
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(400);
     expect(err.message).toBe('Bad CSV');
+  });
+});
+
+describe('filenameOf', () => {
+  it.each<[string | null, string | null]>([
+    ['attachment; filename="trailhead-sprint-2-report.md"', 'trailhead-sprint-2-report.md'],
+    ['attachment; filename=report.md', 'report.md'],
+    ['attachment; filename="a \\"b\\".md"', 'a "b".md'],
+    ["attachment; filename=\"fallback.md\"; filename*=UTF-8''r%C3%A9sum%C3%A9.md", 'résumé.md'],
+    ["attachment; filename*=UTF-8''%E0%A4%A.md; filename=\"plain.md\"", 'plain.md'],
+    ['attachment', null],
+    [null, null],
+  ])('reads %s', (header, name) => {
+    expect(filenameOf(header)).toBe(name);
   });
 });

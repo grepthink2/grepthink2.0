@@ -100,6 +100,62 @@ describe('StoryEditorModal', () => {
     expect(p.onClose).toHaveBeenCalledTimes(2);
   });
 
+  it('sends the acceptance criteria, trimmed and without the blank rows', async () => {
+    const p = props();
+    render(<StoryEditorModal {...p} />);
+
+    await userEvent.type(screen.getByLabelText('Title'), 'Trail search');
+    const add = screen.getByRole('button', { name: 'Add criterion' });
+    await userEvent.click(add);
+    await userEvent.type(screen.getByRole('textbox', { name: 'Criterion 1' }), '  Finds a trail by name  ');
+    await userEvent.click(add);                                   // left blank
+    await userEvent.click(add);
+    await userEvent.type(screen.getByRole('textbox', { name: 'Criterion 3' }), 'Says so when none match');
+    await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
+
+    expect(p.onCreate).toHaveBeenCalledWith({
+      title: 'Trail search',
+      sprint_id: 'sp2',
+      acceptance_criteria: ['Finds a trail by name', 'Says so when none match'],
+    });
+  });
+
+  it('sends no criteria when every row was left blank', async () => {
+    const p = props();
+    render(<StoryEditorModal {...p} />);
+
+    await userEvent.type(screen.getByLabelText('Title'), 'Trail search');
+    await userEvent.click(screen.getByRole('button', { name: 'Add criterion' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
+
+    expect(p.onCreate).toHaveBeenCalledWith({ title: 'Trail search', sprint_id: 'sp2' });
+  });
+
+  it('will not create the story while a criterion is past 300 characters', async () => {
+    const p = props();
+    render(<StoryEditorModal {...p} />);
+
+    await userEvent.type(screen.getByLabelText('Title'), 'Trail search');
+    await userEvent.click(screen.getByRole('button', { name: 'Add criterion' }));
+    await userEvent.click(screen.getByRole('textbox', { name: 'Criterion 1' }));
+    await userEvent.paste('x'.repeat(301));
+    const create = screen.getByRole('button', { name: 'Create story' });
+    expect(create).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Title'), '{Enter}');
+    expect(p.onCreate).not.toHaveBeenCalled();
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Criterion 1' }), '{Backspace}');
+    expect(create).toBeEnabled();
+  });
+
+  it('puts the criteria above the description, which asks for notes', () => {
+    render(<StoryEditorModal {...props()} />);
+    const criteria = screen.getByRole('group', { name: 'Acceptance criteria' });
+    const description = screen.getByLabelText('Description');
+    expect(criteria.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(description).toHaveAttribute('placeholder', 'Notes, links, anything the team needs…');
+  });
+
   it('blocks a double submit while saving', async () => {
     const p = props();
     render(<StoryEditorModal {...p} saving />);

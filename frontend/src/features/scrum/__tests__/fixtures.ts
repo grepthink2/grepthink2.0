@@ -25,7 +25,7 @@ export const makeRef = (over: Partial<ApiTaskRef> = {}): ApiTaskRef => ({
 export const makeStory = (over: Partial<ApiScrumStory> = {}): ApiScrumStory => ({
   id: 's1', sprint_id: 'sp1', key: 'US-1', title: 'Story', description_md: null,
   points: null, estimate_hours: null, reporter_id: 'u1', assignee_id: null,
-  archived_at: null, comment_count: 0, tasks: [], ...over,
+  archived_at: null, rank: null, acceptance_criteria: [], comment_count: 0, tasks: [], ...over,
 });
 
 export const makeMembers = (): ApiScrumMember[] => [

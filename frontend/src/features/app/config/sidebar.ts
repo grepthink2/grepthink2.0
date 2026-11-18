@@ -2,7 +2,6 @@ import {
   Blocks,
   BookOpen,
   CalendarCheck,
-  CalendarDays,
   ChartColumn,
   CirclePlus,
   CircleQuestionMark,
@@ -61,8 +60,6 @@ export interface SidebarSection {
 export const SIDEBAR_HOVER = { openDelayMs: 150, closeDelayMs: 300 } as const;
 
 const HOME: SidebarItem = { label: 'Home', path: '/app/home', icon: House };
-/** The selected class's week (every role; it asks for a class when none is selected). */
-const SCHEDULE: SidebarItem = { label: 'Schedule', path: '/app/schedule', icon: CalendarDays };
 const MESSAGES: SidebarItem = { label: 'Messages', path: '/app/messages', icon: MessageSquare };
 const ANALYTICS: SidebarItem = { label: 'Analytics', path: '/app/analytics', icon: ChartColumn };
 const MY_CLASSES: SidebarItem = { label: 'My Classes', path: '/app/my-classes', icon: BookOpen };
@@ -161,7 +158,7 @@ export function buildSidebarConfig({
   externalTasksUrl?: string | null;
 }): SidebarSection[] {
   const sections: SidebarSection[] = [
-    { id: 'main', groups: [{ items: canCreateClasses ? [HOME, SCHEDULE, MESSAGES, ANALYTICS] : [HOME, SCHEDULE, MESSAGES] }] },
+    { id: 'main', groups: [{ items: canCreateClasses ? [HOME, MESSAGES, ANALYTICS] : [HOME, MESSAGES] }] },
     { id: 'classes', title: 'Classes', groups: [{ items: [MY_CLASSES, canCreateClasses ? CREATE_CLASS : JOIN_CLASS] }] },
   ];
   const role = classRole === undefined ? (canCreateClasses ? 'instructor' : 'student') : classRole;

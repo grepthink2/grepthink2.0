@@ -3,7 +3,7 @@
 ## Documentation for contributors
 
 - **[STYLE_GUIDE.md](STYLE_GUIDE.md)** — layers, auth, database access and batching rules, errors, small examples.
-- **[../AGENTS.md](../AGENTS.md)** — architecture, roles, gotchas and the commit gates.
+- **[../AGENTS.md](../AGENTS.md)** — architecture, roles and the commit gates; [../docs/agents/backend.md](../docs/agents/backend.md) holds the backend rules and gotchas.
 - **Routes** — each feature's `url.py`, and the OpenAPI pages at `/docs` and `/redoc` while the
   server runs.
 

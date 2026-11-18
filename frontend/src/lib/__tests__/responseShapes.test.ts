@@ -148,6 +148,21 @@ describe('moveScrumTask', () => {
   });
 });
 
+describe('createStory', () => {
+  it.each([
+    ['the story itself', STORY],
+    ['{ message, story }', { message: 'Story created successfully', story: STORY }],
+  ])('answers the story when the backend sends %s', async (_shape, body) => {
+    apiRequest.mockResolvedValue(body);
+    const fields = { title: 'Find a ride', sprint_id: 'sp1', acceptance_criteria: ['Shows rides nearby'] };
+    await expect(scrumApi.createStory('p1', fields)).resolves.toEqual(STORY);
+    const [path, init] = apiRequest.mock.calls[0];
+    expect(path).toBe('/api/projects/p1/scrum/stories');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual(fields);
+  });
+});
+
 describe('updateStory', () => {
   it.each([
     ['the story itself', STORY],

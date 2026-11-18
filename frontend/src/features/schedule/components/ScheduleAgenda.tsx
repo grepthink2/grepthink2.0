@@ -9,7 +9,6 @@ import {
   findOverlaps,
   fmtDayLabel,
   fmtTime,
-  groupByDay,
   itemDay,
   kindMeta,
   nowIndex,
@@ -20,13 +19,14 @@ import {
   type ScheduleKind,
   type ScheduleLens,
 } from '../scheduleModel';
-import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, itemsInWeek, weekKeys } from '../scheduleWeek';
+import { AGENDA_KINDS, agendaDayId, fmtWeekLabel, groupWeek, itemsInWeek, weekDaysFrom, weekKeys } from '../scheduleWeek';
 import { ScheduleAgendaItem } from './ScheduleAgendaItem';
 import { ScheduleDayHeader } from './ScheduleDayHeader';
 import { ScheduleDivider } from './ScheduleDivider';
 import { ScheduleIcon } from './ScheduleIcon';
 import { ScheduleNowLine } from './ScheduleNowLine';
-import { ScheduleError, ScheduleSkeleton } from './ScheduleStates';
+import { ScheduleSkeleton } from './ScheduleSkeleton';
+import { ScheduleError } from './ScheduleStates';
 import '../schedule.scss';
 import './scheduleAgenda.scss';
 
@@ -47,9 +47,12 @@ export interface ScheduleAgendaProps {
   weekAnchor: string;
   /** Another week ('YYYY-MM-DD' of its Monday), or null for this week. */
   onWeekChange: (anchor: string | null) => void;
-  /** Kinds shown; empty shows them all. */
-  kinds: ScheduleKind[];
-  onKindsChange: (kinds: ScheduleKind[]) => void;
+  /** The first day shown when it falls in the week (Home passes today); the days before it are left out. */
+  startDay?: string | null;
+  /** Kinds shown; empty shows them all. @default [] */
+  kinds?: ScheduleKind[];
+  /** The kind chips show only with this. */
+  onKindsChange?: (kinds: ScheduleKind[]) => void;
   /** For an empty week: the next thing after now, from a look-ahead. */
   next?: ScheduleItemData | null;
   /** A day to show even when it is empty (the `?day=` the page opened on). */
@@ -61,26 +64,30 @@ export interface ScheduleAgendaProps {
 const peekDate = (label: { title: string; date: string }): string =>
   label.title === 'Tomorrow' || label.title === 'Today' ? `${label.title} · ${label.date}` : `${label.title}, ${label.date}`;
 
+const ALL_KINDS: ScheduleKind[] = [];
+
 /**
- * The /app/schedule week (the handoff's agenda `ScheduleList`): the week switcher, the range, the
- * zone note and the kind chips; then one white surface of days with sticky headers, each day's sprint
- * rules above its rows, and the Now line on today. Days shown: those with something, today, and the
- * day the page was opened on. Lives in its own chunk with the page, so Home never loads it.
+ * The week on Home (the handoff's agenda `ScheduleList`): the week switcher, the range, the zone note
+ * and, when asked for, the kind chips; then one white surface of days with sticky headers, each day's
+ * sprint rules above its rows, and the Now line on today. Days shown: from `startDay` (or Monday)
+ * through Sunday, those with something, today, and the `?day=` Home was opened on. Lives in the lazy
+ * chunk of Home's week, so the entry chunk never carries it.
  */
 export function ScheduleAgenda({
-  items, status, onRetry, now, zone, schoolZone, lens, weekAnchor, onWeekChange, kinds, onKindsChange, next, focusDay = null,
-  markAttendanceHref = '/app/ta-meetings',
+  items, status, onRetry, now, zone, schoolZone, lens, weekAnchor, onWeekChange, startDay = null, kinds = ALL_KINDS,
+  onKindsChange, next, focusDay = null, markAttendanceHref = '/app/ta-meetings',
 }: ScheduleAgendaProps) {
   const navigate = useNavigate();
   const today = dayKey(now, zone);
-  const keys = useMemo(() => weekKeys(weekAnchor), [weekAnchor]);
+  const monday = weekKeys(weekAnchor)[0];
+  const keys = useMemo(() => weekDaysFrom(weekAnchor, startDay), [weekAnchor, startDay]);
   const week = fmtWeekLabel(keys, now, zone);
   const onThisWeek = week.title === 'This week';
   const differs = zoneDiffers(zone, schoolZone, now);
 
-  const inWeek = useMemo(() => itemsInWeek(items, keys, zone), [items, zone, keys]);
+  const inWeek = useMemo(() => itemsInWeek(items, keys, zone, now), [items, zone, keys, now]);
   const filtered = useMemo(() => (kinds.length ? inWeek.filter((it) => kinds.includes(it.kind)) : inWeek), [inWeek, kinds]);
-  const groups = groupByDay(filtered, { zone, now });
+  const groups = groupWeek(filtered, keys, now, zone);
   const byKey = new Map(groups.map((g) => [g.key, g]));
   const overlaps = useMemo(() => findOverlaps(filtered), [filtered]);
   const filtersOn = kinds.length > 0;
@@ -114,7 +121,7 @@ export function ScheduleAgenda({
   const toolbar = (
     <div className="gt-sched__toolbar">
       <div className="gt-sched__week" role="group" aria-label="Week">
-        <IconButton size="sm" ariaLabel="Previous week" onClick={() => onWeekChange(shiftKey(keys[0], -7))}>
+        <IconButton size="sm" ariaLabel="Previous week" onClick={() => onWeekChange(shiftKey(monday, -7))}>
           <ChevronLeft size={16} aria-hidden="true" />
         </IconButton>
         <Button
@@ -126,7 +133,7 @@ export function ScheduleAgenda({
         >
           {week.title ?? week.range}
         </Button>
-        <IconButton size="sm" ariaLabel="Next week" onClick={() => onWeekChange(shiftKey(keys[0], 7))}>
+        <IconButton size="sm" ariaLabel="Next week" onClick={() => onWeekChange(shiftKey(monday, 7))}>
           <ChevronRight size={16} aria-hidden="true" />
         </IconButton>
       </div>
@@ -137,22 +144,24 @@ export function ScheduleAgenda({
           Times in {zoneLabel(zone, now)} · campus is {zoneLabel(schoolZone, now)}
         </span>
       )}
-      <FilterChipGroup
-        className="gt-sched__filters"
-        ariaLabel="Filter by kind"
-        size="sm"
-        value={kinds}
-        onChange={(value) => onKindsChange(value as ScheduleKind[])}
-        options={AGENDA_KINDS.map((kind) => ({ value: kind, label: chipLabel(kind) }))}
-      />
+      {onKindsChange && (
+        <FilterChipGroup
+          className="gt-sched__filters"
+          ariaLabel="Filter by kind"
+          size="sm"
+          value={kinds}
+          onChange={(value) => onKindsChange(value as ScheduleKind[])}
+          options={AGENDA_KINDS.map((kind) => ({ value: kind, label: chipLabel(kind) }))}
+        />
+      )}
     </div>
   );
 
   let body: ReactNode;
   if (status === 'loading') {
-    body = <div className="gt-sched__days"><ScheduleSkeleton count={5} compact={false} /></div>;
+    body = <div className="gt-sched__days"><ScheduleSkeleton /></div>;
   } else if (status === 'error') {
-    body = <div className="gt-sched__days"><ScheduleError onRetry={onRetry} compact={false} /></div>;
+    body = <div className="gt-sched__days"><ScheduleError onRetry={onRetry} /></div>;
   } else if (groups.length === 0) {
     const nextLabel = next ? peekDate(fmtDayLabel(itemDay(next, zone), now, zone)) : null;
     body = (
@@ -162,11 +171,14 @@ export function ScheduleAgenda({
           {filtersOn && inWeek.length > 0 ? (
             <>
               <p className="gt-sched__state-title">Nothing matches these filters</p>
-              <button type="button" className="gt-sched__retry" onClick={() => onKindsChange([])}>Clear filters</button>
+              <button type="button" className="gt-sched__retry" onClick={() => onKindsChange?.([])}>Clear filters</button>
             </>
           ) : (
             <>
-              <p className="gt-sched__state-title">Nothing scheduled {week.title ? week.title.toLowerCase() : 'that week'}</p>
+              <p className="gt-sched__state-title">
+                {/* A week cut to start at today says nothing about the days before it. */}
+                Nothing {keys.length < 7 ? 'else ' : ''}scheduled {week.title ? week.title.toLowerCase() : 'that week'}
+              </p>
               {next && nextLabel && (
                 <p className="gt-sched__state-hint">
                   Next up: {next.title}{next.teamName ? ` · ${next.teamName}` : ''} · {nextLabel}
@@ -203,9 +215,10 @@ export function ScheduleAgenda({
   }
 
   return (
-    <section className="gt-sched gt-sched--agenda" aria-label="Schedule">
+    // No landmark of its own: the card or page around it names the region.
+    <div className="gt-sched gt-sched--agenda">
       {toolbar}
       {body}
-    </section>
+    </div>
   );
 }

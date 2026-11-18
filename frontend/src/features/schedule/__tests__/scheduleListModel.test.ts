@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findOverlaps, groupByDay, nowIndex, statusOf, todayOrPeek, type ScheduleItemData } from '../scheduleModel';
+import { findOverlaps, groupByDay, nowIndex, statusOf, type ScheduleItemData } from '../scheduleModel';
 
 /** UTC-8 all year. */
 const ZONE = 'Etc/GMT+8';
@@ -48,42 +48,6 @@ describe('nowIndex', () => {
 
   it('places a deadline, a point in time, by its instant', () => {
     expect(nowIndex([at('2026-11-11T07:59:00.000Z', { kind: 'deadline', endsAt: null })], NOW)).toBe(0);
-  });
-});
-
-describe('todayOrPeek', () => {
-  const sprintToday = at('2026-11-10T08:00:00.000Z', {
-    id: 'sprint',
-    kind: 'sprint',
-    allDay: true,
-    endsAt: null,
-    sprint: { name: 'Sprint 4', edge: 'start' },
-  });
-
-  it("answers today's group when today has rows", () => {
-    const pick = todayOrPeek([at('2026-11-10T23:00:00.000Z'), sprintToday], NOW, ZONE);
-    expect(pick.mode).toBe('today');
-    expect(pick.day?.key).toBe('2026-11-10');
-    expect(pick.day?.dividers.map((d) => d.id)).toEqual(['sprint']);
-  });
-
-  it('peeks at the next day with rows, keeping today’s sprint rules', () => {
-    const thursday = at('2026-11-12T18:00:00.000Z');
-    const pick = todayOrPeek([sprintToday, thursday], NOW, ZONE);
-    expect(pick).toMatchObject({ mode: 'peek', todayDividers: [sprintToday] });
-    expect(pick.day?.key).toBe('2026-11-12');
-  });
-
-  it('answers none when nothing has rows', () => {
-    expect(todayOrPeek([sprintToday], NOW, ZONE)).toEqual({ mode: 'none', day: null, todayDividers: [sprintToday] });
-    expect(todayOrPeek([], NOW, ZONE)).toEqual({ mode: 'none', day: null, todayDividers: [] });
-  });
-
-  it('groups by the viewer’s day: 9 AM today at UTC-8 was yesterday at UTC+5', () => {
-    const morning = at('2026-11-10T17:00:00.000Z');
-    expect(todayOrPeek([morning], NOW, ZONE).mode).toBe('today');
-    // NOW is 4:12 AM on the 11th at UTC+5, and the meeting was at 10 PM on the 10th.
-    expect(todayOrPeek([morning], NOW, 'Etc/GMT-5').mode).toBe('none');
   });
 });
 

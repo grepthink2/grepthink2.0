@@ -50,6 +50,21 @@ describe('getScrumBoard', () => {
   });
 });
 
+describe('setStoryOrder', () => {
+  it.each<[string, string | null]>([
+    ['a sprint', 'sp1'],
+    ['the backlog (a null sprint)', null],
+  ])('PUTs the story order of %s and answers the saved order', async (_list, sprintId) => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { story_ids: ['s2', 's1'] }));
+
+    await expect(scrumApi.setStoryOrder('p1', sprintId, ['s2', 's1'])).resolves.toEqual({ story_ids: ['s2', 's1'] });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/projects/p1/scrum/stories/order');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({ sprint_id: sprintId, story_ids: ['s2', 's1'] });
+  });
+});
+
 describe('updateSprint', () => {
   it("takes no status, which follows the sprint's dates", () => {
     // @ts-expect-error: a sprint's status follows its dates

@@ -17,6 +17,7 @@ import { ConversationsProvider } from '@features/messages/hooks/useConversations
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 import { PreviewProvider } from '@/lib/previewContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { ScheduleRedirect } from '@features/schedule/components/ScheduleRedirect';
 
 // Every /app page except Home is code-split with React.lazy, so the entry
 // chunk every visitor downloads holds the shell, the landing page and the
@@ -29,7 +30,6 @@ const Dashboard = lazy(() => import('@features/app/pages/Dashboard'));
 const Modules = lazy(() => import('@features/app/pages/Modules'));
 const TAManagement = lazy(() => import('@features/app/pages/TAManagement'));
 const TAMeetings = lazy(() => import('@features/app/pages/TAMeetings'));
-const SchedulePage = lazy(() => import('@features/schedule/pages/SchedulePage'));
 const BrowseProjects = lazy(() => import('@features/app/pages/BrowseProjects'));
 const MyProject = lazy(() => import('@features/app/pages/MyProject'));
 const Assignments = lazy(() => import('@features/app/pages/Assignments'));
@@ -47,6 +47,9 @@ const TSRViewPage = lazy(() => import('@features/app/pages/TSRViewPage'));
 const FeedbackViewPage = lazy(() => import('@features/app/pages/FeedbackViewPage'));
 const ProjectDetails = lazy(() => import('@features/app/pages/ProjectDetails'));
 const ScrumBoardPage = lazy(() => import('@features/scrum/pages/ScrumBoardPage'));
+// A team's document, and the address a link that knows only the document opens it by.
+const DocumentPage = lazy(() => import('@features/documents/pages/DocumentPage'));
+const DocumentRedirect = lazy(() => import('@features/documents/pages/DocumentRedirect'));
 const AnalyticsPage = lazy(() => import('@features/analytics/pages/AnalyticsPage'));
 const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
 // Assign is Staffing's sibling in the same folder/pattern — same size
@@ -114,7 +117,8 @@ function App() {
             }>
               <Route index element={<Navigate to="/app/home" replace />} />
               <Route path="home" element={<Home />} />
-              <Route path="schedule" element={<SchedulePage />} />
+              {/* The week moved onto Home: an old link keeps its ?day=. */}
+              <Route path="schedule" element={<ScheduleRedirect />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/compose" element={<Messages />} />
               <Route path="messages/:conversationId" element={<Messages />} />
@@ -125,6 +129,8 @@ function App() {
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:projectId" element={<ProjectDetails />} />
               <Route path="projects/:projectId/board" element={<ScrumBoardPage />} />
+              <Route path="projects/:projectId/documents/:documentId" element={<DocumentPage />} />
+              <Route path="documents/:documentId" element={<DocumentRedirect />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="roster" element={<Roster />} />
               <Route path="modules" element={<Modules />} />

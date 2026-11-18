@@ -14,6 +14,7 @@ import type {
   ApiScrumStory,
   ApiScrumSummary,
   ApiScrumTask,
+  ApiStoryOrder,
   ApiTaskRef,
   ApiUpdateSprintBody,
   ApiUpdateStoryBody,
@@ -72,11 +73,14 @@ export const scrumApi = {
     return 'sprint' in res ? res.sprint : res;
   },
 
-  createStory: async (projectId: string, body: ApiCreateStoryBody) => {
-    return apiRequest<{ message: string; story: ApiScrumStory }>(
+  /** The story as saved, without tasks. */
+  createStory: async (projectId: string, body: ApiCreateStoryBody): Promise<ApiScrumStory> => {
+    const res = await apiRequest<ApiScrumStory | { message: string; story: ApiScrumStory }>(
       `/api/projects/${projectId}/scrum/stories`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+    // An older backend answers {message, story}.
+    return 'story' in res ? res.story : res;
   },
 
   /** The story as saved, without its tasks. */
@@ -87,6 +91,18 @@ export const scrumApi = {
     );
     // An older backend answers {message, story}.
     return 'story' in res ? res.story : res;
+  },
+
+  /**
+   * Order a sprint's stories, or the backlog's when `sprintId` is null: `storyIds` must be every
+   * story of that list, each once, in the new order (ranks 1 to n). A 409 says the list changed since
+   * the board was loaded, and nothing was saved.
+   */
+  setStoryOrder: async (projectId: string, sprintId: string | null, storyIds: string[]) => {
+    return apiRequest<ApiStoryOrder>(`/api/projects/${projectId}/scrum/stories/order`, {
+      method: 'PUT',
+      body: JSON.stringify({ sprint_id: sprintId, story_ids: storyIds }),
+    });
   },
 
   /** A backlog story and its tasks; 409 for a story in a sprint (move it to the backlog first). */

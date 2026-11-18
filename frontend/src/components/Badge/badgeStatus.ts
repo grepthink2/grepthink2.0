@@ -21,7 +21,11 @@ export type BadgeStatus =
   | 'signups.open' | 'signups.closed' | 'slot.free' | 'slot.yours' | 'slot.past' | 'review.no_review_ta' | 'review.no_product_owner'
   | 'live'
   /** What's new: the "New" marker on a release newer than the one this browser last saw, and on the menu row. */
-  | 'release.new';
+  | 'release.new'
+  /** A team's project document: not made yet, a draft, handed in, or handed in and saved again since. */
+  | 'document.not_started' | 'document.draft' | 'document.final' | 'document.edited_since'
+  /** What wrote a document's revision, and the mark on every revision that was handed in. */
+  | 'revision.seed' | 'revision.edit' | 'revision.import' | 'revision.export' | 'revision.handed_in';
 
 export type BadgeCategory = 'ta' | 'instructor' | 'team' | 'sponsored' | 'manual' | 'members';
 
@@ -59,6 +63,12 @@ export const BADGE_STATUS: Record<BadgeStatus, readonly [tone: BadgeTone, label:
   live: ['info', 'Live'],
   // An entry newer than the release this browser last saw: informational, never the unread red.
   'release.new': ['info', 'New'],
+  // A final document saved again since is amber: what its readers see is not what the team has now.
+  'document.not_started': ['neutral', 'Not started'], 'document.draft': ['info', 'Draft'],
+  'document.final': ['success', 'Final'], 'document.edited_since': ['warning', 'Final · edited since'],
+  'revision.seed': ['neutral', 'Started'], 'revision.edit': ['neutral', 'Edited'],
+  'revision.import': ['neutral', 'Imported'], 'revision.export': ['neutral', 'Exported'],
+  'revision.handed_in': ['success', 'Handed in'],
 };
 
 /**

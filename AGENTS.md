@@ -40,16 +40,6 @@ review shape below, not the skill's own.
   request into `beta` or `main`.
 - A frontend test that times out on a busy machine proves nothing. Rerun the failing files alone,
   and let CI decide.
-- Vitest runs in its `vmThreads` pool (`vite.config.ts`): one jsdom per worker, a fresh `window`
-  per file. Objects that come from Node APIs or jsdom internals live in another realm there, so
-  `toStrictEqual` on a `Response.json()` result or `structuredClone` output, or `instanceof Error`
-  on an error a Node built-in threw, can fail where `toEqual` passes; compare with `toEqual` or
-  check the shape. `isolate` has no effect in that pool, and a worker is recycled past
-  `vmMemoryLimit` rather than garbage-collected.
-- Vitest keeps compiled modules on disk (`frontend/node_modules/.vitest-cache`), and that cache misses
-  a change to a Sass partial: a stylesheet that `@use`s the partial keeps its old CSS. After changing a
-  partial, run `npx vitest --clearCache` in `frontend/` before trusting a test that reads styles. CI
-  starts from a clean install.
 - Tests that depend on the clock or a time zone:
   - pin the clock (`app.assignments.deadlines.now_utc` in the backend, fake timers in the frontend);
   - use fixed-offset zones (`Etc/GMT+8`), never a real zone whose daylight-time rules can change.
@@ -69,17 +59,53 @@ review shape below, not the skill's own.
   `u`, four hex digits) into the raw character. Build such escapes in code, and scan the branch's diff
   for invisible characters (Unicode categories Cf and Cc) before a pull request.
 - **`git stash`** is shared by every worktree of this repo. Set work aside with a commit instead.
-- **Local preview pages** (`frontend/<name>-mock.html` and their entry file in `frontend/src/`) stay
-  local:
-  - list them in `.git/info/exclude`;
-  - never commit them;
-  - move them out before switching to a branch that lacks what they import, or lint and build fail
-    there.
 - **Plans, ledgers and review notes** stay out of the repo. Code, comments and commit messages never
   cite them (no plan, task or ruling ids): say what the code does.
 - **Old response shapes move on touch.** When you change an endpoint that still answers
   `{"message": …, "<resource>": …}`, move it to the current shape (`backend/STYLE_GUIDE.md`,
   "Response Format") in the same pull request, with its client method and tests.
+
+**Keep the loop short.**
+- Read the one area doc your change needs (the table below), not all of them.
+- While you work, run the tests of the files you touch. Run the full gates once before the pull
+  request, and again only if code changed after that run.
+- Brief a subagent with paths (the spec, the plan, its area doc), not pasted text; it loads this file
+  itself. Review its diff, not its transcript.
+- A change to an agreed spec is a dated amendment in that spec, not a new spec.
+- This file holds what every change needs. Knowledge about one area goes in `docs/agents/`, updated in
+  the pull request that changes the behaviour. Leave version numbers to `package.json` and
+  `requirements*.txt`.
+
+## Read before you touch
+
+| You are changing | Read first |
+| --- | --- |
+| Anything under `backend/` | [docs/agents/backend.md](docs/agents/backend.md): authorization, batching, errors, routes and the client, SQL, rate limits, email, events |
+| Anything under `frontend/` | [docs/agents/frontend.md](docs/agents/frontend.md): the shared UI kit, oxlint and TypeScript 7, the entry chunk, Vitest, local harnesses |
+| The scrum board or its MCP connector | [docs/agents/scrum.md](docs/agents/scrum.md): sprints, status, burnup, move-in, connector tokens |
+| A team's project documents (sprint reports, release summary, test plan and report) | [docs/agents/documents.md](docs/agents/documents.md): the kinds registry, revisions, finalize, who may |
+| Attendance, TAs, meetings, final reviews, deadlines, the schedule, any date | [docs/agents/meetings-and-time.md](docs/agents/meetings-and-time.md) |
+| A release, or the Supabase, Vercel or Cloudflare CLI | [docs/agents/release-and-ops.md](docs/agents/release-and-ops.md) |
+| Sign-up, login, email verification | `AUTH.md` |
+| Deploys, environments, applying migrations | `DEPLOY.md` |
+| A design import | `design/PORTING.md` |
+
+## Rules for every change
+
+- **Authorization is in Python.** Controllers use the service role, which bypasses Row-Level Security:
+  check membership or ownership on every read and write.
+- **Never depend on unapplied SQL.** Migrations are applied by hand, DEV first; merging applies nothing.
+- **PROD is the maintainer's.** No PROD read, write, deploy or DNS change without being asked.
+- **Never run bare `supabase`, `vercel` or their `login`:** use `scripts/supabase.sh`, `scripts/vercel.sh`
+  and `scripts/cloudflare.sh`.
+- **Secrets stay server-side,** and identity columns (`profiles.email`, `edu_email`, `role`) never come
+  from a request body.
+- **Sentry and logs:** keep names, emails, grades and review text out of exception and log messages;
+  log ids.
+- **A new or changed route** moves its client method (`frontend/src/lib/api/<domain>.ts`) and its entry
+  in the agent catalog in the same pull request.
+- **Times:** store instants, compute calendar boundaries in the school's zone, show the viewer's zone.
+- **Frontend UI** comes from `frontend/src/components/`; the first download must not grow.
 
 ## Tech stack
 
@@ -93,7 +119,7 @@ review shape below, not the skill's own.
 | Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
-| Lint      | ruff check + format (backend), oxlint 1.89 + `lint:design` (frontend) |
+| Lint      | ruff check + format (backend), oxlint (pinned exactly) + `lint:design` (frontend) |
 | Coverage  | pytest-cov (`backend/.coveragerc`: branch, `fail_under`), @vitest/coverage-v8 (`vite.config.ts` thresholds), Codecov |
 | Tooling   | Node 24 in CI (`engines` >= 22.12), `backend/requirements-dev.txt` |
 
@@ -102,7 +128,7 @@ review shape below, not the skill's own.
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search schedule mcp
+  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search schedule mcp documents
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -111,6 +137,7 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   analytics/         # per-institution dashboard: SQL functions (RPC) + nightly analytics_daily rollup
   schedule/          # GET /api/schedule: a caller's items in one class (TA meetings expanded per week), by lens
   mcp/               # scrum board MCP connector at /mcp (mcp SDK): tools, its own OAuth server, fill controller
+  documents/         # a team's documents: kinds registry, revisions, finalize with a frozen snapshot, Markdown
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
   utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
@@ -126,8 +153,8 @@ frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
   features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
                       # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
-  features/schedule/  # schedule model + rows; Home's Today's Schedule (TodaySchedule, compact ScheduleList) and the
-                      # /app/schedule week (SchedulePage, ScheduleAgenda: a lazy route Home never imports)
+  features/schedule/  # schedule model + rows; Home's schedule card, the week from today (HomeScheduleCard lazy-loads
+                      # HomeSchedule and ScheduleAgenda, so the entry chunk has none of it); /app/schedule redirects to Home
   lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
@@ -136,15 +163,13 @@ frontend/src/
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
-  components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
-                      # Slider, Modal (+useDialog, tone="dark"), Drawer, ConfirmDialog (+InlineConfirm), Alert,
-                      # EmptyState (+NoClassSelected), InfoPopover, Badge, CountBadge, UnreadBadge, NewDot, Tag,
-                      # FilterChip (+FilterChipGroup), Avatar (+AvatarGroup), Card, StatCard, ProgressBar, Tabs
-                      # (+TabPanel), SegmentedControl, Pagination (+usePagination), Table (+SortableHeader, useTableSort), Skeleton,
-                      # ErrorBoundary, Popover, Menu (+MenuGroup), Tooltip, Toast, Markdown; hooks/useRovingFocus)
+  components/         # the shared UI kit (what it holds and its rules: docs/agents/frontend.md)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
+
+docs/agents/          # area rules and gotchas, routed from "Read before you touch"
+docs/superpowers/specs/  # agreed designs, one per feature
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 design/               # Claude Design export (design system); replace it wholesale on each
@@ -156,19 +181,8 @@ design/               # Claude Design export (design system); replace it wholesa
 - **Backend module = url + views + controller + models.** `url.py` registers routes
   (functional `router.post('/x')(views.fn)`); `views.py` handles request/response;
   `controller.py` holds business logic + **authorization checks**; `models.py` is Pydantic.
-- **Data access (backend).** Controllers take the client from `app.core.db.get_client()` and
-  authorize with `app.core.authz`. Every `.execute()` is a network round trip, so batch:
-  embed related rows over foreign keys (`projects(class_id, classes(created_by))`, with
-  `!fk_name` hints where a table has several FKs to one target), use `.in_()` instead of
-  per-row loops, run independent reads with `fan_out({...})`, and validate everything in
-  memory before one bulk `insert` / `upsert` / `delete`. Tests pin a round-trip budget with
-  `FakeSupabase.executes`. `backend/STYLE_GUIDE.md` has the details.
-- **Errors.** Raise `HTTPException` with a fixed `detail`; a failed database request raises
-  `DatabaseError` (503 unavailable, 409 conflict, 500 read or write failure, each with a `code`),
-  and `app/core/errors.py` logs anything else uncaught and answers
-  `{"detail": "Internal server error", "code": "internal_error"}`. In the web client a failed
-  call throws `ApiError` (status, detail and the backend's `code`), and a 401 signs the user out
-  locally.
+- **Data access and errors (backend):** batch round trips, authorize with `app.core.authz`, raise
+  `HTTPException` with a fixed `detail`. Details in `docs/agents/backend.md`.
 - **Auth flow:** Supabase `signUp`/`signInWithPassword`/Google OAuth on the frontend
   → frontend calls `POST /api/create-user` to provision the `profiles` row → JWT in
   cookies → every API call sends `Authorization: Bearer <jwt>` → backend verifies via
@@ -208,7 +222,7 @@ Use these words in code, copy, comments and the agent catalog:
 - **Catalog roles** (`frontend/public/.well-known/grepthink-actions.json`, each action's `role`; join
   alternatives with `|`): `public` (no sign-in), `any` (any signed-in user), `student`, `ta` (a class
   TA), `meeting-ta` (the team's meeting TA), `instructor` (the class instructor), `project-member`,
-  `owner`, `product owner`, `admin`.
+  `owner`, `product owner`, `scrum master`, `admin`.
 
 ## Run / test
 ```bash
@@ -228,31 +242,6 @@ npx vitest run                              # unit + component tests
 npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
 ```
 
-## Supabase, Vercel and Cloudflare CLIs: always use the project profiles
-Run the CLI as `scripts/supabase.sh dev|prod <supabase args>`. Never run bare `supabase`, and
-never run `supabase login`: login keeps its token in the macOS keychain, and after that every
-call from another process (an editor terminal, an agent) asks for the keychain password. The
-script reads a personal access token from `.supabase/access-token` (create it once with
-`scripts/supabase.sh token`). It links each environment in its own working directory, so
-`--linked` means the environment you named. `.supabase/` is gitignored and lives in the main
-checkout, and every worktree shares it. `db dump` needs a running Docker. Dumps hold student
-data, so write them outside the repo. The Supabase MCP connector reaches both projects too;
-in Claude Code's auto mode, calls to PROD need the maintainer's approval.
-
-The same goes for Vercel: `scripts/vercel.sh frontend|backend <vercel args>` (once:
-`scripts/vercel.sh token`), never bare `vercel` and never `vercel login`. The token lives in
-`.vercel/global/auth.json`, a repo-local global config (`--global-config`), so your
-account-wide login is never used. Each project is linked under `.vercel/<frontend|backend>`.
-The script refuses deploys (PROD deploys by merging to `main`). Use it for what the Vercel
-connector cannot do: `env ls production`, `logs`, `rollback`.
-
-DNS for `grepthink2.com` lives in Cloudflare, not Vercel: `scripts/cloudflare.sh verify | dns ls |
-dns add | dns rm | get` (once: `scripts/cloudflare.sh token`). It takes an account API token
-(Zone → DNS → Edit and Zone → Zone → Read on that zone; it refuses the Global API Key) from
-`.cloudflare/api-token` and hands it to curl on stdin, never on a command line. It will not
-remove or shadow the apex, www, api or email records, or add a `_vercel` TXT that verifies one
-of them for another Vercel account. Reads are fine; ask the maintainer before any DNS write.
-
 ## API surface
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`, `check-user-exists`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
@@ -260,233 +249,12 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
 `/api/projects/{id}/scrum` (scrum board), `/api/projects/{project_id}/meetings` (a team's one-off
-meetings), `/api/search` (`index`), `/api/schedule` (a caller's items in one class for a range), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
+meetings), `/api/search` (`index`), `/api/schedule` (a caller's items in one class for a range), `/api/projects/{project_id}/documents`,
+`/api/documents` and `/api/classes/{class_id}/documents` (a team's project documents), plus attendance routes under `/api`. Outside `/api`: `/mcp` (the scrum
 board MCP connector, `app/mcp`), its OAuth metadata (`/.well-known/oauth-protected-resource/mcp`,
 `/.well-known/oauth-authorization-server`) and its OAuth endpoints (`/register`, `/authorize`, `/token`, `/revoke`).
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
-
-## Gotchas (read before changing these areas)
-- **`service_client` bypasses RLS.** Controllers query Postgres with the service
-  role, so Row-Level Security does **not** protect you (RLS is on for every table, and most
-  have no policies). A missing membership/ownership check in a controller is an
-  IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
-- **Two project-TA roles (by design):** `projects.assigned_ta_id` = the team's *assigned TA*
-  (runs the weekly meeting, takes attendance and reviews the team's TSRs; set through
-  `app/attendance`). `project_review_tas` = the *second end-of-quarter reviewer* (at most one per
-  team; `app/tas`), a different class TA than the assigned one, who is reviewer #1 and is not
-  stored there. Both draw from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
-  designating via TA Management or TA Meetings writes the same `enrollment_role`
-  (the legacy `class_tas` table was removed).
-- **`meetings` holds two kinds of row.** `kind = 'ta_meeting'` is a TA's weekly slot
-  (`app/attendance`); `kind = 'team_meeting'` is a team's one-off meeting (`app/team_meetings`,
-  written by the team's Product Owner). TA code filters `cadence = 'weekly'`, team-meeting code
-  filters `kind = 'team_meeting'`, and a CHECK (`meetings_team_meeting_shape`) ties `team_meeting`
-  to `cadence = 'once'`, so the weekly filter never sees a team row. TA code must never read team
-  rows: keep `cadence = 'weekly'` on every new TA query.
-- **`projects.final_review_at` has one writer.** Only the SQL functions `book_final_review_slot`
-  and `release_final_review_slot` set it, called over `.rpc()` from `app/tas/review_slots.py`, so
-  a team's time moves with its slot in one transaction. Never update it directly.
-  `classes.review_period_open` ("Sign-ups open") is the one switch for team booking and TA
-  reviewer sign-up, and a TA self-appoints as Review TA only once the team holds a slot.
-- **The browser gets no table access, by grant as well as by policy.** `anon` holds nothing in
-  `public`; `authenticated` holds `SELECT` on the Realtime tables only, and new tables start with
-  no client privileges (`2026-09-21_lock_down_direct_table_access.sql`). Never add a write policy
-  or a `GRANT` for those roles to make something work: route it through the backend. A table the
-  browser must read over Realtime needs a `SELECT` policy scoped by `auth.uid()` **and**
-  `GRANT SELECT … TO authenticated`.
-- **Identity columns are never taken from a request body.** `profiles.email`, `profiles.edu_email`
-  and `profiles.role` decide whose roster row and whose privileges an account gets. The email
-  comes from the verified token, `edu_email` is written only by `verify_edu_email` (or from the
-  token's address when it is a school email — `.edu`, or an institution's `email_domains`;
-  `app/institutions/controller.py` `is_school_email` — not just `.edu`), and the role is written
-  once by `create_user`. A login email change goes through Supabase Auth (Settings → Change),
-  and `GET /api/profiles/me` re-mirrors the token's email afterwards. See `AUTH.md`.
-- **Connected apps get GrepThink tokens, never Supabase tokens.** The scrum board MCP connector (`app/mcp`) is
-  its own OAuth server: the MCP SDK serves `/register`, `/authorize`, `/token` and `/revoke` on
-  `app/mcp/oauth.py`, the student answers on the site's consent page (`/api/mcp/authorizations`), and the
-  app gets opaque tokens (hashed in `mcp_tokens`) that only `/mcp` accepts. A Supabase token in an app's
-  hands could change the student's password through Supabase Auth, which nothing on our side can fence.
-  Students end a grant in Settings → Connected apps. ⚠️ `/register` accepts any redirect URI for now: a
-  known safety issue to revisit. Supabase's own OAuth server stays off on every project: a token it
-  issued would carry the student's whole account, and nothing on our side can fence Supabase Auth.
-- **A team's move-in goes through `fill_board`.** While a board holds 3 stories or fewer with
-  `user_stories.imported_at` NULL, the connector also takes done and in-progress tasks and stories in
-  finished sprints, and marks every story it writes. `scrum_fill_board` dates the tasks' `task_moves` rows and
-  replaces the saved `sprint_burnup_days` rows of each started sprint it adds to (`p_burnup`), all in one
-  transaction, and that chart then says "Includes imported work". This is the only writer that backdates a
-  move or rewrites past burnup rows; the board's own writes only snapshot today.
-  `scrum.controller.import_window_open` is the window's one rule. The board's dismissible notice
-  (`ImportNudge`) invites a team in only while the board response says `connector_ready` and
-  `import_window_open`, and not yet `has_imported_stories`. On the student Home, `MoveInInvite` opens a
-  modal with the same invitation once a visit (a browser tab's session) while the summary response
-  says `connector_ready` and its `story_count`, imported stories included, is under 3. The board's
-  "Connect an AI assistant" ⓘ pulses while the connector is ready, on every board load until it is
-  clicked, and its popover offers the move-in prompt. `MOVE_IN_NUDGE_ON`
-  (`features/connector/config/moveInNudge.ts`) turns the notice, the pulse and the Home modal off together.
-- **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
-  code once let `%` join any class. Validate the shape first, then match exactly.
-- **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).
-  The web client (`lib/api/<domain>.ts`) and the agent catalog follow it, and both are
-  hand-maintained, so they can drift. Confirm a route exists before adding or calling a client
-  method, and add the method to the matching domain file (`lib/api.ts` spreads them all into
-  `api`; `apiFacade.test.ts` fails if two domains share a method name).
-  `backend/scripts/check_api_client.py` (run by pytest and as its own CI step) fails when a
-  request in `frontend/src` or an action in `grepthink-actions.json` matches no route, or when
-  a route has no caller there and no reason in its `SERVER_ONLY` list.
-- **Never depend on unapplied SQL.** Migrations in `backend/database/migrations/` are
-  applied by hand, dev first and then prod; merging does not apply them. Code must work on
-  the schema that is live, and an upsert needs a unique constraint that already exists.
-- **`projects.num_members` is derived.** After any `project_members` write call
-  `projects.controller.recount_num_members(client, project_ids)`; never read-modify-write it.
-- **Secrets stay server-side.** `.env` lives at the repo root (see `.env.example`), and Vite
-  exposes only `VITE_*` (`envPrefix`). Never widen that prefix: the same file holds
-  `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET`.
-- **`backend/api/index.py` is the Vercel entrypoint.** It only re-exports `app`; keep the
-  `__all__`, which stops ruff deleting the import as unused. Keep tool settings out of a
-  `backend/pyproject.toml`: Vercel reads that file as a dependency source, and deployments
-  install from `requirements.txt`.
-- **Sentry scrubs by name and by shape.** With `SENTRY_DSN` set, `app/core/sentry.py` filters
-  the values of env vars whose names look like credentials (`KEY`, `SECRET`, `TOKEN`,
-  `PASSWORD`, ...) and anything shaped like an email, IP address, JWT or provider token. Name
-  new credentials that way, and keep names, grades and review text out of exception and log
-  messages: nothing can recognise those.
-- **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
-  sits on the auth routes, contact, the issue form, `GET /api/institutions`, message sending, the
-  `/api/email` dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts,
-  stats, analytics and the search index. The search index's limit is per signed-in user
-  (`key_func=_search_rate_key` in `app/search/views.py`): on Vercel every request arrives from
-  the proxy's address, so a limit keyed by address is one bucket for everybody. Add one to any
-  new public or abuse-prone endpoint.
-- **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
-  (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
-  producer may run twice) instead of sending from a request or a background task: Vercel pauses
-  an instance between requests, so a send started inside one can be cut off and lost. Only interactive
-  emails the user is waiting for (verification codes, the contact and issue forms) call
-  `app.utils.email.send_email` directly. Reminder/digest kinds need a preference `category`.
-- **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
-  read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
-  no backend act-as, so it does not show a specific student's real data.
-- **Deadlines are instants.** `assignments.due_at` (first moment after `close_date` in the school's
-  zone, derived by the backend) is the deadline; `accept_until` is a late window. After a published
-  assignment's `due_at` passes, moving `close_date` or unpublishing is refused (400): set
-  `accept_until`. A draft can always be rescheduled. `create_tsr`, `update_tsr_entry` (students) and
-  `submit_feedback` enforce the window (403 `"This assignment is not open yet"` / `"This assignment
-  is closed"`). `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in
-  tests).
-- **Times: store instants, compute in the school's zone, show in the viewer's.**
-  - The database holds `timestamptz` instants.
-  - Calendar boundaries (a day, a term week, a deadline's `due_at`, the scrum board's burnup day) are
-    computed in the school's zone: `institutions.timezone`, read through
-    `app.institutions.controller.institution_timezone()`. A controller with no class row at hand embeds
-    `classes(institution_id)` in a read it makes anyway: scrum's `_board_access` does, and answers the
-    project's `institution_id` along with the caller's access.
-  - The web client shows times in the viewer's zone, with the campus time beside them when the two
-    differ (`features/schedule/scheduleModel.ts` `zoneDiffers` / `viewerZone`,
-    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`). The campus zone is the class's school's, from
-    `useSchoolTimezone(class.institution.id)` (`lib/institutions.ts`), and the components and helpers
-    that show campus time take it as an argument, with no default of their own. `SCHOOL_ZONE`
-    (`lib/schoolZone.ts`, Pacific) is only that hook's last resort, when no school's zone is known, and
-    `viewerZone()`'s when the browser cannot say where it is.
-  - Known exception, still to fix: the Final Reviews page shows the browser's zone with no campus time.
-- **Sprints come from the class.** `classes.sprint_count` (1–20), `sprint_frequency` (`weekly`,
-  `biweekly`, `monthly`) and `sprints_start_on` are the class's sprint schedule, all three or none,
-  and `scrum.controller.ensure_project_sprints` makes each team's "Sprint 1" to "Sprint N" from it,
-  numbered by `sprints.sequence`: when the team is created, and for every team on
-  `PATCH /api/classes/{class_id}/sprints`. Team members can still add a sprint of their own (the
-  board's "New sprint", `POST /api/projects/{project_id}/scrum/sprints`); it has `sequence NULL`,
-  and the schedule never touches it. A sprint's dates must fit the class, and a class with a
-  schedule caps a team at its `sprint_count` sprints (`create_sprint` answers 409 past it).
-- **Sprint status is derived from dates.** `scrum.schedule.sprint_status` makes a sprint `planned`,
-  `active` (from `starts_at` through `ends_at`) or `completed` by the day at the project's school
-  (`_today`, as the burnup day is), and the board opens on today's sprint, else the latest one
-  that has started, else the first (`_select_sprint`).
-  Nothing writes or reads the stored `sprints.status` column: `update_sprint` drops a `status`.
-- **The burnup counts tasks in hours or points.** Scope is the sum of the sprint's task estimates
-  (`tasks.points` or `tasks.estimate_hours`) and completed the same sum over its done tasks; story
-  points count nowhere, and points are drawn only when every task in the sprint has them
-  (`scrum.burnup.units_available`), else hours. Every write that moves either line takes a
-  `sprint_burnup_days` snapshot in both units (`_snapshot_burnup_safe`), a task estimate edit or
-  delete included; a story points edit takes none.
-- **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
-  is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
-  `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
-  and timestamps as strings: a `UUID` or `datetime` raises `TypeError` before anything is written
-  (tests catch it; the fake client does not serialize).
-- **Analytics counts in Postgres, authorizes in Python.** `app/analytics` fans out `analytics_*` SQL
-  functions over `.rpc()` and composes one payload; who may see an institution is decided by
-  `scope_for_user` (maintainers from `ANALYTICS_ADMIN_EMAILS`, instructors through the classes they
-  created). A missing or failing function is a card in `failures[]`, never a 500. The nightly
-  `analytics_daily` rollup runs under pg_cron (`prod/2026-10/2026-10-07_analytics_cron.sql`); its
-  `class_id` has no foreign key on purpose, so deleted classes keep their history.
-- **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
-  tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
-  the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
-  SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
-  dialogs (Modal, with a dark tone for the landing page, Drawer, ConfirmDialog with InlineConfirm), Alert,
-  EmptyState with NoClassSelected, InfoPopover, Badge (with a small size), CountBadge, UnreadBadge, NewDot
-  (the blue "something new" dot, never the red unread count), Tag, FilterChip with FilterChipGroup, Avatar
-  with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl,
-  Pagination with `usePagination`, Table with
-  SortableHeader and `useTableSort`, Popover, Menu (with MenuGroup and a `trailing` slot on MenuItem),
-  Tooltip, Toast, Skeleton and Markdown. Tabs switch
-  panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
-  a list. A table row that opens something carries a link or button in its first cell (Table's
-  `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
-  (`<Badge status="attendance.late" />`), never a colour: `components/Badge/badgeStatus.ts` maps it. Avatars
-  take their colour from the one palette and hash in `components/Avatar/avatarHelpers.ts`
-  (`lib/avatarColors.ts` is the landing page's hex copy). A field's `maxLength` is a soft
-  limit: the text past it is kept and flagged, so the form's own validation must refuse it. The dialogs
-  share `useDialog` (`components/Modal/`): Esc and the scrim close only the topmost, so a layer inside a
-  dialog that handles Esc itself (a popover, a calendar, an inline form) must take it first: in the
-  capture phase, or with `stopPropagation()` in its own handler. A
-  feature stylesheet never re-declares a shared component's classes, and feature markup never renders
-  them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
-  feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
-  build it with your feature's own class names; never copy a design component's CSS block. A kit
-  component takes the name `design/_ds_manifest.json` gives it, at `src/components/<Name>/<Name>.tsx`
-  (an export the design ships inside another component's file may sit in that component's folder);
-  `lint:design` fails otherwise, and a deliberate difference goes in `NAMES_ALLOWLIST`
-  (`frontend/scripts/names.mjs`) with its reason.
-- **The frontend lints with oxlint and type-checks with TypeScript 7.** `frontend/.oxlintrc.json`
-  lists the rules it runs, each as an error; nothing is enabled by category (its `off` entries are
-  typescript-eslint's overlay, which turns core rules off on TypeScript files). The rule names are
-  `typescript/*` and `react/*` (`react/only-export-components` is the old `react-refresh` rule, and
-  the output prints the classic hooks rules as `react-hooks(...)`). The React rules are native ports
-  of `eslint-plugin-react-hooks`, the React Compiler rules included; they run on every TypeScript
-  file, tests too, and find more than the ESLint plugin did (a clock read during render, a ref
-  written during render). A component reads the clock through `lib/useNow.ts`, never with
-  `new Date()` in render. A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
-  hides one finding; a reason that wraps needs a block comment, because the directive covers the
-  line after the comment ends. Never suppress `react/exhaustive-deps` or `react/rules-of-hooks`
-  inside a component: in oxlint 1.89 such a directive also hides every React Compiler finding in
-  that component. Restructure the effect instead: a value that must not re-run it is read from a
-  ref that an earlier effect keeps current. `npm run lint` also fails on a suppression that hides
-  nothing.
-  oxlint is pinned to an exact version: its minor releases add rules and make existing ones
-  stricter, so an upgrade is a change of its own. TypeScript 7 has no stable JavaScript API
-  (`require("typescript")` returns only its version; the rest is under `typescript/unstable/*`), so
-  a tool that loads the compiler API, such as typescript-eslint, cannot be added without
-  TypeScript 6 beside it (Microsoft's `@typescript/typescript6` package, under an `npm:` alias).
-- **The entry chunk stays lean.** Every `/app` page except Home is a `lazy()` route in
-  `frontend/src/App.tsx`, heavy modals (Settings among them) go through `lib/lazyModal.ts`, and the
-  shell (`AppView`, `Header`, `Sidebar`) imports no page and no Markdown renderer statically: whatever
-  they import lands in the chunk every visitor downloads. After adding a route or a dependency, check
-  every JS and CSS file `frontend/dist/index.html` loads (its scripts, stylesheets and modulepreload
-  links), not only the `index-*.js` line of `npm run build`: rolldown can split a shared module out of
-  `index-*.js` into a chunk that is still preloaded. Measured 2026-10-23: `index-*.js` 199 kB minified
-  (58 kB gzipped); all the files `index.html` loads, 817 kB of JS (238 kB gzipped, each file on its own)
-  and 132 kB of CSS (23 kB gzipped).
-- **Release notes and the version.** The newest file in `frontend/src/features/releases/notes/` must
-  equal `frontend/package.json`'s `version`, and its format is checked by `releaseNotes.test.ts`. A
-  release is one pull request from `beta` into `main`, and every one is tagged: its "Release version
-  and notes" check (required by `main`'s ruleset) fails while `v<version>` is tagged already or the
-  notes file is missing. Turn it green with one `release: <version>` commit pushed straight to `beta`
-  (no pull request of its own): the notes file plus `npm --prefix frontend version <version>
-  --no-git-tag-version`. Raise the minor number for anything new or improved, the patch for fixes or
-  internal work only (one line under `## Improved`). After the merge into `main`,
-  `.github/workflows/release.yml` tags it and publishes the GitHub release from the same file. Only a
-  Dependabot security update straight into `main` keeps the version.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

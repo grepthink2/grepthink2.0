@@ -197,3 +197,32 @@ much.
 TA-posted office hours; lectures; the unified instructor schedule across classes, with TA meetings;
 "Add to your calendar" (Piece D); inline attendance and Set time; `MeetingCard` expansion; team
 meetings for staff; cancelled and TBD items; the Final Reviews page's missing campus time.
+
+## Amendment, 2026-11-12: the week on Home, no separate page
+
+v0.94.0 shipped the compact card on Home and the `/app/schedule` week. Two views of the same items
+is one too many, so the week moves onto Home and the page goes. Decided with the maintainer:
+
+1. **Ships after v0.94.0,** in the next release.
+2. **`/app/schedule` and its sidebar entry are removed.** The route redirects to `/app/home`,
+   keeping `?day=`, so old links and bookmarks still open the right week.
+3. **Instructor Home:** the schedule card moves from the aside to the top of the main column, above
+   Needs Attention. The week's rows need the width.
+4. **Home's week starts at today:** the current week shows today and the days after it through
+   Sunday, so nothing past sits above today. The week switcher still moves to any week, and any
+   other week shows Monday to Sunday.
+
+My calls:
+- **Lazy-loaded:** the week view loads with its own code from Home, behind the card's skeleton, so
+  the first download does not grow.
+- **No kind chips on Home:** the week switcher, range and zone note stay. The chips can return
+  when lectures or office hours bring more kinds.
+- **Empty today:** it still says "Nothing scheduled", and an empty week keeps its "Next up" look-ahead.
+- **`?day=` lives on `/app/home`:** it is the week shown, and Back steps through weeks. Only a
+  `?day=` someone opened (a redirect or a link) scrolls to that day.
+- **Links follow:** the Team Meetings card's "See all in Schedule" goes to Home's week, and the
+  Header's title for `/app/schedule` goes.
+- **Removed:** the compact `ScheduleList`, `TodaySchedule` and their tests. `SchedulePage` becomes
+  the Home card's body. The agenda's own code stays out of the entry chunk.
+
+Unchanged: the endpoint, the lenses, preview and no-class behaviour, and everything the agenda shows.

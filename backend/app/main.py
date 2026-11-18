@@ -27,6 +27,7 @@ from app.config import settings
 from app.contact.url import router as contact_router
 from app.core.errors import install_exception_handlers
 from app.core.sentry import SentryFlushMiddleware, init_sentry
+from app.documents.url import router as documents_router
 from app.health.url import router as health_router
 from app.institutions.url import router as institutions_router
 from app.issues.url import router as issues_router
@@ -105,6 +106,8 @@ app.add_middleware(
     allow_credentials=settings.CORS_CREDENTIALS,
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
+    # A download's file name (a document's Markdown) is readable across origins only when exposed.
+    expose_headers=["Content-Disposition"],
 )
 # Defensive security headers on every response.
 app.add_middleware(SecurityHeadersMiddleware)
@@ -136,6 +139,7 @@ for router in (
     attendance_router,
     email_router,
     scrum_router,
+    documents_router,
     schedule_router,
     search_router,
     mcp_router,

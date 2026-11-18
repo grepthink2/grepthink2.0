@@ -41,7 +41,7 @@ series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is 
 | `docs/superpowers/specs/` | design records for the larger features, cited from code | |
 | `.github/` | CI workflow, Dependabot, the pull-request template and the branch rulesets | "Tests and checks" and "Branches" below |
 
-Start with [AGENTS.md](AGENTS.md): architecture, roles, conventions, and the gotchas that bite.
+Start with [AGENTS.md](AGENTS.md): architecture, roles, conventions, and which area doc under `docs/agents/` holds the gotchas for what you are changing.
 [AUTH.md](AUTH.md) covers sign-in and authorization. [DEPLOY.md](DEPLOY.md) covers Vercel,
 environment variables, migrations, email delivery and error tracking.
 [CODE_REVIEW.md](CODE_REVIEW.md) is the April 2026 code review that comments in the code cite by

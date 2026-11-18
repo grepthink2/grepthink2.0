@@ -254,9 +254,49 @@ def test_board_context_member(monkeypatch):
             "key": "US-1",
             "title": "Existing story",
             "sprint_id": None,
+            "acceptance_criteria": [],
             "tasks": [{"key": "GT-1", "title": "Existing task", "status": "todo"}],
         }
     ]
+
+
+def test_board_context_carries_each_storys_acceptance_criteria(monkeypatch):
+    """In their order. A story read from a database without the column has none, and the read
+    still works there: it names no column the migration adds."""
+    criteria = ["Finds a trail by name", "Says so when none match"]
+    fake = _db(
+        monkeypatch,
+        user_stories=[
+            hand_made(1)[0] | {"key": "US-1", "acceptance_criteria": criteria},
+            hand_made(2)[1] | {"key": "US-2"},
+        ],
+    )
+    selects: list[str] = []
+    table = fake.table
+
+    def recording(name):
+        """The fake's query, noting the columns each user_stories select names."""
+        query = table(name)
+        if name == "user_stories":
+            select = query.select
+
+            def noting(columns="*", **kw):
+                selects.append(columns)
+                return select(columns, **kw)
+
+            query.select = noting
+        return query
+
+    monkeypatch.setattr(fake, "table", recording)
+
+    ctx = controller.board_context(project_id=PID, user_id=UID)
+
+    assert [(s["key"], s["acceptance_criteria"]) for s in ctx["existing"]] == [
+        ("US-1", criteria),
+        ("US-2", []),
+    ]
+    [columns] = selects
+    assert "acceptance_criteria" not in columns
 
 
 def test_board_context_staff_reads_but_cannot_write(monkeypatch):

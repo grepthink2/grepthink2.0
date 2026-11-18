@@ -20,7 +20,7 @@ import { api } from '@/lib/api';
 import { useSchoolTimezone } from '@/lib/institutions';
 import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
-import { TodaySchedule } from '@features/schedule/components/TodaySchedule';
+import { HomeScheduleCard } from '@features/schedule/components/HomeScheduleCard';
 import { buildAttentionItems, type AttentionItem } from './attentionItems';
 import '@features/app/components/Modules/AddAssignmentButton.scss';
 import './InstructorHomeDashboard.scss';
@@ -145,6 +145,16 @@ const InstructorHomeDashboard: React.FC = () => {
       <div className="instructor-home__grid">
         {/* ── Main column ── */}
         <div className="instructor-home__column">
+          {/* The week's rows need the main column's width. */}
+          <section className="instructor-home__card" aria-labelledby="schedule-heading">
+            <div className="instructor-home__card-header">
+              <h2 id="schedule-heading" className="instructor-home__card-title">
+                <CalendarDays size={18} aria-hidden /> Schedule
+              </h2>
+            </div>
+            <HomeScheduleCard classId={selectedClass?.id} schoolZone={schoolZone} />
+          </section>
+
           <section
             className="instructor-home__card"
             aria-labelledby="attention-heading"
@@ -255,15 +265,6 @@ const InstructorHomeDashboard: React.FC = () => {
               Create Class
             </button>
           )}
-
-          <section className="instructor-home__card" aria-labelledby="schedule-heading">
-            <div className="instructor-home__card-header">
-              <h2 id="schedule-heading" className="instructor-home__card-title">
-                <CalendarDays size={18} aria-hidden /> Today&apos;s Schedule
-              </h2>
-            </div>
-            <TodaySchedule classId={selectedClass?.id} schoolZone={schoolZone} />
-          </section>
 
           <section className="instructor-home__card" aria-labelledby="classes-heading">
             <div className="instructor-home__card-header">

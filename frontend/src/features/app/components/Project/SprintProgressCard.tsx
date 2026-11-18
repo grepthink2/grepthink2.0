@@ -19,7 +19,7 @@ interface SprintProgressCardProps {
 
 /**
  * The project page's sprint card: task counts and progress for the sprint the board opens on,
- * the backlog size, and a link to the board. It reads the board summary, which answers 403 to
+ * the backlog size, and links to the board and to the team's documents (the board's Documents tab). It reads the board summary, which answers 403 to
  * anyone outside the team and the class staff, as the board does, but records no board view.
  */
 export default function SprintProgressCard({ projectId, projectName }: SprintProgressCardProps) {
@@ -54,14 +54,24 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
       });
   }, [projectId]);
 
+  // The board, and the team's documents on its Documents tab.
   const boardLink = (
-    <Link
-      to={`/app/projects/${projectId}/board`}
-      state={projectName ? { projectName } : undefined}
-      className="sprint-progress__link"
-    >
-      Open board <ArrowRight size={14} aria-hidden="true" />
-    </Link>
+    <p className="sprint-progress__links">
+      <Link
+        to={`/app/projects/${projectId}/board`}
+        state={projectName ? { projectName } : undefined}
+        className="sprint-progress__link"
+      >
+        Open board <ArrowRight size={14} aria-hidden="true" />
+      </Link>
+      <Link
+        to={`/app/projects/${projectId}/board?view=documents`}
+        state={projectName ? { projectName } : undefined}
+        className="sprint-progress__link"
+      >
+        Documents <ArrowRight size={14} aria-hidden="true" />
+      </Link>
+    </p>
   );
 
   let body: ReactNode = null;

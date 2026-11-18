@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ScheduleItemData } from '../scheduleModel';
-import { fitRange, fmtWeekLabel, itemsInWeek, nextUp, parseDayParam, weekKeys } from '../scheduleWeek';
+import { fitRange, fmtWeekLabel, groupWeek, itemsInWeek, nextUp, parseDayParam, weekDaysFrom, weekKeys } from '../scheduleWeek';
 
 const ZONE = 'Etc/GMT+8';
 /** Tue Nov 10, 2026, 3:12 PM at UTC-8. */
@@ -16,7 +16,24 @@ describe('weekKeys', () => {
   });
 });
 
+describe('weekDaysFrom', () => {
+  it('starts the week holding the day at that day, and runs any other week Monday to Sunday', () => {
+    expect(weekDaysFrom('2026-11-12', '2026-11-10')).toEqual([
+      '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15',
+    ]);
+    expect(weekDaysFrom('2026-11-15', '2026-11-15')).toEqual(['2026-11-15']);
+    expect(weekDaysFrom('2026-11-17', '2026-11-10')).toEqual(weekKeys('2026-11-17'));
+    expect(weekDaysFrom('2026-11-03', '2026-11-10')).toEqual(weekKeys('2026-11-03'));
+    expect(weekDaysFrom('2026-11-10', null)).toEqual(weekKeys('2026-11-10'));
+  });
+});
+
 describe('fmtWeekLabel', () => {
+  it('reads a week that starts at today from today', () => {
+    expect(fmtWeekLabel(weekDaysFrom('2026-11-10', '2026-11-10'), NOW, ZONE)).toEqual({ title: 'This week', range: 'Nov 10 – 15' });
+    expect(fmtWeekLabel(['2026-11-15'], NOW, ZONE)).toEqual({ title: 'This week', range: 'Nov 15' });
+  });
+
   it('names this, next and last week, and gives the range', () => {
     expect(fmtWeekLabel(weekKeys('2026-11-10'), NOW, ZONE)).toEqual({ title: 'This week', range: 'Nov 9 – 15' });
     expect(fmtWeekLabel(weekKeys('2026-11-17'), NOW, ZONE)).toEqual({ title: 'Next week', range: 'Nov 16 – 22' });
@@ -88,5 +105,36 @@ describe('itemsInWeek', () => {
     const spill = { id: 'spill', kind: 'meeting' as const, title: 's', startsAt: '2026-11-09T07:30:00Z', endsAt: '2026-11-09T08:30:00Z' };
     const inside = { id: 'in', kind: 'meeting' as const, title: 'i', startsAt: '2026-11-09T08:30:00Z', endsAt: null };
     expect(itemsInWeek([spill, inside], keys, ZONE).map((i) => i.id)).toEqual(['in']);
+  });
+
+  it('keeps a week that starts at today to today and the days after it', () => {
+    const at = (id: string, startsAt: string) => ({ id, kind: 'meeting' as const, title: id, startsAt, endsAt: null });
+    const items = [at('monday', '2026-11-09T18:00:00Z'), at('today', '2026-11-10T18:00:00Z'), at('sunday', '2026-11-16T07:00:00Z')];
+    expect(itemsInWeek(items, weekDaysFrom('2026-11-10', '2026-11-10'), ZONE).map((i) => i.id)).toEqual(['today', 'sunday']);
+  });
+
+  describe('an item from before today that is still on', () => {
+    /** Wed Nov 11, 12:10 AM at UTC-8. */
+    const AFTER_MIDNIGHT = new Date('2026-11-11T08:10:00Z');
+    const days = weekDaysFrom('2026-11-11', '2026-11-11');
+    // Tue 11:30 PM to Wed 12:45 AM, and Tue 11:00 PM to Wed 12:05 AM (over by 12:10).
+    const live = { id: 'live', kind: 'meeting' as const, title: 'Late sync', startsAt: '2026-11-11T07:30:00Z', endsAt: '2026-11-11T08:45:00Z' };
+    const over = { id: 'over', kind: 'meeting' as const, title: 'Wrap', startsAt: '2026-11-11T07:00:00Z', endsAt: '2026-11-11T08:05:00Z' };
+    const later = { id: 'later', kind: 'meeting' as const, title: 'Standup', startsAt: '2026-11-11T17:00:00Z', endsAt: '2026-11-11T17:30:00Z' };
+
+    it('counts in a week whose first day is today, and one that ended does not', () => {
+      expect(itemsInWeek([over, live, later], days, ZONE, AFTER_MIDNIGHT).map((i) => i.id)).toEqual(['live', 'later']);
+      expect(itemsInWeek([over, live, later], days, ZONE).map((i) => i.id)).toEqual(['later']);
+    });
+
+    it('does not count in a week that starts after today', () => {
+      expect(itemsInWeek([live], weekKeys('2026-11-17'), ZONE, AFTER_MIDNIGHT)).toEqual([]);
+    });
+
+    it('lists under today, first', () => {
+      const groups = groupWeek([later, live], days, AFTER_MIDNIGHT, ZONE);
+      expect(groups.map((g) => [g.key, g.isToday, g.items.map((i) => i.id)])).toEqual([['2026-11-11', true, ['live', 'later']]]);
+      expect(groupWeek([live], days, AFTER_MIDNIGHT, ZONE).map((g) => [g.key, g.items.map((i) => i.id)])).toEqual([['2026-11-11', ['live']]]);
+    });
   });
 });

@@ -18,5 +18,5 @@
       `supabase/schema.sql` updated (or the follow-up is named above), and this PR labelled
       `needs-prod-sql`
 - [ ] Release (`release/<version>` into `beta`): `notes/<version>.md` added and `frontend/package.json` raised to it
-- [ ] Docs that describe the changed behaviour are updated (README, AGENTS.md, DEPLOY.md, AUTH.md)
+- [ ] Docs that describe the changed behaviour are updated (README, AGENTS.md, `docs/agents/`, DEPLOY.md, AUTH.md)
 - [ ] No secrets, student data or local plans (`docs/superpowers/plans/`) in the diff

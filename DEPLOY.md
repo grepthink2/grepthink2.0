@@ -79,7 +79,7 @@ Only `VITE_`-prefixed variables reach the browser bundle. Never add
 `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_JWT_SECRET` to the **frontend** project.
 
 To check what a project has, without values, or to act on a deployment, use the project's
-Vercel CLI profile (AGENTS.md explains it):
+Vercel CLI profile (`docs/agents/release-and-ops.md` explains it):
 
 ```bash
 scripts/vercel.sh backend env ls production      # variable names per environment
@@ -109,7 +109,7 @@ code that depends on a schema change:
    record the date in the migration's header comment.
 4. Regenerate `supabase/schema.sql` from the repo root so the schema-as-code stays current:
    `scripts/supabase.sh dev db dump --linked --schema public -f supabase/schema.sql`. Always
-   run the CLI through `scripts/supabase.sh` and never `supabase login`; AGENTS.md explains why.
+   run the CLI through `scripts/supabase.sh` and never `supabase login`; `docs/agents/release-and-ops.md` explains why.
 
 **Through the Supabase connector.** An agent with the Supabase MCP connector can do steps 1–3
 on dev and on PROD. `apply_migration` also records the file in the project's migration

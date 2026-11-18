@@ -1,6 +1,6 @@
 /* GrepThink · schedule layer, the agenda week. Port of the agenda rules of design/components/schedule/schedule.css:
    the white surface of days, sticky day headers, the row's hairlines, people and note, the toolbar and the phone
-   rules. Loaded with the /app/schedule page only; the rows' shared rules are in ../schedule.scss.
+   rules. Loaded with the week on Home, in its own chunk; the rows' shared rules are in ../schedule.scss.
    Not ported: the class select, the expand toggle and its MeetingCard panel. The week switcher and the kind chips
    are the kit's IconButton, Button and FilterChip, sized from the switcher's own class. */
 

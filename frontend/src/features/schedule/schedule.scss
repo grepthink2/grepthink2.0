@@ -1,9 +1,11 @@
-/* GrepThink · schedule layer: the compact list and its rows. Port of design/components/schedule/schedule.css
+/* GrepThink · schedule layer: the rows and what every schedule view shares. Port of design/components/schedule/schedule.css
    (the handoff in design/design_handoff_schedule/): BEM `.gt-*` classes, `--gt-*` tokens only (lint:design),
    the rules kept as the design has them.
    Ported: the kind palette, the list root, the day header, the sprint rule, the item row with its pills and
-   the Join action, the deadline marker, the Now line, the loading / empty / error states, the zone footer
-   and the compact block.
+   the Join action, the deadline marker, the Now line, the empty / error states, the zone footer and the
+   compact block (the team meetings card's rows). The loading rows are in components/scheduleSkeleton.scss.
+   Not kept: the compact list's "+n more" line, its quiet empty-today state and its links (the week on Home
+   replaced that list).
    Not ported: the green Live pill, its pulsing dot and their keyframes (`.gt-sched-item__live`,
    `gt-sched-pulse`). A live row shows the kit's `<Badge status="live" />`, blue under the status colour
    rule (design/design_handoff_ui_alignment/NOTES.md), at the size `.gt-sched-item__head .gt-badge` gives
@@ -109,23 +111,19 @@
 
 /* ── States: loading, empty, error ───────────────────────── */
 .gt-sched__state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 28px 16px; text-align: center; }
-.gt-sched__state--quiet { padding: 14px 16px 8px; }
 .gt-sched__state-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: 50%; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
 .gt-sched__state-title { margin: 0; font-size: 13.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
 .gt-sched__state--error .gt-sched__state-title { color: var(--gt-text-secondary); }
 .gt-sched__state-hint { margin: 0; max-width: 340px; font-size: 12px; line-height: var(--gt-leading-normal); color: var(--gt-text-tertiary); }
-.gt-sched__link, .gt-sched__retry { display: inline-flex; align-items: center; gap: 5px; border: none; background: transparent; padding: 0; font-family: var(--gt-font-sans); font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; cursor: pointer; }
-.gt-sched__link:hover, .gt-sched__retry:hover { text-decoration: underline; }
-.gt-sched__link:focus-visible, .gt-sched__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-.gt-sched__skeleton { display: grid; grid-template-columns: 112px 28px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 12px 16px; }
-.gt-sched__skeleton-lines { display: flex; flex-direction: column; gap: 7px; }
-.gt-sched__more { margin: 0; padding: 6px 16px 2px; font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-tertiary); }
+.gt-sched__retry { display: inline-flex; align-items: center; gap: 5px; border: none; background: transparent; padding: 0; font-family: var(--gt-font-sans); font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; cursor: pointer; }
+.gt-sched__retry:hover { text-decoration: underline; }
+.gt-sched__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
 
-/* ── Zone note (the card's footer) ───────────────────────── */
+/* ── Zone note (the team meetings card's footer, the week's toolbar) ── */
 .gt-sched__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gt-border-subtle); font-size: 12px; color: var(--gt-text-tertiary); }
 .gt-sched__zone { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gt-text-tertiary); }
 
-/* ── Compact (Today's Schedule card body, project-page team meetings card) ─── */
+/* ── Compact (the project-page team meetings card, the schedule's empty state) ─── */
 .gt-sched--compact .gt-sched-item { grid-template-columns: 60px 24px minmax(0, 1fr); column-gap: 10px; padding: 8px 0; }
 .gt-sched--compact .gt-sched-item__range { display: none; }
 .gt-sched--compact .gt-sched-item__start { display: block; font-size: 12.5px; }
@@ -135,13 +133,8 @@
 .gt-sched--compact .gt-sched-item__actions { margin-top: 6px; }
 .gt-sched--compact .gt-sched-item__action { height: 32px; padding: 0 12px; font-size: 12.5px; }
 .gt-sched--compact .gt-sched-item--marker { min-height: 32px; padding: 5px 0; }
-.gt-sched--compact .gt-sched__now { display: flex; gap: 10px; padding: 4px 0; }
 .gt-sched--compact .gt-sched-day { padding: 10px 0 2px; }
-.gt-sched--compact .gt-sched-divider { padding: 6px 0 2px; }
-.gt-sched--compact .gt-sched__skeleton { grid-template-columns: 60px 24px minmax(0, 1fr); column-gap: 10px; padding: 10px 0; }
 .gt-sched--compact .gt-sched__state { padding: 20px 8px; }
-.gt-sched--compact .gt-sched__state--quiet { padding: 10px 0 4px; align-items: flex-start; text-align: left; }
-.gt-sched--compact .gt-sched__more { padding: 6px 0 0; }
 
 /* ── Phone (< 768px) ──────────────────────────────────────── */
 @media (max-width: 767px) {

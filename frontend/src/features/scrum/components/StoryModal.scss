@@ -120,6 +120,21 @@
     gap: 6px;
 
     textarea { font-size: 12.5px; line-height: var(--gt-leading-normal); resize: vertical; }
+    // The criteria come first; the description's label below them starts a field of its own.
+    .criteria-editor { margin-bottom: 8px; }
+  }
+
+  // Acceptance criteria, read: a numbered list above the description.
+  &__criteria-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding-left: 20px;
+    font-size: 12.5px;
+    line-height: var(--gt-leading-normal);
+    color: var(--gt-text-primary);
+    overflow-wrap: anywhere;
   }
 
   &__edit-foot { display: flex; align-items: center; gap: 8px; }
@@ -155,8 +170,9 @@
     &:disabled { opacity: 0.45; cursor: not-allowed; }
   }
 
-  // Same dashed affordance as "Add task", for a story that has no description yet.
-  &__add-description {
+  // Same dashed affordance as "Add task", for a story that has no description or no criteria yet.
+  &__add-description,
+  &__add-criteria {
     display: inline-flex;
     align-items: center;
     gap: 6px;

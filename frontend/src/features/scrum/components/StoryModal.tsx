@@ -9,9 +9,11 @@ import type { EstimateScale } from '../config/scrumTags';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { isBacklogStory } from '../utils/backlog';
+import { cleanCriteria, criteriaFit, sameCriteria } from '../utils/criteria';
 import { assignedTaskPoints, remainingStoryPoints, storyHours, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 import CommentThread from './CommentThread';
+import CriteriaEditor from './CriteriaEditor';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './StoryModal.scss';
@@ -42,8 +44,12 @@ export interface StoryModalProps {
 /** What the sticky confirm is asking about, if anything. */
 type Confirm = { kind: 'task'; task: ApiScrumTask } | { kind: 'story' } | null;
 
+/** What an edit opens on: the field the reader asked to change takes the cursor. */
+type EditFocus = 'title' | 'description' | 'criteria';
+
 /**
- * Story detail — description, meta, the child tasks and the story's comment thread.
+ * Story detail — acceptance criteria, description, meta, the child tasks and the story's comment
+ * thread. Edit changes the title, the criteria and the description in place.
  *
  * Task rows show where each task is but do not move it: that happens on the board,
  * by drag and drop, or from the task's own editor, whose Status select is the
@@ -57,10 +63,15 @@ export default function StoryModal({
   const [confirm, setConfirm] = useState<Confirm>(null);
   // In-place editing of the story's text (the create-only StoryEditorModal has
   // always pointed here for edits; until 2026-09-25 nothing was wired).
-  const [editing, setEditing] = useState<null | 'title' | 'description'>(null);
+  const [editing, setEditing] = useState<null | EditFocus>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
+  const [draftCriteria, setDraftCriteria] = useState<string[]>([]);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // A story from a backend older than this client carries no criteria field.
+  const criteria = story.acceptance_criteria ?? [];
+  // A criterion past its soft limit is kept and flagged; Save waits until it fits.
+  const canSave = Boolean(draftTitle.trim()) && criteriaFit(draftCriteria);
 
   const { tasksDone, tasksTotal, pointsDone } = storyRollup(story);
   const hours = storyHours(story);
@@ -88,22 +99,28 @@ export default function StoryModal({
     return () => document.removeEventListener('keydown', onEscape);
   }, [onClose, editing]);
 
-  /** `focus` picks which field takes the cursor: the one the reader asked to change. */
-  const startEdit = (focus: 'title' | 'description') => {
+  /**
+   * `focus` picks which field takes the cursor: the one the reader asked to change. Adding criteria
+   * to a story without any opens on one empty row.
+   */
+  const startEdit = (focus: EditFocus) => {
     setDraftTitle(story.title);
     setDraftDescription(story.description_md ?? '');
+    setDraftCriteria(focus === 'criteria' && criteria.length === 0 ? [''] : criteria);
     setEditing(focus);
   };
 
   const saveEdit = () => {
+    if (!canSave) return;
     const title = draftTitle.trim();
-    if (!title) return;
     const description = draftDescription.trim();
-    // Only what changed: an untouched title shouldn't re-save, and a cleared
-    // description goes as null, which the API treats as "clear".
+    const kept = cleanCriteria(draftCriteria);
+    // Only what changed: an untouched title shouldn't re-save, a cleared description goes as
+    // null, which the API treats as "clear", and the criteria go as the whole list ([] clears it).
     const body: ApiUpdateStoryBody = {};
     if (title !== story.title) body.title = title;
     if (description !== (story.description_md ?? '')) body.description_md = description || null;
+    if (!sameCriteria(kept, criteria)) body.acceptance_criteria = kept;
     if (Object.keys(body).length) onUpdateStory(body);
     setEditing(null);
   };
@@ -171,8 +188,24 @@ export default function StoryModal({
           </div>
         )}
 
+        {!editing && criteria.length > 0 && (
+          <section className="story-modal__criteria">
+            <h3 className="story-modal__section-title" id="story-modal-criteria-title">Acceptance criteria</h3>
+            <ol className="story-modal__criteria-list" aria-labelledby="story-modal-criteria-title">
+              {criteria.map((c, i) => <li key={i}>{c}</li>)}
+            </ol>
+          </section>
+        )}
+        {!editing && criteria.length === 0 && canWrite && (
+          <button type="button" className="story-modal__add-criteria" onClick={() => startEdit('criteria')}>
+            <Plus size={12} aria-hidden="true" />
+            Add acceptance criteria
+          </button>
+        )}
+
         {editing ? (
           <div className="story-modal__edit-form">
+            <CriteriaEditor value={draftCriteria} onChange={setDraftCriteria} autoFocus={editing === 'criteria'} />
             <label className="story-modal__label" htmlFor="story-modal-description">Description</label>
             <textarea
               id="story-modal-description"
@@ -180,7 +213,7 @@ export default function StoryModal({
               rows={6}
               value={draftDescription}
               maxLength={20000}
-              placeholder="What should a user be able to do, and how will the team know it's done?"
+              placeholder="Notes, links, anything the team needs…"
               autoFocus={editing === 'description'}
               onChange={(e) => setDraftDescription(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(); }}
@@ -196,7 +229,7 @@ export default function StoryModal({
                 type="button"
                 className="story-modal__edit-save"
                 onClick={saveEdit}
-                disabled={!draftTitle.trim()}
+                disabled={!canSave}
               >
                 Save
               </button>

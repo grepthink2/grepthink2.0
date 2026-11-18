@@ -36,7 +36,7 @@
     color: var(--gt-text-primary);
   }
 
-  // Sub-view switch — Board | Backlog | Burnup
+  // Sub-view switch — Board | Backlog | Burnup | Documents
   &__views {
     display: inline-flex;
     gap: 4px;
@@ -64,6 +64,9 @@
       outline: none;
       box-shadow: var(--gt-focus-ring);
     }
+
+    // Four views fit a phone's width side by side.
+    @media (max-width: 400px) { padding: 5px 10px; }
 
     &--active {
       background: var(--gt-gray-0);
@@ -269,6 +272,13 @@
 
   &:hover .story-slot__open,
   .story-slot__open:focus-visible { opacity: 1; }
+}
+
+// A team member's Move up and Move down for the card (StoryOrderButtons), a column at its left.
+.story-slot__order {
+  flex-direction: column;
+  justify-content: center;
+  margin-right: 4px;
 }
 
 // Keep the card's top row (key, estimate, points) clear of the open control: 24px button

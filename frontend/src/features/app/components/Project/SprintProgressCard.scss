@@ -96,6 +96,13 @@
     color: var(--gt-text-secondary);
   }
 
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gt-space-xs) var(--gt-space-md);
+    margin: 0;
+  }
+
   &__link {
     display: inline-flex;
     align-items: center;
