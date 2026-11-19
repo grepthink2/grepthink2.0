@@ -44,6 +44,7 @@ INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 NOT_PROJECT_MEMBER = "Not a member of this project"
 ONLY_PRODUCT_OWNER = "Only the team's Product Owner can change meetings."
+NOT_LATE_WINDOW_EDITOR = "Only the instructor or a TA with permission may change the late window"
 
 INSTR = "10000000-0000-0000-0000-000000000001"
 OTHER_INSTR = "10000000-0000-0000-0000-000000000002"
@@ -310,6 +311,22 @@ CASES = {
         lambda db: authz.require_class_access(db, OUTSIDER, CLASS),
         403,
         NOT_CLASS_MEMBER,
+    ),
+    # A late window: the class instructor, or a TA of the class with the permission (TA1 has none).
+    "authz.late_window/missing-class": (
+        lambda db: authz.require_late_window_access(db, INSTR, MISSING_CLASS),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "authz.late_window/enrolled-ta": (
+        lambda db: authz.require_late_window_access(db, TA1, CLASS),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
+    ),
+    "authz.late_window/enrolled-student": (
+        lambda db: authz.require_late_window_access(db, S1, CLASS),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
     ),
     # app.assignments
     "assignments.list/missing-class-instructor": (

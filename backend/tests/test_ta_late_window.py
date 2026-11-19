@@ -10,8 +10,10 @@ from __future__ import annotations
 import datetime as dt
 
 import pytest
+from fastapi import HTTPException
 
 from app.assignments import deadlines
+from app.core import authz
 from app.tas import controller as tas
 from tests.fake_supabase import FakeSupabase
 
@@ -155,3 +157,25 @@ def test_demote_clears_the_late_window_permission(db):
     assert row["enrollment_role"] == "student"
     assert row["can_extend_deadlines"] is False
     assert out == {"user_id": TA_ON, "enrollment_role": "student"}
+
+
+# ---------------------------------------------------------- who may change it
+
+
+def test_late_window_access_for_the_instructor_and_a_permitted_ta(db):
+    assert authz.require_late_window_access(db, INSTR, CLASS)["id"] == CLASS
+    assert authz.require_late_window_access(db, TA_ON, CLASS)["id"] == CLASS
+    assert db.executes == 4, _trace(db)  # class + enrollment, twice
+
+
+@pytest.mark.parametrize("user", [TA_OFF, S1, OUTSIDER, OTHER_INSTR])
+def test_late_window_access_is_refused_without_the_flag(db, user):
+    with pytest.raises(HTTPException) as exc:
+        authz.require_late_window_access(db, user, CLASS)
+    assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_LATE_WINDOW_EDITOR)
+
+
+def test_late_window_access_on_a_missing_class_is_404(db):
+    with pytest.raises(HTTPException) as exc:
+        authz.require_late_window_access(db, INSTR, MISSING_CLASS)
+    assert (exc.value.status_code, exc.value.detail) == (404, authz.CLASS_NOT_FOUND)
