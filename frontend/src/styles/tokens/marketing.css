@@ -1,0 +1,50 @@
+/* ============================================================
+   GrepThink · Marketing tokens (the core palette)
+   The public site's colours (grepthink2.com: the landing and contact pages), as the design system
+   lists them. The landing's own stylesheets read the Sass copy, features/landing/_landing-tokens.scss
+   ($mkt-*), which also holds its gradients, shadows and motion; a test keeps every value here equal
+   to that file's. The app does not load this file: none of these belongs in the signed-in app.
+   ============================================================ */
+
+:root {
+  /* ---- Dark brand chrome (header bar, footer) ---- */
+  --gt-mkt-dark: #0c1f18;
+  --gt-mkt-dark-translucent: rgba(12, 31, 24, 0.82);  /* scrolled header pill */
+  --gt-mkt-on-dark: rgba(255, 255, 255, 0.82);  /* nav links */
+  --gt-mkt-on-dark-muted: rgba(255, 255, 255, 0.72);  /* footer links */
+  --gt-mkt-on-dark-soft: rgba(255, 255, 255, 0.6);  /* tagline */
+  --gt-mkt-on-dark-faint: rgba(255, 255, 255, 0.5);  /* legal bar */
+  --gt-mkt-on-dark-label: rgba(255, 255, 255, 0.45);  /* footer column titles */
+  --gt-mkt-divider-on-dark: rgba(255, 255, 255, 0.1);
+
+  /* ---- Closing band ---- */
+  --gt-mkt-closing-bg: #0f2a20;
+  --gt-mkt-closing-text: rgba(255, 255, 255, 0.75);
+  --gt-mkt-closing-outline: rgba(255, 255, 255, 0.35);  /* "Talk to us" ghost button */
+
+  /* ---- Ink and grays used only on the public site ---- */
+  --gt-mkt-ink: #212B36;  /* headlines (= --gt-text-dark) */
+  --gt-mkt-slate: #637381;  /* lead paragraphs, card meta (spotlight bands) */
+  --gt-mkt-muted: #9aa0a6;  /* placeholders, float-card meta */
+  --gt-mkt-hairline: #e5e7eb;  /* window chrome border */
+
+  /* ---- Brand green on the public site ---- */
+  --gt-mkt-green-light: #02a06b;  /* 2nd gradient stop: never solo */
+  --gt-mkt-green-tint: rgba(1, 129, 86, 0.1);  /* eyebrow / badge backgrounds */
+
+  /* ---- Eyebrows and badges ---- */
+  --gt-mkt-eyebrow-text: #016547;  /* on green tint: 6.3:1 (the hero's #018156 was ~4.3:1) */
+  --gt-mkt-eyebrow-bg: rgba(1, 129, 86, 0.1);
+  --gt-mkt-eyebrow-amber-text: #8A5200;  /* on #FEF3C7: 5.7:1 */
+  --gt-mkt-eyebrow-amber-bg: #FEF3C7;
+  --gt-mkt-badge-new-bg: #018156;  /* white on it: 4.9:1 */
+  --gt-mkt-badge-soon-bg: #8A5200;  /* white on it: 6.4:1: NOT #B26A00 (4.2:1) */
+  --gt-mkt-badge-text: #FFFFFF;
+
+  /* ---- Bands and stages ---- */
+  --gt-mkt-band-bg: #FFFFFF;
+  --gt-mkt-band-alt-bg: #f8faf9;
+  --gt-mkt-stage-bg: #f5f8f7;  /* live feature (band on white) */
+  --gt-mkt-stage-alt-bg: #eef5f2;  /* live feature (band on alt bg) */
+  --gt-mkt-preview-bg: #fbfbfc;  /* coming-soon preview stage */
+}
