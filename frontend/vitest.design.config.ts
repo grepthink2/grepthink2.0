@@ -9,6 +9,13 @@
  * builds (`module`), so their `react` and `react-dom` imports resolve the same way; Node, or their
  * CommonJS builds, would hand them the app's React 19.
  *
+ * user-event is processed by Vite too, though it imports no React: it must share Testing Library's
+ * `@testing-library/dom`. Testing Library, processed here, gets that package's ES module build and
+ * configures it to run every event and interaction inside `act`. Loaded by Node, user-event would get
+ * the CommonJS build, a second copy with no `act` in it: its clicks would update React outside
+ * `act`, and a router navigation (a transition, which React 18 renders in a later task) would
+ * race the test's next line.
+ *
  * A kit test that cannot pass on React 18 for a reason the adapter does not cause is listed, with
  * its reason, in design-system/react18-skips.json; its file is left out here.
  */
@@ -52,7 +59,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, ...skips.map((skip) => skip.file)],
     server: {
       deps: {
-        inline: [/[\\/]node_modules[\\/](@testing-library[\\/]react|react-router|react-router-dom|lucide-react|react-markdown)[\\/]/],
+        inline: [/[\\/]node_modules[\\/](@testing-library[\\/](?:react|user-event)|react-router|react-router-dom|lucide-react|react-markdown)[\\/]/],
       },
     },
   },
