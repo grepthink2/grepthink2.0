@@ -101,6 +101,7 @@ const SCAN_EXTS = new Set(['.scss', '.css', '.ts', '.tsx']);
 const DEFINITION_FILES = new Set([
   'src/styles/_colors.scss',
   'src/styles/tokens/colors.css',
+  'src/styles/tokens/marketing.css',
   'src/styles/tokens/spacing.css',
   'src/styles/tokens/typography.css',
 ]);
