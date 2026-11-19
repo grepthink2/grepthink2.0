@@ -4,11 +4,19 @@ import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiClassTA, ApiProject, ApiStudent } from '@/lib/api';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { Toggle } from '@/components/Toggle/Toggle';
 import './TAManagement.scss';
 
 function studentName(s: ApiStudent): string {
   const full = [s.first_name, s.last_name].filter(Boolean).join(' ').trim();
   return full || s.email || 'Unknown';
+}
+
+/** The count beside a TA's late-window switch. */
+function lateWindowsCopy(n: number): string {
+  if (n === 0) return 'none yet';
+  if (n === 1) return '1 late window opened';
+  return `${n} late windows opened`;
 }
 
 const TAManagement: React.FC = () => {
@@ -23,7 +31,8 @@ const TAManagement: React.FC = () => {
   // Per-TA selected project in the "assign to project" dropdown.
   const [assignSelections, setAssignSelections] = useState<Record<string, string>>({});
 
-  // Bumped after each successful action so the lists load again.
+  // Bumped after a successful action so the lists load again (a late-window switch patches its
+  // card in place instead).
   const [reloadCount, setReloadCount] = useState(0);
   const loadKey = classId ? `${classId}:${reloadCount}` : null;
   /** The load that last settled, and its error. */
@@ -88,17 +97,22 @@ const TAManagement: React.FC = () => {
       .sort((a, b) => studentName(a).localeCompare(studentName(b)));
   }, [students, taIds, search]);
 
-  const runAction = async (id: string, fn: () => Promise<unknown>) => {
+  const runAction = async (
+    id: string,
+    fn: () => Promise<unknown>,
+    { reload = true }: { reload?: boolean } = {},
+  ) => {
     if (!selectedClass?.id) return;
     setBusyId(id);
     setActionError(null);
     try {
       await fn();
-      setReloadCount((n) => n + 1);
+      if (reload) setReloadCount((n) => n + 1);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
-      setBusyId(null);
+      // A slower earlier action must not re-enable a card whose own request is still running.
+      setBusyId((prev) => (prev === id ? null : prev));
     }
   };
 
@@ -124,6 +138,21 @@ const TAManagement: React.FC = () => {
   const handleUnassign = (ta: ApiClassTA, projectId: string) =>
     runAction(ta.id, () => api.assignProjectTA(projectId, null));
 
+  // A flip changes only the permission (the count is of windows opened), so the card is patched
+  // in place rather than reloaded.
+  const handleLateWindowPermission = (ta: ApiClassTA, next: boolean) => {
+    void runAction(
+      ta.id,
+      async () => {
+        const res = await api.setTALateWindowPermission(selectedClass!.id, ta.id, next);
+        setTas((prev) =>
+          prev.map((t) => (t.id === ta.id ? { ...t, can_extend_deadlines: res.can_extend_deadlines } : t)),
+        );
+      },
+      { reload: false },
+    );
+  };
+
   if (!selectedClass) {
     return (
       <div className="ta-management">
@@ -142,7 +171,8 @@ const TAManagement: React.FC = () => {
         <p>
           Promote enrolled students to TAs and assign them to the projects they
           oversee. TAs can review the TSRs of their assigned projects and never
-          count as project members.
+          count as project members. You can also let a TA open late windows
+          for this class's TSR assignments.
         </p>
       </header>
 
@@ -185,7 +215,7 @@ const TAManagement: React.FC = () => {
                 <li key={ta.id} className="ta-card">
                   <div className="ta-card__top">
                     <div className="ta-card__identity">
-                      <span className="ta-card__name">{ta.name}</span>
+                      <span className="ta-card__name" id={`ta-${ta.id}-name`}>{ta.name}</span>
                       {ta.email && <span className="ta-card__email">{ta.email}</span>}
                     </div>
                     <button
@@ -196,6 +226,20 @@ const TAManagement: React.FC = () => {
                     >
                       <UserMinus size={15} /> Remove TA
                     </button>
+                  </div>
+
+                  <div className="ta-card__late-window">
+                    <Toggle
+                      label="Can open late windows"
+                      aria-labelledby={`ta-${ta.id}-name`}
+                      aria-describedby={`ta-${ta.id}-late-count`}
+                      checked={ta.can_extend_deadlines}
+                      disabled={busyId === ta.id}
+                      onChange={(e) => handleLateWindowPermission(ta, e.target.checked)}
+                    />
+                    <span className="ta-card__late-count" id={`ta-${ta.id}-late-count`}>
+                      {lateWindowsCopy(ta.late_windows_opened)}
+                    </span>
                   </div>
 
                   <div className="ta-card__projects">
