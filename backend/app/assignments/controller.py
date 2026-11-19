@@ -27,6 +27,10 @@ ACCEPT_UNTIL_BEFORE_DEADLINE = "accept_until must be after the deadline"
 NO_DEADLINE_TO_EXTEND = "This assignment has no deadline"
 ASSIGNMENT_CLOSED = "This assignment is closed"
 ASSIGNMENT_NOT_OPEN = "This assignment is not open yet"
+#: 403: a TA (with the class's late-window permission) on an assignment that is not a TSR.
+TA_LATE_WINDOW_TSR_ONLY = "TAs may change the late window of TSR assignments only"
+#: 400: the late-window route on a draft.
+LATE_WINDOW_NEEDS_PUBLISHED = "Only a published assignment can take a late window"
 
 #: What a controller must select from ``assignments`` to run ``_require_window_open``.
 WINDOW_COLUMNS = "open_date, due_at, accept_until"
@@ -261,8 +265,8 @@ def _as_utc(value: datetime.datetime) -> datetime.datetime:
 def _validate_late_window(
     accept_until: datetime.datetime, due_at: datetime.datetime | None
 ) -> None:
-    """400 unless ``accept_until`` can close a late window on a deadline at ``due_at``: there must be
-    a deadline (``NO_DEADLINE_TO_EXTEND``), and the window must end after it
+    """400 unless ``accept_until`` can end a late window on a deadline at ``due_at``: there must
+    be a deadline (``NO_DEADLINE_TO_EXTEND``), and the window must end after it
     (``ACCEPT_UNTIL_BEFORE_DEADLINE``)."""
     if due_at is None:
         raise HTTPException(status_code=400, detail=NO_DEADLINE_TO_EXTEND)
@@ -501,6 +505,104 @@ def update_assignment(
             user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to update assignment")
+
+
+def set_late_window(
+    user_id: str, assignment_id: UUID, accept_until: datetime.datetime | None
+) -> dict:
+    """Set, move or remove an assignment's late window (``accept_until``).
+
+    Who can call: the class instructor, on any published assignment of the class; a TA of the
+    class whose enrollment carries ``can_extend_deadlines``, on its published TSR assignments.
+    Nobody may change anything else about the assignment here.
+
+    A time sets or moves the window. It must be after the deadline (``due_at``), and a time
+    without an offset is read as UTC. The write is recorded as ``assignment_reopened``, and the
+    class's students who have not submitted are notified. ``None`` removes the window, recorded as
+    ``late_window_removed`` and told to nobody. Re-sending the current window, or removing a window
+    that is not there, writes nothing.
+
+    Returns the assignment row as it now stands (without the ``tsrs`` that PATCH adds).
+
+    Raises: 404 for a missing assignment or class; 403 ``authz.NOT_LATE_WINDOW_EDITOR`` for anyone
+    without the permission, ``TA_LATE_WINDOW_TSR_ONLY`` for a TA on another type of assignment;
+    400 ``LATE_WINDOW_NEEDS_PUBLISHED`` for a draft, ``NO_DEADLINE_TO_EXTEND`` or
+    ``ACCEPT_UNTIL_BEFORE_DEADLINE`` for a window that cannot be.
+    """
+    try:
+        client = get_client()
+        found = client.table("assignments").select("*").eq("id", str(assignment_id)).execute()
+        if not found.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = found.data[0]
+        cls = authz.require_late_window_access(
+            client, user_id, assignment["class_id"], columns="id, created_by, institution_id"
+        )
+        is_instructor = str(cls["created_by"]) == str(user_id)
+        if not is_instructor and assignment.get("assignment_type") != "tsr":
+            raise HTTPException(status_code=403, detail=TA_LATE_WINDOW_TSR_ONLY)
+        if assignment.get("status") != "publish":
+            raise HTTPException(status_code=400, detail=LATE_WINDOW_NEEDS_PUBLISHED)
+
+        current = deadlines.parse_ts(assignment.get("accept_until"))
+        if accept_until is None:
+            if current is None:
+                return assignment
+            result = (
+                client.table("assignments")
+                .update({"accept_until": None})
+                .eq("id", str(assignment_id))
+                .execute()
+            )
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Failed to set the late window")
+            events.record(
+                "late_window_removed",
+                actor_id=user_id,
+                class_id=assignment["class_id"],
+                meta={"assignment_id": str(assignment_id)},
+            )
+            logger.info(
+                "Late window removed | assignment_id=%s class_id=%s user_id=%s",
+                assignment_id,
+                assignment["class_id"],
+                user_id,
+            )
+            return result.data[0]
+
+        accept_until = _as_utc(accept_until)
+        if accept_until == current:
+            return assignment
+        _validate_late_window(accept_until, deadlines.parse_ts(assignment.get("due_at")))
+        now = deadlines.now_utc()
+        accept_until_iso = accept_until.isoformat()
+        result = (
+            client.table("assignments")
+            .update({"accept_until": accept_until_iso})
+            .eq("id", str(assignment_id))
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to set the late window")
+        row = result.data[0]
+        _record_reopening(user_id, row, accept_until_iso, now)
+        _notify_late_window_opened(client, row, cls.get("institution_id"))
+        logger.info(
+            "Late window set | assignment_id=%s class_id=%s user_id=%s",
+            assignment_id,
+            row.get("class_id"),
+            user_id,
+        )
+        return row
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error setting the late window | assignment_id=%s user_id=%s",
+            assignment_id,
+            user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to set the late window")
 
 
 def delete_assignment(user_id: str, assignment_id: UUID) -> None:

@@ -73,6 +73,7 @@ ROLES = {
 }
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 OCT_1, OCT_8 = datetime.date(2026, 10, 1), datetime.date(2026, 10, 8)
+LATE_UNTIL = datetime.datetime(2026, 10, 12, 8, tzinfo=datetime.UTC)  # a late window's end
 SCHEDULE_FROM = datetime.datetime(2026, 11, 9, 8, tzinfo=datetime.UTC)
 SCHEDULE_TO = SCHEDULE_FROM + datetime.timedelta(days=7)
 
@@ -373,6 +374,21 @@ CASES = {
         lambda db: assignments.delete_assignment(S1, A_FEEDBACK),
         403,
         NOT_CLASS_INSTRUCTOR,
+    ),
+    "assignments.set_late_window/missing-class": (
+        lambda db: assignments.set_late_window(INSTR, A_ORPHAN, LATE_UNTIL),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "assignments.set_late_window/enrolled-ta": (
+        lambda db: assignments.set_late_window(TA1, A_FEEDBACK, LATE_UNTIL),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
+    ),
+    "assignments.set_late_window/enrolled-student": (
+        lambda db: assignments.set_late_window(S1, A_FEEDBACK, LATE_UNTIL),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
     ),
     "assignments.feedback_overview/missing-class": (
         lambda db: assignments.get_feedback_overview(INSTR, A_ORPHAN),

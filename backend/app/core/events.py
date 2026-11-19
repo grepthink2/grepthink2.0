@@ -33,6 +33,7 @@ KINDS = frozenset(
         "tsr_updated",
         "feedback_submitted",
         "assignment_reopened",
+        "late_window_removed",
         "board_viewed",
         "analytics_viewed",
         "board_agent_fill",

@@ -8,6 +8,8 @@ may a TA whose enrollment carries ``can_extend_deadlines``, on the class's TSR a
 from __future__ import annotations
 
 import datetime as dt
+from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 from fastapi import HTTPException
@@ -214,3 +216,134 @@ def test_moving_the_window_notifies_again_and_a_draft_notifies_nobody(db, clock)
         accept_until=dt.datetime(2026, 2, 12, 8, tzinfo=dt.UTC),
     )
     assert len(db.rows("notifications")) == 4
+
+
+# ------------------------------------------------- PUT /api/assignments/{id}/late-window
+
+
+def test_a_permitted_ta_sets_the_window_and_students_are_told(db, clock):
+    clock(NOW_AFTER)
+    row = assignments.set_late_window(TA_ON, A_TSR, LATE)
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert "tsrs" not in row
+    assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
+    assert db.rows("events")[0]["meta"] == {
+        "assignment_id": A_TSR,
+        "accept_until": "2026-01-12T08:00:00+00:00",
+        "after_deadline": True,
+    }
+    assert sorted(r["user_id"] for r in db.rows("notifications")) == sorted([S2, S3])
+    # assignment, class + enrollment, update, event, recipients (enrollments, TSR rows), insert
+    assert db.executes <= 8, _trace(db)
+
+
+def test_the_instructor_uses_the_same_route(db, clock):
+    clock(NOW_AFTER)
+    row = assignments.set_late_window(INSTR, A_FB, LATE)
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+
+
+@pytest.mark.parametrize("user", [TA_OFF, S1, OUTSIDER])
+def test_set_late_window_is_refused_without_permission(db, clock, user):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(user, A_TSR, LATE)
+    assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_LATE_WINDOW_EDITOR)
+    assert db.rows("assignments")[0].get("accept_until") is None and db.rows("events") == []
+
+
+def test_permission_is_per_class(db, clock):
+    # TA_ON may open late windows in CLASS, not in OTHER_CLASS, where they are a TA without it.
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(TA_ON, A_OTHER, LATE)
+    assert exc.value.status_code == 403
+    other = next(a for a in db.rows("assignments") if a["id"] == A_OTHER)
+    assert other.get("accept_until") is None and db.rows("events") == []
+
+
+def test_a_ta_may_not_touch_a_non_tsr_assignment(db, clock):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(TA_ON, A_FB, LATE)
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.TA_LATE_WINDOW_TSR_ONLY)
+
+
+@pytest.mark.parametrize("user", [TA_ON, INSTR])
+def test_a_draft_takes_no_late_window(db, clock, user):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(user, A_DRAFT, LATE)
+    assert (exc.value.status_code, exc.value.detail) == (
+        400,
+        assignments.LATE_WINDOW_NEEDS_PUBLISHED,
+    )
+
+
+def test_set_late_window_validates_against_the_deadline(db, clock):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(TA_ON, A_TSR, dt.datetime(2026, 1, 9, 7, tzinfo=dt.UTC))
+    assert exc.value.detail == assignments.ACCEPT_UNTIL_BEFORE_DEADLINE
+    db.rows("assignments")[0]["due_at"] = None
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(TA_ON, A_TSR, LATE)
+    assert exc.value.detail == assignments.NO_DEADLINE_TO_EXTEND
+
+
+def test_naive_accept_until_is_utc(db, clock):
+    clock(NOW_AFTER)
+    row = assignments.set_late_window(TA_ON, A_TSR, LATE.replace(tzinfo=None))
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+
+
+def test_resending_the_current_window_writes_nothing(db, clock):
+    clock(NOW_AFTER)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    db.reset_counter()
+    row = assignments.set_late_window(TA_ON, A_TSR, LATE)
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert db.rows("events") == [] and db.rows("notifications") == []
+    assert db.executes == 3, _trace(db)  # assignment, class + enrollment
+
+
+def test_removing_notifies_nobody(db, clock):
+    clock(NOW_AFTER)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    row = assignments.set_late_window(TA_ON, A_TSR, None)
+    assert row["accept_until"] is None
+    assert [(e["kind"], e["meta"]) for e in db.rows("events")] == [
+        ("late_window_removed", {"assignment_id": A_TSR})
+    ]
+    assert db.rows("notifications") == []
+    assert db.executes <= 5, _trace(db)  # assignment, class + enrollment, update, event
+
+
+def test_removing_an_absent_window_writes_nothing(db, clock):
+    clock(NOW_AFTER)
+    assignments.set_late_window(INSTR, A_TSR, None)
+    assert db.rows("events") == [] and db.executes == 3, _trace(db)
+
+
+def test_set_late_window_on_a_missing_assignment_is_404(db, clock):
+    with pytest.raises(HTTPException) as exc:
+        assignments.set_late_window(INSTR, MISSING_ASSIGNMENT, LATE)
+    assert (exc.value.status_code, exc.value.detail) == (404, "Assignment not found")
+
+
+def test_late_window_route(client, auth_header):
+    with patch("app.assignments.views.controller.set_late_window") as fn:
+        fn.return_value = {"id": A_TSR, "accept_until": None}
+        r = client.put(
+            f"/api/assignments/{A_TSR}/late-window",
+            json={"accept_until": None},
+            headers=auth_header,
+        )
+    assert r.status_code == 200 and r.json() == {"id": A_TSR, "accept_until": None}
+    assert fn.call_args.kwargs == {
+        "user_id": "user-abc",
+        "assignment_id": UUID(A_TSR),
+        "accept_until": None,
+    }
+    missing_key = client.put(f"/api/assignments/{A_TSR}/late-window", json={}, headers=auth_header)
+    assert missing_key.status_code == 422

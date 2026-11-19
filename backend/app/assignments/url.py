@@ -13,6 +13,8 @@ router.post("")(views.create_assignment)
 router.get("/my-submissions")(views.get_my_submissions)
 router.patch("/{assignment_id}")(views.update_assignment)
 router.delete("/{assignment_id}")(views.delete_assignment)
+# The late window alone: the class instructor, or a TA with the class's late-window permission.
+router.put("/{assignment_id}/late-window")(views.set_late_window)
 router.get("/{assignment_id}/tsr-overview")(views.get_tsr_overview)
 router.get("/{assignment_id}/tsrs")(views.get_my_tsrs)
 router.get("/{assignment_id}/tsrs/about/{evaluatee_id}")(views.get_tsrs_about_user)
