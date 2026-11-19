@@ -24,10 +24,6 @@ export function setReadOnly(value: boolean): void {
   readOnly = value;
 }
 
-export function isReadOnly(): boolean {
-  return readOnly;
-}
-
 /** HTTP methods that only read state and are therefore always allowed. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 

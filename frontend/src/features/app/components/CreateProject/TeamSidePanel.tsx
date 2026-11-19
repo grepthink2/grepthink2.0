@@ -1,6 +1,5 @@
 import React from 'react';
 import SkillsSection from './SkillsSection';
-// import SponsorSection from './SponsorSection';
 import { ROLE_OPTIONS } from './constants';
 
 interface TeamSidePanelProps {
@@ -17,16 +16,6 @@ interface TeamSidePanelProps {
   filteredSkills: string[];
   selectedRoles: string[];
   onToggleRole: (roleId: string) => void;
-  // sponsorName: string;
-  // onSponsorNameChange: (value: string) => void;
-  // sponsorCompany: string;
-  // onSponsorCompanyChange: (value: string) => void;
-  // sponsorEmail: string;
-  // onSponsorEmailChange: (value: string) => void;
-  // sponsorWebsite: string;
-  // onSponsorWebsiteChange: (value: string) => void;
-  // sponsorDescription: string;
-  // onSponsorDescriptionChange: (value: string) => void;
 }
 
 const TeamSidePanel: React.FC<TeamSidePanelProps> = ({
@@ -43,16 +32,6 @@ const TeamSidePanel: React.FC<TeamSidePanelProps> = ({
   filteredSkills,
   selectedRoles,
   onToggleRole,
-  // sponsorName,
-  // onSponsorNameChange,
-  // sponsorCompany,
-  // onSponsorCompanyChange,
-  // sponsorEmail,
-  // onSponsorEmailChange,
-  // sponsorWebsite,
-  // onSponsorWebsiteChange,
-  // sponsorDescription,
-  // onSponsorDescriptionChange,
 }) => {
   return (
     <div className="create-project__right-column">
@@ -99,19 +78,6 @@ const TeamSidePanel: React.FC<TeamSidePanelProps> = ({
           ))}
         </div>
       </div>
-
-      {/* <SponsorSection
-        sponsorName={sponsorName}
-        onSponsorNameChange={onSponsorNameChange}
-        sponsorCompany={sponsorCompany}
-        onSponsorCompanyChange={onSponsorCompanyChange}
-        sponsorEmail={sponsorEmail}
-        onSponsorEmailChange={onSponsorEmailChange}
-        sponsorWebsite={sponsorWebsite}
-        onSponsorWebsiteChange={onSponsorWebsiteChange}
-        sponsorDescription={sponsorDescription}
-        onSponsorDescriptionChange={onSponsorDescriptionChange}
-      /> */}
     </div>
   );
 };

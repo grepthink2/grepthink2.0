@@ -32,34 +32,6 @@
   }
 }
 
-// ── Meta bar (due date + project) ───────────────────────────────
-.assignment-detail__meta {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  flex-wrap: wrap;
-}
-
-.assignment-detail__due,
-.assignment-detail__project {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-}
-
-.assignment-detail__due {
-  background-color: var(--gt-info-soft);
-  color: $accent-color;
-}
-
-.assignment-detail__project {
-  background-color: $background;
-  color: $text-secondary;
-}
-
 // ── Body ────────────────────────────────────────────────────────
 .assignment-detail__body {
   display: flex;
