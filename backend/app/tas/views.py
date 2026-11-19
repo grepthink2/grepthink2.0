@@ -11,6 +11,7 @@ from app.tas.models import (
     CreateReviewSlotsRequest,
     SaveFinalReviewNotesRequest,
     SaveFinalReviewScoresRequest,
+    SetLateWindowPermissionRequest,
     SetReviewTaRequest,
     SetReviewWindowRequest,
     SetReviewZoomRequest,
@@ -32,6 +33,17 @@ def demote_ta(
     user_id: str = Depends(require_user),
 ):
     return controller.demote_ta(user_id, class_id, data.user_id)
+
+
+def set_ta_late_window_permission(
+    class_id: UUID,
+    ta_user_id: UUID,
+    data: SetLateWindowPermissionRequest,
+    user_id: str = Depends(require_user),
+):
+    return controller.set_ta_late_window_permission(
+        user_id, class_id, ta_user_id, data.can_extend_deadlines
+    )
 
 
 def list_class_tas(

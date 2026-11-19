@@ -46,11 +46,26 @@ export const tasApi = {
     );
   },
 
-  /** Instructor: demote a TA back to a regular student. */
+  /** Instructor: demote a TA back to a regular student (which also withdraws their late-window permission). */
   demoteTA: async (classId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
+    return apiRequest<{ user_id: string; enrollment_role: 'student' }>(
       `/api/tas/classes/${classId}/demote`,
       { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+    );
+  },
+
+  /**
+   * Instructor: let a TA of the class set, move or remove the late window of its TSR assignments
+   * (canExtend = true), or stop them (PATCH /api/tas/classes/:classId/tas/:userId).
+   */
+  setTALateWindowPermission: async (
+    classId: string,
+    userId: string,
+    canExtend: boolean,
+  ): Promise<{ user_id: string; can_extend_deadlines: boolean }> => {
+    return apiRequest<{ user_id: string; can_extend_deadlines: boolean }>(
+      `/api/tas/classes/${classId}/tas/${userId}`,
+      { method: 'PATCH', body: JSON.stringify({ can_extend_deadlines: canExtend }) },
     );
   },
 
@@ -154,11 +169,13 @@ export const tasApi = {
     );
   },
 
-  /** TA: the projects they oversee plus the class's TSR assignments. */
+  /** TA: the projects they oversee plus the class's TSR assignments, each with its deadline and late window. */
   getTAReviewTargets: async (classId: string) => {
     return apiRequest<{
       projects: { id: string; name: string | null }[];
       assignments: ApiAssignment[];
+      /** The caller may set, move or remove the late window of these assignments. */
+      can_extend_deadlines: boolean;
     }>(`/api/tas/classes/${classId}/review-targets`);
   },
 

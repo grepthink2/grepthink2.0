@@ -44,6 +44,7 @@ INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 NOT_PROJECT_MEMBER = "Not a member of this project"
 ONLY_PRODUCT_OWNER = "Only the team's Product Owner can change meetings."
+NOT_LATE_WINDOW_EDITOR = "Only the instructor or a TA with permission may change the late window"
 
 INSTR = "10000000-0000-0000-0000-000000000001"
 OTHER_INSTR = "10000000-0000-0000-0000-000000000002"
@@ -72,6 +73,7 @@ ROLES = {
 }
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 OCT_1, OCT_8 = datetime.date(2026, 10, 1), datetime.date(2026, 10, 8)
+LATE_UNTIL = datetime.datetime(2026, 10, 12, 8, tzinfo=datetime.UTC)  # a late window's end
 SCHEDULE_FROM = datetime.datetime(2026, 11, 9, 8, tzinfo=datetime.UTC)
 SCHEDULE_TO = SCHEDULE_FROM + datetime.timedelta(days=7)
 
@@ -311,6 +313,22 @@ CASES = {
         403,
         NOT_CLASS_MEMBER,
     ),
+    # A late window: the class instructor, or a TA of the class with the permission (TA1 has none).
+    "authz.late_window/missing-class": (
+        lambda db: authz.require_late_window_access(db, INSTR, MISSING_CLASS),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "authz.late_window/enrolled-ta": (
+        lambda db: authz.require_late_window_access(db, TA1, CLASS),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
+    ),
+    "authz.late_window/enrolled-student": (
+        lambda db: authz.require_late_window_access(db, S1, CLASS),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
+    ),
     # app.assignments
     "assignments.list/missing-class-instructor": (
         lambda db: assignments.get_assignments_for_class(INSTR, MISSING_CLASS),
@@ -356,6 +374,21 @@ CASES = {
         lambda db: assignments.delete_assignment(S1, A_FEEDBACK),
         403,
         NOT_CLASS_INSTRUCTOR,
+    ),
+    "assignments.set_late_window/missing-class": (
+        lambda db: assignments.set_late_window(INSTR, A_ORPHAN, LATE_UNTIL),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "assignments.set_late_window/enrolled-ta": (
+        lambda db: assignments.set_late_window(TA1, A_FEEDBACK, LATE_UNTIL),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
+    ),
+    "assignments.set_late_window/enrolled-student": (
+        lambda db: assignments.set_late_window(S1, A_FEEDBACK, LATE_UNTIL),
+        403,
+        NOT_LATE_WINDOW_EDITOR,
     ),
     "assignments.feedback_overview/missing-class": (
         lambda db: assignments.get_feedback_overview(INSTR, A_ORPHAN),
@@ -449,6 +482,16 @@ CASES = {
     ),
     "tas.demote/enrolled-student": (
         lambda db: tas.demote_ta(S1, CLASS, TA1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.set_late_window_permission/missing-class": (
+        lambda db: tas.set_ta_late_window_permission(INSTR, MISSING_CLASS, TA1, True),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "tas.set_late_window_permission/enrolled-ta": (
+        lambda db: tas.set_ta_late_window_permission(TA1, CLASS, TA1, True),
         403,
         NOT_CLASS_INSTRUCTOR,
     ),

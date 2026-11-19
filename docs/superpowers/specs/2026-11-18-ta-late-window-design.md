@@ -49,7 +49,7 @@ Maintainer's, unless marked ⚑.
 | 8 | **Default off** for every TA, existing ones included; the instructor opts each in from TA Management. On PROD the maintainer turns it on for one TA by hand (a data fix, not a repo file: it would name a person). |
 | 9 | **Audit:** the existing `assignment_reopened` event (actor, class, assignment, new window). No reason field. ⚑ Removing a window records a new `late_window_removed` event so the trail is complete. |
 | 10 | **Counts, not a list:** the TA's row in TA Management shows how many late windows that TA has opened. |
-| 11 | **Students are told** by an in-app notification when a window opens or moves. No email. Clicking it opens the class's Assignments page. |
+| 11 | **Students are told** by an in-app notification when a window opens or is extended; a shortened or removed window tells nobody. No email. Clicking it opens the class's Assignments page. |
 | 12 | **Placement:** permission toggle on the TA's card in TA Management; the instructor's own control stays in the Modules assignment editor; the TA opens a window from TA Review; students keep "Late submissions until …". |
 | 13 | **Write path B:** a new route `PUT /api/assignments/{id}/late-window`, callable by the instructor or a permitted TA, sharing its validation with `update_assignment`. PATCH stays instructor-only and unchanged. |
 

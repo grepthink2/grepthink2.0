@@ -2132,6 +2132,19 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.events FROM anon, authenticated;
 REVOKE ALL ON SEQUENCE public.events_id_seq FROM anon, authenticated;
 
+-- ===== TA late-window permission (2026-11-18_ta_late_window_permission.sql) =====
+-- Mirrors backend/database/migrations/2026-11/2026-11-18_ta_late_window_permission.sql. A TA with the
+-- flag may set an assignment's late window (accept_until); only a 'ta' enrollment can hold it. No
+-- grant: the browser never reads this column.
+
+ALTER TABLE public.class_enrollments
+  ADD COLUMN IF NOT EXISTS can_extend_deadlines boolean NOT NULL DEFAULT false;
+ALTER TABLE public.class_enrollments
+  DROP CONSTRAINT IF EXISTS class_enrollments_extend_requires_ta;
+ALTER TABLE public.class_enrollments
+  ADD CONSTRAINT class_enrollments_extend_requires_ta
+  CHECK (enrollment_role = 'ta' OR NOT can_extend_deadlines);
+
 -- ===== Analytics core (2026-10-07_analytics.sql) =====
 -- Applied on DEV 2026-10-08; PROD pending. The cron schedule lives in
 -- backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql.

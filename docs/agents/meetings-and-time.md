@@ -21,12 +21,13 @@ Read this before changing attendance, TA assignment, team meetings, final review
   `classes.review_period_open` ("Sign-ups open") is the one switch for team booking and TA
   reviewer sign-up, and a TA self-appoints as Review TA only once the team holds a slot.
 - **Deadlines are instants.** `assignments.due_at` (first moment after `close_date` in the school's
-  zone, derived by the backend) is the deadline; `accept_until` is a late window. After a published
-  assignment's `due_at` passes, moving `close_date` or unpublishing is refused (400): set
-  `accept_until`. A draft can always be rescheduled. `create_tsr`, `update_tsr_entry` (students) and
-  `submit_feedback` enforce the window (403 `"This assignment is not open yet"` / `"This assignment
-  is closed"`). `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in
-  tests).
+  zone, derived by the backend) is the deadline; `accept_until` is a late window. A TA the instructor
+  has granted `can_extend_deadlines` may set it too, on TSR assignments, through
+  `PUT /api/assignments/{id}/late-window`. After a published assignment's `due_at` passes, moving
+  `close_date` or unpublishing is refused (400): set `accept_until`. A draft can always be
+  rescheduled. `create_tsr`, `update_tsr_entry` (students) and `submit_feedback` enforce the window
+  (403 `"This assignment is not open yet"` / `"This assignment is closed"`).
+  `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in tests).
 - **Times: store instants, compute in the school's zone, show in the viewer's.**
   - The database holds `timestamptz` instants.
   - Calendar boundaries (a day, a term week, a deadline's `due_at`, the scrum board's burnup day) are

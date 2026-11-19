@@ -23,6 +23,7 @@ mirrors; see ``app.tas.review_slots``) and the class shares one Zoom room
 
 Who can call what:
     * Promote / demote / list-class-TAs        → class instructor.
+    * a TA's late-window permission            → class instructor.
     * my-role / review targets                 → the TA themselves.
     * list-project-TAs / list-review-TAs       → instructor or any class member.
     * claim / release additional reviewer      → the TA (self) or instructor.
@@ -31,6 +32,7 @@ Who can call what:
 """
 
 import logging
+from collections import Counter
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -46,6 +48,10 @@ logger = logging.getLogger(__name__)
 ENROLLMENT_ROLE_STUDENT = "student"
 ENROLLMENT_ROLE_TA = "ta"
 
+#: 400: the late-window permission is for a TA of the class; the target is a student or not
+#: enrolled.
+NOT_A_CLASS_TA = "User is not a TA in this class"
+
 
 def _owner_check(cls: dict | None, user_id: str) -> None:
     """404 for a missing class, 403 unless ``user_id`` created it (already-loaded row)."""
@@ -60,10 +66,13 @@ def _require_class_instructor(client, user_id: str, class_id) -> dict:
     return authz.require_class_instructor(client, user_id, class_id)
 
 
-def _get_enrollment(client, class_id, user_id: str) -> dict | None:
+def _get_enrollment(
+    client, class_id, user_id: str, columns: str = "id, enrollment_role"
+) -> dict | None:
+    """The user's ``class_enrollments`` row in the class (``columns`` of it), or ``None``."""
     res = (
         client.table("class_enrollments")
-        .select("id, enrollment_role")
+        .select(columns)
         .eq("class_id", str(class_id))
         .eq("user_id", str(user_id))
         .execute()
@@ -152,7 +161,11 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
     safe: the TA's team assignments and review claims are cleared BEFORE the role
     flips. If a later write fails, the user is still a TA with nothing assigned —
     never a student who still holds a team's assigned-TA (meeting, attendance,
-    TSR-review) privileges.
+    TSR-review) privileges. The role flip also withdraws the late-window permission
+    (``can_extend_deadlines``) in the same update, so the CHECK that ties it to the
+    ``ta`` role never trips.
+
+    Returns ``{"user_id", "enrollment_role": "student"}``.
     """
     try:
         client = get_client()
@@ -175,9 +188,9 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             "assigned_ta_id", tid
         ).execute()
         client.table("project_review_tas").delete().eq("class_id", cid).eq("user_id", tid).execute()
-        client.table("class_enrollments").update({"enrollment_role": ENROLLMENT_ROLE_STUDENT}).eq(
-            "id", enrollment["id"]
-        ).execute()
+        client.table("class_enrollments").update(
+            {"enrollment_role": ENROLLMENT_ROLE_STUDENT, "can_extend_deadlines": False}
+        ).eq("id", enrollment["id"]).execute()
 
         logger.info(
             "TA demoted to student | class_id=%s user_id=%s by=%s",
@@ -185,12 +198,61 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             target_user_id,
             instructor_id,
         )
-        return {"message": "TA demoted to student", "user_id": tid}
+        return {"user_id": tid, "enrollment_role": ENROLLMENT_ROLE_STUDENT}
     except HTTPException:
         raise
     except Exception:
         logger.exception("Error demoting TA | class_id=%s user_id=%s", class_id, target_user_id)
         raise HTTPException(status_code=500, detail="Failed to demote TA")
+
+
+def set_ta_late_window_permission(
+    instructor_id: str, class_id: UUID, target_user_id: UUID, can_extend: bool
+) -> dict:
+    """Let a TA of the class set, move or remove the late window of its TSR assignments, or stop
+    them (class instructor only). Writes ``class_enrollments.can_extend_deadlines``, which
+    demoting the TA also clears.
+
+    Returns ``{"user_id", "can_extend_deadlines"}``. 400 :data:`NOT_A_CLASS_TA` when the target
+    is a student of the class or not enrolled in it.
+    """
+    try:
+        client = get_client()
+        cid, tid = str(class_id), str(target_user_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid),
+                "enrollment": lambda: _get_enrollment(
+                    client, cid, tid, columns="id, enrollment_role, can_extend_deadlines"
+                ),
+            }
+        )
+        _owner_check(reads["class"], instructor_id)
+        enrollment = reads["enrollment"]
+        if not enrollment or enrollment.get("enrollment_role") != ENROLLMENT_ROLE_TA:
+            raise HTTPException(status_code=400, detail=NOT_A_CLASS_TA)
+
+        client.table("class_enrollments").update({"can_extend_deadlines": can_extend}).eq(
+            "id", enrollment["id"]
+        ).execute()
+
+        logger.info(
+            "TA late-window permission %s | class_id=%s user_id=%s by=%s",
+            "granted" if can_extend else "withdrawn",
+            class_id,
+            target_user_id,
+            instructor_id,
+        )
+        return {"user_id": tid, "can_extend_deadlines": can_extend}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error setting the TA late-window permission | class_id=%s user_id=%s",
+            class_id,
+            target_user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to set the late-window permission")
 
 
 def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, list[dict]]:
@@ -221,29 +283,38 @@ def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, 
 
 
 def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
-    """List every TA in a class with the projects they oversee (class instructor only)."""
+    """List every TA in a class with the projects they oversee (class instructor only).
+
+    Each TA also carries ``can_extend_deadlines`` (their late-window permission) and
+    ``late_windows_opened``: how many ``assignment_reopened`` events they recorded in this class,
+    one per late window set or moved. Windows the instructor opens are not counted.
+    """
     try:
         client = get_client()
         cid = str(class_id)
         reads = fan_out(
             {
                 "class": lambda: authz.load_class(client, cid),
-                "ta_ids": lambda: [
-                    str(e["user_id"])
-                    for e in (
+                "tas": lambda: (
+                    (
                         client.table("class_enrollments")
-                        .select("user_id, enrollment_role")
+                        .select("user_id, can_extend_deadlines")
                         .eq("class_id", cid)
                         .eq("enrollment_role", ENROLLMENT_ROLE_TA)
                         .execute()
                     ).data
                     or []
-                    if e.get("user_id")
-                ],
+                ),
             }
         )
         _owner_check(reads["class"], instructor_id)
-        ta_ids = reads["ta_ids"]
+        # {user_id: can_extend_deadlines}, in enrollment order; its keys are the TA ids.
+        can_extend = {
+            str(e["user_id"]): bool(e.get("can_extend_deadlines"))
+            for e in reads["tas"]
+            if e.get("user_id")
+        }
+        ta_ids = list(can_extend)
         if not ta_ids:
             return []
 
@@ -257,9 +328,23 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
                     or []
                 },
                 "assignments": lambda: _ta_assignments_by_user(client, cid, ta_ids),
+                "late_windows": lambda: Counter(
+                    str(e["actor_id"])
+                    for e in (
+                        client.table("events")
+                        .select("actor_id")
+                        .eq("class_id", cid)
+                        .eq("kind", "assignment_reopened")
+                        .in_("actor_id", ta_ids)
+                        .execute()
+                    ).data
+                    or []
+                    if e.get("actor_id")
+                ),
             }
         )
         profile_map, assignments_map = details["profiles"], details["assignments"]
+        late_windows = details["late_windows"]
 
         result = [
             {
@@ -267,6 +352,8 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
                 "name": profile_display_name(profile_map.get(uid, {})),
                 "email": (profile_map.get(uid, {}) or {}).get("email"),
                 "projects": assignments_map.get(uid, []),
+                "can_extend_deadlines": can_extend[uid],
+                "late_windows_opened": late_windows.get(uid, 0),
             }
             for uid in ta_ids
         ]
@@ -343,10 +430,13 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
 
 
 def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
-    """For a TA: the projects they oversee plus the class's TSR assignments.
+    """For a TA: the projects they oversee, the class's TSR assignments, and whether they may
+    change those assignments' late windows (``can_extend_deadlines``).
 
     Powers the TA review page. The TA picks a TSR assignment and a project,
     then the regular TSR-overview endpoint returns the (TA-scoped) responses.
+    Each assignment carries its deadline (``due_at``) and late window
+    (``accept_until``), so the page can show them without another call.
     The three reads are independent and run concurrently. A caller with no
     enrollment costs one more read, to answer 404 when the class does not exist.
     """
@@ -354,14 +444,19 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
         client = get_client()
         reads = fan_out(
             {
-                "role": lambda: get_enrollment_role(client, class_id, user_id),
+                "enrollment": lambda: _get_enrollment(
+                    client, class_id, user_id, columns="id, enrollment_role, can_extend_deadlines"
+                ),
                 "projects": lambda: _ta_assignments_by_user(client, class_id, [user_id]).get(
                     user_id, []
                 ),
                 "assignments": lambda: (
                     (
                         client.table("assignments")
-                        .select("id, Title, open_date, close_date, status, assignment_type")
+                        .select(
+                            "id, Title, open_date, close_date, due_at, accept_until, status,"
+                            " assignment_type"
+                        )
                         .eq("class_id", str(class_id))
                         .eq("assignment_type", "tsr")
                         .order("open_date")
@@ -371,12 +466,20 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
                 ),
             }
         )
-        if reads["role"] != ENROLLMENT_ROLE_TA:
+        enrollment = reads["enrollment"]
+        role = (
+            (enrollment.get("enrollment_role") or ENROLLMENT_ROLE_STUDENT) if enrollment else None
+        )
+        if role != ENROLLMENT_ROLE_TA:
             # No enrollment can also mean no class; read it only to tell 404 from 403.
-            if reads["role"] is None and authz.load_class(client, class_id) is None:
+            if role is None and authz.load_class(client, class_id) is None:
                 raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
             raise HTTPException(status_code=403, detail="You are not a TA in this class")
-        return {"projects": reads["projects"], "assignments": reads["assignments"]}
+        return {
+            "projects": reads["projects"],
+            "assignments": reads["assignments"],
+            "can_extend_deadlines": bool(enrollment and enrollment.get("can_extend_deadlines")),
+        }
     except HTTPException:
         raise
     except Exception:

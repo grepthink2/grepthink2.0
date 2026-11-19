@@ -19,6 +19,13 @@ class SetReviewWindowRequest(BaseModel):
     open: bool
 
 
+class SetLateWindowPermissionRequest(BaseModel):
+    """Let a TA of the class set, move or remove the late window of its TSR assignments (true),
+    or stop them (false)."""
+
+    can_extend_deadlines: bool
+
+
 class SetReviewTaRequest(BaseModel):
     """Set a team's additional end-of-quarter reviewer.
 

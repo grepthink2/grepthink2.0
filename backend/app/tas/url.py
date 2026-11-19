@@ -10,6 +10,8 @@ router = APIRouter(prefix="/api/tas", tags=["tas"])
 router.get("/classes/{class_id}")(views.list_class_tas)
 router.post("/classes/{class_id}/promote")(views.promote_to_ta)
 router.post("/classes/{class_id}/demote")(views.demote_ta)
+# A TA's late-window permission (class_enrollments.can_extend_deadlines).
+router.patch("/classes/{class_id}/tas/{ta_user_id}")(views.set_ta_late_window_permission)
 
 # Class-level role lookups for the current user.
 router.get("/classes/{class_id}/my-role")(views.get_my_enrollment_role)
