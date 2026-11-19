@@ -38,7 +38,12 @@ describe('Badge', () => {
       ['live', 'info', 'Live'], ['release.new', 'info', 'New'],
     ];
     for (const [key, tone, label] of expected) expect(BADGE_STATUS[key]).toEqual([tone, label]);
-    expect(Object.keys(BADGE_STATUS)).toHaveLength(65);
+    expect(Object.keys(BADGE_STATUS)).toHaveLength(67);
+  });
+
+  it("carries a TSR's late marks for its reviewers", () => {
+    expect(BADGE_STATUS['tsr.late']).toEqual(['warning', 'Late']);
+    expect(BADGE_STATUS['tsr.edited_late']).toEqual(['info', 'Edited late']);
   });
 
   it("carries a project document's states and its revisions' sources", () => {

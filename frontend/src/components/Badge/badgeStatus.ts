@@ -25,7 +25,9 @@ export type BadgeStatus =
   /** A team's project document: not made yet, a draft, handed in, or handed in and saved again since. */
   | 'document.not_started' | 'document.draft' | 'document.final' | 'document.edited_since'
   /** What wrote a document's revision, and the mark on every revision that was handed in. */
-  | 'revision.seed' | 'revision.edit' | 'revision.import' | 'revision.export' | 'revision.handed_in';
+  | 'revision.seed' | 'revision.edit' | 'revision.import' | 'revision.export' | 'revision.handed_in'
+  /** A TSR to its reviewers: first submitted at or after the deadline, or submitted on time and saved again after it. */
+  | 'tsr.late' | 'tsr.edited_late';
 
 export type BadgeCategory = 'ta' | 'instructor' | 'team' | 'sponsored' | 'manual' | 'members';
 
@@ -69,6 +71,8 @@ export const BADGE_STATUS: Record<BadgeStatus, readonly [tone: BadgeTone, label:
   'revision.seed': ['neutral', 'Started'], 'revision.edit': ['neutral', 'Edited'],
   'revision.import': ['neutral', 'Imported'], 'revision.export': ['neutral', 'Exported'],
   'revision.handed_in': ['success', 'Handed in'],
+  // A late TSR needs the reviewer's attention; one only edited after the deadline is informational.
+  'tsr.late': ['warning', 'Late'], 'tsr.edited_late': ['info', 'Edited late'],
 };
 
 /**

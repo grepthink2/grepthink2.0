@@ -64,4 +64,23 @@
     color: $text-primary;
     background: $white;
   }
+
+  // The chosen assignment's deadline and late window, with "Accept late submissions…" beside it.
+  &__window-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-md;
+  }
+
+  &__window {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+
+  &__campus {
+    color: $text-tertiary;
+  }
 }

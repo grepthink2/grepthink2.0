@@ -231,6 +231,54 @@ describe('Header — a document finalized', () => {
   });
 });
 
+describe('Header — a late window opened', () => {
+  it('opens the Assignments page of the class it names, with that class selected', async () => {
+    // A student in Beta, looking at Alpha, is told a TSR in Beta takes late submissions.
+    state.ctx.setSelectedClass.mockClear();
+    state.notifications = [
+      {
+        id: 'n-late',
+        type: 'late_window_opened',
+        title: 'Late submissions open for TSR 3',
+        body: 'You can submit until Nov 18, 2026 at 5:00 PM (PT)',
+        entity_type: 'class',
+        entity_id: 'beta',
+        read_at: null,
+        created_at: '2026-11-17T10:00:00Z',
+      },
+    ];
+    renderAt('/app/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    fireEvent.click(screen.getByText('Late submissions open for TSR 3'));
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/app/assignments'));
+    expect(state.ctx.setSelectedClass).toHaveBeenCalledWith(assisted);
+  });
+
+  it('opens nothing for a class that is not in the list, rather than that page of the selected class', async () => {
+    state.ctx.setSelectedClass.mockClear();
+    state.notifications = [
+      {
+        id: 'n-late-gone',
+        type: 'late_window_opened',
+        title: 'Late submissions open for TSR 9',
+        body: 'You can submit until Nov 18, 2026 at 5:00 PM (PT)',
+        entity_type: 'class',
+        entity_id: 'gamma',
+        read_at: null,
+        created_at: '2026-11-17T10:00:00Z',
+      },
+    ];
+    renderAt('/app/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    fireEvent.click(screen.getByText('Late submissions open for TSR 9'));
+    // The list closes once the notice is read; then anything still queued lands before the check.
+    await waitFor(() => expect(screen.queryByText('Late submissions open for TSR 9')).not.toBeInTheDocument());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.getByTestId('path').textContent).toBe('/app/dashboard');
+    expect(state.ctx.setSelectedClass).not.toHaveBeenCalled();
+  });
+});
+
 describe('Header — a message notification', () => {
   it('quotes the message without its formatting marks', async () => {
     state.notifications = [

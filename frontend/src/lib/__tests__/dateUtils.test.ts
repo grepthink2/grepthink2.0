@@ -9,8 +9,10 @@ import {
   formatAssignmentDueDate,
   formatDeadline,
   formatInstant,
+  formatInstantIn,
   pickerTextToIso,
   startOfDayIn,
+  toPickerText,
 } from '@/lib/dateUtils';
 
 describe('dateUtils — deadlines', () => {
@@ -146,5 +148,32 @@ describe('dateUtils — picker text', () => {
   it('returns null for incomplete or malformed text', () => {
     expect(pickerTextToIso('2026-10-22 ')).toBeNull();
     expect(pickerTextToIso('2026-10-22 2:')).toBeNull();
+  });
+
+  it('writes an instant as picker text in the viewer\'s local time, which reads back to it', () => {
+    const when = new Date(2026, 10, 16, 17, 5);
+    expect(toPickerText(when.toISOString())).toBe('2026-11-16 17:05');
+    expect(toPickerText(when.toISOString())).toBe(format(when, DATETIME_FORMAT));
+    expect(pickerTextToIso(toPickerText(when.toISOString()))).toBe(when.toISOString());
+  });
+
+  it('writes no text for no instant', () => {
+    expect(toPickerText(null)).toBe('');
+    expect(toPickerText(undefined)).toBe('');
+    expect(toPickerText('')).toBe('');
+  });
+});
+
+describe('dateUtils — an instant on another zone\'s clock', () => {
+  it('reads the zone\'s clock, in formatInstant\'s shape', () => {
+    // 06:59 UTC is 10:59 PM the evening before at UTC-8, and 8:59 PM at UTC-10.
+    expect(formatInstantIn('2026-10-08T06:59:00Z', 'Etc/GMT+8')).toBe('Oct 7, 2026 at 10:59 PM');
+    expect(formatInstantIn(new Date('2026-10-08T06:59:00Z'), 'Etc/GMT+10')).toBe('Oct 7, 2026 at 8:59 PM');
+    expect(formatInstantIn('2026-10-08T06:59:00Z', 'Etc/GMT-3')).toBe('Oct 8, 2026 at 9:59 AM');
+  });
+
+  it('writes the hours after midnight and noon as 12', () => {
+    expect(formatInstantIn('2026-11-16T08:05:00Z', 'Etc/GMT+8')).toBe('Nov 16, 2026 at 12:05 AM');
+    expect(formatInstantIn('2026-11-16T20:00:00Z', 'Etc/GMT+8')).toBe('Nov 16, 2026 at 12:00 PM');
   });
 });

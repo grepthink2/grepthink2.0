@@ -1,0 +1,12 @@
+@use '@styles/index.scss' as *;
+
+// The late window form: the time, any warning or error, then removing the window.
+.late-window-modal {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  &__remove {
+    align-self: flex-start;
+  }
+}
