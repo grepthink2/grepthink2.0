@@ -485,6 +485,16 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
+    "tas.set_late_window_permission/missing-class": (
+        lambda db: tas.set_ta_late_window_permission(INSTR, MISSING_CLASS, TA1, True),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "tas.set_late_window_permission/enrolled-ta": (
+        lambda db: tas.set_ta_late_window_permission(TA1, CLASS, TA1, True),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
     "tas.list_class_tas/enrolled-student": (
         lambda db: tas.list_class_tas(S1, CLASS),
         403,

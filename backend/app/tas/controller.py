@@ -23,6 +23,7 @@ mirrors; see ``app.tas.review_slots``) and the class shares one Zoom room
 
 Who can call what:
     * Promote / demote / list-class-TAs        → class instructor.
+    * a TA's late-window permission            → class instructor.
     * my-role / review targets                 → the TA themselves.
     * list-project-TAs / list-review-TAs       → instructor or any class member.
     * claim / release additional reviewer      → the TA (self) or instructor.
@@ -46,6 +47,10 @@ logger = logging.getLogger(__name__)
 ENROLLMENT_ROLE_STUDENT = "student"
 ENROLLMENT_ROLE_TA = "ta"
 
+#: 400: the late-window permission is for a TA of the class; the target is a student or not
+#: enrolled.
+NOT_A_CLASS_TA = "User is not a TA in this class"
+
 
 def _owner_check(cls: dict | None, user_id: str) -> None:
     """404 for a missing class, 403 unless ``user_id`` created it (already-loaded row)."""
@@ -60,10 +65,13 @@ def _require_class_instructor(client, user_id: str, class_id) -> dict:
     return authz.require_class_instructor(client, user_id, class_id)
 
 
-def _get_enrollment(client, class_id, user_id: str) -> dict | None:
+def _get_enrollment(
+    client, class_id, user_id: str, columns: str = "id, enrollment_role"
+) -> dict | None:
+    """The user's ``class_enrollments`` row in the class (``columns`` of it), or ``None``."""
     res = (
         client.table("class_enrollments")
-        .select("id, enrollment_role")
+        .select(columns)
         .eq("class_id", str(class_id))
         .eq("user_id", str(user_id))
         .execute()
@@ -195,6 +203,55 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
     except Exception:
         logger.exception("Error demoting TA | class_id=%s user_id=%s", class_id, target_user_id)
         raise HTTPException(status_code=500, detail="Failed to demote TA")
+
+
+def set_ta_late_window_permission(
+    instructor_id: str, class_id: UUID, target_user_id: UUID, can_extend: bool
+) -> dict:
+    """Let a TA of the class set, move or remove the late window of its TSR assignments, or stop
+    them (class instructor only). Writes ``class_enrollments.can_extend_deadlines``, which
+    demoting the TA also clears.
+
+    Returns ``{"user_id", "can_extend_deadlines"}``. 400 :data:`NOT_A_CLASS_TA` when the target
+    is a student of the class or not enrolled in it.
+    """
+    try:
+        client = get_client()
+        cid, tid = str(class_id), str(target_user_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid),
+                "enrollment": lambda: _get_enrollment(
+                    client, cid, tid, columns="id, enrollment_role, can_extend_deadlines"
+                ),
+            }
+        )
+        _owner_check(reads["class"], instructor_id)
+        enrollment = reads["enrollment"]
+        if not enrollment or enrollment.get("enrollment_role") != ENROLLMENT_ROLE_TA:
+            raise HTTPException(status_code=400, detail=NOT_A_CLASS_TA)
+
+        client.table("class_enrollments").update({"can_extend_deadlines": can_extend}).eq(
+            "id", enrollment["id"]
+        ).execute()
+
+        logger.info(
+            "TA late-window permission %s | class_id=%s user_id=%s by=%s",
+            "granted" if can_extend else "withdrawn",
+            class_id,
+            target_user_id,
+            instructor_id,
+        )
+        return {"user_id": tid, "can_extend_deadlines": can_extend}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error setting the TA late-window permission | class_id=%s user_id=%s",
+            class_id,
+            target_user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to set the late-window permission")
 
 
 def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, list[dict]]:

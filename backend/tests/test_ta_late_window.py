@@ -347,3 +347,49 @@ def test_late_window_route(client, auth_header):
     }
     missing_key = client.put(f"/api/assignments/{A_TSR}/late-window", json={}, headers=auth_header)
     assert missing_key.status_code == 422
+
+
+# ------------------------------------- PATCH /api/tas/classes/{id}/tas/{user}: the permission
+
+
+def test_the_instructor_grants_and_withdraws_the_permission(db):
+    out = tas.set_ta_late_window_permission(INSTR, CLASS, TA_OFF, True)
+    assert out == {"user_id": TA_OFF, "can_extend_deadlines": True}
+    row = next(
+        e for e in db.rows("class_enrollments") if e["user_id"] == TA_OFF and e["class_id"] == CLASS
+    )
+    assert row["can_extend_deadlines"] is True
+    assert db.executes == 3, _trace(db)  # class + enrollment, update
+    tas.set_ta_late_window_permission(INSTR, CLASS, TA_OFF, False)
+    assert row["can_extend_deadlines"] is False
+
+
+@pytest.mark.parametrize("target", [S1, OUTSIDER])
+def test_permission_needs_a_ta_target(db, target):
+    with pytest.raises(HTTPException) as exc:
+        tas.set_ta_late_window_permission(INSTR, CLASS, target, True)
+    assert (exc.value.status_code, exc.value.detail) == (400, tas.NOT_A_CLASS_TA)
+    assert not any(
+        e.get("can_extend_deadlines")
+        for e in db.rows("class_enrollments")
+        if e["user_id"] == target
+    )
+    assert not [q for q in db.queries if q["op"] == "update"]
+
+
+def test_only_the_instructor_grants_the_permission(db):
+    with pytest.raises(HTTPException) as exc:
+        tas.set_ta_late_window_permission(TA_ON, CLASS, TA_OFF, True)
+    assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_CLASS_INSTRUCTOR)
+
+
+def test_permission_route(client, auth_header):
+    with patch("app.tas.views.controller.set_ta_late_window_permission") as fn:
+        fn.return_value = {"user_id": TA_OFF, "can_extend_deadlines": True}
+        r = client.patch(
+            f"/api/tas/classes/{CLASS}/tas/{TA_OFF}",
+            json={"can_extend_deadlines": True},
+            headers=auth_header,
+        )
+    assert r.status_code == 200 and r.json()["can_extend_deadlines"] is True
+    assert fn.call_args.args == ("user-abc", UUID(CLASS), UUID(TA_OFF), True)
