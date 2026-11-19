@@ -65,6 +65,32 @@ Read this before changing anything under `frontend/`. The root [AGENTS.md](../..
   `index-*.js` into a chunk that is still preloaded. Measured 2026-11-12: `index-*.js` 205 kB minified; all the files `index.html` loads, 825 kB of JS
   (241 kB gzipped, each file on its own) and 131 kB of CSS (23 kB gzipped).
 
+## The design system, built from the kit
+
+The Design System artifact's code-derived files come from the shared kit and its tokens, not from
+design copies. In `frontend/`:
+
+- `npm run design:build` writes `.design-system/project/` (git-ignored build output) as it is
+  published: `components/bundle.js` (the kit, its hooks and helpers, and `Icon`, as one classic script
+  assigning `window.GrepThinkDesignSystem_36e7e3` for a page that supplies React 18), `bundle.css`,
+  `index.d.ts`, `tokens.json` and React and React DOM 18.3.1 under `components/lib/`, plus
+  `.design-system/report.json` and a summary (the tokens kept in `bundle.css` and why). It never writes
+  `tokens.css`, `manifest.json` or `api/`: the page generates those. The scripts are in
+  `scripts/design-system/`, the runtime the bundle carries in `design-system/runtime/`, the build config
+  in `vite.design.config.ts`.
+- `npm run design:test` runs the kit's own tests on React 18 (`vitest.design.config.ts`): React and
+  React DOM 18 from the `react18` / `react-dom18` packages, the ref adapter's JSX runtime, and
+  `design-system/runtime/react.ts` for every `react` import (React 19's `ref` prop and
+  `useEffectEvent` on React 18). `react-router-dom` stays the real package there.
+- `npm run design:check` holds the built tree to the artifact's format.
+
+Kit source never changes for React 18: a difference belongs in the adapter or the runtime. A kit test
+that cannot pass on React 18 for a reason the adapter does not cause goes in
+`design-system/react18-skips.json` as `{ "file", "test", "reason" }` (its file is left out of
+`design:test`), only once you have shown the adapter is not the cause; the list is empty today and each
+entry is reviewed. A kit stylesheet's root classes start with `gt-`; DatePickerField's `dpf` block is the
+one other, and the base layer's scope follows whatever the compiled CSS uses.
+
 ## Tests
 
 - Vitest runs in its `vmThreads` pool (`vite.config.ts`): one jsdom per worker, a fresh `window`
