@@ -17,6 +17,7 @@ from fastapi import HTTPException
 from app.assignments import controller as assignments
 from app.assignments import deadlines
 from app.core import authz
+from app.institutions import controller as institutions
 from app.tas import controller as tas
 from tests.fake_supabase import FakeSupabase
 
@@ -28,8 +29,11 @@ S1, S2, S3, OUTSIDER = (
     "00000000-0000-4000-8000-000000000003",
     "00000000-0000-4000-8000-000000000009",
 )
+S_OTHER = "00000000-0000-4000-8000-000000000004"  # a student of OTHER_CLASS
+S_FLAGGED = "00000000-0000-4000-8000-000000000005"  # enrolled only by the test that needs it
 CLASS, OTHER_CLASS = "00000000-0000-4000-8000-0000000000c1", "00000000-0000-4000-8000-0000000000c2"
 MISSING_CLASS = "00000000-0000-4000-8000-0000000000cf"
+SCHOOL = "00000000-0000-4000-8000-0000000000f1"  # CLASS's school, on UTC-8 all year
 P1 = "00000000-0000-4000-8000-0000000000d1"
 A_TSR, A_DRAFT, A_FB, A_OTHER = (
     "00000000-0000-4000-8000-0000000000e1",
@@ -84,9 +88,12 @@ def _assignment(aid: str, class_id: str, title: str, kind: str, status: str) -> 
 
 @pytest.fixture
 def db(monkeypatch):
-    """INSTR teaches CLASS (no school: Pacific time). TA_ON may open late windows there, TA_OFF may
-    not; S1, S2 and S3 are its students, and S1 has submitted A_TSR. TA_ON is also a TA without the
-    permission in OTHER_CLASS, which OTHER_INSTR teaches. OUTSIDER is enrolled nowhere."""
+    """INSTR teaches CLASS, at a school whose zone is UTC-8 all year (``Etc/GMT+8``). TA_ON may open
+    late windows there, TA_OFF may not; S1, S2 and S3 are its students, and S1 has submitted A_TSR.
+    TA_ON is also a TA without the permission in OTHER_CLASS, which OTHER_INSTR teaches and S_OTHER
+    is a student of. OUTSIDER is enrolled nowhere."""
+    school = {"id": SCHOOL, "name": "Test U", "timezone": "Etc/GMT+8", "email_domains": []}
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [school]))
     fake = FakeSupabase(
         profiles=[
             _profile(INSTR, "Ina", "instructor"),
@@ -96,10 +103,11 @@ def db(monkeypatch):
             _profile(S1, "Sam"),
             _profile(S2, "Sara"),
             _profile(S3, "Sid"),
+            _profile(S_OTHER, "Sol"),
             _profile(OUTSIDER, "Oz"),
         ],
         classes=[
-            {"id": CLASS, "created_by": INSTR},
+            {"id": CLASS, "created_by": INSTR, "institution_id": SCHOOL},
             {"id": OTHER_CLASS, "created_by": OTHER_INSTR},
         ],
         class_enrollments=[
@@ -109,6 +117,7 @@ def db(monkeypatch):
             _enrollment(CLASS, S2),
             _enrollment(CLASS, S3),
             _enrollment(OTHER_CLASS, TA_ON, "ta"),
+            _enrollment(OTHER_CLASS, S_OTHER),
         ],
         projects=[{"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA_ON}],
         assignments=[
@@ -154,13 +163,18 @@ def clock(monkeypatch):
 
 
 def test_demote_clears_the_late_window_permission(db):
-    out = tas.demote_ta(INSTR, CLASS, TA_ON)
     row = next(
         e for e in db.rows("class_enrollments") if e["user_id"] == TA_ON and e["class_id"] == CLASS
     )
+    assert (row["enrollment_role"], row["can_extend_deadlines"]) == ("ta", True)
+    out = tas.demote_ta(INSTR, CLASS, TA_ON)
     assert row["enrollment_role"] == "student"
     assert row["can_extend_deadlines"] is False
     assert out == {"user_id": TA_ON, "enrollment_role": "student"}
+    # Both columns changed in the one write to class_enrollments, so it carried both: the CHECK
+    # that ties the permission to the ta role never sees a student row that still holds it.
+    writes = [q for q in db.queries if q["table"] == "class_enrollments" and q["op"] != "select"]
+    assert [q["op"] for q in writes] == ["update"]
 
 
 # ---------------------------------------------------------- who may change it
@@ -179,6 +193,14 @@ def test_late_window_access_is_refused_without_the_flag(db, user):
     assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_LATE_WINDOW_EDITOR)
 
 
+def test_late_window_access_refuses_a_student_row_carrying_the_flag(db):
+    # The database's CHECK forbids the flag on a student's enrollment; Python refuses it anyway.
+    db.rows("class_enrollments").append(_enrollment(CLASS, S_FLAGGED, can_extend=True))
+    with pytest.raises(HTTPException) as exc:
+        authz.require_late_window_access(db, S_FLAGGED, CLASS)
+    assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_LATE_WINDOW_EDITOR)
+
+
 def test_late_window_access_on_a_missing_class_is_404(db):
     with pytest.raises(HTTPException) as exc:
         authz.require_late_window_access(db, INSTR, MISSING_CLASS)
@@ -194,9 +216,12 @@ def test_reopening_notifies_students_who_have_not_submitted(db, clock):
     rows = db.rows("notifications")
     # S1 has submitted, and TAs are not students.
     assert sorted(r["user_id"] for r in rows) == sorted([S2, S3])
+    # The recipients are read in this class only: another class's student is not told.
+    assert S_OTHER not in {r["user_id"] for r in rows}
     assert rows[0]["type"] == "late_window_opened"
     assert rows[0]["title"] == "Late submissions open for TSR 1"
-    assert rows[0]["body"] == "You can submit until Jan 12, 12:00 AM (PST)"
+    # The window ends at midnight in the school's zone, UTC-8, which Python names "-08".
+    assert rows[0]["body"] == "You can submit until Jan 12, 12:00 AM (-08)"
     assert (rows[0]["entity_type"], rows[0]["entity_id"]) == ("class", CLASS)
 
 
@@ -278,7 +303,7 @@ def test_a_permitted_ta_sets_the_window_and_students_are_told(db, clock):
     }
     assert sorted(r["user_id"] for r in db.rows("notifications")) == sorted([S2, S3])
     # assignment, class + enrollment, update, event, recipients (enrollments, TSR rows), insert
-    assert db.executes <= 8, _trace(db)
+    assert db.executes == 8, _trace(db)
 
 
 def test_the_instructor_uses_the_same_route(db, clock):
@@ -301,7 +326,7 @@ def test_permission_is_per_class(db, clock):
     clock(NOW_AFTER)
     with pytest.raises(HTTPException) as exc:
         assignments.set_late_window(TA_ON, A_OTHER, LATE)
-    assert exc.value.status_code == 403
+    assert (exc.value.status_code, exc.value.detail) == (403, authz.NOT_LATE_WINDOW_EDITOR)
     other = next(a for a in db.rows("assignments") if a["id"] == A_OTHER)
     assert other.get("accept_until") is None and db.rows("events") == []
 
@@ -386,7 +411,7 @@ def test_removing_notifies_nobody(db, clock):
         ("late_window_removed", {"assignment_id": A_TSR})
     ]
     assert db.rows("notifications") == []
-    assert db.executes <= 5, _trace(db)  # assignment, class + enrollment, update, event
+    assert db.executes == 5, _trace(db)  # assignment, class + enrollment, update, event
 
 
 def test_removing_an_absent_window_writes_nothing(db, clock):
