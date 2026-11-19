@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "design:test": "vitest run --config vitest.design.config.ts"
+    "design:build": "node scripts/design-system/build.mjs",
+    "design:test": "vitest run --config vitest.design.config.ts",
+    "design:check": "node scripts/design-system/check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

@@ -34,7 +34,8 @@ export async function buildBundle({ root }) {
   const run = spawnSync(process.execPath, [vite, 'build', '--config', 'vite.design.config.ts'], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' },
+    // Production builds of the dependencies whatever the caller's NODE_ENV (Vitest sets "test").
+    env: { ...process.env, NODE_ENV: 'production', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' },
   });
   if (run.status !== 0) throw new Error(`the design-system build failed:\n${run.stdout}${run.stderr}`);
   return {
