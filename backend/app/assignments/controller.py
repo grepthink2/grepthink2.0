@@ -275,12 +275,17 @@ def _validate_late_window(
 
 
 def _record_reopening(
-    actor_id: str, assignment: dict, accept_until_iso: str, now: datetime.datetime
+    actor_id: str,
+    assignment: dict,
+    accept_until_iso: str,
+    due_at: datetime.datetime | None,
+    now: datetime.datetime,
 ) -> None:
     """Record ``assignment_reopened`` for a late window set or moved on ``assignment`` (the row as
-    written): who, the class, the assignment, the window's end, and whether the deadline had
-    already passed."""
-    due_at = deadlines.parse_ts(assignment.get("due_at"))
+    written): who, the class, the assignment, the window's end, and whether the deadline
+    ``due_at`` had already passed at ``now``. ``due_at`` is the deadline as it stood before the
+    request, so a request that also moves the deadline is judged by the one in force when it
+    came in."""
     events.record(
         "assignment_reopened",
         actor_id=actor_id,
@@ -294,8 +299,9 @@ def _record_reopening(
 
 
 def _notify_late_window_opened(client, assignment: dict, institution_id) -> None:
-    """Tell the class's students who have not submitted ``assignment`` (the row as written, with its
-    new ``accept_until``) that a late window opened or moved, with its end in the school's zone.
+    """Tell the class's students that ``assignment``'s late window opened or now ends later, with
+    its end in the school's zone: the students who have not submitted a TSR; for other assignment
+    types, every student. ``assignment`` is the row as written, with its new ``accept_until``.
 
     The recipients are the class's ``student`` enrollments, less, for a TSR assignment, everyone
     with a TSR row as its evaluator; TAs and the instructor are never told. Two reads side by side
@@ -355,6 +361,30 @@ def _notify_late_window_opened(client, assignment: dict, institution_id) -> None
         )
 
 
+def _after_late_window_set(
+    client,
+    actor_id: str,
+    row: dict,
+    accept_until: datetime.datetime,
+    *,
+    previous: datetime.datetime | None,
+    due_at: datetime.datetime | None,
+    now: datetime.datetime,
+    institution_id,
+) -> None:
+    """What follows writing a new late window, ``accept_until``, on ``row`` (the assignment as
+    written), for both routes that write one.
+
+    The ``assignment_reopened`` event is always recorded (``due_at``: the deadline before the
+    request). The students are told only on a published assignment, and only when the window
+    opened (``previous``, the window before the request, is ``None``) or now ends later. Students
+    cannot see a draft, and a shortened window tells nobody: their page already shows its new end.
+    """
+    _record_reopening(actor_id, row, accept_until.isoformat(), due_at, now)
+    if row.get("status") == "publish" and (previous is None or accept_until > previous):
+        _notify_late_window_opened(client, row, institution_id)
+
+
 def update_assignment(
     user_id: str,
     assignment_id: UUID,
@@ -372,9 +402,10 @@ def update_assignment(
     Before the deadline (``due_at``) a new ``close_date`` reschedules it and ``due_at`` follows;
     once a published assignment's deadline has passed, moving ``close_date`` or unpublishing it is
     refused (400) and ``accept_until`` sets a late-submission window instead, recorded as an
-    ``assignment_reopened`` event; on a published assignment, the students who have not submitted
-    are notified (``late_window_opened``). Re-sending an unchanged ``close_date`` or
-    ``accept_until`` changes nothing.
+    ``assignment_reopened`` event. On a published assignment, opening the window or making it end
+    later notifies (``late_window_opened``) the students who have not submitted a TSR; for other
+    assignment types, every student. Shortening it notifies nobody. Re-sending an unchanged
+    ``close_date`` or ``accept_until`` changes nothing.
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -475,10 +506,16 @@ def update_assignment(
                 raise HTTPException(status_code=500, detail="Failed to update assignment")
             assignment = result.data[0]
             if reopened:
-                _record_reopening(user_id, assignment, updates["accept_until"], now)
-                # Students cannot see a draft, so a window on one tells nobody.
-                if assignment.get("status") == "publish":
-                    _notify_late_window_opened(client, assignment, cls.get("institution_id"))
+                _after_late_window_set(
+                    client,
+                    user_id,
+                    assignment,
+                    accept_until,
+                    previous=current_accept_until,
+                    due_at=current_due_at,
+                    now=now,
+                    institution_id=cls.get("institution_id"),
+                )
 
         effective_type = (
             assignment_type.strip().lower()
@@ -517,10 +554,11 @@ def set_late_window(
     Nobody may change anything else about the assignment here.
 
     A time sets or moves the window. It must be after the deadline (``due_at``), and a time
-    without an offset is read as UTC. The write is recorded as ``assignment_reopened``, and the
-    class's students who have not submitted are notified. ``None`` removes the window, recorded as
-    ``late_window_removed`` and told to nobody. Re-sending the current window, or removing a window
-    that is not there, writes nothing.
+    without an offset is read as UTC. The write is recorded as ``assignment_reopened``. Opening the
+    window or making it end later notifies the students who have not submitted a TSR; for other
+    assignment types, every student. Shortening it notifies nobody. ``None`` removes the window,
+    recorded as ``late_window_removed`` and told to nobody. Re-sending the current window, or
+    removing a window that is not there, writes nothing.
 
     Returns the assignment row as it now stands (without the ``tsrs`` that PATCH adds).
 
@@ -573,20 +611,29 @@ def set_late_window(
         accept_until = _as_utc(accept_until)
         if accept_until == current:
             return assignment
-        _validate_late_window(accept_until, deadlines.parse_ts(assignment.get("due_at")))
+        # This route never moves the deadline: the row's due_at stands before and after the write.
+        due_at = deadlines.parse_ts(assignment.get("due_at"))
+        _validate_late_window(accept_until, due_at)
         now = deadlines.now_utc()
-        accept_until_iso = accept_until.isoformat()
         result = (
             client.table("assignments")
-            .update({"accept_until": accept_until_iso})
+            .update({"accept_until": accept_until.isoformat()})
             .eq("id", str(assignment_id))
             .execute()
         )
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to set the late window")
         row = result.data[0]
-        _record_reopening(user_id, row, accept_until_iso, now)
-        _notify_late_window_opened(client, row, cls.get("institution_id"))
+        _after_late_window_set(
+            client,
+            user_id,
+            row,
+            accept_until,
+            previous=current,
+            due_at=due_at,
+            now=now,
+            institution_id=cls.get("institution_id"),
+        )
         logger.info(
             "Late window set | assignment_id=%s class_id=%s user_id=%s",
             assignment_id,

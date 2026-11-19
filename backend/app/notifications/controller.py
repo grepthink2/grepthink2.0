@@ -602,11 +602,11 @@ def notify_late_window_opened(
     accept_until: datetime,
     tz: ZoneInfo,
 ) -> None:
-    """Tell each of ``recipient_ids`` (the class's students who have not submitted) that an
-    assignment's late window opened or moved, with its end in the school's zone ``tz``, e.g.
-    "Late submissions open for TSR 1" / "You can submit until Jan 12, 12:00 AM (PST)". The notice
-    points at the class, whose Assignments page lists the assignment. One insert for all of them;
-    never raises."""
+    """Tell each of ``recipient_ids`` (the students the caller picked) that an assignment's late
+    window opened or now ends later, with its end in the school's zone ``tz``, e.g. "Late
+    submissions open for TSR 1" / "You can submit until Jan 12, 12:00 AM (PST)". The notice points
+    at the class, whose Assignments page lists the assignment. One insert for all of them; never
+    raises."""
     local = accept_until.astimezone(tz)
     body = (
         f"You can submit until {local:%b} {local.day}, "

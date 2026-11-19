@@ -41,6 +41,7 @@ MISSING_ASSIGNMENT = "00000000-0000-4000-8000-0000000000ef"
 
 NOW_AFTER = dt.datetime(2026, 1, 10, 12, 0, tzinfo=dt.UTC)  # after A_TSR's deadline
 LATE = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)  # a late window three days past it
+EARLIER = LATE - dt.timedelta(days=1)  # a shorter window, still after the deadline
 
 
 def _trace(db) -> list[str]:
@@ -208,6 +209,34 @@ def test_moving_the_window_notifies_again_and_a_draft_notifies_nobody(db, clock)
     on_the_draft = dt.datetime(2026, 2, 12, 8, tzinfo=dt.UTC)
     assignments.update_assignment(INSTR, A_DRAFT, None, None, None, None, accept_until=on_the_draft)
     assert len(db.rows("notifications")) == 4
+
+
+@pytest.mark.parametrize(
+    ("shorten", "executes"),
+    [
+        # assignment, class + enrollment, update, event
+        pytest.param(lambda: assignments.set_late_window(TA_ON, A_TSR, EARLIER), 5, id="put"),
+        # assignment, class, update, event; then the response's TSR entries (TSR rows, profiles)
+        pytest.param(
+            lambda: assignments.update_assignment(
+                INSTR, A_TSR, None, None, None, None, accept_until=EARLIER
+            ),
+            6,
+            id="patch",
+        ),
+    ],
+)
+def test_shortening_the_window_is_recorded_and_tells_nobody(db, clock, shorten, executes):
+    clock(NOW_AFTER)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    row = shorten()
+    assert row["accept_until"] == "2026-01-11T08:00:00+00:00"
+    assert db.rows("assignments")[0]["accept_until"] == "2026-01-11T08:00:00+00:00"
+    assert [(e["kind"], e["meta"]["accept_until"]) for e in db.rows("events")] == [
+        ("assignment_reopened", "2026-01-11T08:00:00+00:00")
+    ]
+    assert db.rows("notifications") == []
+    assert db.executes == executes, _trace(db)
 
 
 def test_a_window_with_nobody_left_to_tell_inserts_nothing(db, clock):

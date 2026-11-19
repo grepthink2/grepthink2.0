@@ -596,6 +596,25 @@ def test_a_late_window_set_before_the_deadline_is_not_after_it(db, clock):
     ]
 
 
+def test_after_deadline_is_judged_by_the_deadline_before_the_request(db, clock):
+    # Before the deadline (Jan 9), one request moves the due date into the past and sets a window
+    # after the new deadline. The deadline in force when the request came in had not passed.
+    clock(NOW_BEFORE)
+    late = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    row = assignments.update_assignment(
+        INSTR, A_TSR, None, None, dt.date(2026, 1, 2), None, accept_until=late
+    )
+    assert deadlines.parse_ts(row["due_at"]) < NOW_BEFORE  # the new deadline has passed
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert [e["meta"] for e in db.rows("events")] == [
+        {
+            "assignment_id": A_TSR,
+            "accept_until": "2026-01-12T08:00:00+00:00",
+            "after_deadline": False,
+        }
+    ]
+
+
 def test_late_window_must_be_after_the_deadline(db, clock):
     clock(NOW_AFTER)
     too_early = dt.datetime(2026, 1, 9, 7, 0, tzinfo=dt.UTC)
