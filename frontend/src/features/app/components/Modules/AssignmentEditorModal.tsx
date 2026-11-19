@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useEffectEvent } from 'react';
-import { format, parse, isValid } from 'date-fns';
+import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
-import { pickerTextToIso } from '@/lib/dateUtils';
+import { pickerTextToIso, toPickerText } from '@/lib/dateUtils';
 import { useNow } from '@/lib/useNow';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
@@ -30,9 +30,6 @@ interface AssignmentEditorModalProps {
 
 const toEditorStatus = (s: AssignmentStatus): EditorStatus =>
   s === 'draft' ? 'draft' : 'published';
-
-/** An ISO instant as the picker's DATETIME_FORMAT text, in the viewer's local time. */
-const toPickerText = (iso?: string | null) => (iso ? format(new Date(iso), DATETIME_FORMAT) : '');
 
 // ── Component ──────────────────────────────────────────────────
 const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({

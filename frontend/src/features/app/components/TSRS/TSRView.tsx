@@ -8,7 +8,9 @@ import { ChevronDown, Search, Shield, Users } from 'lucide-react';
 import { api, type ApiAssignmentTsrEntry } from '@/lib/api';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
+import { Badge } from '@/components/Badge/Badge';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { tsrLateStatus } from './tsrLateStatus';
 import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
@@ -44,9 +46,11 @@ interface MemberNameProps {
   name?: string | null;
   userId?: string;
   scrumMasterIds: ReadonlySet<string>;
+  /** The row's late mark, shown in the one cell that stands for the submission. */
+  lateStatus?: ReturnType<typeof tsrLateStatus>;
 }
 
-const MemberName: React.FC<MemberNameProps> = ({ name, userId, scrumMasterIds }) => {
+const MemberName: React.FC<MemberNameProps> = ({ name, userId, scrumMasterIds, lateStatus }) => {
   const isScrumMaster = Boolean(userId && scrumMasterIds.has(userId));
 
   return (
@@ -57,6 +61,7 @@ const MemberName: React.FC<MemberNameProps> = ({ name, userId, scrumMasterIds })
           <Shield size={14} className="tsr-view__sm-badge" aria-hidden />
         </StatTooltip>
       )}
+      {lateStatus && <Badge status={lateStatus} size="sm" />}
     </span>
   );
 };
@@ -249,6 +254,8 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [entries, setEntries] = useState<ApiAssignmentTsrEntry[]>([]);
+  /** The assignment's deadline, which marks late submissions; null when it has none. */
+  const [dueAt, setDueAt] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [members, setMembers] = useState<TsrViewMember[]>([]);
   const [scrumMasterIds, setScrumMasterIds] = useState<ReadonlySet<string>>(new Set());
@@ -275,6 +282,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
         if (cancelled) return;
         setProjects(overview.projects ?? []);
         setEntries(overview.entries ?? []);
+        setDueAt(overview.assignment?.due_at ?? null);
         setNonSubmittersByProject(overview.non_submitters_by_project ?? {});
 
         const withEntries = new Set(
@@ -562,6 +570,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
                                 name={row.evaluator_name}
                                 userId={row.evaluator_id}
                                 scrumMasterIds={scrumMasterIds}
+                                lateStatus={tsrLateStatus(row, dueAt)}
                               />
                             </td>
                             <td className="tsr-view__td-name">
@@ -574,10 +583,12 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
                           </>
                         ) : (
                           <td className="tsr-view__td-name">
+                            {/* Either view's one name cell stands for the row, which is the evaluator's submission. */}
                             <MemberName
                               name={viewMode === 'about' ? row.evaluator_name : row.evaluatee_name}
                               userId={viewMode === 'about' ? row.evaluator_id : row.evaluatee_id}
                               scrumMasterIds={scrumMasterIds}
+                              lateStatus={tsrLateStatus(row, dueAt)}
                             />
                           </td>
                         )}

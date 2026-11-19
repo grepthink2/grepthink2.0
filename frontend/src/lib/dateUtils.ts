@@ -118,10 +118,42 @@ export function pickerTextToIso(text: string): string | null {
   return isValid(parsed) ? parsed.toISOString() : null;
 }
 
+/** An ISO instant as date-picker text, in the viewer's local time; '' when there is none. */
+export function toPickerText(iso?: string | null): string {
+  return iso ? format(new Date(iso), PICKER_TEXT_FORMAT) : '';
+}
+
 /** An instant for display, in the viewer's local time: "Oct 7, 2026 at 11:59 PM". */
 export function formatInstant(iso: string | Date): string {
   const date = typeof iso === 'string' ? new Date(iso) : iso;
   return format(date, "MMM d, yyyy 'at' h:mm a");
+}
+
+/** formatInstantIn's formatters, one per zone: building an Intl.DateTimeFormat costs far more than using one. */
+const zonedFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * An instant on `zone`'s clock, in formatInstant's shape ("Oct 7, 2026 at 11:59 PM"): the campus
+ * time shown beside the viewer's own when the two zones differ.
+ */
+export function formatInstantIn(iso: string | Date, zone: string): string {
+  const date = typeof iso === 'string' ? new Date(iso) : iso;
+  let formatter = zonedFormats.get(zone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    zonedFormats.set(zone, formatter);
+  }
+  const parts = formatter.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${part('month')} ${part('day')}, ${part('year')} at ${part('hour')}:${part('minute')} ${part('dayPeriod')}`;
 }
 
 /** The deadline for display. The backend's instant is one minute past the legacy 11:59 PM label,
