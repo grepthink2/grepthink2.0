@@ -37,6 +37,7 @@ export default defineConfig({
       { find: /^react-dom$/, replacement: runtime('test/react-dom.ts') },
       { find: /^react-dom\/client$/, replacement: runtime('test/react-dom-client.ts') },
       { find: /^react-dom\/test-utils$/, replacement: runtime('test/react-dom-test-utils.ts') },
+      { find: /^virtual:design-system-icons$/, replacement: runtime('test/icons.ts') },
       ...Object.entries(app.resolve?.alias ?? {}).map(([find, replacement]) => ({ find, replacement })),
     ],
   },
