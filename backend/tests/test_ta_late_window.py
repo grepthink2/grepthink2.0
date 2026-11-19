@@ -335,6 +335,32 @@ def test_set_late_window_validates_against_the_deadline(db, clock):
     assert exc.value.detail == assignments.NO_DEADLINE_TO_EXTEND
 
 
+@pytest.mark.parametrize(
+    "set_window",
+    [
+        pytest.param(lambda when: assignments.set_late_window(TA_ON, A_TSR, when), id="put"),
+        pytest.param(
+            lambda when: assignments.update_assignment(
+                INSTR, A_TSR, None, None, None, None, accept_until=when
+            ),
+            id="patch",
+        ),
+    ],
+)
+def test_an_accept_until_past_the_year_9999_in_utc_is_400(db, clock, set_window):
+    # 11 PM on Dec 31, 9999 at UTC-8 is in the year 10000 in UTC, which no datetime can hold.
+    clock(NOW_AFTER)
+    too_late = dt.datetime(9999, 12, 31, 23, tzinfo=dt.timezone(dt.timedelta(hours=-8)))
+    with pytest.raises(HTTPException) as exc:
+        set_window(too_late)
+    assert (exc.value.status_code, exc.value.detail) == (
+        400,
+        assignments.ACCEPT_UNTIL_OUT_OF_RANGE,
+    )
+    assert not [q for q in db.queries if q["op"] != "select"]
+    assert db.rows("assignments")[0].get("accept_until") is None
+
+
 def test_naive_accept_until_is_utc(db, clock):
     clock(NOW_AFTER)
     row = assignments.set_late_window(TA_ON, A_TSR, LATE.replace(tzinfo=None))

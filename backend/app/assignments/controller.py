@@ -31,6 +31,8 @@ ASSIGNMENT_NOT_OPEN = "This assignment is not open yet"
 TA_LATE_WINDOW_TSR_ONLY = "TAs may change the late window of TSR assignments only"
 #: 400: the late-window route on a draft.
 LATE_WINDOW_NEEDS_PUBLISHED = "Only a published assignment can take a late window"
+#: 400: an ``accept_until`` whose UTC time falls outside the years 1 to 9999.
+ACCEPT_UNTIL_OUT_OF_RANGE = "accept_until is out of range"
 
 #: What a controller must select from ``assignments`` to run ``_require_window_open``.
 WINDOW_COLUMNS = "open_date, due_at, accept_until"
@@ -256,10 +258,17 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
 
 
 def _as_utc(value: datetime.datetime) -> datetime.datetime:
-    """``value`` as an aware UTC datetime; a naive value is read as UTC."""
+    """``value`` as an aware UTC datetime; a naive value is read as UTC.
+
+    400 ``ACCEPT_UNTIL_OUT_OF_RANGE`` when its UTC time falls outside the years 1 to 9999, which an
+    offset can cause at either end (11 PM on 9999-12-31 at UTC-8 is in the year 10000 in UTC).
+    """
     if value.tzinfo is None:
         value = value.replace(tzinfo=datetime.UTC)
-    return value.astimezone(datetime.UTC)
+    try:
+        return value.astimezone(datetime.UTC)
+    except (OverflowError, ValueError):
+        raise HTTPException(status_code=400, detail=ACCEPT_UNTIL_OUT_OF_RANGE) from None
 
 
 def _validate_late_window(
@@ -564,8 +573,8 @@ def set_late_window(
 
     Raises: 404 for a missing assignment or class; 403 ``authz.NOT_LATE_WINDOW_EDITOR`` for anyone
     without the permission, ``TA_LATE_WINDOW_TSR_ONLY`` for a TA on another type of assignment;
-    400 ``LATE_WINDOW_NEEDS_PUBLISHED`` for a draft, ``NO_DEADLINE_TO_EXTEND`` or
-    ``ACCEPT_UNTIL_BEFORE_DEADLINE`` for a window that cannot be.
+    400 ``LATE_WINDOW_NEEDS_PUBLISHED`` for a draft, ``ACCEPT_UNTIL_OUT_OF_RANGE``,
+    ``NO_DEADLINE_TO_EXTEND`` or ``ACCEPT_UNTIL_BEFORE_DEADLINE`` for a window that cannot be.
     """
     try:
         client = get_client()
