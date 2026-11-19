@@ -40,6 +40,18 @@ export const assignmentsApi = {
     });
   },
 
+  /**
+   * Set or move (an ISO time with an offset) or remove (null) an assignment's late window
+   * (PUT /api/assignments/:id/late-window): the class instructor, or a TA with the class's
+   * late-window permission on a TSR assignment. Answers the updated assignment.
+   */
+  setAssignmentLateWindow: async (assignmentId: string, acceptUntil: string | null): Promise<ApiAssignment> => {
+    return apiRequest<ApiAssignment>(`/api/assignments/${assignmentId}/late-window`, {
+      method: 'PUT',
+      body: JSON.stringify({ accept_until: acceptUntil }),
+    });
+  },
+
   /** Delete an assignment (instructor only — DELETE /api/assignments/:id) */
   deleteAssignment: async (assignmentId: string) => {
     return apiRequest<{ message: string }>(`/api/assignments/${assignmentId}`, {

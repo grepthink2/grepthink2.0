@@ -54,6 +54,21 @@ export const tasApi = {
     );
   },
 
+  /**
+   * Instructor: let a TA of the class set, move or remove the late window of its TSR assignments
+   * (canExtend = true), or stop them (PATCH /api/tas/classes/:classId/tas/:userId).
+   */
+  setTALateWindowPermission: async (
+    classId: string,
+    userId: string,
+    canExtend: boolean,
+  ): Promise<{ user_id: string; can_extend_deadlines: boolean }> => {
+    return apiRequest<{ user_id: string; can_extend_deadlines: boolean }>(
+      `/api/tas/classes/${classId}/tas/${userId}`,
+      { method: 'PATCH', body: JSON.stringify({ can_extend_deadlines: canExtend }) },
+    );
+  },
+
   /** The current user's class-level role: 'instructor' | 'ta' | 'student' | null. */
   getMyEnrollmentRole: async (classId: string) => {
     return apiRequest<{ enrollment_role: 'instructor' | EnrollmentRole | null }>(

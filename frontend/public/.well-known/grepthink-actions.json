@@ -199,7 +199,14 @@
       "method": "PATCH", "endpoint": "/api/assignments/{assignment_id}",
       "params": {"title": "string", "open_date": "date", "close_date": "date", "status": "enum(draft|publish)", "assignment_type": "enum(tsr|feedback|interest_form)", "accept_until": "datetime (ISO 8601 with offset, none = UTC; opens a late-submission window after the deadline)", "clear_accept_until": "bool"},
       "uiRoute": "/app/modules",
-      "note": "Once a published assignment's deadline (due_at, the end of close_date in the school's time zone) has passed, close_date cannot be moved and the assignment cannot be unpublished (400); set accept_until to accept late submissions instead. A draft can always be rescheduled."
+      "note": "Once a published assignment's deadline (due_at, the end of close_date in the school's time zone) has passed, close_date cannot be moved and the assignment cannot be unpublished (400); set accept_until to accept late submissions instead. A draft can always be rescheduled. A TA with the late-window permission uses set_late_window instead."
+    },
+    {
+      "id": "set_late_window", "title": "Set, move or remove an assignment's late window", "role": "instructor|ta",
+      "method": "PUT", "endpoint": "/api/assignments/{assignment_id}/late-window",
+      "params": {"accept_until": "datetime! (ISO 8601 with offset, none = UTC) | null (removes the window)"},
+      "uiRoute": "/app/ta-review",
+      "note": "Changes accept_until and nothing else. A TA needs the class's late-window permission (set_ta_late_window_permission) and may change TSR assignments only (403 'TAs may change the late window of TSR assignments only'); anyone else but the class instructor gets 403 'Only the instructor or a TA with permission may change the late window'. The assignment must be published (400 'Only a published assignment can take a late window') and the time after its deadline, due_at (400 'accept_until must be after the deadline'). Setting or moving the window notifies the class's students who have not submitted; removing it notifies nobody. Re-sending the current window writes nothing. Answers the assignment row."
     },
     {
       "id": "list_assignments", "title": "List a class's assignments", "role": "any",
@@ -266,6 +273,13 @@
     {
       "id": "promote_to_ta", "title": "Promote a student to TA (TA Management)", "role": "instructor",
       "method": "POST", "endpoint": "/api/tas/classes/{class_id}/promote", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "set_ta_late_window_permission", "title": "Let a TA open late windows (TA Management)", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/tas/classes/{class_id}/tas/{ta_user_id}",
+      "params": {"can_extend_deadlines": "bool!"},
+      "uiRoute": "/app/ta-management",
+      "note": "Writes class_enrollments.can_extend_deadlines, which lets that TA use set_late_window on the class's TSR assignments; demotion clears it. 400 'User is not a TA in this class' for a student or someone not enrolled. Answers {user_id, can_extend_deadlines}."
     },
     {
       "id": "set_final_review_ta", "title": "Appoint a team's second end-of-quarter reviewer", "role": "instructor|ta",
