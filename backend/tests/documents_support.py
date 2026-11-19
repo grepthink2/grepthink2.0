@@ -346,10 +346,6 @@ def documents_db(monkeypatch, **tables) -> DocumentsFake:
     return fake
 
 
-def new_id() -> str:
-    return str(uuid.uuid4())
-
-
 # ----------------------------------------------------------------- a board to read ----
 #
 # Sprint 1 (Sep 7-13) holds US-1 (done, with a criterion) and US-2 (one task left). Sprint 2 (Sep 14-27)

@@ -148,13 +148,6 @@ def _profiles_by_id(client, user_ids) -> dict[str, dict]:
     return {str(p["id"]): p for p in rows}
 
 
-def is_class_ta(user_id: str, class_id: str) -> bool:
-    """True iff the user is a class TA (class_enrollments.enrollment_role='ta')."""
-    if not user_id or not class_id:
-        return False
-    return authz.get_enrollment_role(get_client(), class_id, str(user_id)) == authz.ROLE_TA
-
-
 def _load_project(client, project_id) -> dict:
     """The project with its class embedded under ``classes`` (one round trip; 404 if missing)."""
     return authz.load_project(
@@ -592,17 +585,6 @@ def _pick_current_meeting(
         if best_delta is None or delta < best_delta:
             best_delta, best_seq = delta, seq
     return best_seq or 1
-
-
-def _current_meeting_in_week(client, project_ids, meetings_per_week, now=None) -> int:
-    """:func:`_pick_current_meeting` over the teams' weekly slots (reads them first).
-
-    ``now`` is injectable for tests and used as given; it defaults to the current time
-    in the default school zone.
-    """
-    if meetings_per_week <= 1 or not project_ids:
-        return 1
-    return _pick_current_meeting(_weekly_meetings(client, project_ids), meetings_per_week, now)
 
 
 def get_ta_schedule(

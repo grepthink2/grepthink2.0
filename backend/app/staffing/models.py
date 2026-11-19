@@ -14,7 +14,6 @@ The staffing surface has three flavors of write:
 
 """
 
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -67,7 +66,3 @@ class UnassignUserRequest(BaseModel):
     """Instructor request to remove a student's project assignment in the class."""
 
     user_id: UUID
-
-
-# Used internally by views; kept here for clarity / OpenAPI completeness.
-TeamPreferenceKind = Literal["work_with", "dont_work_with"]
