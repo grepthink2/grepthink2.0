@@ -393,3 +393,44 @@ def test_permission_route(client, auth_header):
         )
     assert r.status_code == 200 and r.json()["can_extend_deadlines"] is True
     assert fn.call_args.args == ("user-abc", UUID(CLASS), UUID(TA_OFF), True)
+
+
+# -------------------------------------------------- what the TA pages are told
+
+
+def _event(kind: str, actor_id: str, class_id: str) -> dict:
+    return {"kind": kind, "actor_id": actor_id, "class_id": class_id, "meta": {}}
+
+
+def test_late_windows_opened_counts_this_tas_windows_in_this_class(db):
+    db.rows("events").extend(
+        [
+            _event("assignment_reopened", TA_ON, CLASS),
+            _event("assignment_reopened", TA_ON, CLASS),
+            _event("assignment_reopened", TA_ON, OTHER_CLASS),  # another class
+            _event("assignment_reopened", INSTR, CLASS),  # the instructor's own
+            _event("late_window_removed", TA_ON, CLASS),  # not an opening
+        ]
+    )
+    tas_ = {t["id"]: t for t in tas.list_class_tas(INSTR, CLASS)}
+    assert (tas_[TA_ON]["can_extend_deadlines"], tas_[TA_ON]["late_windows_opened"]) == (True, 2)
+    assert (tas_[TA_OFF]["can_extend_deadlines"], tas_[TA_OFF]["late_windows_opened"]) == (False, 0)
+    assert db.executes == 5, _trace(db)  # class + enrollments; profiles + projects + events
+
+
+def test_review_targets_carry_the_flag_and_the_window(db):
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    out = tas.get_ta_review_targets(TA_ON, CLASS)
+    assert out["can_extend_deadlines"] is True
+    assert set(out["assignments"][0]) == {
+        "id",
+        "Title",
+        "open_date",
+        "close_date",
+        "due_at",
+        "accept_until",
+        "status",
+        "assignment_type",
+    }
+    assert out["assignments"][0]["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert tas.get_ta_review_targets(TA_OFF, CLASS)["can_extend_deadlines"] is False

@@ -97,7 +97,9 @@ describe('FinalReviews: times come from booked slots', () => {
 
   it('still lets the instructor appoint a Review TA for a team without a time', async () => {
     vi.mocked(api.getClassTAs).mockResolvedValue({
-      tas: [{ id: 'ta-2', name: 'Tomás', email: null, projects: [] }],
+      tas: [
+        { id: 'ta-2', name: 'Tomás', email: null, projects: [], can_extend_deadlines: false, late_windows_opened: 0 },
+      ],
     });
     vi.mocked(api.getFinalReviewSchedule).mockResolvedValue(schedule([team({ final_review_at: null })]));
     const user = userEvent.setup();

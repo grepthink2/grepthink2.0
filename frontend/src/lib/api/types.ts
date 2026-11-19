@@ -91,6 +91,10 @@ export interface ApiClassTA {
   name: string;
   email: string | null;
   projects: { id: string; name: string | null }[];
+  /** The instructor lets this TA set, move or remove the late window of the class's TSR assignments. */
+  can_extend_deadlines: boolean;
+  /** How many late windows this TA has opened or moved in this class (the instructor's are not counted). */
+  late_windows_opened: number;
 }
 
 // ----- TA meeting schedule + attendance (app/attendance backend) ------------

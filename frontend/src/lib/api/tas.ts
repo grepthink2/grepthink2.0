@@ -154,11 +154,13 @@ export const tasApi = {
     );
   },
 
-  /** TA: the projects they oversee plus the class's TSR assignments. */
+  /** TA: the projects they oversee plus the class's TSR assignments, each with its deadline and late window. */
   getTAReviewTargets: async (classId: string) => {
     return apiRequest<{
       projects: { id: string; name: string | null }[];
       assignments: ApiAssignment[];
+      /** The caller may set, move or remove the late window of these assignments. */
+      can_extend_deadlines: boolean;
     }>(`/api/tas/classes/${classId}/review-targets`);
   },
 
