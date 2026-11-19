@@ -298,7 +298,7 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
                 "tas": lambda: (
                     (
                         client.table("class_enrollments")
-                        .select("user_id, enrollment_role, can_extend_deadlines")
+                        .select("user_id, can_extend_deadlines")
                         .eq("class_id", cid)
                         .eq("enrollment_role", ENROLLMENT_ROLE_TA)
                         .execute()

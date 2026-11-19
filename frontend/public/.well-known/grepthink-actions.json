@@ -271,6 +271,12 @@
       "note": "Writes class_enrollments.enrollment_role (the single source of truth shared with TA Review)."
     },
     {
+      "id": "list_class_tas", "title": "List a class's TAs (TA Management)", "role": "instructor",
+      "method": "GET", "endpoint": "/api/tas/classes/{class_id}",
+      "uiRoute": "/app/ta-management",
+      "note": "Answers {tas: [{id, name, email, projects, can_extend_deadlines, late_windows_opened}]}, sorted by name; projects are the teams the TA is the meeting TA of. can_extend_deadlines is the TA's late-window permission (set_ta_late_window_permission); late_windows_opened counts the late windows that TA opened or moved in this class (the instructor's are not counted)."
+    },
+    {
       "id": "promote_to_ta", "title": "Promote a student to TA (TA Management)", "role": "instructor",
       "method": "POST", "endpoint": "/api/tas/classes/{class_id}/promote", "params": {"user_id": "uuid!"}
     },
