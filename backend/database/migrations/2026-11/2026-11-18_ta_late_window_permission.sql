@@ -20,7 +20,7 @@
 -- GET /api/tas/classes/{class_id}/review-targets, demoting a TA, and both new routes fail. The
 -- code before it never reads the column, so applying this early is safe.
 --
--- Applied: DEV — 2026-11-18   PROD — pending
+-- Applied: DEV — 2026-11-18   PROD — 2026-11-19
 
 ALTER TABLE public.class_enrollments
   ADD COLUMN IF NOT EXISTS can_extend_deadlines boolean NOT NULL DEFAULT false;
