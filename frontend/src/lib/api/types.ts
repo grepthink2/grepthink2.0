@@ -694,6 +694,8 @@ export interface ApiNotification {
    * none with a reviewing role) went to the class instructor; `entity_id` is the project.
    * `document_finalized`: a team the reader is a TA of handed in a document; `entity_id` is the
    * document.
+   * `late_window_opened`: a late window opened or moved on an assignment of a class the reader is a
+   * student in (TAs set them on TSRs only); `entity_id` is the class.
    */
   type:
     | 'join_request'
@@ -705,7 +707,8 @@ export interface ApiNotification {
     | 'upload_roster'
     | 'member_removed'
     | 'email_undeliverable'
-    | 'document_finalized';
+    | 'document_finalized'
+    | 'late_window_opened';
   title: string;
   body: string;
   entity_type: string | null;

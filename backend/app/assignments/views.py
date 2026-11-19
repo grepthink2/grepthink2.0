@@ -37,7 +37,8 @@ def update_assignment(
     data: UpdateAssignmentRequest,
     user_id: str = Depends(require_user),
 ):
-    assignment = controller.update_assignment(
+    """The updated assignment row (a TSR assignment's carries its entries under ``tsrs``)."""
+    return controller.update_assignment(
         user_id=user_id,
         assignment_id=assignment_id,
         title=data.title,
@@ -48,7 +49,6 @@ def update_assignment(
         accept_until=data.accept_until,
         clear_accept_until=data.clear_accept_until,
     )
-    return {"message": "Assignment updated successfully", "assignment": assignment}
 
 
 def delete_assignment(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
@@ -28,6 +29,7 @@ NOTIFICATION_TYPES = frozenset(
         "email_undeliverable",
         "mention",
         "document_finalized",
+        "late_window_opened",
     }
 )
 
@@ -586,6 +588,39 @@ def notify_document_finalized(
                 "body": f"{project_name} finalized its {document_title}",
                 "entity_type": "document",
                 "entity_id": document_id,
+            }
+            for user_id in recipient_ids
+        ]
+    )
+
+
+def notify_late_window_opened(
+    *,
+    recipient_ids: list[str],
+    class_id: str,
+    assignment_title: str,
+    accept_until: datetime,
+    tz: ZoneInfo,
+) -> None:
+    """Tell each of ``recipient_ids`` (the class's students who have not submitted) that an
+    assignment's late window opened or moved, with its end in the school's zone ``tz``, e.g.
+    "Late submissions open for TSR 1" / "You can submit until Jan 12, 12:00 AM (PST)". The notice
+    points at the class, whose Assignments page lists the assignment. One insert for all of them;
+    never raises."""
+    local = accept_until.astimezone(tz)
+    body = (
+        f"You can submit until {local:%b} {local.day}, "
+        f"{local.hour % 12 or 12}:{local:%M} {local:%p} ({local:%Z})"
+    )
+    _insert_notifications(
+        [
+            {
+                "user_id": user_id,
+                "type": "late_window_opened",
+                "title": f"Late submissions open for {assignment_title}",
+                "body": body,
+                "entity_type": "class",
+                "entity_id": class_id,
             }
             for user_id in recipient_ids
         ]

@@ -12,6 +12,7 @@ import datetime as dt
 import pytest
 from fastapi import HTTPException
 
+from app.assignments import controller as assignments
 from app.assignments import deadlines
 from app.core import authz
 from app.tas import controller as tas
@@ -179,3 +180,37 @@ def test_late_window_access_on_a_missing_class_is_404(db):
     with pytest.raises(HTTPException) as exc:
         authz.require_late_window_access(db, INSTR, MISSING_CLASS)
     assert (exc.value.status_code, exc.value.detail) == (404, authz.CLASS_NOT_FOUND)
+
+
+# ---------------------------------------------------------- who is told
+
+
+def test_reopening_notifies_students_who_have_not_submitted(db, clock):
+    clock(NOW_AFTER)
+    assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=LATE)
+    rows = db.rows("notifications")
+    assert sorted(r["user_id"] for r in rows) == sorted(
+        [S2, S3]
+    )  # S1 submitted; TAs are not students
+    assert rows[0]["type"] == "late_window_opened"
+    assert rows[0]["title"] == "Late submissions open for TSR 1"
+    assert rows[0]["body"] == "You can submit until Jan 12, 12:00 AM (PST)"
+    assert (rows[0]["entity_type"], rows[0]["entity_id"]) == ("class", CLASS)
+
+
+def test_moving_the_window_notifies_again_and_a_draft_notifies_nobody(db, clock):
+    clock(NOW_AFTER)
+    assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=LATE)
+    later = LATE + dt.timedelta(days=2)
+    assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=later)
+    assert len(db.rows("notifications")) == 4
+    assignments.update_assignment(
+        INSTR,
+        A_DRAFT,
+        None,
+        None,
+        None,
+        None,
+        accept_until=dt.datetime(2026, 2, 12, 8, tzinfo=dt.UTC),
+    )
+    assert len(db.rows("notifications")) == 4

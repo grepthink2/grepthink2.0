@@ -555,9 +555,10 @@ def test_late_window_after_the_deadline_is_recorded_as_a_reopening(db, clock):
         "after_deadline": True,
     }
     assert db.rows("events")[0]["class_id"] == CLASS
-    # assignment, class, update, event; then the TSR entries a TSR assignment's response
-    # carries (TSR rows, profiles), which update_assignment read before deadlines existed
-    assert db.executes <= 6, _trace(db)
+    # assignment, class, update, event; then the recipients (enrollments, TSR rows) and the
+    # notification insert; then the TSR entries a TSR assignment's response carries (TSR rows,
+    # profiles), which update_assignment read before deadlines existed
+    assert db.executes <= 9, _trace(db)
 
 
 def test_the_editors_save_after_the_deadline_sets_the_late_window(db, clock):
@@ -577,7 +578,9 @@ def test_the_editors_save_after_the_deadline_sets_the_late_window(db, clock):
     assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
     assert db.rows("assignments")[0]["accept_until"] == "2026-01-12T08:00:00+00:00"
     assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
-    assert db.executes <= 6, _trace(db)
+    # as above: assignment, class, update, event, recipients (enrollments, TSR rows), the
+    # notification insert, then the response's TSR entries (TSR rows, profiles)
+    assert db.executes <= 9, _trace(db)
 
 
 def test_a_late_window_set_before_the_deadline_is_not_after_it(db, clock):
