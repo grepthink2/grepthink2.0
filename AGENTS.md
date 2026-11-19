@@ -219,6 +219,9 @@ Use these words in code, copy, comments and the agent catalog:
 - **TA meeting** (weekly, `kind = 'ta_meeting'`) and **team meeting** (one-off,
   `kind = 'team_meeting'`, scheduled by the team's Product Owner).
 - **Product Owner** in prose and copy; `product owner` is the stored `project_members.role` value.
+- **Late window**: the class-wide `accept_until` after a deadline, opened by the instructor or a TA
+  with `class_enrollments.can_extend_deadlines` (`PUT /api/assignments/{id}/late-window`). Never
+  "extension": that word is kept for a per-student grant, which does not exist.
 - **Catalog roles** (`frontend/public/.well-known/grepthink-actions.json`, each action's `role`; join
   alternatives with `|`): `public` (no sign-in), `any` (any signed-in user), `student`, `ta` (a class
   TA), `meeting-ta` (the team's meeting TA), `instructor` (the class instructor), `project-member`,

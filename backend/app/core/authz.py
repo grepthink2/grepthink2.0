@@ -52,6 +52,8 @@ from typing import TypedDict
 
 from fastapi import HTTPException
 
+from app.core.db import fan_out
+
 ROLE_STUDENT = "student"
 ROLE_TA = "ta"
 #: ``my_role`` for a class the caller created (``classes.created_by``).
@@ -71,6 +73,9 @@ NOT_CLASS_INSTRUCTOR = "Only the class instructor can do this"
 NOT_CLASS_MEMBER = "You do not have access to this class"
 #: 403: the action needs the caller to be enrolled in the class.
 NOT_ENROLLED = "You are not enrolled in this class"
+#: 403: an assignment's late window (``accept_until``) is changed only by the class instructor or
+#: by a TA of the class whose enrollment carries ``can_extend_deadlines``.
+NOT_LATE_WINDOW_EDITOR = "Only the instructor or a TA with permission may change the late window"
 #: 403: the caller's ``profiles.role`` is not ``instructor``.
 INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 #: 404: the project does not exist.
@@ -172,6 +177,44 @@ def require_class_access(client, user_id, class_id, *, columns: str = CLASS_COLU
     if not access["is_instructor"] and access["enrollment_role"] is None:
         raise HTTPException(status_code=403, detail=NOT_CLASS_MEMBER)
     return access
+
+
+def require_late_window_access(client, user_id, class_id, *, columns: str = CLASS_COLUMNS) -> dict:
+    """Return the class row when ``user_id`` may set, move or remove the late window
+    (``assignments.accept_until``) of the class's assignments.
+
+    The class instructor may, and needs no enrollment; so may a TA of the class whose enrollment
+    carries ``can_extend_deadlines``. Nobody else may, another TA or a student included. The class
+    and the caller's enrollment are read concurrently: two reads, one round trip of latency.
+    ``columns`` must include ``created_by``.
+
+    404 :data:`CLASS_NOT_FOUND` when the class does not exist; 403
+    :data:`NOT_LATE_WINDOW_EDITOR` for anyone else.
+    """
+    reads = fan_out(
+        {
+            "class": lambda: load_class(client, class_id, columns),
+            "enrollment": lambda: (
+                (
+                    client.table("class_enrollments")
+                    .select("enrollment_role, can_extend_deadlines")
+                    .eq("class_id", str(class_id))
+                    .eq("user_id", str(user_id))
+                    .limit(1)
+                    .execute()
+                ).data
+            ),
+        }
+    )
+    row = reads["class"]
+    if row is None:
+        raise HTTPException(status_code=404, detail=CLASS_NOT_FOUND)
+    if str(row.get("created_by")) == str(user_id):
+        return row
+    enrollment = (reads["enrollment"] or [{}])[0]
+    if enrollment.get("enrollment_role") != ROLE_TA or not enrollment.get("can_extend_deadlines"):
+        raise HTTPException(status_code=403, detail=NOT_LATE_WINDOW_EDITOR)
+    return row
 
 
 # --------------------------------------------------------------- projects ----

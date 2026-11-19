@@ -171,6 +171,19 @@
     }
   }
 
+  &__late-window {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: $spacing-sm 0 0;
+  }
+
+  &__late-count {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
   &__projects {
     display: flex;
     flex-wrap: wrap;

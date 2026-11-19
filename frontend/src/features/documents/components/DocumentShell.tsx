@@ -128,13 +128,13 @@ export default function DocumentShell({
 
       <div className="document-page__actions">
         {editable && (
-          <>
+          <span className="document-page__save">
             <Button size="sm" onClick={onSave} disabled={!dirty} loading={saving} loadingLabel="Saving…">Save</Button>
             {/* In place from the start, so a screen reader hears the change from saved to not. */}
             <span className="document-page__save-state" aria-live="polite">
               {dirty ? 'Unsaved changes' : 'All changes saved'}
             </span>
-          </>
+          </span>
         )}
         {finalizable && (
           <span className="document-page__finalize">

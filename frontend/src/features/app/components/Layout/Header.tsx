@@ -20,11 +20,15 @@ const MessagePlainText = lazy(() =>
 );
 
 /**
- * Notices the class's instructor answers on that class's Roster: its roster is missing, or an
- * invite email to it could not be delivered. `entity_id` is the class.
+ * The page a class notice opens, in the class its `entity_id` names; null for any other notice.
+ * The instructor answers the roster notices (its roster is missing, or an invite email to it could
+ * not be delivered) on that class's Roster; a student told a late window opened finds the
+ * assignment on that class's Assignments page.
  */
-function isRosterNotice(type: string): boolean {
-  return type === 'upload_roster' || type === 'email_undeliverable';
+function classNoticePath(type: string): string | null {
+  if (type === 'upload_roster' || type === 'email_undeliverable') return '/app/roster';
+  if (type === 'late_window_opened') return '/app/assignments';
+  return null;
 }
 
 function notificationPath(notification: {
@@ -33,7 +37,8 @@ function notificationPath(notification: {
   entity_id: string | null;
 }): string | null {
   if (notification.type === 'complete_profile') return null;
-  if (isRosterNotice(notification.type)) return '/app/roster';
+  const classPath = classNoticePath(notification.type);
+  if (classPath) return classPath;
   if (notification.entity_type === 'conversation' && notification.entity_id) {
     return `/app/messages/${notification.entity_id}`;
   }
@@ -160,10 +165,11 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
       return;
     }
 
-    const target =
-      isRosterNotice(notification.type) && notification.entity_id
-        ? classes.find((c) => c.id === notification.entity_id)
-        : undefined;
+    // A class notice opens a page of the class it names. For a class not in the list (left since, or
+    // not loaded yet) that page cannot open, and the selected class's page would be the wrong one.
+    const isClassNotice = classNoticePath(notification.type) !== null;
+    const target = isClassNotice ? classes.find((c) => c.id === notification.entity_id) : undefined;
+    if (isClassNotice && !target) return;
     const path = notificationPath(notification);
     // The class and the page commit together: the router navigates in a transition, so a class
     // committed on its own would meet the class route guard on the old page.

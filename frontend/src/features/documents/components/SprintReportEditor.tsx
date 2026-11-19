@@ -163,6 +163,7 @@ export default function SprintReportEditor({ doc, body, editable, onChange }: Sp
 
   return (
     <div className="document-editor">
+      <div className="document-actions">
       {ACTION_LISTS.map(({ key, label }) => (
         <section key={key} className="document-section" aria-labelledby={`document-${key}`}>
           <h2 className="document-section__title" id={`document-${key}`}>{label}</h2>
@@ -203,6 +204,7 @@ export default function SprintReportEditor({ doc, body, editable, onChange }: Sp
           ) : null)}
         </section>
       ))}
+      </div>
 
       <FromBoard frozen={doc.derived_frozen} note={asOf}>
         <section className="document-section" aria-labelledby="document-work">

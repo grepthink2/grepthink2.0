@@ -38,6 +38,17 @@ class UpdateAssignmentRequest(BaseModel):
     clear_accept_until: bool = False
 
 
+class SetLateWindowRequest(BaseModel):
+    """Set, move or remove an assignment's late window (the class instructor, or a TA with the
+    class's late-window permission on a TSR assignment).
+
+    ``accept_until`` is required: a time after the deadline (``due_at``) sets or moves the window,
+    and ``null`` removes it. A time without an offset is read as UTC.
+    """
+
+    accept_until: datetime.datetime | None
+
+
 class UpdateTSREntryRequest(BaseModel):
     """Request model for updating the editable fields of a TSR linked to an assignment."""
 
