@@ -1,0 +1,112 @@
+// @vitest-environment node
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { BUNDLE_JS_CAP, buildBundle, finishBundleJs, loadInJsdom, parseBundleHeader } from '../design-system/bundle.mjs';
+import { NAMESPACE } from '../design-system/exports.mjs';
+
+const root = fileURLToPath(new URL('../../', import.meta.url));
+
+const exports = [
+  { name: 'useThing', kind: 'hook' },
+  { name: 'Button', kind: 'component' },
+  { name: 'shade', kind: 'helper' },
+  { name: 'Card', kind: 'component' },
+  { name: 'Button', kind: 'component' },
+];
+
+describe('finishBundleJs', () => {
+  it('puts the header on line 1, components first, each name once', () => {
+    const out = finishBundleJs('(function(){})();\n', exports);
+    const [line1, ...rest] = out.split('\n');
+    expect(line1).toMatch(/^\/\* @ds-bundle: \{.*\} \*\/$/);
+    expect(parseBundleHeader(out)).toEqual({
+      format: 4,
+      namespace: NAMESPACE,
+      components: [{ name: 'Button' }, { name: 'Card' }, { name: 'useThing' }, { name: 'shade' }],
+    });
+    expect(rest.join('\n')).toBe('(function(){})();\n');
+  });
+
+  it('escapes the strings that would end or confuse an inline script, and passes its own check', () => {
+    const out = finishBundleJs('var a="a</script>b",b="x<!--y";\n', exports);
+    expect(out).toContain('var a="a<\\/script>b",b="x<\\!--y";');
+    expect(out).not.toContain('</script');
+    expect(out).not.toContain('<!--');
+    expect(() => finishBundleJs(out.split('\n').slice(1).join('\n'), exports)).not.toThrow();
+  });
+
+  it('refuses a bundle over 6 MB', () => {
+    expect(() => finishBundleJs('x'.repeat(BUNDLE_JS_CAP + 1), exports)).toThrow('bundle.js is over 6 MB');
+  });
+
+  it('refuses a module statement', () => {
+    expect(() => finishBundleJs("import { a } from 'b';\na();\n", exports)).toThrow('bundle.js has a top-level import or export');
+    expect(() => finishBundleJs('export default 1;\n', exports)).toThrow('bundle.js has a top-level import or export');
+    expect(() => finishBundleJs('var m=import.meta;import("x");\n', exports)).not.toThrow();
+  });
+});
+
+const lib = (file) => readFileSync(`${root}node_modules/${file}`, 'utf8');
+
+describe('built bundle', () => {
+  let built;
+  let finished;
+  let window;
+
+  beforeAll(async () => {
+    built = await buildBundle({ root });
+    finished = finishBundleJs(built.js, built.exports);
+    window = loadInJsdom([
+      lib('react18/umd/react.production.min.js'),
+      lib('react-dom18/umd/react-dom.production.min.js'),
+      finished,
+    ]);
+  }, 120_000);
+
+  it('puts every name in the header on the namespace', () => {
+    const header = parseBundleHeader(finished);
+    expect(header.components.length).toBeGreaterThan(50);
+    const namespace = window[NAMESPACE];
+    expect(Object.keys(namespace).sort()).toEqual(header.components.map((c) => c.name).sort());
+  });
+
+  /** Renders `element` into a fresh container, synchronously, and returns the container. */
+  function mount(element) {
+    const { React, ReactDOM, document } = window;
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = ReactDOM.createRoot(container);
+    ReactDOM.flushSync(() => root.render(element));
+    return { container, React, unmount: () => ReactDOM.flushSync(() => root.unmount()) };
+  }
+
+  it('hands a ref given by the page to the element a component renders', () => {
+    const { React } = window;
+    const ref = React.createRef();
+    const { container } = mount(React.createElement(window[NAMESPACE].Button, { ref }, 'Save'));
+    expect(ref.current).toBe(container.querySelector('button'));
+  });
+
+  it('renders a router link as a plain anchor', () => {
+    const { React } = window;
+    const { container } = mount(React.createElement(window[NAMESPACE].Button, { to: '/x' }, 'Open'));
+    expect(container.querySelector('a[href="/x"]')).not.toBeNull();
+  });
+
+  it('places an icon by name', () => {
+    const { React } = window;
+    const { container } = mount(React.createElement(window[NAMESPACE].Icon, { name: 'Trash2' }));
+    expect(container.querySelector('svg')).not.toBeNull();
+  });
+
+  it('carries neither the router nor a second React', () => {
+    expect(finished).not.toContain('createBrowserRouter');
+    expect(finished).not.toContain('react.production');
+    expect(finished).not.toContain('react-dom.production');
+  });
+
+  it('emits the kit stylesheet', () => {
+    expect(built.css).toContain('.gt-button');
+  });
+});
