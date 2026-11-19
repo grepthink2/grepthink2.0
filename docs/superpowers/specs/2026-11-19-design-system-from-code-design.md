@@ -60,8 +60,10 @@ Two things changed on 2026-11-19:
   `api/` cards and `manifest.json`: a sync never writes those.
 - **React 18 on canvases.** A Design canvas supplies React 18 to a system's components and will not
   load a second React (`artifact-type/reference/design-system-components.md` of the Design type).
-  The app is on React 19, and 36 kit files take `ref` as a plain prop, which React 18 strips. No
-  other React 19-only API is used in the kit (checked on beta `8770c39c`).
+  The app is on React 19, and 36 kit files take `ref` as a plain prop, which React 18 strips.
+  `useDialog` also uses `useEffectEvent` (React 19.2); the design build supplies a stand-in on
+  React 18. Nothing else in the kit is React 19-only (checked on beta `7d33c6a2`), and the build
+  fails if that changes.
 - **The router.** `Button`, `Card` and `Table` import `Link` from `react-router-dom`. A canvas and
   a preview have no router.
 - **Icons.** Kit components import icons from `lucide-react`. A canvas places icons through a
@@ -99,7 +101,7 @@ It produces:
 | --- | --- |
 | `components/bundle.js` | what `frontend/src/components` exports (see "What the bundle exports" below), as one IIFE that reads `window.React` / `window.ReactDOM` and assigns the namespace; line 1 is the `@ds-bundle` header listing the exports |
 | `components/bundle.css` | a scoped base layer (below), the kit's compiled SCSS and `styles/keyframes.css`, with the custom properties that `tokens.json` carries left out of `:root` (the page declares them from `tokens.json`) |
-| `tokens.json` | `frontend/src/styles/tokens/*.css`, as lists in the format's shape; each token's `usage` is its trailing comment; one theme, `light` |
+| `tokens.json` | `frontend/src/styles/tokens/*.css` (colours, type and spacing, plus `marketing.css`: the public site's core palette, which the app does not load and a test keeps equal to the landing's Sass copy), as lists in the format's shape; each token's `usage` is its trailing comment; one theme, `light` |
 | `components/index.d.ts` | the kit's exported prop types, as documentation |
 | `components/<Name>/README.md` | the guide beside the component (4.4) |
 | `components/<Name>/preview.html` | built from the preview beside the component (4.4) |
@@ -120,27 +122,34 @@ Design-era kit pieces that were never built in code (`Combobox`, `FileUpload`, `
 `Stepper`, `ProfileMenu`, `SidebarNavItem`, `SidebarSectionTitle`) leave the system at the switch.
 Their design files stay under `archived/`, and a prototype that needs one draws it as a proposal.
 
-**Base styles and fonts.** The app's `index.css` sets a universal `box-sizing` reset, the root font
-and bare `a` and `button` rules; the kit leans on the first two. `bundle.css` therefore opens with a
-base layer scoped to the kit, with zero specificity and no bare element rules, so it cannot restyle
-a prototype's own markup:
-`:where([class^="gt-"], [class*=" gt-"]), :where([class^="gt-"], [class*=" gt-"]) :where(*, ::before, ::after) { box-sizing: border-box; }`
-plus `font-family: var(--gt-font-sans)` and the root line height and text colour on the same kit
-roots. The format checks fail if a kit root class does not start with `gt-`. Poppins and Fira Code
+**Base styles and fonts.** The app's `index.css` sets a universal reset, the root font, line
+height and text colour, bare `a` and `button` rules, and the kit's `.gt-visually-hidden` utility.
+The kit leans on the box-sizing reset, the root font and `.gt-visually-hidden`; it sets its own
+margins and focus rings. `bundle.css` therefore carries `.gt-visually-hidden` and opens with a base
+layer scoped to the kit, with zero specificity and no bare element rules, so it cannot restyle a
+prototype's own markup. Its scope S is derived from the kit's compiled CSS: the first class of
+every rule, as a `gt-` prefix test, plus each other block by name (today only DatePickerField's
+`dpf`). The layer sets `box-sizing: border-box` on `:where(S)`, its descendants and their
+`::before` and `::after` (written outside `:where()`, which cannot hold pseudo-elements), and the
+font family, line height and text colour on the outermost kit element only, since those inherit.
+The format checks fail if a rule of the kit's compiled CSS starts from a class outside S. Poppins and Fira Code
 are Google-hosted: `tokens.json` names them in `type.families` with no font files, each preview's
 head carries the Google Fonts `<link>`, and the README's Consuming notes tell a canvas to add the
 same link in its `<helmet>`.
 
-Three substitutions happen only in this build:
+Four substitutions happen only in this build:
 
-1. **The ref adapter.** The build's JSX runtime is a shim over React 18's `createElement`. When the
-   element type is a function component and the props carry `ref`, the shim renders a cached
-   `forwardRef` wrapper that calls the component with `ref` back in its props. Every export of the
-   bundle is wrapped the same way, so a `ref` given by a canvas or a preview arrives too. Builder's
-   freedom: the exact mechanism, as long as 4.3 passes and no kit source file changes.
-2. **`Link`.** `react-router-dom` resolves to a stub whose `Link` renders `<a href={to}>` and
+1. **The React module.** Every `react` import resolves to a module that re-exports React 18's API
+   by name (so a React 19-only import fails the build), adds the `useEffectEvent` stand-in, and
+   exports `createElement` and `cloneElement` that carry a function component's ref in its props.
+2. **The ref adapter.** The build's JSX runtime makes elements the way React 19 does: the element's
+   type stays the component and a function component's `ref` travels in its props, so libraries
+   that compare element types (React Router's `Routes`) still work and state survives a ref coming
+   or going. Each export of the bundle is wrapped once in `forwardRef`, so a `ref` given by a
+   canvas or a preview with the page's own React arrives too.
+3. **`Link`.** `react-router-dom` resolves to a stub whose `Link` renders `<a href={to}>` and
    passes other props through.
-3. **Icons.** The bundle exports `Icon` (`<Icon name="Trash2" size={16} />`) carrying exactly the
+4. **Icons.** The bundle exports `Icon` (`<Icon name="Trash2" size={16} />`) carrying exactly the
    lucide icons imported anywhere under `frontend/src/`, collected at build time. The README's
    iconography section lists the names. An unknown name renders nothing and warns in the console.
 
