@@ -110,7 +110,7 @@ export function topLevelBlocks(css) {
  * @param {string} body
  * @returns {{ start: number; end: number; property: string; value: string }[]}
  */
-function declarationsOf(body) {
+export function declarationsOf(body) {
   const declarations = [];
   let i = 0;
   while (i < body.length) {
