@@ -152,7 +152,11 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
     safe: the TA's team assignments and review claims are cleared BEFORE the role
     flips. If a later write fails, the user is still a TA with nothing assigned —
     never a student who still holds a team's assigned-TA (meeting, attendance,
-    TSR-review) privileges.
+    TSR-review) privileges. The role flip also withdraws the late-window permission
+    (``can_extend_deadlines``) in the same update, so the CHECK that ties it to the
+    ``ta`` role never trips.
+
+    Returns ``{"user_id", "enrollment_role": "student"}``.
     """
     try:
         client = get_client()
@@ -175,9 +179,9 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             "assigned_ta_id", tid
         ).execute()
         client.table("project_review_tas").delete().eq("class_id", cid).eq("user_id", tid).execute()
-        client.table("class_enrollments").update({"enrollment_role": ENROLLMENT_ROLE_STUDENT}).eq(
-            "id", enrollment["id"]
-        ).execute()
+        client.table("class_enrollments").update(
+            {"enrollment_role": ENROLLMENT_ROLE_STUDENT, "can_extend_deadlines": False}
+        ).eq("id", enrollment["id"]).execute()
 
         logger.info(
             "TA demoted to student | class_id=%s user_id=%s by=%s",
@@ -185,7 +189,7 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             target_user_id,
             instructor_id,
         )
-        return {"message": "TA demoted to student", "user_id": tid}
+        return {"user_id": tid, "enrollment_role": ENROLLMENT_ROLE_STUDENT}
     except HTTPException:
         raise
     except Exception:

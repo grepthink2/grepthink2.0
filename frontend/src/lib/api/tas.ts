@@ -46,9 +46,9 @@ export const tasApi = {
     );
   },
 
-  /** Instructor: demote a TA back to a regular student. */
+  /** Instructor: demote a TA back to a regular student (which also withdraws their late-window permission). */
   demoteTA: async (classId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
+    return apiRequest<{ user_id: string; enrollment_role: 'student' }>(
       `/api/tas/classes/${classId}/demote`,
       { method: 'POST', body: JSON.stringify({ user_id: userId }) },
     );
