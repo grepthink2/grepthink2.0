@@ -134,10 +134,11 @@ extracted into one helper both call so the two writers cannot drift. The respons
 assignment row in the current response shape (`backend/STYLE_GUIDE.md`, "Response Format"); the client
 method returns it typed as `ApiAssignment`.
 
-Round trips, to pin in the test (`fan_out` counts one per read): class + enrollment (2, fanned out) +
-assignment (1) + write (1) + notification reads (2, fanned out: enrolled students and this assignment's
-evaluators) + notification insert (1). ⚑ The response is the bare row: PATCH's extra `tsrs` key is not
-reproduced here.
+Round trips, to pin in the test (`fan_out` counts one per read, and so do the event and the
+notification insert): assignment (1) + class + enrollment (2, fanned out) + write (1) + event (1) +
+notification reads (2, fanned out: enrolled students and this assignment's evaluators) + notification
+insert (1): eight on a set that notifies, five on a removal, three when nothing changes. ⚑ The response
+is the bare row: PATCH's extra `tsrs` key is not reproduced here.
 
 ### Notification
 
