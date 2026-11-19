@@ -5,7 +5,6 @@ export const TASK_TAGS = [
   'backend', 'frontend', 'ui/ux', 'infra', 'design',
   'research', 'bug', 'chore', 'optimization', 'docs',
 ] as const;
-export type TaskTag = (typeof TASK_TAGS)[number];
 
 /** Estimate scale -> the point values it offers (project-level setting, D3). */
 export const ESTIMATE_SCALES = {

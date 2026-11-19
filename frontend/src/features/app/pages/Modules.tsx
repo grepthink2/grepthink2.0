@@ -8,7 +8,6 @@ import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentB
 import AssignmentList, { type Assignment } from '@features/app/components/Modules/AssignmentList';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
-// import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import { lazyModal } from '@/lib/lazyModal';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import '@features/app/components/Stats/ProjectHealth.scss';
@@ -23,30 +22,6 @@ const AssignmentEditorModal = lazyModal(
   () => import('@features/app/components/Modules/AssignmentEditorModal'),
   (p) => p.assignment !== null,
 );
-
-// const mockProjectHealth: ProjectHealthItem[] = [
-//   {
-//     id: '1',
-//     name: 'ShoeShopper',
-//     health: 'excellent',
-//     description: 'Excellent collaboration and progress on schedule',
-//     via: 'Team Status Report 1',
-//   },
-//   {
-//     id: '2',
-//     name: 'Chatcut',
-//     health: 'warning',
-//     description: 'Minor disagreements on tech stack decisions',
-//     via: 'Team Status Report 1',
-//   },
-//   {
-//     id: '3',
-//     name: 'TaskMaster',
-//     health: 'poor',
-//     description: 'Significant delays and communication breakdowns',
-//     via: 'Team Status Report 2',
-//   },
-// ];
 
 function mapApiAssignment(a: ApiAssignment): Assignment {
   return {
@@ -246,7 +221,6 @@ const Modules: React.FC = () => {
         {/* ── Right ── */}
         <div className="modules__stats">
           <AssignmentTurnInRate data={turnInRate} />
-          {/* <ProjectHealth projects={mockProjectHealth} /> */}
           <div className="project-health">
             <h3 className="project-health__heading">Project Health</h3>
             <div className="project-health__coming-soon">

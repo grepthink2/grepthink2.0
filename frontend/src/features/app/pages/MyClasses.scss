@@ -480,11 +480,6 @@ $my-classes-app-header-height: 64px;
   gap: $spacing-sm;
 }
 
-.my-classes-card-row-spacer {
-  flex: 1;
-  min-width: 0;
-}
-
 .my-classes-select-cta {
   display: inline-flex;
   align-items: center;
@@ -504,12 +499,4 @@ $my-classes-app-header-height: 64px;
   color: $text-secondary;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.my-classes-loading {
-  padding: $spacing-xxl;
-  text-align: center;
-  color: $text-secondary;
-  font-size: 1.05rem;
-  font-family: $primary-font;
 }
