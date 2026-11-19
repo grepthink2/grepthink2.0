@@ -110,13 +110,3 @@ def test_project_role():
     db = _db()
     assert authz.get_project_role(db, PROJECT_ID, STUDENT) == "product owner"
     assert authz.get_project_role(db, PROJECT_ID, STRANGER) is None
-    assert (
-        authz.require_project_role(db, PROJECT_ID, STUDENT, authz.ELEVATED_PROJECT_ROLES)
-        == "product owner"
-    )
-    with pytest.raises(HTTPException) as not_member:
-        authz.require_project_role(db, PROJECT_ID, STRANGER, authz.ELEVATED_PROJECT_ROLES)
-    assert not_member.value.status_code == 403
-    with pytest.raises(HTTPException) as wrong_role:
-        authz.require_project_role(db, PROJECT_ID, STUDENT, ("admin",))
-    assert wrong_role.value.status_code == 403

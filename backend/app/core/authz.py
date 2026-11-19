@@ -47,7 +47,6 @@ Every helper takes the client explicitly so it can be exercised against
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import TypedDict
 
 from fastapi import HTTPException
@@ -59,8 +58,6 @@ ROLE_TA = "ta"
 #: ``my_role`` for a class the caller created (``classes.created_by``).
 ROLE_INSTRUCTOR = "instructor"
 
-#: Project roles allowed to manage membership / review join requests.
-ELEVATED_PROJECT_ROLES: tuple[str, ...] = ("owner", "product owner", "admin")
 
 CLASS_COLUMNS = "id, created_by"
 PROJECT_COLUMNS = "id, class_id, name, assigned_ta_id"
@@ -82,8 +79,6 @@ INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 #: 403: the caller has no ``project_members`` row on the project.
 NOT_PROJECT_MEMBER = "Not a member of this project"
-#: 403: the caller is a member, but not in a role the action allows.
-INSUFFICIENT_PROJECT_ROLE = "Insufficient project role"
 
 
 #: What :func:`get_class_access` / :func:`require_class_access` return.
@@ -251,25 +246,3 @@ def get_project_role(client, project_id, user_id) -> str | None:
         .execute()
     )
     return res.data[0].get("role") if res.data else None
-
-
-def require_project_role(
-    client,
-    project_id,
-    user_id,
-    allowed: Iterable[str],
-    *,
-    denied_detail: str = INSUFFICIENT_PROJECT_ROLE,
-) -> str:
-    """Raise unless the user holds one of ``allowed`` roles on the project.
-
-    403 :data:`NOT_PROJECT_MEMBER` for a non-member; 403 ``denied_detail`` for a
-    member in another role. A missing project has no members either, so load it
-    first (:func:`load_project` answers the 404).
-    """
-    role = get_project_role(client, project_id, user_id)
-    if role is None:
-        raise HTTPException(status_code=403, detail=NOT_PROJECT_MEMBER)
-    if role not in set(allowed):
-        raise HTTPException(status_code=403, detail=denied_detail)
-    return role

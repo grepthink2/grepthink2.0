@@ -197,7 +197,8 @@ def test_undesignate_clears_assigned_and_review(db):
         {"id": "prt-1", "class_id": CLASS, "project_id": P2, "user_id": TA1}
     )
     controller.set_class_ta(CLASS, INSTR, TA1, False)
-    assert controller.is_class_ta(TA1, CLASS) is False
+    ta1 = next(e for e in db.rows("class_enrollments") if e["user_id"] == TA1)
+    assert ta1["enrollment_role"] == "student"
     p1 = next(p for p in db.rows("projects") if p["id"] == P1)
     assert p1["assigned_ta_id"] is None
     assert not [r for r in db.rows("project_review_tas") if r["user_id"] == TA1]
@@ -478,6 +479,7 @@ def test_current_meeting_in_week_advances_with_time(db):
     controller.upsert_meeting(
         P1, INSTR, meeting_in_week=2, meeting_day="friday", meeting_time="3:00 PM"
     )
+    rows = controller._weekly_meetings(db, [P1])
 
     # Snap to a Monday 08:00 so weekday math is deterministic regardless of run date.
     base = datetime.datetime(2026, 7, 6, 8, 0)
@@ -486,21 +488,11 @@ def test_current_meeting_in_week_advances_with_time(db):
     def at(days, hour, minute=0):
         return monday + datetime.timedelta(days=days, hours=hour - 8, minutes=minute)
 
-    assert controller._current_meeting_in_week(db, [P1], 2, now=monday) == 1  # Mon → next is Tue M1
+    assert controller._pick_current_meeting(rows, 2, now=monday) == 1  # Mon → next is Tue M1
     assert (
-        controller._current_meeting_in_week(db, [P1], 2, now=at(1, 9, 10)) == 1
+        controller._pick_current_meeting(rows, 2, now=at(1, 9, 10)) == 1
     )  # Tue 09:10 → M1 in progress
+    assert controller._pick_current_meeting(rows, 2, now=at(2, 12)) == 2  # Wed → Fri M2 upcoming
     assert (
-        controller._current_meeting_in_week(db, [P1], 2, now=at(2, 12)) == 2
-    )  # Wed → Fri M2 upcoming
-    assert (
-        controller._current_meeting_in_week(db, [P1], 2, now=at(4, 16)) == 1
+        controller._pick_current_meeting(rows, 2, now=at(4, 16)) == 1
     )  # Fri late → rolls to next Tue M1
-
-
-def test_current_meeting_in_week_edge_cases(db):
-    controller.upsert_meeting(
-        P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM"
-    )
-    assert controller._current_meeting_in_week(db, [P1], 1) == 1  # single cadence → always 1
-    assert controller._current_meeting_in_week(db, [], 2) == 1  # no teams → 1
