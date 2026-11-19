@@ -191,9 +191,8 @@ def test_reopening_notifies_students_who_have_not_submitted(db, clock):
     clock(NOW_AFTER)
     assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=LATE)
     rows = db.rows("notifications")
-    assert sorted(r["user_id"] for r in rows) == sorted(
-        [S2, S3]
-    )  # S1 submitted; TAs are not students
+    # S1 has submitted, and TAs are not students.
+    assert sorted(r["user_id"] for r in rows) == sorted([S2, S3])
     assert rows[0]["type"] == "late_window_opened"
     assert rows[0]["title"] == "Late submissions open for TSR 1"
     assert rows[0]["body"] == "You can submit until Jan 12, 12:00 AM (PST)"
@@ -206,16 +205,32 @@ def test_moving_the_window_notifies_again_and_a_draft_notifies_nobody(db, clock)
     later = LATE + dt.timedelta(days=2)
     assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=later)
     assert len(db.rows("notifications")) == 4
-    assignments.update_assignment(
-        INSTR,
-        A_DRAFT,
-        None,
-        None,
-        None,
-        None,
-        accept_until=dt.datetime(2026, 2, 12, 8, tzinfo=dt.UTC),
-    )
+    on_the_draft = dt.datetime(2026, 2, 12, 8, tzinfo=dt.UTC)
+    assignments.update_assignment(INSTR, A_DRAFT, None, None, None, None, accept_until=on_the_draft)
     assert len(db.rows("notifications")) == 4
+
+
+def test_a_window_with_nobody_left_to_tell_inserts_nothing(db, clock):
+    clock(NOW_AFTER)
+    for student in (S2, S3):
+        db.rows("TSRs").append(
+            {"id": f"t-{student[-2:]}", "assignment_id": A_TSR, "evaluator_id": student}
+        )
+    assignments.set_late_window(TA_ON, A_TSR, LATE)
+    assert db.rows("notifications") == []
+    # assignment, class + enrollment, update, event, recipients (enrollments, TSR rows)
+    assert db.executes == 7, _trace(db)
+
+
+def test_a_failed_notice_never_fails_the_write(db, clock, monkeypatch):
+    def unavailable(**_kwargs):
+        raise RuntimeError("notifications are down")
+
+    clock(NOW_AFTER)
+    monkeypatch.setattr(assignments.notifications, "notify_late_window_opened", unavailable)
+    row = assignments.set_late_window(TA_ON, A_TSR, LATE)
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
 
 
 # ------------------------------------------------- PUT /api/assignments/{id}/late-window
