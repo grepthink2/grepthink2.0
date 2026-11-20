@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PROD STAGING 2/3 — Final Reviews CONTRACT phase        ⚠ DO NOT RUN EARLY
--- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ⚠ NOT YET APPLIED
+-- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ✅ APPLIED, verified 2026-11-19 (catalog check)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Drops the superseded TSR-review junction. The pre-feat/final-reviews backend
 -- still SELECTs project_ta_assignments on the TSR-review path — running this
