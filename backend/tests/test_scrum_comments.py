@@ -1,11 +1,8 @@
 """Comments: staff may post, the parent kind picks the column, the mention seam runs,
 and authors come back by name."""
 
-import pytest
-from fastapi import HTTPException
-
 from app.scrum import controller
-from tests.scrum_support import INSTR, OUTSIDER, PID, UID, scrum_db
+from tests.scrum_support import INSTR, PID, UID, scrum_db
 
 STORY = {"id": "st1", "project_id": PID, "key": "US-3", "title": "Search"}
 TASK = {"id": "t1", "story_id": "st1", "project_id": PID, "key": "GT-12", "status": "todo"}
@@ -53,16 +50,6 @@ def test_a_comment_by_an_author_without_a_profile_is_unknown(monkeypatch):
         parent_kind="story", parent_id="st1", user_id=UID, body_md="hello"
     )
     assert out["author_name"] == "Unknown"
-
-
-def test_outsiders_cannot_comment(monkeypatch):
-    db = _board(monkeypatch)
-    with pytest.raises(HTTPException) as e:
-        controller.create_comment(
-            parent_kind="story", parent_id="st1", user_id=OUTSIDER, body_md="hi"
-        )
-    assert e.value.status_code == 403
-    assert db.rows("scrum_comments") == []
 
 
 def test_list_comments_names_each_author(monkeypatch):

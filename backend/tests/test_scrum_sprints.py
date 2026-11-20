@@ -34,14 +34,6 @@ def test_update_settings_rejects_unknown_scale(monkeypatch):
     assert e.value.status_code == 422
 
 
-def test_staff_cannot_change_settings(monkeypatch):
-    db = scrum_db(monkeypatch)
-    with pytest.raises(HTTPException) as e:
-        controller.update_settings(project_id=PID, user_id=INSTR, estimate_scale="linear")
-    assert e.value.status_code == 403
-    assert next(p for p in db.rows("projects") if p["id"] == PID)["estimate_scale"] == "fibonacci"
-
-
 def test_create_sprint_returns_the_row_with_the_status_of_its_dates(monkeypatch):
     monkeypatch.setattr(controller, "_today", lambda zone: TODAY)
     db = scrum_db(monkeypatch)

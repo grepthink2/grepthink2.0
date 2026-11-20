@@ -1,4 +1,7 @@
-"""The analytics routes end to end: auth, scope, validation, headers, the viewed event, the limit."""
+"""The analytics routes end to end: auth, scope, validation, headers, the viewed event, the limit.
+
+Who is refused a dashboard, and the 404 for an unknown institution, are pinned on the
+controller in test_authz_status_policy.py."""
 
 import time
 
@@ -48,7 +51,6 @@ COUNTS_UUID = {
 }
 CONV_UUID = {**CONV, "by_class": _remap(CONV["by_class"])}
 SCRUM_UUID = {**SCRUM, "by_class": _remap(SCRUM["by_class"])}
-NOWHERE = "99999999-9999-4999-8999-999999999999"
 
 
 @pytest.fixture(autouse=True)
@@ -119,20 +121,12 @@ def test_scope_lists_the_callers_institutions_and_is_empty_for_students(client):
     assert client.get(f"{BASE}/scope", headers=STUDENT).json() == {"institutions": []}
 
 
-def test_a_maintainer_sees_every_institution_and_an_unknown_one_is_404(client):
+def test_a_maintainer_sees_every_institution(client):
     r = client.get(f"{BASE}/scope", headers=MAINTAINER)
     assert [(i["slug"], i["access"]) for i in r.json()["institutions"]] == [
         ("istinye", "maintainer"),
         ("ucsc", "maintainer"),
     ]
-    r = client.get(f"{BASE}/dashboard", params={"institution_id": NOWHERE}, headers=MAINTAINER)
-    assert r.status_code == 404 and r.json()["detail"] == controller.INSTITUTION_NOT_FOUND
-    assert (
-        client.get(
-            f"{BASE}/dashboard", params={"institution_id": NOWHERE}, headers=PROF
-        ).status_code
-        == 403
-    )
 
 
 def test_dashboard_happy_path_sets_the_headers_and_records_the_view(client, _setup):
@@ -214,15 +208,7 @@ def test_the_class_rows_line_up_with_the_remapped_fixtures(client):
     )
 
 
-def test_dashboard_authorization_answers(client):
-    assert (
-        client.get(
-            f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=STUDENT
-        ).status_code
-        == 403
-    )
-    r = client.get(f"{BASE}/dashboard", params={"institution_id": ISTINYE["id"]}, headers=PROF)
-    assert r.status_code == 403 and r.json()["detail"] == controller.ANALYTICS_FORBIDDEN
+def test_a_class_of_another_institution_is_400_without_cache_headers(client):
     r = client.get(
         f"{BASE}/dashboard", params={"institution_id": UCSC["id"], "class_id": C9}, headers=PROF
     )

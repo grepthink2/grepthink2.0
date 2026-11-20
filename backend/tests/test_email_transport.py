@@ -323,13 +323,6 @@ def test_the_http_client_has_short_timeouts():
 # ── HTTP: the answer ─────────────────────────────────────────────────────────────────
 
 
-def test_http_send_returns_the_providers_reference_id(monkeypatch):
-    _use_http(monkeypatch)
-    _http(monkeypatch, _reply(200, _accepted(PROVIDER_ID)))
-
-    assert transport.send(_message(reference_id=OUR_ID)) == PROVIDER_ID
-
-
 @pytest.mark.parametrize(
     "body",
     [

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createRef, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -62,16 +62,14 @@ afterEach(() => {
 const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 describe('useDialog', () => {
-  it('moves focus to the first field on open and back to the opener on close', async () => {
+  it.each([
+    ['moves focus to the first field on open', <><button type="button">Help</button><input aria-label="Name" /></>, 'Name'],
+    ['keeps the focus a field took as it mounted', <><input aria-label="Title" /><input aria-label="Code" autoFocus /></>, 'Code'],
+  ])('%s, and gives focus back to the opener on close', async (_, fields, field) => {
     const user = userEvent.setup();
-    render(
-      <Opener>
-        <button type="button">Help</button>
-        <input aria-label="Name" />
-      </Opener>,
-    );
+    render(<Opener>{fields}</Opener>);
     await user.click(screen.getByRole('button', { name: 'Open' }));
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: field })).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
@@ -113,81 +111,56 @@ describe('useDialog', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
   });
 
-  it('prefers initialFocusRef, then [data-autofocus], over the first field', async () => {
-    function WithRef() {
-      const ref = useRef<HTMLButtonElement>(null);
-      return (
-        <TestDialog open initialFocusRef={ref}>
-          <input aria-label="Name" />
-          <button type="button" data-autofocus>Marked</button>
-          <button type="button" ref={ref}>Chosen</button>
-        </TestDialog>
-      );
-    }
-    const { unmount } = render(<WithRef />);
-    await settle();
-    expect(screen.getByRole('button', { name: 'Chosen' })).toHaveFocus();
-    unmount();
-
-    render(
+  // On open: initialFocusRef, else [data-autofocus], else the first field that can take focus, else the sheet.
+  const chosen = createRef<HTMLButtonElement>();
+  const unfocusable = createRef<HTMLParagraphElement>();
+  it.each([
+    [
+      'prefers initialFocusRef over [data-autofocus] and the first field',
+      <TestDialog open initialFocusRef={chosen}>
+        <input aria-label="Name" />
+        <button type="button" data-autofocus>Marked</button>
+        <button type="button" ref={chosen}>Chosen</button>
+      </TestDialog>,
+      'button', 'Chosen',
+    ],
+    [
+      'prefers [data-autofocus] over the first field',
       <TestDialog open>
         <input aria-label="Name" />
         <button type="button" data-autofocus>Marked</button>
       </TestDialog>,
-    );
-    await settle();
-    expect(screen.getByRole('button', { name: 'Marked' })).toHaveFocus();
-  });
-
-  it('keeps the focus a field took as it mounted, and still gives focus back to the opener', async () => {
-    const user = userEvent.setup();
-    render(
-      <Opener>
-        <input aria-label="Title" />
-        <input aria-label="Code" autoFocus />
-      </Opener>,
-    );
-    await user.click(screen.getByRole('button', { name: 'Open' }));
-    expect(screen.getByRole('textbox', { name: 'Code' })).toHaveFocus();
-    await user.keyboard('{Escape}');
-    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
-  });
-
-  it('focuses the sheet when it holds no field, and skips a field in a hidden panel', async () => {
-    const { unmount } = render(
-      <TestDialog open label="Notes">
-        <p>Read only.</p>
-        <button type="button">OK</button>
+      'button', 'Marked',
+    ],
+    [
+      'falls past an initialFocusRef that cannot take focus',
+      <TestDialog open initialFocusRef={unfocusable}>
+        <p ref={unfocusable}>Not focusable</p>
+        <input aria-label="Name" />
       </TestDialog>,
-    );
-    await settle();
-    expect(screen.getByRole('dialog', { name: 'Notes' })).toHaveFocus();
-    unmount();
-
-    render(
+      'textbox', 'Name',
+    ],
+    [
+      'skips a field in a hidden panel, and a file input styled away',
       <TestDialog open>
         <div hidden><input aria-label="Hidden tab" /></div>
         <input type="file" aria-label="Logo" style={{ display: 'none' }} />
         <select aria-label="Role"><option>Member</option></select>
       </TestDialog>,
-    );
+      'combobox', 'Role',
+    ],
+    [
+      'focuses the sheet when it holds no field',
+      <TestDialog open label="Notes">
+        <p>Read only.</p>
+        <button type="button">OK</button>
+      </TestDialog>,
+      'dialog', 'Notes',
+    ],
+  ])('on open, %s', async (_, dialog, role, name) => {
+    render(dialog);
     await settle();
-    expect(screen.getByRole('combobox', { name: 'Role' })).toHaveFocus();
-  });
-
-  it('falls past an initialFocusRef that cannot take focus', async () => {
-    function WithStaticRef() {
-      const ref = useRef<HTMLParagraphElement>(null);
-      return (
-        <TestDialog open initialFocusRef={ref}>
-          <p ref={ref}>Not focusable</p>
-          <input aria-label="Name" />
-        </TestDialog>
-      );
-    }
-    render(<WithStaticRef />);
-    await settle();
-    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
+    expect(screen.getByRole(role, { name })).toHaveFocus();
   });
 
   it('traps Tab and Shift+Tab inside the sheet', async () => {
@@ -257,72 +230,68 @@ describe('useDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Notes' })).toHaveFocus();
   });
 
-  it('counts a roving group at the end of the sheet as one stop, so Tab from it wraps', async () => {
+  /** A radio group, with the option `checked` names checked. */
+  function Visibility({ checked }: { checked?: string }) {
+    return (
+      <fieldset>
+        <legend>Visibility</legend>
+        {['Draft', 'Published', 'Archived'].map((option) => (
+          <label key={option}>
+            <input type="radio" name="visibility" value={option} defaultChecked={option === checked} />
+            {option}
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
+  // The sheet ends on what the trap must count as the browser does. The page's button is where a Tab
+  // the trap let through would land.
+  it.each([
+    [
+      'counts a roving group at the end of the sheet as one stop',
+      <div role="toolbar" aria-label="Format">
+        <button type="button" tabIndex={0}>Bold</button>
+        <button type="button" tabIndex={-1}>Italic</button>
+        <button type="button" tabIndex={-1}>Link</button>
+      </div>,
+      'button', 'Bold',
+    ],
+    [
+      'counts a radio group at the end of the sheet as one stop: the checked radio',
+      <Visibility checked="Published" />,
+      'radio', 'Published',
+    ],
+    [
+      'counts a radio group at the end of the sheet as one stop: the first radio, when none is checked',
+      <Visibility />,
+      'radio', 'Draft',
+    ],
+    [
+      'skips a stop inside a box that is display: none, where the browser has no checkVisibility',
+      <>
+        <button type="button">Last</button>
+        <div style={{ display: 'none' }}><button type="button">Collapsed</button></div>
+      </>,
+      'button', 'Last',
+    ],
+  ])('%s, so Tab wraps from the last stop to the first and Shift+Tab back', async (_, end, role, name) => {
     const user = userEvent.setup();
     render(
       <>
         <TestDialog open>
           <button type="button">First</button>
-          <div role="toolbar" aria-label="Format">
-            <button type="button" tabIndex={0}>Bold</button>
-            <button type="button" tabIndex={-1}>Italic</button>
-            <button type="button" tabIndex={-1}>Link</button>
-          </div>
+          {end}
         </TestDialog>
         <button type="button">Page</button>
       </>,
     );
-    screen.getByRole('button', { name: 'Bold' }).focus();
-    await user.tab();
-    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
-  });
-
-  it('counts a radio group at the end of the sheet as one stop: the checked radio, else the first', async () => {
-    const user = userEvent.setup();
-    function Choice({ checked }: { checked?: string }) {
-      return (
-        <TestDialog open>
-          <button type="button">First</button>
-          <fieldset>
-            <legend>Visibility</legend>
-            {['Draft', 'Published', 'Archived'].map((option) => (
-              <label key={option}>
-                <input type="radio" name="visibility" value={option} defaultChecked={option === checked} />
-                {option}
-              </label>
-            ))}
-          </fieldset>
-        </TestDialog>
-      );
-    }
-    const { unmount } = render(<Choice checked="Published" />);
-    screen.getByRole('radio', { name: 'Published' }).focus();
+    const last = screen.getByRole(role, { name });
+    last.focus();
     await user.tab();
     expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
     await user.tab({ shift: true });
-    expect(screen.getByRole('radio', { name: 'Published' })).toHaveFocus();
-    unmount();
-
-    render(<Choice />);
-    screen.getByRole('radio', { name: 'Draft' }).focus();
-    await user.tab();
-    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
-    await user.tab({ shift: true });
-    expect(screen.getByRole('radio', { name: 'Draft' })).toHaveFocus();
-  });
-
-  it('skips a stop inside a box that is display: none, where the browser has no checkVisibility', async () => {
-    const user = userEvent.setup();
-    render(
-      <TestDialog open>
-        <button type="button">First</button>
-        <button type="button">Last</button>
-        <div style={{ display: 'none' }}><button type="button">Collapsed</button></div>
-      </TestDialog>,
-    );
-    screen.getByRole('button', { name: 'Last' }).focus();
-    await user.tab();
-    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
+    expect(last).toHaveFocus();
   });
 
   it('uses checkVisibility where the browser has it', async () => {

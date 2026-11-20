@@ -2,8 +2,8 @@
 
 Replaces the MagicMock-chain tests in the former test_projects_instructor_add_member.py
 (BUG-1: membership pre-check scoped to the project; BUG-2: role change targets the
-target, demotion excludes the target; missing project → 404) with the same guards run
-against the in-memory FakeSupabase, plus:
+target, demotion excludes the target) with the same guards run against the in-memory
+FakeSupabase, plus:
 
 - `num_members` is derived from the real member rows after every write (no drift:
   removing a non-member no longer decrements the counter);
@@ -12,6 +12,9 @@ against the in-memory FakeSupabase, plus:
 - each path has an upper bound on Supabase round trips;
 - creating and updating a project take the class instructor to be the class's creator,
   never an account whose role is ``instructor``.
+
+Who may not add, remove, name roles or accept, and the 404 for a missing project, are
+pinned in test_authz_status_policy.py.
 """
 
 from __future__ import annotations
@@ -37,8 +40,6 @@ RELATIONS = {
     ("project_members", "profiles"): ("user_id", "id", False),
     ("project_join_requests", "projects"): ("project_id", "id", False),
 }
-
-WRITE_OPS = {"insert", "update", "upsert", "delete"}
 
 
 def _profile(uid: str) -> dict:
@@ -212,19 +213,6 @@ def test_elevated_member_can_add_with_a_non_member_role_directly(db):
     assert db.rows("project_join_requests") == []
 
 
-def test_plain_member_cannot_add(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.instructor_add_member(P1, S2, S4, role="member")
-    assert exc.value.status_code == 403
-    assert not any(q["op"] in WRITE_OPS for q in db.queries)
-
-
-def test_add_member_missing_project_404(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.instructor_add_member("nope", INSTR, S4, role="member")
-    assert exc.value.status_code == 404
-
-
 # --------------------------------------------------------- instructor_remove_member
 
 
@@ -236,26 +224,17 @@ def test_instructor_removes_member_and_syncs_count(db):
     assert db.executes <= 4
 
 
-def test_self_removal_and_elevated_removal_allowed_plain_member_forbidden(db):
+def test_a_member_removes_themselves_and_an_elevated_member_removes_others(db):
     projects.instructor_remove_member(P1, S2, S2)  # self
     assert S2 not in _members(db, P1)
     projects.instructor_add_member(P1, INSTR, S2, role="member")
     projects.instructor_remove_member(P1, S1, S2)  # product owner removes member
     assert S2 not in _members(db, P1)
-    with pytest.raises(HTTPException) as exc:
-        projects.instructor_remove_member(P2, S3, S5)  # scrum master is not elevated
-    assert exc.value.status_code == 403
 
 
 def test_removing_a_non_member_does_not_touch_the_counter(db):
     projects.instructor_remove_member(P1, INSTR, S4)  # S4 is not on P1
     assert _num_members(db, P1) == 2  # was decremented unconditionally before
-
-
-def test_remove_member_missing_project_404(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.instructor_remove_member("nope", INSTR, S2)
-    assert exc.value.status_code == 404
 
 
 # ----------------------------------------------------------------- role endpoints
@@ -269,12 +248,9 @@ def test_assign_product_owner_demotes_previous_holder_in_one_update(db):
     assert db.executes <= 4
 
 
-def test_assign_product_owner_permissions(db):
+def test_the_product_owner_hands_the_role_on_to_a_teammate_only(db):
     projects.assign_product_owner(P1, S1, S2)  # current product owner may reassign
     assert _members(db, P1)[S2] == "product owner"
-    with pytest.raises(HTTPException) as exc:
-        projects.assign_product_owner(P1, S1, S2)  # S1 is now a plain member
-    assert exc.value.status_code == 403
     with pytest.raises(HTTPException) as nm:
         projects.assign_product_owner(P1, INSTR, S4)  # not a member
     assert nm.value.status_code == 404
@@ -290,10 +266,7 @@ def test_assign_scrum_master_demotes_previous_and_remove_requires_current_holder
     assert _members(db, P2)[S5] == "member"
 
 
-def test_admin_role_requires_instructor_or_class_ta(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.assign_admin(P1, S1, S2)  # product owner may not
-    assert exc.value.status_code == 403
+def test_a_class_ta_names_an_admin_and_the_instructor_removes_them_once(db):
     assert projects.assign_admin(P1, TA1, S2) == {"role": "admin", "user_id": S2}
     assert _members(db, P1)[S2] == "admin"
     assert projects.remove_admin(P1, INSTR, S2) == {"role": "member", "user_id": S2}
@@ -397,15 +370,6 @@ def test_class_projects_for_enrolled_student_carry_their_role(db):
     assert db.executes <= 3
 
 
-def test_class_projects_access_rules(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.get_projects_for_user(OUTSIDER, CLASS)
-    assert exc.value.status_code == 403
-    with pytest.raises(HTTPException) as missing:
-        projects.get_projects_for_user(INSTR, "nope")
-    assert missing.value.status_code == 404
-
-
 def test_my_projects_without_class_filter(db):
     out = projects.get_projects_for_user(S3)
     assert out == [
@@ -444,10 +408,7 @@ def test_project_members_in_one_query_with_full_shape(db):
     }
 
 
-def test_project_members_missing_project_404_and_empty_team(db):
-    with pytest.raises(HTTPException) as exc:
-        projects.get_project_members("nope")
-    assert exc.value.status_code == 404
+def test_an_empty_team_has_no_members(db):
     db.rows("projects").append({"id": "p-empty", "class_id": CLASS, "name": "Empty"})
     assert projects.get_project_members("p-empty") == []
 
@@ -479,7 +440,7 @@ def test_accept_student_request_moves_them_and_notifies_old_product_owner(db):
     assert db.executes <= 11, [q["table"] + ":" + q["op"] for q in db.queries]
 
 
-def test_accept_request_permissions_and_state(db):
+def test_the_product_owner_accepts_a_request_once(db):
     db.rows("project_join_requests").append(
         {
             "id": "r1",
@@ -489,9 +450,6 @@ def test_accept_request_permissions_and_state(db):
             "invited_by": None,
         }
     )
-    with pytest.raises(HTTPException) as exc:
-        projects.accept_join_request("r1", S2)  # plain member may not review
-    assert exc.value.status_code == 403
     projects.accept_join_request("r1", S1)  # product owner may
     assert S4 in _members(db, P1)
     with pytest.raises(HTTPException) as again:
@@ -499,13 +457,10 @@ def test_accept_request_permissions_and_state(db):
     assert again.value.status_code == 400  # already approved
 
 
-def test_accept_team_invite_only_by_invitee(db):
+def test_the_invitee_accepts_a_team_invite(db):
     db.rows("project_join_requests").append(
         {"id": "r2", "project_id": P1, "user_id": S4, "request_status": "pending", "invited_by": S1}
     )
-    with pytest.raises(HTTPException) as exc:
-        projects.accept_join_request("r2", INSTR)
-    assert exc.value.status_code == 403
     projects.accept_join_request("r2", S4)
     assert S4 in _members(db, P1)
 

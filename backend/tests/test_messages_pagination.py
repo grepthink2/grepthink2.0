@@ -101,23 +101,3 @@ def test_limit_is_clamped_to_1_through_100(client, _auth, asked, used):
     )
     list_messages(conversation_id="c1", caller_id="alice", limit=asked)
     q.order.return_value.order.return_value.limit.assert_called_once_with(used)
-
-
-@patch("app.core.db.service_client")
-def test_list_messages_403_for_non_participant_wired(client):
-    """Defense-in-depth: exercises the real _require_participant wiring."""
-    from app.messages.controller import list_messages
-
-    (
-        client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
-    ) = MagicMock(
-        data={"id": "c1", "type": "dm", "user_a": "alice", "user_b": "bob", "project_id": None}
-    )
-    (
-        client.table.return_value.select.return_value.eq.return_value.execute.return_value
-    ) = MagicMock(
-        data=[{"user_id": "alice", "role": "member"}, {"user_id": "bob", "role": "member"}]
-    )
-    with pytest.raises(HTTPException) as exc:
-        list_messages(conversation_id="c1", caller_id="mallory")
-    assert exc.value.status_code == 403

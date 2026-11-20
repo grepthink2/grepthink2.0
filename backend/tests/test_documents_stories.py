@@ -1,6 +1,7 @@
 """The board's stories for a document's story pickers: every live story of the team's board in board
 order, each with its sprint, its criteria and whether it is completed. Read by members and staff as the
-board is; anyone else gets the board's 403. Nothing is written and no event is recorded."""
+board is; anyone else gets the board's 403 (test_documents_authz.py). Nothing is written and no event is
+recorded."""
 
 from __future__ import annotations
 
@@ -16,7 +17,6 @@ from tests.documents_support import (
     MEETING_TA,
     MEMBER,
     OTHER_PID,
-    OUTSIDER,
     PID,
     S1,
     S2,
@@ -35,7 +35,6 @@ from tests.documents_support import (
     writes,
 )
 
-MISSING = "00000000-0000-4000-8000-00000000dead"
 #: A legacy archived story that still names Sprint 1: the board lists it in its backlog.
 ARCHIVED = "5c000000-0000-4000-8000-0000000000aa"
 
@@ -129,14 +128,6 @@ def test_members_and_staff_read_it_and_nothing_is_written(db, user):
     assert db.rows("events") == []
 
 
-@pytest.mark.parametrize("user", [STUDENT, OUTSIDER])
-def test_anyone_else_gets_the_boards_403(db, user):
-    assert refused(lambda: controller.list_project_stories(PID, user)) == (
-        403,
-        authz.NOT_PROJECT_MEMBER,
-    )
-
-
 def test_another_projects_id_answers_for_that_project_alone(db):
     """A member of this team asking for the other team's stories is a stranger there; that team's own
     member reads that team's stories only."""
@@ -147,13 +138,6 @@ def test_another_projects_id_answers_for_that_project_alone(db):
     assert [s["key"] for s in controller.list_project_stories(OTHER_PID, STUDENT)["stories"]] == [
         "US-1"
     ]
-
-
-def test_a_project_that_does_not_exist_is_404(db):
-    assert refused(lambda: controller.list_project_stories(MISSING, UID)) == (
-        404,
-        authz.PROJECT_NOT_FOUND,
-    )
 
 
 def test_its_round_trips(db):
@@ -186,10 +170,3 @@ def test_the_route_answers_through_http(db, client):
         "sprint_name": None,
         "completed": False,
     }
-
-
-def test_the_route_refuses_a_stranger(db, client):
-    response = client.get(
-        f"/api/projects/{PID}/documents/stories", headers=header_for("o@ucsc.edu", sub=OUTSIDER)
-    )
-    assert response.status_code == 403

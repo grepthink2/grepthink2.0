@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from app.core.db import get_client
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import OTHER_PID, PID, TA, UID, scrum_db
+from tests.scrum_support import OTHER_PID, PID, UID, scrum_db
 
 STORY = {"id": "st1", "project_id": PID, "key": "US-1", "title": "Search", "sprint_id": None}
 SPRINT = {
@@ -55,14 +55,6 @@ def test_create_story_rejects_a_sprint_from_another_project(monkeypatch):
             project_id=PID, user_id=UID, fields={"title": "x", "sprint_id": "s9"}
         )
     assert (e.value.status_code, e.value.detail) == (404, controller.SPRINT_NOT_FOUND)
-    assert db.rows("user_stories") == []
-
-
-def test_staff_cannot_create_a_story(monkeypatch):
-    db = scrum_db(monkeypatch)
-    with pytest.raises(HTTPException) as e:
-        controller.create_story(project_id=PID, user_id=TA, fields={"title": "x"})
-    assert e.value.status_code == 403
     assert db.rows("user_stories") == []
 
 

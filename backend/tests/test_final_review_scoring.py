@@ -10,7 +10,9 @@ Tests for final-review scoring + the Review-TA notes form:
     to the instructor and any class TA; students get 403.
 
 Controller logic runs against the in-memory FakeSupabase (same harness as
-test_final_reviews.py); endpoint routing uses TestClient + mocks.
+test_final_reviews.py); endpoint routing uses TestClient + mocks. Who is refused each
+read and write, and the 404 for a missing project, are pinned in
+test_authz_status_policy.py.
 """
 
 from unittest.mock import patch
@@ -117,13 +119,6 @@ def _score_rows(db, role=None):
 # --------------------------------------------------------------------------
 
 
-def test_detail_forbidden_for_students_and_outsiders(db):
-    for uid in (S1, "not-enrolled"):
-        with pytest.raises(HTTPException) as exc:
-            tas.get_final_review_detail(uid, P1)
-        assert exc.value.status_code == 403
-
-
 def test_detail_viewer_roles(db):
     assert tas.get_final_review_detail(INSTR, P1)["viewer_role"] == "instructor"
     assert tas.get_final_review_detail(TA1, P1)["viewer_role"] == "home"
@@ -142,12 +137,6 @@ def test_detail_shape(db):
     assert all(m["name"] for m in out["members"])
     assert out["scores"] == []
     assert out["notes"] is None
-
-
-def test_detail_unknown_project_404(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.get_final_review_detail(INSTR, "proj-missing")
-    assert exc.value.status_code == 404
 
 
 # --------------------------------------------------------------------------
@@ -186,13 +175,8 @@ def test_home_scores_save_and_upsert(db):
     assert s1["notes"] is None  # full-role-row replace semantics
 
 
-def test_home_scores_role_gating(db):
+def test_the_instructor_may_write_the_home_row(db):
     entry = [{"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0}]
-    for caller in (TA2, TA3, S1):
-        with pytest.raises(HTTPException) as exc:
-            tas.save_final_review_scores(caller, P1, "home", entry)
-        assert exc.value.status_code == 403
-    # Instructor override may write the home row.
     tas.save_final_review_scores(INSTR, P1, "home", entry)
     assert _score_rows(db, "home")[0]["scored_by"] == INSTR
 
@@ -202,25 +186,16 @@ def test_home_scores_role_gating(db):
 # --------------------------------------------------------------------------
 
 
-def test_review_overall_save_and_gating(db):
+def test_the_review_ta_saves_an_overall_score_only(db):
     entry = [{"student_id": S1, "overall": 4.2}]
-    for caller in (TA1, TA3, S1):
-        with pytest.raises(HTTPException) as exc:
-            tas.save_final_review_scores(caller, P1, "review", entry)
-        assert exc.value.status_code == 403
-
     tas.save_final_review_scores(TA2, P1, "review", entry)
     row = _score_rows(db, "review")[0]
     assert row["overall"] == 4.2
     assert row["product"] is None and row["team"] is None and row["scrum"] is None
 
 
-def test_instructor_overall_gating(db):
+def test_the_instructor_saves_their_own_overall_score(db):
     entry = [{"student_id": S1, "overall": 3.9}]
-    for caller in (TA1, TA2, TA3):
-        with pytest.raises(HTTPException) as exc:
-            tas.save_final_review_scores(caller, P1, "instructor", entry)
-        assert exc.value.status_code == 403
     tas.save_final_review_scores(INSTR, P1, "instructor", entry)
     assert _score_rows(db, "instructor")[0]["overall"] == 3.9
 
@@ -406,13 +381,8 @@ def test_scores_appear_in_detail(db):
 # --------------------------------------------------------------------------
 
 
-def test_notes_gating_and_upsert(db):
+def test_the_review_ta_and_the_instructor_upsert_one_notes_document(db):
     content = {"project_scope": "Travel app", "member_contributions": {S1: "UI work"}}
-    for caller in (TA1, TA3, S1):
-        with pytest.raises(HTTPException) as exc:
-            tas.save_final_review_notes(caller, P1, content, 1)
-        assert exc.value.status_code == 403
-
     out = tas.save_final_review_notes(TA2, P1, content, 1)
     assert out["notes"]["content"]["project_scope"] == "Travel app"
     assert len(db.rows("final_review_notes")) == 1

@@ -11,7 +11,7 @@ import pytest
 
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import CLASS, OUTSIDER, PID, UID, pin_today, scrum_db
+from tests.scrum_support import CLASS, PID, UID, pin_today, scrum_db
 
 TODAY = date(2026, 9, 10)
 URL = f"/api/projects/{PID}/scrum/board"
@@ -258,18 +258,6 @@ def test_board_round_trips_do_not_grow_with_sprints(monkeypatch, client):
     # access 1 + three concurrent rounds (5 + 2 + 2) + snapshot upsert 1 + audit read 1
     # + the board_viewed event insert 1; round 1 reads the project's dependency edges
     assert db.executes <= 13
-
-
-def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client):
-    db = _seed(monkeypatch)
-    res = client.get(URL, headers=header_for("x@ucsc.edu", sub=OUTSIDER))
-    assert res.status_code == 403
-    res = client.get(
-        "/api/projects/00000000-0000-0000-0000-00000000dead/scrum/board",
-        headers=header_for("x@ucsc.edu", sub=OUTSIDER),
-    )
-    assert res.status_code == 404
-    assert db.store["events"] == []  # a refused load records no view
 
 
 def test_an_unknown_sprint_is_404(monkeypatch, client):

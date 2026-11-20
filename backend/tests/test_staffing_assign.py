@@ -122,16 +122,10 @@ def test_assign_already_on_that_team_is_a_cheap_noop(db):
     assert db.executes <= 3
 
 
-def test_assign_rejects_wrong_class_missing_project_and_non_instructor(db):
+def test_assign_rejects_a_project_of_another_class(db):
     with pytest.raises(HTTPException) as wrong:
         staffing.assign_user(INSTR, CLASS, S2, P_OTHER)
     assert wrong.value.status_code == 400
-    with pytest.raises(HTTPException) as missing:
-        staffing.assign_user(INSTR, CLASS, S2, "nope")
-    assert missing.value.status_code == 404
-    with pytest.raises(HTTPException) as denied:
-        staffing.assign_user(TA1, CLASS, S2, P1)
-    assert denied.value.status_code == 403
 
 
 def test_assign_inserts_before_removing_so_a_failure_never_strands_the_student(db, monkeypatch):

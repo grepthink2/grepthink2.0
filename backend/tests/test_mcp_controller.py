@@ -6,7 +6,6 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
-from fastapi import HTTPException
 
 from app.mcp import controller
 from app.mcp.controller import FillRejected
@@ -317,16 +316,6 @@ def test_fill_requires_confirmed(monkeypatch):
         _fill(_req(confirmed=False))
 
     assert exc.value.errors == [controller.NOT_CONFIRMED]
-    assert fake.fill_calls == []
-
-
-def test_fill_staff_forbidden(monkeypatch):
-    fake = _db(monkeypatch)
-
-    with pytest.raises(HTTPException) as exc:
-        _fill(_req(), user_id=TA)
-
-    assert exc.value.status_code == 403
     assert fake.fill_calls == []
 
 
