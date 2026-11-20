@@ -53,7 +53,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [tasksUrlChecked, setTasksUrlChecked] = useState(false);
   const [tasksUrlRefused, setTasksUrlRefused] = useState(false); // the API said no
   const tasksUrlInput = useRef<HTMLInputElement>(null);
-  const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,11 +222,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         await api.uploadClassRoster(createdId, csvFile);
       }
 
-      // TODO: Handle instructor-only setting
-      if (instructorOnly) {
-        console.log('Instructor-only setting not yet implemented');
-      }
-
       // Reset form and close
       setChosenInstitutionId(null);
       setCourseName('');
@@ -242,7 +236,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setTasksUrl('');
       setTasksUrlChecked(false);
       setTasksUrlRefused(false);
-      setInstructorOnly(false);
       handleClose();
       navigate('/app/dashboard');
     } catch (err) {
@@ -479,19 +472,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                 {tasksUrlError}
               </p>
             )}
-          </div>
-
-          {/* Instructor Only Checkbox */}
-          <div className="create-class-modal__field">
-            <label className="create-class-modal__checkbox-label">
-              <input
-                type="checkbox"
-                checked={instructorOnly}
-                onChange={(e) => setInstructorOnly(e.target.checked)}
-                className="create-class-modal__checkbox"
-              />
-              <span>Only Allow Instructors to Create Projects?</span>
-            </label>
           </div>
 
           {/* Error Message */}

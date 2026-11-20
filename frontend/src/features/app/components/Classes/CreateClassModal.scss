@@ -338,56 +338,6 @@
   }
 }
 
-// Checkbox
-.create-class-modal__checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  cursor: pointer;
-  font-size: $font-size-base;
-  font-weight: $font-weight-normal;
-  font-family: $primary-font;
-  color: $text-primary;
-}
-
-.create-class-modal__checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  background-color: $white;
-  border: 1px solid $border-color;
-  border-radius: 3px;
-  position: relative;
-  flex-shrink: 0;
-
-  &:checked {
-    background-color: $primary-color;
-    border-color: $primary-color;
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 6px;
-      top: 2px;
-      width: 6px;
-      height: 11px;
-      border: solid $white;
-      border-width: 0 2.5px 2.5px 0;
-      transform: rotate(45deg);
-    }
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  // Dead: the global :focus-visible rule (index.css) already forces a ring;
-  // no resting box-shadow here to layer with.
-}
-
 // Action Buttons Container
 .create-class-modal__actions {
   display: flex;

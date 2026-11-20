@@ -368,11 +368,6 @@
     font-size: 0.9rem;
   }
 
-  &__footer-left {
-    display: flex;
-    align-items: center;
-  }
-
   // Skills Section
   &__skills-container {
     display: flex;
@@ -512,7 +507,7 @@
   // Footer — margin (not page padding) stays below buttons as skills/content grow
   &__footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     padding-top: 1.5rem;
     border-top: 1px solid $border-color;
@@ -542,15 +537,6 @@
 
       &:hover {
         background: $primary-hover;
-      }
-    }
-
-    &--secondary {
-      background: white;
-      color: $text-primary;
-
-      &:hover {
-        background: $background;
       }
     }
 

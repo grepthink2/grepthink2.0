@@ -222,10 +222,6 @@ const CreateProject: React.FC = () => {
     }
   };
 
-  const handleSaveDraft = () => {
-    console.log('Saving draft');
-  };
-
   return (
     <div className="create-project">
       {classError && (
@@ -306,7 +302,6 @@ const CreateProject: React.FC = () => {
       <ProjectFooter
         submitting={submitting}
         isDisabled={submitting || !selectedClass || membershipLoading || !!existingProject}
-        onSaveDraft={handleSaveDraft}
         onCreateProject={handleCreateProject}
       />
 
