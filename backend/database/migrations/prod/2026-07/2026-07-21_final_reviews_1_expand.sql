@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PROD STAGING 1/3 — Final Reviews EXPAND phase          (safe to run anytime)
--- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ⚠ NOT YET APPLIED
+-- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ✅ APPLIED, verified 2026-11-19 (catalog check)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Combined expand phase of:
 --   * 2026-07-05_review_tas_and_unify_tsr.sql  (review model — WHO reviews)

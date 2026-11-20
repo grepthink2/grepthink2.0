@@ -10,7 +10,7 @@
 -- It counts days in UTC, so the hour only decides when in the day it runs: 09:20 UTC, after the analytics
 -- rollup at 09:00, is 01:20/02:20 in Santa Cruz.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV — pending   PROD — applied (job active; verified 2026-11-19)
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 

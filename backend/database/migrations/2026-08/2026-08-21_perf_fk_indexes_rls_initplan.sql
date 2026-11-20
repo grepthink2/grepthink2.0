@@ -1,5 +1,13 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ⛔ SUPERSEDED — NEVER APPLIED — DO NOT RUN
+--    Never applied as written. PROD already has an index on each of these FK
+--    columns under the idx_<table>_<column> names, and policies in the
+--    (select auth.uid()) form (verified 2026-11-19, catalog check): applying
+--    this would add a duplicate index for each CREATE INDEX below.
+--    A PROD copy, prod/2026-08/2026-08-21_perf_fk_indexes_rls_initplan.sql,
+--    existed until 2026-11-20: the same statements under an extra "PROD
+--    STAGING" header.
+--
 --    Superseded by 2026-09-08_perf_indexes_and_lints.sql (PR #178), applied on
 --    DEV 2026-09-20 and on PROD 2026-09-23 through prod/2026-09/2026-09-20_align_prod.sql.
 --
@@ -9,7 +17,9 @@
 --    (checked 2026-09-25), and nothing records it on PROD. Running it NOW would
 --    add a second index under a different name on each of those columns, which
 --    is exactly the duplicate-index finding the advisors flag. Kept as the record
---    of the 2026-08-21 advisor pass that found them first.
+--    of the 2026-08-21 advisor pass that found them first. The notes below
+--    ("applied manually", "re-run this file afterwards") predate that and no
+--    longer apply.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Performance hygiene from the 2026-08-21 PROD advisor pass:

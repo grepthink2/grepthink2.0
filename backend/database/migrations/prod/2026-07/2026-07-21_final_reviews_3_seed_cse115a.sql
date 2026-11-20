@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PROD STAGING 3/3 — CSE115A final-review seed           (run AFTER 1/3)
--- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ⚠ NOT YET APPLIED
+-- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)   ✅ APPLIED, verified 2026-11-19 (catalog check)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Class: "2026Su cse115a"  ca9b1627-bb0c-4a88-8e61-32341863033f
 --        (instructor rjullig@ucsc.edu = 005adfbb-e43a-44f1-a3f7-94a99f952d2b)
