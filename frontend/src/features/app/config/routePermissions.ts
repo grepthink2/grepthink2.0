@@ -8,7 +8,6 @@ export const instructorOnlyPaths: readonly string[] = [
   '/app/staff-projects',
   '/app/modules',
   '/app/ta-management',
-  '/app/class-settings',
 ];
 
 /** Class pages for students and TAs (TAs keep the student pages). */

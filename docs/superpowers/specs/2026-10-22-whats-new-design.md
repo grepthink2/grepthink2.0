@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-22, revised 2026-10-23 with the maintainer's answers to the brief's questions
 **Branch:** `docs/whats-new` (onto `beta`)
-**Status:** Proposed. Nothing is built. The UI waits for a Claude Design round.
+**Status:** Shipped. Built in #288 (`frontend/src/features/releases/`, merged 2026-10-23) and released in 0.91.0.
 **Design brief:** `docs/superpowers/handoffs/2026-10-22-whats-new/` (`README.md` and `PROMPT.md`), in the same
 pull request as this spec.
 

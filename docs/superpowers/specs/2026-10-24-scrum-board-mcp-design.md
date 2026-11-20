@@ -1,6 +1,7 @@
 # Scrum board MCP connector: design
 
-Date: 2026-10-24. Status: agreed with the maintainer in chat; awaiting their read of this document.
+Date: 2026-10-24. Status: agreed with the maintainer in chat; shipped in #301 (`backend/app/mcp/`, merged
+2026-10-27) and released in 0.93.0.
 
 ## Why
 
