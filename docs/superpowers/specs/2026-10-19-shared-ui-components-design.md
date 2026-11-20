@@ -132,6 +132,7 @@ In this session:
   component module exports components only), `npm run lint:design` (no raw hex outside the token files),
   `npm run build` (`tsc -b && vite build`), `npm run test:coverage` (thresholds in `vite.config.ts`: lines 52,
   statements 52, branches 48, functions 48; they only ever go up). CI runs all four on every PR into `beta`.
+- Since #267 (merged 2026-10-21), TypeScript 7 and oxlint have replaced TypeScript 5.9 and ESLint.
 - Baseline on `b6fff628`: 135 test files, 1,507 tests, coverage lines 58.66%, statements 57.89%, branches 56.23%,
   functions 54.59%. The shared components today: lines 98.1%, branches 90.5%, functions 93.3%. Built CSS:
   487,222 bytes in 37 files.

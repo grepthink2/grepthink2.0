@@ -1,5 +1,6 @@
 # Sprint Plan Documents — Design Spec
 
+**Superseded by** `2026-11-16-project-documents-design.md` (2026-11-16), except Part 0, shipped in 0.92.0.
 **Date:** 2026-10-22
 **Base:** `origin/beta` at `50f65d16` (code references below are to that head). New work branches from it.
 **Status:** draft for the maintainer's approval. Decisions marked ⚑ are mine; the others are the
