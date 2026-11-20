@@ -26,6 +26,8 @@ S3 = "student-3"
 CLASS = "class-1"
 P1 = "proj-1"
 P2 = "proj-2"
+#: "Today at the school" wherever these tests pin it: a Monday.
+TODAY = datetime.date(2026, 10, 5)
 
 
 def _profile(uid, first):
@@ -40,11 +42,12 @@ def _profile(uid, first):
 
 @pytest.fixture
 def db(monkeypatch):
-    """Seed a class with two projects; TA1 is a class TA assigned to P1.
+    """Seed a class in its second week on TODAY, with two projects; TA1 is a class TA assigned
+    to P1.
 
     Members:  P1 = {S1, S2},  P2 = {S1, S3}  (S1 is in both projects).
     """
-    start = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()  # → week 2
+    start = (TODAY - datetime.timedelta(days=7)).isoformat()  # → week 2
     fake = FakeSupabase(
         relations={
             ("projects", "classes"): ("class_id", "id", False),
@@ -113,6 +116,7 @@ def db(monkeypatch):
         monkeypatch.setattr(mod, "service_client", fake, raising=False)
         monkeypatch.setattr(mod, "supabase", fake, raising=False)
         monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    monkeypatch.setattr(controller, "_class_today", lambda zone, now=None: TODAY)
     return fake
 
 
@@ -123,12 +127,12 @@ def _set_class(db, **fields):
 
 @pytest.fixture
 def todays_zones(monkeypatch):
-    """Pin "today at the school" to 2026-10-05; the list records the zone each lookup asked for."""
+    """Pin "today at the school" to TODAY; the list records the zone each lookup asked for."""
     zones = []
 
     def todays_date(zone, now=None):
         zones.append(zone)
-        return datetime.date(2026, 10, 5)
+        return TODAY
 
     monkeypatch.setattr(controller, "_class_today", todays_date)
     return zones

@@ -19,10 +19,17 @@ from app.mcp.controller import BOARD_CHANGED, FillRejected
 from tests.scrum_support import PID, UID, pin_clock, pin_today
 from tests.test_mcp_controller import SPRINT_DONE, SPRINT_PLANNED, _db, _fill, _req, hand_made
 
-SCHOOL = ZoneInfo("America/Los_Angeles")
+#: The board's school keeps UTC-8 all year (an ``Etc/GMT`` name inverts the sign).
+SCHOOL = ZoneInfo("Etc/GMT+8")
 #: At noon. SPRINT_DONE ran Oct 12 to 23, SPRINT_PLANNED runs Oct 26 to Nov 6.
 TODAY = date(2026, 10, 27)
 OVER = "only while a board holds 3 or fewer stories that weren't imported, and this one holds more"
+
+
+@pytest.fixture(autouse=True)
+def _school_zone(monkeypatch):
+    """Put the board's class at a school on ``SCHOOL``, the zone the connector dates work in."""
+    monkeypatch.setattr(controller, "institution_timezone", lambda _institution_id: SCHOOL)
 
 
 def _noon(day: int) -> str:

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cssRules } from '@/test/cssRules';
@@ -6,6 +6,10 @@ import { Toast, ToastStack } from '../Toast';
 import { useToasts } from '../useToasts';
 
 describe('Toast', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders the message with a variant class and alerts on errors', () => {
     const { container } = render(<Toast variant="error" message="Couldn’t move GT-12" />);
     expect(screen.getByRole('alert')).toBeInTheDocument();
@@ -19,15 +23,18 @@ describe('Toast', () => {
   });
 
   it('runs the action and dismisses on demand', async () => {
+    // shouldAdvanceTime: Testing Library ends each user-event call on a timer of its own.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const onAction = vi.fn();
     const onDismiss = vi.fn();
     render(<Toast variant="error" message="Failed" actionLabel="Retry" onAction={onAction} onDismiss={onDismiss} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(onAction).toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-    await new Promise((r) => setTimeout(r, 200));   // exit animation
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await vi.advanceTimersByTimeAsync(200); // exit animation
     expect(onDismiss).toHaveBeenCalled();
   });
 

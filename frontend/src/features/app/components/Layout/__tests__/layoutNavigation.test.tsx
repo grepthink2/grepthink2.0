@@ -106,10 +106,13 @@ function pickFromProfileMenu(name: string) {
   fireEvent.click(row);
 }
 
-/** Waits for `path`, then lets anything still queued land before the caller checks the history. */
+/**
+ * Waits for `path`, then lets anything still queued land before the caller checks the history: act
+ * flushes React's queued work, and the work that work queues, until none is left.
+ */
 async function landsOn(path: string) {
   await waitFor(() => expect(page()).toBe(path));
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await act(async () => {});
   expect(page()).toBe(path);
 }
 
@@ -256,8 +259,8 @@ describe('a class list refresh while a class switch waits for its page', () => {
     const refresh = deferred<unknown>();
     api.getClasses.mockReturnValueOnce(refresh.promise);
     fireEvent.click(screen.getByText('refresh classes')); // My Classes' timer, say
+    // act lets the answer land, and whatever it queues in turn, before the checks.
     await act(async () => refresh.resolve({ classes }));
-    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(page()).toBe('/app/assignments/asgA');
     expect(commits).not.toContain('/app/assignments/asgA B');
 

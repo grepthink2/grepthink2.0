@@ -40,8 +40,9 @@ describe('resolveAssignmentState', () => {
   });
 
   it("opens at midnight in the school's zone", () => {
+    // A school at UTC+3 all year, Istanbul's clock: midnight on Oct 5 there is Oct 4 21:00Z.
     const istanbul = { ...A, due_at: '2026-10-07T21:00:00+00:00' };
-    expect(resolveAssignmentState(istanbul, new Date('2026-10-04T20:59:00Z'), false, true, 'Europe/Istanbul').action).toBe('opens_later');
-    expect(resolveAssignmentState(istanbul, new Date('2026-10-04T21:00:00Z'), false, true, 'Europe/Istanbul').action).toBe('start');
+    expect(resolveAssignmentState(istanbul, new Date('2026-10-04T20:59:00Z'), false, true, 'Etc/GMT-3').action).toBe('opens_later');
+    expect(resolveAssignmentState(istanbul, new Date('2026-10-04T21:00:00Z'), false, true, 'Etc/GMT-3').action).toBe('start');
   });
 });

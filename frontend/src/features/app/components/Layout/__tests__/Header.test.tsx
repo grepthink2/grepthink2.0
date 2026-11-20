@@ -271,9 +271,10 @@ describe('Header — a late window opened', () => {
     renderAt('/app/dashboard');
     fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
     fireEvent.click(screen.getByText('Late submissions open for TSR 9'));
-    // The list closes once the notice is read; then anything still queued lands before the check.
+    // The list closes once the notice is read; then anything still queued lands before the check:
+    // act flushes React's queued work, and the work that work queues, until none is left.
     await waitFor(() => expect(screen.queryByText('Late submissions open for TSR 9')).not.toBeInTheDocument());
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await act(async () => {});
     expect(screen.getByTestId('path').textContent).toBe('/app/dashboard');
     expect(state.ctx.setSelectedClass).not.toHaveBeenCalled();
   });

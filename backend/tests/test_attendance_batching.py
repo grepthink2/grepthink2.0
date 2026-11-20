@@ -32,6 +32,8 @@ P1, P2 = "proj-1", "proj-2"
 
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 NAMES = {INSTR: "Ina", TA1: "Tara", S1: "Sam", S2: "Sara", S3: "Sid", OUTSIDER: "Oz"}
+#: "Today at the school" for the seeded class: the Monday of its third week.
+TODAY = datetime.date(2026, 10, 5)
 
 
 def _trace(db) -> list[str]:
@@ -40,8 +42,9 @@ def _trace(db) -> list[str]:
 
 @pytest.fixture
 def db(monkeypatch):
-    """Fall class, 2 meetings/week. TA1 is P1's assigned TA. P1 = {S1, S2}, P2 = {S1, S3}."""
-    start = (datetime.date.today() - datetime.timedelta(days=14)).isoformat()
+    """Fall class in its third week on TODAY, 2 meetings/week. TA1 is P1's assigned TA.
+    P1 = {S1, S2}, P2 = {S1, S3}."""
+    start = (TODAY - datetime.timedelta(days=14)).isoformat()
     fake = FakeSupabase(
         profiles=[
             {
@@ -90,6 +93,7 @@ def db(monkeypatch):
         },
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    monkeypatch.setattr(controller, "_class_today", lambda zone, now=None: TODAY)
     return fake
 
 
@@ -337,11 +341,12 @@ def test_current_term_week_is_deterministic_with_an_injected_date():
 
 
 def test_class_today_is_the_schools_date():
-    # The same instant is still the 19th in Santa Cruz and already the 20th in Istanbul.
+    # The same instant is still the 19th at UTC-8 and already the 20th at UTC+3 (an ``Etc/GMT``
+    # name inverts the sign).
     instant = datetime.datetime(2026, 10, 19, 22, 30, tzinfo=datetime.UTC)
-    santa_cruz = controller._class_today(ZoneInfo("America/Los_Angeles"), instant)
-    istanbul = controller._class_today(ZoneInfo("Europe/Istanbul"), instant)
-    assert (santa_cruz, istanbul) == (datetime.date(2026, 10, 19), datetime.date(2026, 10, 20))
+    pacific = controller._class_today(ZoneInfo("Etc/GMT+8"), instant)
+    istanbul = controller._class_today(ZoneInfo("Etc/GMT-3"), instant)
+    assert (pacific, istanbul) == (datetime.date(2026, 10, 19), datetime.date(2026, 10, 20))
 
 
 # ------------------------------------------------------------ view wiring

@@ -15,7 +15,8 @@ vi.mock('@/lib/api', () => ({
   emptyMySubmissions: () => ({ tsrs: [], feedback_assignment_ids: [] }),
 }));
 
-// A class at a school in Istanbul (UTC+3, no daylight saving).
+// A class at a school in Istanbul (UTC+3, no daylight saving), whose zone the schools list gives as
+// that fixed offset.
 const classContext = vi.hoisted(() => ({
   selectedClass: {
     id: 'c1',
@@ -34,7 +35,7 @@ const ISTINYE: ApiInstitution = {
   name: 'İstinye University',
   slug: 'istinye',
   email_domains: ['istinye.edu.tr'],
-  timezone: 'Europe/Istanbul',
+  timezone: 'Etc/GMT-3',
 };
 
 // Opens at midnight on Oct 5 in Istanbul (Oct 4 21:00Z), ten hours before midnight in Pacific.

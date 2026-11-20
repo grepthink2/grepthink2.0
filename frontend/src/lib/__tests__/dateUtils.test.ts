@@ -79,8 +79,8 @@ describe('dateUtils — deadlines', () => {
 
 describe('dateUtils — the opening instant', () => {
   it('startOfDayIn is midnight in the named zone', () => {
-    expect(startOfDayIn('America/Los_Angeles', '2026-10-05').toISOString()).toBe('2026-10-05T07:00:00.000Z');
-    expect(startOfDayIn('Europe/Istanbul', '2026-10-05').toISOString()).toBe('2026-10-04T21:00:00.000Z');
+    expect(startOfDayIn('Etc/GMT+8', '2026-10-05').toISOString()).toBe('2026-10-05T08:00:00.000Z');
+    expect(startOfDayIn('Etc/GMT-3', '2026-10-05').toISOString()).toBe('2026-10-04T21:00:00.000Z');
   });
 
   it('startOfDayIn takes the offset in force at midnight on the day DST ends', () => {
@@ -97,7 +97,7 @@ describe('dateUtils — the opening instant', () => {
 
   it("assignmentOpensAt opens at midnight in the school's zone", () => {
     const a = { open_date: '2026-10-05', close_date: '2026-10-07' };
-    expect(assignmentOpensAt(a, 'Europe/Istanbul')?.toISOString()).toBe('2026-10-04T21:00:00.000Z');
+    expect(assignmentOpensAt(a, 'Etc/GMT-3')?.toISOString()).toBe('2026-10-04T21:00:00.000Z'); // UTC+3
   });
 });
 

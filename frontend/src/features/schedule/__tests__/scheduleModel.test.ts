@@ -22,9 +22,17 @@ import {
   type ScheduleItemData,
 } from '../scheduleModel';
 
+/**
+ * The zone most tests read in: UTC-7 all year, Santa Cruz's clock on these October dates. A fixed
+ * offset, so no answer depends on the runner's time-zone data.
+ */
+const ZONE = 'Etc/GMT+7';
+/** A viewer far from campus: UTC+5 all year. */
+const UTC_PLUS_5 = 'Etc/GMT-5';
+/** Istanbul's clock: UTC+3 all year. */
+const ISTANBUL = 'Etc/GMT-3';
+/** The real Pacific zone: for its daylight-saving change, and as the zone the model falls back to. */
 const LA = 'America/Los_Angeles';
-const IST = 'Asia/Kolkata';
-const ISTANBUL = 'Europe/Istanbul';
 
 /** Tue Oct 20, 2026, 3:12 PM PT: the clock the design's demo is pinned to. */
 const NOW = new Date('2026-10-20T22:12:00Z');
@@ -66,8 +74,8 @@ describe('kindMeta', () => {
 
 describe('day keys', () => {
   it('reads the calendar day on the zone’s own clock', () => {
-    expect(dayKey('2026-10-21T06:30:00Z', LA)).toBe('2026-10-20'); // 11:30 PM Tuesday in Santa Cruz
-    expect(dayKey('2026-10-21T06:30:00Z', IST)).toBe('2026-10-21'); // noon Wednesday in Kolkata
+    expect(dayKey('2026-10-21T06:30:00Z', ZONE)).toBe('2026-10-20'); // 11:30 PM Tuesday in Santa Cruz
+    expect(dayKey('2026-10-21T06:30:00Z', UTC_PLUS_5)).toBe('2026-10-21'); // 11:30 AM Wednesday at UTC+5
   });
 
   it('moves a key by whole days without being fooled by a daylight-saving change', () => {
@@ -81,28 +89,28 @@ describe('day keys', () => {
 
 describe('statusOf', () => {
   it('is upcoming before the start, live from the start and past from the end', () => {
-    expect(statusOf(item(), new Date('2026-10-20T21:59:59Z'), LA)).toBe('upcoming');
-    expect(statusOf(item(), new Date('2026-10-20T22:00:00Z'), LA)).toBe('live');
-    expect(statusOf(item(), new Date('2026-10-20T22:44:59Z'), LA)).toBe('live');
-    expect(statusOf(item(), new Date('2026-10-20T22:45:00Z'), LA)).toBe('past');
+    expect(statusOf(item(), new Date('2026-10-20T21:59:59Z'), ZONE)).toBe('upcoming');
+    expect(statusOf(item(), new Date('2026-10-20T22:00:00Z'), ZONE)).toBe('live');
+    expect(statusOf(item(), new Date('2026-10-20T22:44:59Z'), ZONE)).toBe('live');
+    expect(statusOf(item(), new Date('2026-10-20T22:45:00Z'), ZONE)).toBe('past');
   });
 
   it('keeps the status the data sends for cancelled and Time TBD, and never ends a sprint edge', () => {
-    expect(statusOf(item({ status: 'cancelled' }), NOW, LA)).toBe('cancelled');
-    expect(statusOf(item({ status: 'tbd' }), NOW, LA)).toBe('tbd');
-    expect(statusOf(item({ kind: 'sprint', startsAt: '2026-10-01T07:00:00Z', endsAt: null }), NOW, LA)).toBe('upcoming');
+    expect(statusOf(item({ status: 'cancelled' }), NOW, ZONE)).toBe('cancelled');
+    expect(statusOf(item({ status: 'tbd' }), NOW, ZONE)).toBe('tbd');
+    expect(statusOf(item({ kind: 'sprint', startsAt: '2026-10-01T07:00:00Z', endsAt: null }), NOW, ZONE)).toBe('upcoming');
   });
 
   it('treats an item with no end as a point in time', () => {
     const deadline = item({ kind: 'deadline', endsAt: null, startsAt: '2026-10-21T06:59:00Z' });
-    expect(statusOf(deadline, NOW, LA)).toBe('upcoming');
-    expect(statusOf(deadline, new Date('2026-10-21T06:59:00Z'), LA)).toBe('past');
+    expect(statusOf(deadline, NOW, ZONE)).toBe('upcoming');
+    expect(statusOf(deadline, new Date('2026-10-21T06:59:00Z'), ZONE)).toBe('past');
   });
 
   it('keeps an all-day item upcoming through its day and past after it, by the zone’s calendar', () => {
     const allDay = item({ allDay: true, startsAt: '2026-10-20T07:00:00Z', endsAt: null }); // midnight Oct 20 PT
-    expect(statusOf(allDay, new Date('2026-10-21T06:59:00Z'), LA)).toBe('upcoming'); // 11:59 PM Oct 20 PT
-    expect(statusOf(allDay, new Date('2026-10-21T07:00:00Z'), LA)).toBe('past');
+    expect(statusOf(allDay, new Date('2026-10-21T06:59:00Z'), ZONE)).toBe('upcoming'); // 11:59 PM Oct 20 PT
+    expect(statusOf(allDay, new Date('2026-10-21T07:00:00Z'), ZONE)).toBe('past');
   });
 });
 
@@ -137,15 +145,15 @@ describe('countdown', () => {
   const review = (startsAt: string) => item({ kind: 'final_review', startsAt });
 
   it('says today, tomorrow or the days left once the item is under a week away', () => {
-    expect(countdown(review('2026-10-21T01:00:00Z'), NOW, LA)).toBe('today'); // 6 PM Oct 20 PT
-    expect(countdown(review('2026-10-21T21:40:00Z'), NOW, LA)).toBe('tomorrow');
-    expect(countdown(review('2026-10-23T21:40:00Z'), NOW, LA)).toBe('in 3 days');
-    expect(countdown(review('2026-10-26T21:40:00Z'), NOW, LA)).toBe('in 6 days');
+    expect(countdown(review('2026-10-21T01:00:00Z'), NOW, ZONE)).toBe('today'); // 6 PM Oct 20 PT
+    expect(countdown(review('2026-10-21T21:40:00Z'), NOW, ZONE)).toBe('tomorrow');
+    expect(countdown(review('2026-10-23T21:40:00Z'), NOW, ZONE)).toBe('in 3 days');
+    expect(countdown(review('2026-10-26T21:40:00Z'), NOW, ZONE)).toBe('in 6 days');
   });
 
   it('says nothing from a week out, or once the day has passed', () => {
-    expect(countdown(review('2026-10-27T21:40:00Z'), NOW, LA)).toBeNull();
-    expect(countdown(review('2026-10-19T21:40:00Z'), NOW, LA)).toBeNull();
+    expect(countdown(review('2026-10-27T21:40:00Z'), NOW, ZONE)).toBeNull();
+    expect(countdown(review('2026-10-19T21:40:00Z'), NOW, ZONE)).toBeNull();
   });
 });
 
@@ -156,7 +164,7 @@ describe('sortItems', () => {
     const early = item({ id: 'early', title: 'Beta', startsAt: '2026-10-20T17:00:00Z' });
     const allDay = item({ id: 'allday', allDay: true, startsAt: '2026-10-20T07:00:00Z', endsAt: null });
     const sprint = item({ id: 'sprint', kind: 'sprint', title: 'Sprint 3 starts', startsAt: '2026-10-20T07:00:00Z', endsAt: null });
-    const order = sortItems([tbd, late, early, allDay, sprint], LA).map((i) => i.id);
+    const order = sortItems([tbd, late, early, allDay, sprint], ZONE).map((i) => i.id);
     expect(order).toEqual(['sprint', 'allday', 'early', 'late', 'tbd']);
   });
 
@@ -164,15 +172,15 @@ describe('sortItems', () => {
     const b = item({ id: 'b', title: 'Bravo' });
     const a = item({ id: 'a', title: 'Alpha' });
     const input = [b, a];
-    expect(sortItems(input, LA).map((i) => i.id)).toEqual(['a', 'b']);
+    expect(sortItems(input, ZONE).map((i) => i.id)).toEqual(['a', 'b']);
     expect(input.map((i) => i.id)).toEqual(['b', 'a']);
   });
 
   it('sorts by the day on the viewer’s clock', () => {
-    const timed = item({ id: 'timed', startsAt: '2026-10-21T06:30:00Z', endsAt: '2026-10-21T07:30:00Z' }); // 11:30 PM Tue in Santa Cruz, noon Wed in Kolkata
+    const timed = item({ id: 'timed', startsAt: '2026-10-21T06:30:00Z', endsAt: '2026-10-21T07:30:00Z' }); // 11:30 PM Tue in Santa Cruz, 11:30 AM Wed at UTC+5
     const allDay = item({ id: 'allday', allDay: true, startsAt: '2026-10-21T07:00:00Z', endsAt: null }); // midnight Wed in Santa Cruz
-    expect(sortItems([allDay, timed], LA).map((i) => i.id)).toEqual(['timed', 'allday']); // different days
-    expect(sortItems([allDay, timed], IST).map((i) => i.id)).toEqual(['allday', 'timed']); // one day: all-day first
+    expect(sortItems([allDay, timed], ZONE).map((i) => i.id)).toEqual(['timed', 'allday']); // different days
+    expect(sortItems([allDay, timed], UTC_PLUS_5).map((i) => i.id)).toEqual(['allday', 'timed']); // one day: all-day first
   });
 });
 
@@ -181,7 +189,7 @@ describe('groupByDay', () => {
     const today = item({ id: 'today' });
     const edge = item({ id: 'edge', kind: 'sprint', title: 'Sprint 3 starts', startsAt: '2026-10-20T07:00:00Z', endsAt: null });
     const thursday = item({ id: 'thu', startsAt: '2026-10-22T21:00:00Z', endsAt: '2026-10-22T22:00:00Z' });
-    const groups = groupByDay([thursday, today, edge], { zone: LA, now: NOW });
+    const groups = groupByDay([thursday, today, edge], { zone: ZONE, now: NOW });
     expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({ key: '2026-10-20', isToday: true });
     expect(groups[0].dividers.map((i) => i.id)).toEqual(['edge']);
@@ -197,8 +205,8 @@ describe('groupByDay', () => {
 
 describe('formatters', () => {
   it('reads a time on the zone’s clock', () => {
-    expect(fmtTime('2026-10-20T22:00:00Z', LA)).toBe('3:00 PM');
-    expect(fmtTime(new Date('2026-10-20T22:00:00Z'), IST)).toBe('3:30 AM');
+    expect(fmtTime('2026-10-20T22:00:00Z', ZONE)).toBe('3:00 PM');
+    expect(fmtTime(new Date('2026-10-20T22:00:00Z'), UTC_PLUS_5)).toBe('3:00 AM');
   });
 
   it('keeps a plain space before AM/PM even when the engine emits a narrow no-break space', () => {
@@ -211,19 +219,19 @@ describe('formatters', () => {
     vi.stubGlobal('Intl', { DateTimeFormat: NarrowSpaceFormat });
     // A zone nothing else in this file formats in, so the model's formatter cache is cold (and stays
     // out of any later test's way: the stubbed formatter is cached under this zone).
-    const zone = 'Pacific/Kiritimati';
+    const zone = 'Etc/GMT-14';
     expect(fmtTime('2026-10-20T22:00:00Z', zone)).toBe('12:00 PM');
     expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: '2026-10-20T22:45:00Z' }, zone)).toBe('12:00 – 12:45 PM');
   });
 
   it('formats a range once when the period is shared', () => {
-    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: '2026-10-20T22:45:00Z' }, LA)).toBe('3:00 – 3:45 PM');
+    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: '2026-10-20T22:45:00Z' }, ZONE)).toBe('3:00 – 3:45 PM');
   });
 
   it('repeats the period when the range crosses noon, and shows only the start without an end', () => {
-    expect(fmtTimeRange({ startsAt: '2026-10-20T18:30:00Z', endsAt: '2026-10-20T19:15:00Z' }, LA)).toBe('11:30 AM – 12:15 PM');
-    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z' }, LA)).toBe('3:00 PM');
-    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: null }, LA)).toBe('3:00 PM');
+    expect(fmtTimeRange({ startsAt: '2026-10-20T18:30:00Z', endsAt: '2026-10-20T19:15:00Z' }, ZONE)).toBe('11:30 AM – 12:15 PM');
+    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z' }, ZONE)).toBe('3:00 PM');
+    expect(fmtTimeRange({ startsAt: '2026-10-20T22:00:00Z', endsAt: null }, ZONE)).toBe('3:00 PM');
   });
 
   it('writes a duration for the row and for the <time> element', () => {
@@ -246,10 +254,10 @@ describe('formatters', () => {
   });
 
   it('labels a day Today, Tomorrow or Yesterday with the weekday and date, else by weekday', () => {
-    expect(fmtDayLabel('2026-10-20', NOW, LA)).toEqual({ title: 'Today', date: 'Tue, Oct 20', isToday: true });
-    expect(fmtDayLabel('2026-10-21', NOW, LA)).toEqual({ title: 'Tomorrow', date: 'Wed, Oct 21', isToday: false });
-    expect(fmtDayLabel('2026-10-19', NOW, LA)).toEqual({ title: 'Yesterday', date: 'Mon, Oct 19', isToday: false });
-    expect(fmtDayLabel('2026-10-22', NOW, LA)).toEqual({ title: 'Thursday', date: 'Oct 22', isToday: false });
+    expect(fmtDayLabel('2026-10-20', NOW, ZONE)).toEqual({ title: 'Today', date: 'Tue, Oct 20', isToday: true });
+    expect(fmtDayLabel('2026-10-21', NOW, ZONE)).toEqual({ title: 'Tomorrow', date: 'Wed, Oct 21', isToday: false });
+    expect(fmtDayLabel('2026-10-19', NOW, ZONE)).toEqual({ title: 'Yesterday', date: 'Mon, Oct 19', isToday: false });
+    expect(fmtDayLabel('2026-10-22', NOW, ZONE)).toEqual({ title: 'Thursday', date: 'Oct 22', isToday: false });
   });
 });
 
@@ -258,14 +266,14 @@ describe('time zones', () => {
     expect(zoneLabel(LA, new Date('2026-10-20T22:00:00Z'))).toBe('PT'); // PDT
     expect(zoneLabel(LA, new Date('2026-11-20T22:00:00Z'))).toBe('PT'); // PST
     expect(zoneLabel('America/New_York', new Date('2026-10-20T22:00:00Z'))).toBe('ET');
-    expect(zoneLabel(IST, new Date('2026-10-20T22:00:00Z'))).toBe('GMT+5:30');
+    expect(zoneLabel(UTC_PLUS_5, new Date('2026-10-20T22:00:00Z'))).toBe('GMT+5');
   });
 
   it('compares zones by UTC offset at the moment, so PDT against PST never counts as a difference', () => {
     const summer = new Date('2026-07-20T22:00:00Z');
     const winter = new Date('2026-12-20T22:00:00Z');
     expect(zoneDiffers(LA, LA, summer)).toBe(false);
-    expect(zoneDiffers(LA, IST, summer)).toBe(true);
+    expect(zoneDiffers(LA, UTC_PLUS_5, summer)).toBe(true);
     // Fixed-offset zones only: a real zone's daylight-time rules can change, and then the
     // answer depends on the runner's time-zone data (America/Vancouver failed on CI this way).
     // UTC-7 all year: the same clock as Santa Cruz in summer, an hour ahead of it in winter.
@@ -277,8 +285,8 @@ describe('time zones', () => {
   });
 
   it('reads the viewer’s zone from the browser, and falls back to Pacific when it cannot say', () => {
-    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: IST } as Intl.ResolvedDateTimeFormatOptions);
-    expect(viewerZone()).toBe(IST);
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: UTC_PLUS_5 } as Intl.ResolvedDateTimeFormatOptions);
+    expect(viewerZone()).toBe(UTC_PLUS_5);
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: '' } as Intl.ResolvedDateTimeFormatOptions);
     expect(viewerZone()).toBe(LA);
     vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(() => {

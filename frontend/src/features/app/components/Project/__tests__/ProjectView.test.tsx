@@ -303,21 +303,21 @@ describe('ProjectView — the team meetings card', () => {
   });
 
   it('gives the campus time of the class’s school, not Pacific', async () => {
-    // The class is at İstinye and the schools list names its zone; the viewer's own clock is Santa Cruz's.
+    // The class is at İstinye and the schools list names its zone, UTC+3; the viewer's own clock is UTC-8.
     classContext.classes = [{ id: 'c1', institution: { id: 'istinye', name: 'İstinye University', slug: 'istinye' } }];
     clearInstitutionsCache();
     getInstitutions.mockResolvedValueOnce([
-      { id: 'istinye', name: 'İstinye University', slug: 'istinye', email_domains: ['istinye.edu.tr'], timezone: 'Europe/Istanbul' },
+      { id: 'istinye', name: 'İstinye University', slug: 'istinye', email_domains: ['istinye.edu.tr'], timezone: 'Etc/GMT-3' },
     ]);
     const viewerZone = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
-      timeZone: 'America/Los_Angeles',
+      timeZone: 'Etc/GMT+8',
     } as Intl.ResolvedDateTimeFormatOptions);
     try {
       getProjectMeetings.mockResolvedValueOnce({ meetings: [row()], can_manage: false });
       renderView({ userRoleOnProject: 'member' });
 
       await within(card()!).findByText('Design review');
-      await waitFor(() => expect(card()).toHaveTextContent('Times in PT · campus is GMT+3'));
+      await waitFor(() => expect(card()).toHaveTextContent('Times in GMT-8 · campus is GMT+3'));
     } finally {
       viewerZone.mockRestore();
       classContext.classes = [];

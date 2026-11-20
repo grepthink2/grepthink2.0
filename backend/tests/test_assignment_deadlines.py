@@ -10,29 +10,41 @@ import pytest
 
 from app.assignments import deadlines
 
-LA = ZoneInfo("America/Los_Angeles")
-IST = ZoneInfo("Europe/Istanbul")
+#: Fixed offsets, which no daylight-time rule can move: UTC-8 all year (Pacific standard time)
+#: and UTC+3 (Istanbul). An ``Etc/GMT`` name inverts the sign.
+PACIFIC = ZoneInfo("Etc/GMT+8")
+ISTANBUL = ZoneInfo("Etc/GMT-3")
+#: A real zone, only for the daylight-time change itself.
+LOS_ANGELES = ZoneInfo("America/Los_Angeles")
 
 
 def test_due_at_is_midnight_after_the_due_day_in_the_schools_zone():
-    assert deadlines.due_at_for(date(2026, 10, 7), LA) == datetime(2026, 10, 8, 7, 0, tzinfo=UTC)
-    assert deadlines.due_at_for(date(2026, 10, 7), IST) == datetime(2026, 10, 7, 21, 0, tzinfo=UTC)
-    assert deadlines.due_at_for(None, LA) is None
+    assert deadlines.due_at_for(date(2026, 10, 7), PACIFIC) == datetime(
+        2026, 10, 8, 8, 0, tzinfo=UTC
+    )
+    assert deadlines.due_at_for(date(2026, 10, 7), ISTANBUL) == datetime(
+        2026, 10, 7, 21, 0, tzinfo=UTC
+    )
+    assert deadlines.due_at_for(None, PACIFIC) is None
 
 
 def test_due_at_across_the_dst_change_day():
     # Los Angeles leaves DST on 2026-11-01: midnight after that day is 08:00 UTC, not 07:00.
-    assert deadlines.due_at_for(date(2026, 10, 31), LA) == datetime(2026, 11, 1, 7, 0, tzinfo=UTC)
-    assert deadlines.due_at_for(date(2026, 11, 1), LA) == datetime(2026, 11, 2, 8, 0, tzinfo=UTC)
-    # Istanbul has no DST: always 21:00 UTC.
-    assert deadlines.due_at_for(date(2026, 10, 25), IST) == datetime(
-        2026, 10, 25, 21, 0, tzinfo=UTC
+    assert deadlines.due_at_for(date(2026, 10, 31), LOS_ANGELES) == datetime(
+        2026, 11, 1, 7, 0, tzinfo=UTC
+    )
+    assert deadlines.due_at_for(date(2026, 11, 1), LOS_ANGELES) == datetime(
+        2026, 11, 2, 8, 0, tzinfo=UTC
+    )
+    # The same day in a zone without DST keeps its offset: 21:00 UTC at UTC+3.
+    assert deadlines.due_at_for(date(2026, 11, 1), ISTANBUL) == datetime(
+        2026, 11, 1, 21, 0, tzinfo=UTC
     )
 
 
 def test_opens_at_is_midnight_starting_the_open_day():
-    assert deadlines.opens_at(date(2026, 10, 5), LA) == datetime(2026, 10, 5, 7, 0, tzinfo=UTC)
-    assert deadlines.opens_at(None, LA) is None
+    assert deadlines.opens_at(date(2026, 10, 5), PACIFIC) == datetime(2026, 10, 5, 8, 0, tzinfo=UTC)
+    assert deadlines.opens_at(None, PACIFIC) is None
 
 
 def test_closes_at_prefers_the_late_window():

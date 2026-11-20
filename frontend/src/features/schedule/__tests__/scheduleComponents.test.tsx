@@ -8,9 +8,15 @@ import { ScheduleIcon } from '../components/ScheduleIcon';
 import { ScheduleItem } from '../components/ScheduleItem';
 import type { ScheduleItemData } from '../scheduleModel';
 
-const LA = 'America/Los_Angeles';
-const IST = 'Asia/Kolkata';
-const ISTANBUL = 'Europe/Istanbul';
+/**
+ * The zone most tests read in: UTC-7 all year, Santa Cruz's clock on these October dates. A fixed
+ * offset, so no answer depends on the runner's time-zone data.
+ */
+const ZONE = 'Etc/GMT+7';
+/** A viewer far from campus: UTC+5 all year. */
+const UTC_PLUS_5 = 'Etc/GMT-5';
+/** Istanbul's clock: UTC+3 all year. */
+const ISTANBUL = 'Etc/GMT-3';
 
 /** Make `zone` the browser's own zone, which a component reads when it is not told one. */
 function viewerIn(zone: string) {
@@ -69,7 +75,7 @@ function clickLink(link: Element): { handled: boolean } {
 
 describe('ScheduleItem (compact row)', () => {
   it('shows a team meeting as a time block, a kind tile, the title, its context and the organizer', () => {
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={ZONE} />);
 
     expect(row()).toHaveClass('gt-sched-item', 'gt-sched-item--meeting', 'gt-sched-item--upcoming');
     expect(row()).not.toHaveAttribute('aria-current');
@@ -92,25 +98,25 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('puts the room in the context line instead of Zoom', () => {
-    renderRow(<ScheduleItem item={meeting({ location: 'E2 room 180' })} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ location: 'E2 room 180' })} now={NOW} zone={ZONE} />);
     expect(screen.getByText('E2 room 180')).toHaveClass('gt-sched-item__place');
     expect(screen.queryByText('Zoom')).not.toBeInTheDocument();
   });
 
   it('drops the MEETING eyebrow when the title already says it', () => {
-    renderRow(<ScheduleItem item={meeting({ title: 'Team meeting' })} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ title: 'Team meeting' })} now={NOW} zone={ZONE} />);
     expect(row().querySelector('.gt-sched-item__kind')).toBeNull();
   });
 
   it('calls a whole-class meeting by that name when no team is given', () => {
-    renderRow(<ScheduleItem item={meeting({ teamName: undefined, scope: 'class', zoomUrl: null })} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ teamName: undefined, scope: 'class', zoomUrl: null })} now={NOW} zone={ZONE} />);
     expect(screen.getByText('Whole class')).toHaveClass('gt-sched-item__meta-primary');
   });
 
   it('marks a meeting in progress with the blue Live badge and offers Join Zoom', () => {
     const onJoin = vi.fn();
     const item = meeting();
-    renderRow(<ScheduleItem item={item} now={new Date('2026-10-20T22:10:00Z')} zone={LA} onJoin={onJoin} />);
+    renderRow(<ScheduleItem item={item} now={new Date('2026-10-20T22:10:00Z')} zone={ZONE} onJoin={onJoin} />);
 
     expect(row()).toHaveAttribute('aria-current', 'true');
     expect(row()).toHaveClass('gt-sched-item--live');
@@ -132,12 +138,12 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('offers Join Zoom from ten minutes before the start, and only then', () => {
-    const { rerender } = renderRow(<ScheduleItem item={meeting()} now={new Date('2026-10-20T21:49:00Z')} zone={LA} />);
+    const { rerender } = renderRow(<ScheduleItem item={meeting()} now={new Date('2026-10-20T21:49:00Z')} zone={ZONE} />);
     expect(screen.queryByRole('link', { name: 'Join Zoom' })).not.toBeInTheDocument();
     rerender(
       <div className="gt-sched gt-sched--compact">
         <ol className="gt-sched__items">
-          <ScheduleItem item={meeting()} now={new Date('2026-10-20T21:50:00Z')} zone={LA} />
+          <ScheduleItem item={meeting()} now={new Date('2026-10-20T21:50:00Z')} zone={ZONE} />
         </ol>
       </div>,
     );
@@ -146,26 +152,26 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('has no Join action and no Zoom place without a Zoom link', () => {
-    renderRow(<ScheduleItem item={meeting({ zoomUrl: null })} now={new Date('2026-10-20T22:10:00Z')} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ zoomUrl: null })} now={new Date('2026-10-20T22:10:00Z')} zone={ZONE} />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByText('Zoom')).not.toBeInTheDocument();
   });
 
   it('shows a meeting that has ended as past, with nothing to join', () => {
-    renderRow(<ScheduleItem item={meeting()} now={new Date('2026-10-20T23:30:00Z')} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting()} now={new Date('2026-10-20T23:30:00Z')} zone={ZONE} />);
     expect(row()).toHaveClass('gt-sched-item--past');
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Join Zoom' })).not.toBeInTheDocument();
   });
 
   it('reads times on the viewer’s clock and keeps the campus time in the title when asked', () => {
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={IST} schoolZone={LA} showSchoolTime />);
-    const start = screen.getByText('3:30 AM');
-    expect(start).toHaveAttribute('title', '3:00 – 4:00 PM PT');
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={UTC_PLUS_5} schoolZone={ZONE} showSchoolTime />);
+    const start = screen.getByText('3:00 AM');
+    expect(start).toHaveAttribute('title', '3:00 – 4:00 PM GMT-7');
   });
 
   it('keeps the campus time of a school outside Pacific in the title', () => {
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} schoolZone={ISTANBUL} showSchoolTime />);
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={ZONE} schoolZone={ISTANBUL} showSchoolTime />);
     // 3:00 – 4:00 PM in Santa Cruz is 22:00 – 23:00 UTC: 1:00 – 2:00 AM on Wed Oct 21 in Istanbul.
     expect(screen.getByText('3:00 PM')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
   });
@@ -177,8 +183,8 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('leaves the campus time out of the title unless asked', () => {
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={IST} schoolZone={LA} />);
-    expect(screen.getByText('3:30 AM')).not.toHaveAttribute('title');
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={UTC_PLUS_5} schoolZone={ZONE} />);
+    expect(screen.getByText('3:00 AM')).not.toHaveAttribute('title');
   });
 
   it('strikes a cancelled meeting, says why and offers no Join', () => {
@@ -186,7 +192,7 @@ describe('ScheduleItem (compact row)', () => {
       <ScheduleItem
         item={meeting({ status: 'cancelled', cancelReason: 'Room double-booked' })}
         now={new Date('2026-10-20T22:10:00Z')}
-        zone={LA}
+        zone={ZONE}
       />,
     );
     expect(row()).toHaveClass('gt-sched-item--cancelled');
@@ -198,7 +204,7 @@ describe('ScheduleItem (compact row)', () => {
   it('says Time TBD instead of a time, and lets staff set one', () => {
     const onSetTime = vi.fn();
     const item = meeting({ status: 'tbd' });
-    const { rerender } = renderRow(<ScheduleItem item={item} now={NOW} zone={LA} lens="student" onSetTime={onSetTime} />);
+    const { rerender } = renderRow(<ScheduleItem item={item} now={NOW} zone={ZONE} lens="student" onSetTime={onSetTime} />);
     expect(screen.getByText('Time TBD')).toBeInTheDocument();
     expect(row().querySelector('time')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Set time' })).not.toBeInTheDocument();
@@ -206,7 +212,7 @@ describe('ScheduleItem (compact row)', () => {
     rerender(
       <div className="gt-sched gt-sched--compact">
         <ol className="gt-sched__items">
-          <ScheduleItem item={item} now={NOW} zone={LA} lens="ta" onSetTime={onSetTime} />
+          <ScheduleItem item={item} now={NOW} zone={ZONE} lens="ta" onSetTime={onSetTime} />
         </ol>
       </div>,
     );
@@ -215,7 +221,7 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('says All day for an all-day item', () => {
-    renderRow(<ScheduleItem item={meeting({ allDay: true, endsAt: null })} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ allDay: true, endsAt: null })} now={NOW} zone={ZONE} />);
     expect(screen.getByText('All day')).toBeInTheDocument();
     expect(row().querySelector('time')).toBeNull();
   });
@@ -230,7 +236,7 @@ describe('ScheduleItem (compact row)', () => {
       endsAt: null,
       href: '/app/assignments/a1',
     };
-    renderRow(<ScheduleItem item={item} now={NOW} zone={LA} onOpen={onOpen} />);
+    renderRow(<ScheduleItem item={item} now={NOW} zone={ZONE} onOpen={onOpen} />);
 
     expect(row()).toHaveClass('gt-sched-item--marker');
     expect(screen.getByText('Due')).toBeInTheDocument();
@@ -243,7 +249,7 @@ describe('ScheduleItem (compact row)', () => {
 
   it('follows a deadline link as usual when nothing handles the click', () => {
     const item: ScheduleItemData = { id: 'd1', kind: 'deadline', title: 'TSR 4 due', startsAt: '2026-10-21T06:59:00Z', href: '/app/assignments/a1' };
-    renderRow(<ScheduleItem item={item} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={item} now={NOW} zone={ZONE} />);
     expect(clickLink(screen.getByRole('link', { name: 'TSR 4 due' })).handled).toBe(false);
   });
 
@@ -262,7 +268,7 @@ describe('ScheduleItem (compact row)', () => {
         { name: 'Rex Review', slot: 'review', you: true },
       ],
     };
-    renderRow(<ScheduleItem item={review} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={review} now={NOW} zone={ZONE} />);
 
     expect(screen.getByText('in 3 days')).toHaveClass('gt-sched-item__countdown');
     expect(screen.getByText('Shared Zoom room')).toHaveClass('gt-sched-item__place');
@@ -273,14 +279,14 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('shows no countdown for a meeting, or once the review has begun', () => {
-    const { rerender } = renderRow(<ScheduleItem item={meeting({ startsAt: '2026-10-21T21:40:00Z', endsAt: null })} now={NOW} zone={LA} />);
+    const { rerender } = renderRow(<ScheduleItem item={meeting({ startsAt: '2026-10-21T21:40:00Z', endsAt: null })} now={NOW} zone={ZONE} />);
     expect(screen.queryByText('tomorrow')).not.toBeInTheDocument();
 
     const review: ScheduleItemData = { id: 'f1', kind: 'final_review', title: 'Final review', startsAt: '2026-10-20T22:00:00Z', endsAt: '2026-10-20T23:00:00Z' };
     rerender(
       <div className="gt-sched gt-sched--compact">
         <ol className="gt-sched__items">
-          <ScheduleItem item={review} now={new Date('2026-10-20T22:10:00Z')} zone={LA} />
+          <ScheduleItem item={review} now={new Date('2026-10-20T22:10:00Z')} zone={ZONE} />
         </ol>
       </div>,
     );
@@ -302,7 +308,7 @@ describe('ScheduleItem (compact row)', () => {
       attendance: 'late',
       host: { name: 'Ro Trinh' },
     };
-    renderRow(<ScheduleItem item={ta} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={ta} now={NOW} zone={ZONE} />);
 
     expect(screen.getByText('Late')).toHaveClass('gt-badge', 'gt-badge--warning');
     expect(screen.getByText('Weekly · Tue')).toBeInTheDocument();
@@ -321,7 +327,7 @@ describe('ScheduleItem (compact row)', () => {
       teamName: 'Team 1',
       attendance: { present: 3, total: 4 },
     };
-    const { rerender } = renderRow(<ScheduleItem item={ta} now={NOW} zone={LA} lens="ta" onMarkAttendance={onMarkAttendance} />);
+    const { rerender } = renderRow(<ScheduleItem item={ta} now={NOW} zone={ZONE} lens="ta" onMarkAttendance={onMarkAttendance} />);
     expect(screen.getByText('3/4 present')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Mark attendance' }));
     expect(onMarkAttendance).toHaveBeenCalledWith(ta);
@@ -329,7 +335,7 @@ describe('ScheduleItem (compact row)', () => {
     rerender(
       <div className="gt-sched gt-sched--compact">
         <ol className="gt-sched__items">
-          <ScheduleItem item={ta} now={NOW} zone={LA} lens="student" onMarkAttendance={onMarkAttendance} />
+          <ScheduleItem item={ta} now={NOW} zone={ZONE} lens="student" onMarkAttendance={onMarkAttendance} />
         </ol>
       </div>,
     );
@@ -339,7 +345,7 @@ describe('ScheduleItem (compact row)', () => {
 
   it('names the items a row overlaps with, in the pill’s title and for screen readers', () => {
     const other = meeting({ id: 'o1', title: 'Office hours' });
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} overlaps={[other]} />);
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={ZONE} overlaps={[other]} />);
     expect(row()).toHaveClass('gt-sched-item--overlap');
     const pill = screen.getByText('Overlaps', { exact: false }).closest('.gt-badge');
     expect(pill).toHaveClass('gt-badge--warning');
@@ -348,7 +354,7 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('shows a photo when the person has one, initials on a name-based colour otherwise', () => {
-    const { rerender } = renderRow(<ScheduleItem item={meeting({ host: { name: 'Pat Lee', avatarUrl: 'https://img.example/pat.png' } })} now={NOW} zone={LA} />);
+    const { rerender } = renderRow(<ScheduleItem item={meeting({ host: { name: 'Pat Lee', avatarUrl: 'https://img.example/pat.png' } })} now={NOW} zone={ZONE} />);
     const photo = screen.getByRole('img', { name: 'Pat Lee' });
     expect(photo.tagName).toBe('IMG');
     expect(photo).toHaveAttribute('src', 'https://img.example/pat.png');
@@ -356,7 +362,7 @@ describe('ScheduleItem (compact row)', () => {
     rerender(
       <div className="gt-sched gt-sched--compact">
         <ol className="gt-sched__items">
-          <ScheduleItem item={meeting({ host: { name: 'Pat Lee' } })} now={NOW} zone={LA} />
+          <ScheduleItem item={meeting({ host: { name: 'Pat Lee' } })} now={NOW} zone={ZONE} />
         </ol>
       </div>,
     );
@@ -367,26 +373,26 @@ describe('ScheduleItem (compact row)', () => {
   });
 
   it('draws "?" for a person whose name is blank', () => {
-    renderRow(<ScheduleItem item={meeting({ host: { name: '   ' } })} now={NOW} zone={LA} />);
+    renderRow(<ScheduleItem item={meeting({ host: { name: '   ' } })} now={NOW} zone={ZONE} />);
     expect(row().querySelector('.gt-avatar')).toHaveTextContent('?');
   });
 
   it('adds a class of its own', () => {
-    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} className="extra" />);
+    renderRow(<ScheduleItem item={meeting()} now={NOW} zone={ZONE} className="extra" />);
     expect(row()).toHaveClass('extra');
   });
 });
 
 describe('ScheduleDayHeader', () => {
   it('labels today in green with the weekday and date', () => {
-    const { container } = render(<ScheduleDayHeader dayKey="2026-10-20" now={NOW} zone={LA} />);
+    const { container } = render(<ScheduleDayHeader dayKey="2026-10-20" now={NOW} zone={ZONE} />);
     expect(screen.getByRole('heading', { level: 3, name: 'Today' })).toBeInTheDocument();
     expect(screen.getByText('Tue, Oct 20')).toHaveClass('gt-sched-day__date');
     expect(container.firstChild).toHaveClass('gt-sched-day', 'gt-sched-day--today');
   });
 
   it('labels another day by its weekday, without the today treatment', () => {
-    const { container } = render(<ScheduleDayHeader dayKey="2026-10-22" now={NOW} zone={LA} />);
+    const { container } = render(<ScheduleDayHeader dayKey="2026-10-22" now={NOW} zone={ZONE} />);
     expect(screen.getByRole('heading', { name: 'Thursday' })).toBeInTheDocument();
     expect(screen.getByText('Oct 22')).toBeInTheDocument();
     expect(container.firstChild).not.toHaveClass('gt-sched-day--today');
@@ -400,7 +406,7 @@ describe('ScheduleDayHeader', () => {
   });
 
   it('can be forced to the today treatment', () => {
-    const { container } = render(<ScheduleDayHeader dayKey="2026-10-22" now={NOW} zone={LA} isToday />);
+    const { container } = render(<ScheduleDayHeader dayKey="2026-10-22" now={NOW} zone={ZONE} isToday />);
     expect(container.firstChild).toHaveClass('gt-sched-day--today');
   });
 
