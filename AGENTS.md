@@ -243,6 +243,9 @@ npm run lint                                # oxlint: any finding fails (the rea
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
 npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
+npm run design:build                        # the Design System artifact's files from the kit, in .design-system/ (build output)
+npm run design:test                         # the kit's tests on React 18, through the ref adapter
+npm run design:check                        # the built tree against the artifact's format
 ```
 
 ## API surface
@@ -267,7 +270,7 @@ The full agent-facing action catalog (method, params, role) lives at
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov` (all green,
   coverage above `.coveragerc`'s `fail_under`).
 - Frontend: `npm run lint && npm run lint:design && npm run build && npm run test:coverage` (no lint findings,
-  all green, thresholds met).
+  all green, thresholds met), then `npm run design:build && npm run design:test && npm run design:check`.
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`, and an entry in the
   agent catalog.
 - New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its

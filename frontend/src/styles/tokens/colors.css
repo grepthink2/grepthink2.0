@@ -123,7 +123,25 @@
   --gt-border-control-hover: var(--gt-gray-600);
 
   /* ---- Chart palette (analytics handoff §6): the slots in use ---- */
-  --gt-chart-context: var(--gt-gray-400);   /* de-emphasis: sparkline history (StatCard) */
+  --gt-chart-1: var(--gt-green-500);        /* default single series: team channels, done, the current range */
+  --gt-chart-2: var(--gt-blue-500);         /* second series: direct messages, in progress */
+  --gt-chart-3: var(--gt-purple);           /* third series (per-class comparisons) */
+  --gt-chart-4: var(--gt-warning);          /* fourth series, only with direct labels */
+  --gt-chart-context: var(--gt-gray-400);   /* de-emphasis: to do, other, the previous range, sparkline history */
+  --gt-chart-grid: var(--gt-gray-200);      /* hairline gridlines */
+  --gt-chart-axis: var(--gt-gray-400);      /* axis lines and the crosshair */
+  --gt-chart-early: var(--gt-green-300);    /* timeliness "early": a lighter step of the on-time ramp */
+  --gt-chart-wash: rgba(1, 129, 86, 0.10);  /* area wash under series 1 */
+
+  /* Status fills for charts: what a mark means, whichever slot it borrows */
+  --gt-status-todo: var(--gt-chart-context);
+  --gt-status-in-progress: var(--gt-chart-2);
+  --gt-status-done: var(--gt-chart-1);
+  --gt-status-early: var(--gt-chart-early);
+  --gt-status-on-time: var(--gt-success);
+  --gt-status-late: var(--gt-warning);
+  --gt-status-missing: var(--gt-error);
+  --gt-status-not-due: var(--gt-surface-sunken);
 
   /* Avatar palette — every slot passes 4.5:1 behind white initials (AVATAR_COLORS reads these) */
   --gt-avatar-1: var(--gt-green-500);  /* 4.9:1 */

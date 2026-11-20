@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.design-types.tsbuildinfo",
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": ".",
+    "outDir": ".design-system/types"
+  },
+  "include": [
+    "src/components",
+    "src/vite-env.d.ts",
+    "design-system/runtime/Icon.tsx",
+    "design-system/runtime/icons.d.ts"
+  ],
+  "exclude": [
+    "src/components/**/__tests__",
+    "src/components/**/*.test.ts",
+    "src/components/**/*.test.tsx",
+    "src/components/ErrorBoundary",
+    "src/components/icons"
+  ]
+}

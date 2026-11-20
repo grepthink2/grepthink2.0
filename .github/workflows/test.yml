@@ -86,6 +86,11 @@ jobs:
       - run: npm run build
       - run: npm run lint
       - run: npm run lint:design
+      # The Design System artifact's files, built from the shared kit (docs/agents/frontend.md):
+      # the kit's tests on React 18 through the ref adapter, and the format's checks.
+      - run: npm run design:build
+      - run: npm run design:test
+      - run: npm run design:check
       - name: Test with coverage
         # Thresholds live in vite.config.ts (coverage.thresholds); the run fails below them.
         run: npm run test:coverage

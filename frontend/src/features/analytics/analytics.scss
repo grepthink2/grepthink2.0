@@ -1,14 +1,14 @@
 @use '@styles/index.scss' as *;
 
 // Series slots (brief §6): fixed identity, never cycled. Marks read var(--series).
-.gt-series--1 { --series: var(--gt-primary); }
-.gt-series--2 { --series: var(--gt-accent); }
-.gt-series--3 { --series: var(--gt-purple); }
-.gt-series--4 { --series: var(--gt-warning); }
-.gt-series--gray { --series: var(--gt-gray-400); }
-.gt-status--todo { --series: var(--gt-gray-400); }
-.gt-status--in_progress { --series: var(--gt-accent); }
-.gt-status--done { --series: var(--gt-primary); }
+.gt-series--1 { --series: var(--gt-chart-1); }
+.gt-series--2 { --series: var(--gt-chart-2); }
+.gt-series--3 { --series: var(--gt-chart-3); }
+.gt-series--4 { --series: var(--gt-chart-4); }
+.gt-series--gray { --series: var(--gt-chart-context); }
+.gt-status--todo { --series: var(--gt-status-todo); }
+.gt-status--in_progress { --series: var(--gt-status-in-progress); }
+.gt-status--done { --series: var(--gt-status-done); }
 
 .gt-analytics { max-width: 1400px; margin: 0 auto; display: grid; gap: 20px; padding: 20px 24px; } // the shell's content padding (handoff §2); .app-main has none
 .gt-analytics__grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

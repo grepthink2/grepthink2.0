@@ -75,3 +75,6 @@ supabase/.temp/
 
 # Implementation plans are working notes: keep them local and track open work in issues.
 docs/superpowers/plans/
+
+# Design-system build output (npm run design:build): the tree a sync publishes, rebuilt from the kit.
+frontend/.design-system/

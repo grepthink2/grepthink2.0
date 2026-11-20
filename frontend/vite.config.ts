@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
 import path from 'path'
@@ -61,6 +61,8 @@ export default defineConfig(({ mode }) => {
     test: {
       // Component tests need a browser-like DOM; jsdom is enough for Testing Library.
       environment: 'jsdom',
+      // The design-system runtime's tests run on React 18, under `npm run design:test`.
+      exclude: [...configDefaults.exclude, 'design-system/**'],
       // One jsdom per worker and a fresh window per file, instead of a process per file: the
       // suite runs about three times faster (39 s → 13 s here; 48 s → 27 s with coverage).
       // The sandbox has two consequences: objects made by Node APIs or jsdom internals live in
