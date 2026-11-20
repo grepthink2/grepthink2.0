@@ -811,7 +811,8 @@ describe('answers landing between a commit and its effects', () => {
     actGlobal.IS_REACT_ACT_ENVIRONMENT = false; // schedule as React does in a browser
     first.resolve({ classes: [cls('a', { my_role: 'student' })] }); // selects "a"
     await waitFor(() => expect(events).toContain('timer answered'), { timeout: 5000 });
-    await new Promise((resolve) => setTimeout(resolve, 100)); // React finishes with that answer
+    // React finishes with that answer: the newest load settling turns the spinner off.
+    await waitFor(() => expect(text('loading')).toBe('false'), { timeout: 5000 });
     expect(text('selected')).toBe('new');
   });
 });

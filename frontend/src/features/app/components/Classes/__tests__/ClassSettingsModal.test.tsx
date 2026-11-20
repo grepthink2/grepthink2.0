@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
 import { cssRules } from '@/test/cssRules';
 
@@ -727,8 +727,15 @@ describe('ClassSettingsModal — sprints', () => {
 });
 
 describe('ClassSettingsModal — Delete class', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('asks first: Esc closes only the question, and Remove from my view hides the class', async () => {
-    const user = userEvent.setup();
+    // The settings dialog closes on a timer, which a fake clock steps past. shouldAdvanceTime:
+    // Testing Library ends each user-event call on a timer of its own.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const onClose = vi.fn();
     render(<ClassSettingsModal isOpen onClose={onClose} classItem={job} />);
     const del = screen.getByRole('button', { name: 'Delete class' });
@@ -741,13 +748,14 @@ describe('ClassSettingsModal — Delete class', () => {
     await user.keyboard('{Escape}');
     expect(del).toHaveFocus();
     // The settings dialog closes 200ms after its own Esc; this one was the question's alone.
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await act(() => vi.advanceTimersByTimeAsync(250));
     expect(onClose).not.toHaveBeenCalled();
     expect(ctx.hideClassFromUI).not.toHaveBeenCalled();
 
     await user.click(del);
     await user.click(screen.getByRole('button', { name: 'Remove from my view' }));
     expect(ctx.hideClassFromUI).toHaveBeenCalledWith('job-191');
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    await act(() => vi.advanceTimersByTimeAsync(200));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -23,9 +23,17 @@ import {
   type TeamMeetingDraft,
 } from '../teamMeetingsModel';
 
+/**
+ * The zone most tests read in: UTC-7 all year, Santa Cruz's clock on these October dates. A fixed
+ * offset, so no answer depends on the runner's time-zone data.
+ */
+const ZONE = 'Etc/GMT+7';
+/** A viewer far from campus: UTC+5 all year. */
+const UTC_PLUS_5 = 'Etc/GMT-5';
+/** Istanbul's clock: UTC+3 all year. */
+const ISTANBUL = 'Etc/GMT-3';
+/** The real Pacific zone, where its change between PDT and PST is what a test is about. */
 const LA = 'America/Los_Angeles';
-const IST = 'Asia/Kolkata';
-const ISTANBUL = 'Europe/Istanbul';
 
 /** Make `zone` the browser's own zone, which the model reads when it is not told one. */
 function viewerIn(zone: string) {
@@ -187,17 +195,17 @@ describe('wall clock and instant', () => {
   });
 
   it('reads it on a zone that has no daylight saving', () => {
-    expect(zonedToInstant('2026-10-21', '15:00', IST).toISOString()).toBe('2026-10-21T09:30:00.000Z');
+    expect(zonedToInstant('2026-10-21', '15:00', UTC_PLUS_5).toISOString()).toBe('2026-10-21T10:00:00.000Z');
   });
 
   it('turns an instant back into the date and time on that clock, with midnight as 00:00', () => {
-    expect(instantToZoned('2026-11-03T23:00:00.000Z', LA)).toEqual({ date: '2026-11-03', time: '15:00' });
-    expect(instantToZoned(new Date('2026-10-21T07:00:00Z'), LA)).toEqual({ date: '2026-10-21', time: '00:00' });
-    expect(instantToZoned('2026-10-20T22:00:00Z', IST)).toEqual({ date: '2026-10-21', time: '03:30' });
+    expect(instantToZoned('2026-11-03T22:00:00.000Z', ZONE)).toEqual({ date: '2026-11-03', time: '15:00' });
+    expect(instantToZoned(new Date('2026-10-21T07:00:00Z'), ZONE)).toEqual({ date: '2026-10-21', time: '00:00' });
+    expect(instantToZoned('2026-10-20T22:00:00Z', UTC_PLUS_5)).toEqual({ date: '2026-10-21', time: '03:00' });
   });
 
   it('round-trips a typed time in any zone', () => {
-    for (const zone of [LA, IST, ISTANBUL, 'Pacific/Auckland']) {
+    for (const zone of [LA, UTC_PLUS_5, ISTANBUL, 'Pacific/Auckland']) {
       for (const [date, time] of [['2026-10-21', '15:00'], ['2026-11-03', '00:00'], ['2026-03-09', '23:45']]) {
         expect(instantToZoned(zonedToInstant(date, time, zone), zone)).toEqual({ date, time });
       }
@@ -207,42 +215,42 @@ describe('wall clock and instant', () => {
 
 describe('campusTimeOf', () => {
   it('shows the campus time beside the field when zones differ', () => {
-    expect(campusTimeOf('2026-10-21', '15:00', IST, LA)).toBe('2:30 AM PT');
+    expect(campusTimeOf('2026-10-21', '15:00', UTC_PLUS_5, ZONE)).toBe('3:00 AM GMT-7');
   });
 
   it('adds the campus weekday when the campus day is not the viewer’s', () => {
-    expect(campusTimeOf('2026-10-21', '10:00', IST, LA)).toBe('9:30 PM PT · Tue');
+    expect(campusTimeOf('2026-10-21', '10:00', UTC_PLUS_5, ZONE)).toBe('10:00 PM GMT-7 · Tue');
   });
 
   it('has nothing to show until both the date and the time are set', () => {
-    expect(campusTimeOf('', '15:00', IST, LA)).toBeNull();
-    expect(campusTimeOf('2026-10-21', '', IST, LA)).toBeNull();
+    expect(campusTimeOf('', '15:00', UTC_PLUS_5, ZONE)).toBeNull();
+    expect(campusTimeOf('2026-10-21', '', UTC_PLUS_5, ZONE)).toBeNull();
   });
 
   it('is the campus time of whatever school it is given, Pacific or not', () => {
     // 3:00 PM on Wed Oct 21 in Santa Cruz is 22:00 UTC: 1:00 AM on Thu Oct 22 in Istanbul (UTC+3).
-    expect(campusTimeOf('2026-10-21', '15:00', LA, ISTANBUL)).toBe('1:00 AM GMT+3 · Thu');
-    // 3:00 PM in Kolkata (UTC+5:30) is 09:30 UTC: 12:30 PM the same day in Istanbul.
-    expect(campusTimeOf('2026-10-21', '15:00', IST, ISTANBUL)).toBe('12:30 PM GMT+3');
+    expect(campusTimeOf('2026-10-21', '15:00', ZONE, ISTANBUL)).toBe('1:00 AM GMT+3 · Thu');
+    // 3:00 PM at UTC+5 is 10:00 UTC: 1:00 PM the same day in Istanbul.
+    expect(campusTimeOf('2026-10-21', '15:00', UTC_PLUS_5, ISTANBUL)).toBe('1:00 PM GMT+3');
   });
 });
 
 describe('fmtMeetingWhen', () => {
   it('splits a meeting into its day, start, end and range once the period is shared', () => {
-    expect(fmtMeetingWhen(meeting(), LA, NOW)).toEqual({ day: 'Tue, Oct 20', start: '3:00', end: '4:00 PM', range: '3:00 – 4:00 PM' });
+    expect(fmtMeetingWhen(meeting(), ZONE, NOW)).toEqual({ day: 'Tue, Oct 20', start: '3:00', end: '4:00 PM', range: '3:00 – 4:00 PM' });
   });
 
   it('keeps both periods when the meeting crosses noon', () => {
     const noon = meeting({ startsAt: '2026-10-20T18:30:00Z' });
-    expect(fmtMeetingWhen(noon, LA, NOW)).toEqual({ day: 'Tue, Oct 20', start: '11:30 AM', end: '12:30 PM', range: '11:30 AM – 12:30 PM' });
+    expect(fmtMeetingWhen(noon, ZONE, NOW)).toEqual({ day: 'Tue, Oct 20', start: '11:30 AM', end: '12:30 PM', range: '11:30 AM – 12:30 PM' });
   });
 
   it('reads the day and times on the viewer’s clock', () => {
-    expect(fmtMeetingWhen(meeting(), IST, NOW)).toEqual({ day: 'Wed, Oct 21', start: '3:30', end: '4:30 AM', range: '3:30 – 4:30 AM' });
+    expect(fmtMeetingWhen(meeting(), UTC_PLUS_5, NOW)).toEqual({ day: 'Wed, Oct 21', start: '3:00', end: '4:00 AM', range: '3:00 – 4:00 AM' });
   });
 
   it('adds the year when the meeting is not in the current one', () => {
-    expect(fmtMeetingWhen(meeting(), LA, new Date('2027-01-05T20:00:00Z')).day).toBe('Tue, Oct 20, 2026');
+    expect(fmtMeetingWhen(meeting(), ZONE, new Date('2027-01-05T20:00:00Z')).day).toBe('Tue, Oct 20, 2026');
   });
 });
 
@@ -266,12 +274,12 @@ describe('without a zone', () => {
 
 describe('draftFrom', () => {
   it('starts a new meeting blank, an hour long', () => {
-    expect(draftFrom(null, LA)).toEqual({ title: '', date: '', time: '', durationMinutes: 60, location: '', zoomUrl: '', note: '' });
+    expect(draftFrom(null, ZONE)).toEqual({ title: '', date: '', time: '', durationMinutes: 60, location: '', zoomUrl: '', note: '' });
   });
 
   it('fills the form from a meeting, on the viewer’s clock', () => {
     const existing = meeting({ durationMinutes: 90, location: 'E2 room 180', zoomUrl: 'https://ucsc.zoom.us/j/1', note: 'Bring the board' });
-    expect(draftFrom(existing, LA)).toEqual({
+    expect(draftFrom(existing, ZONE)).toEqual({
       title: 'Sprint 3 planning',
       date: '2026-10-20',
       time: '15:00',
@@ -280,11 +288,11 @@ describe('draftFrom', () => {
       zoomUrl: 'https://ucsc.zoom.us/j/1',
       note: 'Bring the board',
     });
-    expect(draftFrom(existing, IST)).toMatchObject({ date: '2026-10-21', time: '03:30' });
+    expect(draftFrom(existing, UTC_PLUS_5)).toMatchObject({ date: '2026-10-21', time: '03:00' });
   });
 
   it('writes a blank for what the meeting does not have, and an hour for a missing length', () => {
-    const bare = draftFrom(meeting({ location: null, zoomUrl: null, note: null, durationMinutes: 0 }), LA);
+    const bare = draftFrom(meeting({ location: null, zoomUrl: null, note: null, durationMinutes: 0 }), ZONE);
     expect(bare).toMatchObject({ location: '', zoomUrl: '', note: '', durationMinutes: 60 });
   });
 });
@@ -305,7 +313,7 @@ describe('isHttpUrl', () => {
 });
 
 describe('validateTeamMeeting', () => {
-  const opts = { now: NOW, zone: LA };
+  const opts = { now: NOW, zone: ZONE };
 
   it('uses the handoff copy for every validation error', () => {
     const errorOf = (over: Partial<TeamMeetingDraft>, field: 'title' | 'date' | 'time' | 'zoomUrl' | 'note') =>
@@ -365,7 +373,8 @@ describe('validateTeamMeeting', () => {
         zoomUrl: ' https://ucsc.zoom.us/j/1 ',
         note: '  Bring the board ',
       }),
-      opts,
+      // Pacific itself: the typed date is in PST while NOW is in PDT.
+      { ...opts, zone: LA },
     );
     expect(result).toEqual({
       valid: true,
@@ -382,7 +391,7 @@ describe('validateTeamMeeting', () => {
   });
 
   it('reads the typed time on the viewer’s clock, whatever zone that is', () => {
-    expect(validateTeamMeeting(draft({ date: '2026-11-03', time: '15:00' }), { ...opts, zone: IST }).value?.startsAt).toBe('2026-11-03T09:30:00.000Z');
+    expect(validateTeamMeeting(draft({ date: '2026-11-03', time: '15:00' }), { ...opts, zone: UTC_PLUS_5 }).value?.startsAt).toBe('2026-11-03T10:00:00.000Z');
   });
 
   it('sends null for a blank room, link or note, and an hour for a missing length', () => {

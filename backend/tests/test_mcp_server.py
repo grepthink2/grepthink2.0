@@ -175,7 +175,10 @@ def test_fill_board_writes_and_returns_keys(mcp_client, monkeypatch):
 
 def test_fill_board_takes_a_status_and_a_done_day(mcp_client, monkeypatch):
     fake = _db(monkeypatch)
-    # The app's own token check reads the real clock, so only the board's "today" is pinned.
+    # The app's own token check reads the real clock, so only the board's "today" is pinned, at a
+    # school that keeps UTC-8 all year (an ``Etc/GMT`` name inverts the sign).
+    school = ZoneInfo("Etc/GMT+8")
+    monkeypatch.setattr(mcp_controller, "institution_timezone", lambda _institution_id: school)
     monkeypatch.setattr(mcp_controller, "_today", lambda zone: date(2026, 10, 27))
     task = {"title": "Form", "points": 3, "status": "done", "done_on": "2026-10-14"}
 
@@ -193,9 +196,7 @@ def test_fill_board_takes_a_status_and_a_done_day(mcp_client, monkeypatch):
     assert not result.get("isError"), result
     (sent,) = fake.fill_calls[0]["p_stories"][0]["tasks"]
     assert sent["status"] == "done"
-    assert datetime.fromisoformat(sent["moved_at"]) == datetime(
-        2026, 10, 14, 12, tzinfo=ZoneInfo("America/Los_Angeles")
-    )
+    assert datetime.fromisoformat(sent["moved_at"]) == datetime(2026, 10, 14, 12, tzinfo=school)
 
 
 def test_a_status_the_board_has_not_is_a_tool_error(mcp_client, monkeypatch):

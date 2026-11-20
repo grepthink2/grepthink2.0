@@ -125,17 +125,14 @@ def test_parse_date_reads_a_date_column_and_refuses_timestamps():
 
 
 def test_local_date_takes_the_calendar_date_in_the_school_zone():
-    # 2026-09-22 03:30Z is still the evening of the 21st in Santa Cruz, already the 22nd in Istanbul
-    assert windows.local_date("2026-09-22T03:30:00+00:00", "America/Los_Angeles") == dt.date(
-        2026, 9, 21
-    )
-    assert windows.local_date("2026-09-22T03:30:00+00:00", "Europe/Istanbul") == dt.date(
-        2026, 9, 22
-    )
-    assert windows.local_date("2026-09-22", "America/Los_Angeles") == dt.date(
+    # 2026-09-22 03:30Z is still the evening of the 21st at UTC-8, already the 22nd at UTC+3 (an
+    # Etc/GMT name inverts the sign)
+    assert windows.local_date("2026-09-22T03:30:00+00:00", "Etc/GMT+8") == dt.date(2026, 9, 21)
+    assert windows.local_date("2026-09-22T03:30:00+00:00", "Etc/GMT-3") == dt.date(2026, 9, 22)
+    assert windows.local_date("2026-09-22", "Etc/GMT+8") == dt.date(
         2026, 9, 22
     )  # a bare date is kept
-    assert windows.local_date(None, "America/Los_Angeles") is None
+    assert windows.local_date(None, "Etc/GMT+8") is None
 
 
 def test_local_date_follows_daylight_saving_and_reads_a_naive_timestamp_as_utc():
@@ -145,6 +142,6 @@ def test_local_date_follows_daylight_saving_and_reads_a_naive_timestamp_as_utc()
     assert windows.local_date("2026-11-01T06:30:00+00:00", "America/Los_Angeles") == dt.date(
         2026, 10, 31
     )
-    assert windows.local_date("2026-09-22T03:30:00", "America/Los_Angeles") == dt.date(
+    assert windows.local_date("2026-09-22T03:30:00", "Etc/GMT+8") == dt.date(
         2026, 9, 21
     )  # no offset → UTC

@@ -13,9 +13,15 @@ import EditProjectModal from '../../EditProject/EditProjectModal';
 import { TeamMeetingsList, type TeamMeetingsListProps } from '../TeamMeetingsList';
 import type { TeamMeeting } from '../teamMeetingsModel';
 
-const LA = 'America/Los_Angeles';
-const IST = 'Asia/Kolkata';
-const ISTANBUL = 'Europe/Istanbul';
+/**
+ * The zone most tests read in: UTC-7 all year, Santa Cruz's clock on these October dates. A fixed
+ * offset, so no answer depends on the runner's time-zone data.
+ */
+const ZONE = 'Etc/GMT+7';
+/** A viewer far from campus: UTC+5 all year. */
+const UTC_PLUS_5 = 'Etc/GMT-5';
+/** Istanbul's clock: UTC+3 all year. */
+const ISTANBUL = 'Etc/GMT-3';
 
 /** Tue Oct 20, 2026, 3:12 PM PT: the clock the design's demo is pinned to. */
 const NOW = new Date('2026-10-20T22:12:00Z');
@@ -43,7 +49,7 @@ const past = meeting({ id: 'm-past', title: 'Kickoff', startsAt: '2026-10-13T22:
 
 function renderManage(props: Partial<TeamMeetingsListProps> = {}) {
   return render(
-    <TeamMeetingsList variant="manage" canManage now={NOW} zone={LA} schoolZone={LA} meetings={[]} {...props} />,
+    <TeamMeetingsList variant="manage" canManage now={NOW} zone={ZONE} schoolZone={ZONE} meetings={[]} {...props} />,
   );
 }
 
@@ -63,8 +69,8 @@ function StatefulList({ initial = [], created = {} }: { initial?: TeamMeeting[];
       variant="manage"
       canManage
       now={NOW}
-      zone={LA}
-      schoolZone={LA}
+      zone={ZONE}
+      schoolZone={ZONE}
       meetings={meetings}
       onCreate={async (value) => {
         const added: TeamMeeting = { id: `new-${value.title}`, projectId: 'p1', ...value, ...created };
@@ -384,7 +390,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     await user.type(titleBox(), 'Standup, longer');
     // 4:05 PM PT: the 3:00 – 4:00 PM meeting ends while its editor is open.
     const later = new Date('2026-10-20T23:05:00Z');
-    rerender(<TeamMeetingsList variant="manage" canManage now={later} zone={LA} schoolZone={LA} {...props} />);
+    rerender(<TeamMeetingsList variant="manage" canManage now={later} zone={ZONE} schoolZone={ZONE} {...props} />);
 
     expect(screen.getByRole('heading', { name: 'Edit meeting' })).toBeInTheDocument();
     expect(titleBox()).toHaveValue('Standup, longer');
@@ -511,7 +517,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByRole('status', { name: 'Loading team meetings' })).toHaveAttribute('aria-busy', 'true');
 
     const onRetry = vi.fn();
-    rerender(<TeamMeetingsList variant="manage" canManage status="error" now={NOW} zone={LA} schoolZone={LA} onRetry={onRetry} />);
+    rerender(<TeamMeetingsList variant="manage" canManage status="error" now={NOW} zone={ZONE} schoolZone={ZONE} onRetry={onRetry} />);
     expect(screen.getByText('Couldn’t load team meetings.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -519,19 +525,19 @@ describe('TeamMeetingsList — the Meetings tab', () => {
 
   it('reads times on the viewer’s clock and gives the campus time when the zones differ', async () => {
     const user = userEvent.setup();
-    renderManage({ zone: IST, meetings: [meeting()] });
+    renderManage({ zone: UTC_PLUS_5, meetings: [meeting()] });
 
-    expect(screen.getByText('Times in GMT+5:30 · campus is PT')).toBeInTheDocument();
-    // 3:00 PM PT on Thu Oct 22 is 3:30 AM IST on Fri Oct 23.
+    expect(screen.getByText('Times in GMT+5 · campus is GMT-7')).toBeInTheDocument();
+    // 3:00 PM at UTC-7 on Thu Oct 22 is 3:00 AM on Fri Oct 23 at UTC+5.
     const row = screen.getByText('Sprint 3 planning').closest('li')!;
     expect(row).toHaveTextContent('Fri, Oct 23');
-    expect(row.querySelector('.gt-tm-row__when')).toHaveAttribute('title', '3:00 – 4:00 PM PT');
+    expect(row.querySelector('.gt-tm-row__when')).toHaveAttribute('title', '3:00 – 4:00 PM GMT-7');
 
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
-    expect(screen.getByText('2:30 AM PT on campus')).toBeInTheDocument();
-    expect(timeInput()).toHaveAccessibleDescription('2:30 AM PT on campus');
+    expect(screen.getByText('3:00 AM GMT-7 on campus')).toBeInTheDocument();
+    expect(timeInput()).toHaveAccessibleDescription('3:00 AM GMT-7 on campus');
   });
 });
 
@@ -542,7 +548,7 @@ describe('TeamMeetingsList — a school outside Pacific', () => {
     const user = userEvent.setup();
     renderManage({ schoolZone: ISTANBUL, meetings: [meeting()] });
 
-    expect(screen.getByText('Times in PT · campus is GMT+3')).toBeInTheDocument();
+    expect(screen.getByText('Times in GMT-7 · campus is GMT+3')).toBeInTheDocument();
     const row = screen.getByText('Sprint 3 planning').closest('li')!;
     expect(row.querySelector('.gt-tm-row__when')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
 
@@ -554,9 +560,9 @@ describe('TeamMeetingsList — a school outside Pacific', () => {
 
   it('gives it in the project-page card too', () => {
     const { container } = render(
-      <TeamMeetingsList variant="card" now={NOW} zone={LA} schoolZone={ISTANBUL} meetings={[meeting()]} />,
+      <TeamMeetingsList variant="card" now={NOW} zone={ZONE} schoolZone={ISTANBUL} meetings={[meeting()]} />,
     );
-    expect(container.querySelector('.gt-sched__footer')).toHaveTextContent('Times in PT · campus is GMT+3');
+    expect(container.querySelector('.gt-sched__footer')).toHaveTextContent('Times in GMT-7 · campus is GMT+3');
     expect(container.querySelector('.gt-sched-item__start')).toHaveAttribute('title', '1:00 – 2:00 AM GMT+3');
   });
 });
@@ -668,7 +674,7 @@ describe('TeamMeetingsList — focus when an editor or a delete confirm closes',
 
 describe('TeamMeetingsList — the project-page card', () => {
   const card = (props: Partial<TeamMeetingsListProps> = {}) =>
-    render(<TeamMeetingsList variant="card" now={NOW} zone={LA} schoolZone={LA} meetings={[]} {...props} />);
+    render(<TeamMeetingsList variant="card" now={NOW} zone={ZONE} schoolZone={ZONE} meetings={[]} {...props} />);
 
   it('shows upcoming meetings as compact schedule rows grouped by day', () => {
     const { container } = card({ meetings: [meeting(), live], teamName: 'Alpha', people: { 'u-po': { id: 'u-po', name: 'Ana Lopez' } } });
@@ -732,9 +738,9 @@ describe('TeamMeetingsList — the project-page card', () => {
   });
 
   it('notes the viewer’s zone once and keeps the campus time in each time’s title', () => {
-    const { container } = card({ zone: IST, meetings: [meeting()] });
-    expect(container.querySelector('.gt-sched__footer')).toHaveTextContent('Times in GMT+5:30 · campus is PT');
-    expect(container.querySelector('.gt-sched-item__start')).toHaveAttribute('title', '3:00 – 4:00 PM PT');
+    const { container } = card({ zone: UTC_PLUS_5, meetings: [meeting()] });
+    expect(container.querySelector('.gt-sched__footer')).toHaveTextContent('Times in GMT+5 · campus is GMT-7');
+    expect(container.querySelector('.gt-sched-item__start')).toHaveAttribute('title', '3:00 – 4:00 PM GMT-7');
   });
 
   it('shows skeleton rows while loading and a retry when loading fails', async () => {
@@ -743,7 +749,7 @@ describe('TeamMeetingsList — the project-page card', () => {
     expect(screen.getByRole('status', { name: 'Loading team meetings' })).toHaveAttribute('aria-busy', 'true');
 
     const onRetry = vi.fn();
-    rerender(<TeamMeetingsList variant="card" status="error" now={NOW} zone={LA} schoolZone={LA} onRetry={onRetry} />);
+    rerender(<TeamMeetingsList variant="card" status="error" now={NOW} zone={ZONE} schoolZone={ZONE} onRetry={onRetry} />);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
@@ -765,7 +771,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
         project={project}
         projectMembers={[]}
         viewerIsProductOwner
-        meetingsList={{ meetings: [meeting()], now: NOW, zone: LA, schoolZone: LA, onCreate: vi.fn(), onDelete: vi.fn() }}
+        meetingsList={{ meetings: [meeting()], now: NOW, zone: ZONE, schoolZone: ZONE, onCreate: vi.fn(), onDelete: vi.fn() }}
         {...props}
       />,
     );
@@ -865,7 +871,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
 
   it('opens on the Meetings tab when asked, and on Details for anyone else', () => {
     const { unmount } = render(
-      <EditProjectModal isOpen onClose={() => {}} project={project} projectMembers={[]} viewerIsProductOwner initialTab="meetings" meetingsList={{ meetings: [], now: NOW, zone: LA, schoolZone: LA }} />,
+      <EditProjectModal isOpen onClose={() => {}} project={project} projectMembers={[]} viewerIsProductOwner initialTab="meetings" meetingsList={{ meetings: [], now: NOW, zone: ZONE, schoolZone: ZONE }} />,
     );
     expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
     unmount();
@@ -948,7 +954,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       const user = userEvent.setup();
       let finish: () => void = () => {};
       const onUpdate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-      renderModal({ meetingsList: { meetings: [meeting()], now: NOW, zone: LA, schoolZone: LA, onUpdate } });
+      renderModal({ meetingsList: { meetings: [meeting()], now: NOW, zone: ZONE, schoolZone: ZONE, onUpdate } });
 
       await user.click(screen.getByRole('tab', { name: 'Meetings' }));
       await user.click(screen.getByRole('button', { name: 'Edit Sprint 3 planning' }));

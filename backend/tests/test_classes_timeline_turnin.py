@@ -12,6 +12,7 @@ Access codes and messages are pinned in test_classes_authz.py.
 from __future__ import annotations
 
 import datetime
+import types
 
 import pytest
 
@@ -205,7 +206,22 @@ def test_roster_timeline_of_an_empty_class(timeline_db):
 
 # ------------------------------------------------------------------ turn-in
 
-TODAY = datetime.date.today()
+#: The day the turn-in tests run on, whatever the real date: ``turnin_db`` makes it the
+#: controller's ``datetime.date.today()``.
+TODAY = datetime.date(2026, 10, 7)
+
+
+def _datetime_on(day: datetime.date) -> types.ModuleType:
+    """A copy of the ``datetime`` module whose ``date.today()`` answers ``day``."""
+
+    class PinnedDate(datetime.date):
+        @classmethod
+        def today(cls):
+            return day
+
+    module = types.ModuleType("datetime")
+    module.__dict__.update(vars(datetime), date=PinnedDate)
+    return module
 
 
 def _day(offset: int) -> str:
@@ -267,6 +283,8 @@ def turnin_db(monkeypatch):
         relations=RELATIONS,
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    # Turn-in stats reads the host's date (datetime.date.today()), not deadlines.now_utc.
+    monkeypatch.setattr(classes, "datetime", _datetime_on(TODAY))
     return fake
 
 

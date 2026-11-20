@@ -135,8 +135,8 @@ describe('TSRS submission window', () => {
 
   it('says when the assignment opens and disables Submit', async () => {
     vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
-    renderForm({ ...ASSIGNMENT, openDate: '2026-09-28' }, [], 'Europe/Istanbul');
-    // Midnight on Sep 28 in Istanbul is Sep 27 21:00Z.
+    renderForm({ ...ASSIGNMENT, openDate: '2026-09-28' }, [], 'Etc/GMT-3');
+    // Midnight on Sep 28 at UTC+3 (Istanbul's clock all year) is Sep 27 21:00Z.
     const notice = `This assignment opens ${formatInstant('2026-09-27T21:00:00Z')}`;
     expect(await screen.findByText(notice)).toBeInTheDocument();
     expect(await submitButton()).toBeDisabled();

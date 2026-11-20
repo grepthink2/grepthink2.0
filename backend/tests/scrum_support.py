@@ -50,12 +50,10 @@ def pin_clock(monkeypatch, instant: datetime) -> None:
 
 
 def pin_today(monkeypatch, day: date) -> None:
-    """Make it noon on ``day`` at a school in the default zone (Pacific, where the seed's class
-    is): the board's "today" is ``day`` there."""
-    pin_clock(
-        monkeypatch,
-        datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
-    )
+    """Make it noon on ``day`` at UTC-8 (``Etc/GMT+8``, a fixed offset), which is ``day`` at a
+    school in the default zone (Pacific, where the seed's class is) with or without daylight
+    time: the board's "today" is ``day`` there."""
+    pin_clock(monkeypatch, datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo("Etc/GMT+8")))
 
 
 def profile(uid: str, first: str, last: str = "X") -> dict:
