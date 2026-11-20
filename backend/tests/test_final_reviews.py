@@ -14,7 +14,6 @@ import datetime
 from unittest.mock import patch
 
 import pytest
-from fastapi import HTTPException
 
 import app.tas.controller as tas
 from tests.fake_supabase import FakeSupabase
@@ -121,23 +120,9 @@ def test_set_review_zoom_sets_the_link_and_clears_it_with_none_or_blank(db):
     assert _class_row(db)["review_zoom_url"] is None
 
 
-def test_set_review_zoom_instructor_only(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.set_review_zoom(TA1, CLASS, ZOOM)
-    assert exc.value.status_code == 403
-    assert _class_row(db)["review_zoom_url"] is None
-
-
 # --------------------------------------------------------------------------
 # Schedule read (instructor + class TAs)
 # --------------------------------------------------------------------------
-
-
-def test_schedule_forbidden_for_students_and_outsiders(db):
-    for uid in (S1, "not-enrolled"):
-        with pytest.raises(HTTPException) as exc:
-            tas.get_final_review_schedule(uid, CLASS)
-        assert exc.value.status_code == 403
 
 
 def test_schedule_orders_by_time_with_unscheduled_last(db):

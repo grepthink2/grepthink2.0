@@ -68,7 +68,9 @@ class TestRequireUser:
 
 
 class TestRequireInstructor:
-    """Covers require_instructor via /api/classes (POST) which requires it."""
+    """Covers require_instructor via /api/classes (POST) which requires it. Its refusal of
+    any other account role is pinned in test_authz_status_policy.py, and through this route
+    in test_class_scoped_roles.py."""
 
     @patch("app.classes.controller.create_class")
     @patch("app.auth.controller.get_user_role")
@@ -96,25 +98,6 @@ class TestRequireInstructor:
         assert r.status_code == 200
         assert r.json() == {"id": "cls-1", "name": "115C"}
         mock_create_class.assert_called_once()
-
-    @pytest.mark.parametrize("role", ["student", None], ids=["student", "no role yet"])
-    @patch("app.auth.controller.get_user_role")
-    def test_anyone_else_is_refused(self, mock_get_role, client: TestClient, auth_header, role):
-        mock_get_role.return_value = role
-        r = client.post(
-            "/api/classes",
-            headers=auth_header,
-            json={
-                "name": "115C",
-                "description": "Soft Eng",
-                "term": "Spring",
-                "start_date": "2026-04-01",
-                "sprint_count": 5,
-                "sprint_frequency": "biweekly",
-            },
-        )
-        assert r.status_code == 403
-        assert r.json()["detail"] == "Instructor role required"
 
 
 def test_login_check_records_a_login_event(client, auth_header, monkeypatch):

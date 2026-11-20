@@ -5,7 +5,7 @@ from fastapi import HTTPException
 
 from app.scrum import controller
 from app.scrum.pr_links import parse_repo_url, pr_repo_prefix
-from tests.scrum_support import INSTR, OUTSIDER, PID, UID, scrum_db
+from tests.scrum_support import INSTR, PID, UID, scrum_db
 
 REPO = {
     "id": "r1",
@@ -129,26 +129,6 @@ def test_staff_list_repos_but_see_only_has_token(monkeypatch):
         {"id": "r1", "repo_url": REPO["repo_url"], "provider": "github", "has_token": True}
     ]
     assert "secret" not in str(out)
-
-
-def test_staff_cannot_add_or_delete_repos(monkeypatch):
-    db = scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
-    with pytest.raises(HTTPException) as e:
-        controller.add_repo(
-            project_id=PID, user_id=INSTR, repo_url=REPO["repo_url"], access_token=None
-        )
-    assert e.value.status_code == 403
-    with pytest.raises(HTTPException) as e:
-        controller.delete_repo(repo_id="r1", user_id=INSTR)
-    assert e.value.status_code == 403
-    assert len(db.rows("scrum_repos")) == 1
-
-
-def test_outsiders_cannot_list_repos(monkeypatch):
-    scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
-    with pytest.raises(HTTPException) as e:
-        controller.list_repos(project_id=PID, user_id=OUTSIDER)
-    assert e.value.status_code == 403
 
 
 def test_delete_repo_404_when_missing(monkeypatch):

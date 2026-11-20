@@ -3,7 +3,9 @@ Tests for the TA Management controllers (class-TA designation, project-TA
 assignment, meeting metadata, weekly schedule, attendance).
 
 Runs the real controller logic against an in-memory FakeSupabase (the repo's
-`mem` fixture references a missing module, so these are self-contained).
+`mem` fixture references a missing module, so these are self-contained). Who may
+not designate, assign, edit a meeting, mark attendance or read every team's
+schedule is pinned in test_authz_status_policy.py.
 """
 
 import datetime
@@ -187,12 +189,6 @@ def test_designate_requires_enrollment(db):
     assert exc.value.status_code == 400
 
 
-def test_designate_requires_instructor(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.set_class_ta(CLASS, S1, S2, True)
-    assert exc.value.status_code == 403
-
-
 def test_undesignate_clears_assigned_and_review(db):
     # TA1 is P1's assigned TA (meeting + attendance + TSR review) and also holds
     # an end-of-quarter review claim on P2. Removing TA1 as a class TA flips
@@ -229,12 +225,6 @@ def test_assign_and_unassign_project_ta(db):
     assert p2["assigned_ta_id"] is None
 
 
-def test_assign_project_ta_requires_instructor(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.assign_project_ta(P1, TA1, TA1)
-    assert exc.value.status_code == 403
-
-
 # --------------------------------------------------------------------------
 # Meeting / Zoom metadata
 # --------------------------------------------------------------------------
@@ -257,13 +247,6 @@ def test_update_meeting_by_assigned_ta(db):
     assert m["day_of_week"] == "tuesday" and m["zoom_url"] == "https://zoom.us/j/1"
 
 
-def test_update_meeting_denied_for_unassigned_ta(db):
-    # TA1 is not assigned to P2 → cannot edit it.
-    with pytest.raises(HTTPException) as exc:
-        controller.upsert_meeting(P2, TA1, zoom_url="https://zoom.us/j/2")
-    assert exc.value.status_code == 403
-
-
 def test_update_meeting_rejects_bad_day(db):
     with pytest.raises(HTTPException) as exc:
         controller.upsert_meeting(P1, INSTR, meeting_day="someday")
@@ -281,12 +264,6 @@ def test_mark_attendance_by_instructor_and_assigned_ta(db):
     rows = [a for a in db.rows("attendance") if a["project_id"] == P1 and a["week_number"] == 3]
     statuses = {a["user_id"]: a["status"] for a in rows}
     assert statuses == {S1: "present", S2: "late"}
-
-
-def test_mark_attendance_denied_for_unassigned_ta(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.upsert_attendance(P2, TA1, S1, 3, "present")
-    assert exc.value.status_code == 403
 
 
 def test_mark_attendance_rejects_non_member(db):
@@ -378,12 +355,6 @@ def test_the_schedule_picks_the_current_meeting_in_the_schools_zone(db, with_ist
     monkeypatch.setattr(controller, "_pick_current_meeting", recording_pick)
     controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all")
     assert zones == [ZoneInfo("Europe/Istanbul")]
-
-
-def test_schedule_all_denied_for_student(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.get_ta_schedule(CLASS, S1, week_number=3, scope="all")
-    assert exc.value.status_code == 403
 
 
 def test_schedule_mine_filters_to_assigned(db):

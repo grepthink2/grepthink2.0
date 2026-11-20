@@ -1,4 +1,8 @@
-"""send_message: to a user (create-or-fetch the DM) or to an existing conversation."""
+"""send_message: to a user (create-or-fetch the DM) or to an existing conversation.
+
+Who may not send is pinned against FakeSupabase: an ineligible recipient and a
+non-participant in test_messages_batching.py, a direct conversation whose two people no
+longer share a class in test_authz_status_policy.py."""
 
 from __future__ import annotations
 
@@ -61,15 +65,6 @@ def test_send_message_answers_400(_can, kwargs):
     with pytest.raises(HTTPException) as exc:
         send_message(sender_id="alice", **kwargs)
     assert exc.value.status_code == 400
-
-
-@patch("app.messages.controller.can_message", return_value=False)
-def test_send_message_rejects_ineligible(_can):
-    from app.messages.controller import send_message
-
-    with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="alice", to_user_id="bob", body="hi")
-    assert exc.value.status_code == 403
 
 
 @patch("app.messages.controller.can_message", return_value=True)
@@ -193,49 +188,6 @@ def test_team_channel_send_notifies_others(client, _conv, notify):
     _, kwargs = notify.call_args
     assert sorted(kwargs["recipient_ids"]) == ["bob", "carol"]
     assert kwargs["sender_name"] == "Alice Adams"
-
-
-@patch("app.messages.controller.can_message", return_value=False)
-@patch(
-    "app.messages.controller._require_participant",
-    return_value=(
-        {"id": "conv-d", "type": "dm", "user_a": "alice", "user_b": "bob"},
-        ["alice", "bob"],
-    ),
-)
-@patch("app.core.db.service_client")
-def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _can):
-    from app.messages.controller import send_message
-
-    with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="alice", conversation_id="conv-d", body="hi")
-    assert exc.value.status_code == 403
-
-
-@patch("app.core.db.service_client")
-def test_send_403_for_non_participant_wired(client):
-    """Core security property: non-participant cannot send via conversation_id."""
-    from app.messages.controller import send_message
-
-    (
-        client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
-    ) = MagicMock(
-        data={
-            "id": "conv-t",
-            "type": "team_members",
-            "user_a": None,
-            "user_b": None,
-            "project_id": "p1",
-        }
-    )
-    (
-        client.table.return_value.select.return_value.eq.return_value.execute.return_value
-    ) = MagicMock(
-        data=[{"user_id": "alice", "role": "member"}, {"user_id": "bob", "role": "member"}]
-    )
-    with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="mallory", conversation_id="conv-t", body="hi")
-    assert exc.value.status_code == 403
 
 
 @patch(

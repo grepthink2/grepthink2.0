@@ -11,10 +11,9 @@ from datetime import date
 
 import pytest
 
-from app.core import authz
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import INSTR, MEETING_TA, OUTSIDER, PID, STUDENT, TA, UID, scrum_db
+from tests.scrum_support import INSTR, MEETING_TA, PID, TA, UID, scrum_db
 
 URL = f"/api/projects/{PID}/scrum/summary"
 NO_TASKS = {"todo": 0, "in_progress": 0, "done": 0}
@@ -160,24 +159,6 @@ def test_story_count_includes_imported_stories(monkeypatch, client):
     )
     body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
     assert body["story_count"] == 2
-
-
-@pytest.mark.parametrize("uid", [OUTSIDER, STUDENT])
-def test_someone_off_the_team_and_staff_gets_403(monkeypatch, client, uid):
-    _seed(monkeypatch)
-    res = client.get(URL, headers=header_for("x@ucsc.edu", sub=uid))
-    assert res.status_code == 403
-    assert res.json()["detail"] == authz.NOT_PROJECT_MEMBER
-
-
-def test_a_project_that_does_not_exist_is_404(monkeypatch, client):
-    _seed(monkeypatch)
-    res = client.get(
-        "/api/projects/00000000-0000-0000-0000-00000000dead/scrum/summary",
-        headers=header_for("x@ucsc.edu", sub=OUTSIDER),
-    )
-    assert res.status_code == 404
-    assert res.json()["detail"] == authz.PROJECT_NOT_FOUND
 
 
 @pytest.mark.parametrize("uid", [INSTR, TA, MEETING_TA])

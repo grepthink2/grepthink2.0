@@ -3,7 +3,8 @@
 Team members read and write; class staff (the instructor, a class TA, the team's meeting TA) read and
 never write; anyone else gets the board's 403, and a document, project or class that does not exist is 404.
 Finalizing and deleting take a team role: Scrum Master, Product Owner, owner or admin. A refused call
-writes nothing. The class's list of documents is for its instructor and TAs.
+writes nothing. The class's list of documents is for its instructor and TAs. The board's stories, which a
+document's story pickers read, answer the same people.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from fastapi import HTTPException
 from app.core import authz
 from app.documents import controller
 from app.scrum.controller import MEMBERS_ONLY
+from tests.conftest import header_for
 from tests.documents_support import (
     ADMIN,
     AFTER_SPRINT_2,
@@ -74,6 +76,7 @@ READS = {
     "read": lambda db, user: controller.get_document(db.report, user),
     "revisions": lambda db, user: controller.list_revisions(db.report, user),
     "markdown": lambda db, user: controller.document_markdown(db.report, user),
+    "stories": lambda db, user: controller.list_project_stories(PID, user),
 }
 # The routes that write, with the refusal a member without the role gets.
 WRITE_ROUTES = {
@@ -175,10 +178,20 @@ def test_a_document_that_does_not_exist_is_404(db, call):
     [
         lambda: controller.list_project_documents(MISSING, UID),
         lambda: controller.create_document(MISSING, UID, "release_summary", None),
+        lambda: controller.list_project_stories(MISSING, UID),
     ],
+    ids=["list", "create", "stories"],
 )
 def test_a_project_that_does_not_exist_is_404(db, call):
     assert refused(call) == (404, authz.PROJECT_NOT_FOUND)
+
+
+def test_the_stories_route_refuses_a_stranger(db, client):
+    response = client.get(
+        f"/api/projects/{PID}/documents/stories", headers=header_for("o@ucsc.edu", sub=OUTSIDER)
+    )
+    assert (response.status_code, response.json()["detail"]) == (403, authz.NOT_PROJECT_MEMBER)
+    assert writes(db) == []
 
 
 # ----------------------------------------------------------------- the class's list ----

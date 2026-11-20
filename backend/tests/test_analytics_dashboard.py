@@ -1,4 +1,7 @@
-"""One payload from four RPCs: composition, folding, deltas, failures, cache (spec §6.1, §9)."""
+"""One payload from four RPCs: composition, folding, deltas, failures, cache (spec §6.1, §9).
+
+Who is refused a dashboard, and the 404 a maintainer gets for an unknown institution, are
+pinned in test_authz_status_policy.py."""
 
 import datetime as dt
 
@@ -548,49 +551,14 @@ def test_active_users_delta_needs_a_baseline(fake):
     assert dashboard()["overview"]["deltas"]["active_users_7d"] is None
 
 
-def test_outside_scope_is_403_and_a_foreign_class_is_400(fake):
+def test_a_class_of_another_institution_is_400(fake):
     fake()
-    with pytest.raises(HTTPException) as e:
-        controller.get_dashboard(
-            "student",
-            "s@ucsc.edu",
-            institution_id=UCSC["id"],
-            class_id=None,
-            window="30d",
-            custom_from=None,
-            custom_to=None,
-            fresh=False,
-        )
-    assert (e.value.status_code, e.value.detail) == (403, controller.ANALYTICS_FORBIDDEN)
     with pytest.raises(HTTPException) as e:
         dashboard(class_id="c9")
     assert (e.value.status_code, e.value.detail) == (400, controller.CLASS_NOT_IN_INSTITUTION)
     with pytest.raises(HTTPException) as e:
-        controller.get_dashboard(
-            "prof",
-            "prof@ucsc.edu",
-            institution_id=ISTINYE["id"],
-            class_id=None,
-            window="30d",
-            custom_from=None,
-            custom_to=None,
-            fresh=False,
-        )
-    assert e.value.status_code == 403  # prof created nothing at İstinye
-    with pytest.raises(HTTPException) as e:
         as_maintainer(class_id="c9")  # a maintainer gets 400 for a class of another institution too
     assert (e.value.status_code, e.value.detail) == (400, controller.CLASS_NOT_IN_INSTITUTION)
-
-
-def test_an_unknown_institution_is_404_for_a_maintainer_and_403_for_anyone_else(fake):
-    fake()
-    nowhere = "99999999-9999-4999-8999-999999999999"
-    with pytest.raises(HTTPException) as e:
-        as_maintainer(institution_id=nowhere)
-    assert (e.value.status_code, e.value.detail) == (404, controller.INSTITUTION_NOT_FOUND)
-    with pytest.raises(HTTPException) as e:
-        dashboard(institution_id=nowhere)
-    assert (e.value.status_code, e.value.detail) == (403, controller.ANALYTICS_FORBIDDEN)
 
 
 def test_window_rules_surface_as_window_error(fake):

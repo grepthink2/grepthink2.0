@@ -299,16 +299,12 @@ def test_evaluator_edit_returns_the_entry_with_its_project_and_is_bounded(db, cl
     assert db.executes == 3, _trace(db)
 
 
-def test_instructor_may_edit_others_may_not(db):
+def test_the_instructor_edits_any_tsr_entry_and_the_event_says_so(db):
     assignments.update_tsr_entry(INSTR, A_TSR, "t-s2", positive_feedback="edited")
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-s2")["positive_feedback"] == "edited"
     # the TSR (its project, class and assignment window embedded), the update (both people
     # embedded) and the event; the instructor's edit checks no window
     assert db.executes == 3, _trace(db)
-    for caller in (S3, TA1, OTHER_INSTR):
-        with pytest.raises(HTTPException) as exc:
-            assignments.update_tsr_entry(caller, A_TSR, "t-s2", positive_feedback="nope")
-        assert exc.value.status_code == 403
     # One event, by the instructor: analytics tells staff corrections from evaluator edits by actor.
     (event,) = db.rows("events")
     assert {k: event[k] for k in ("kind", "actor_id", "class_id", "project_id", "meta")} == {
@@ -405,17 +401,10 @@ def test_ta_overview_is_scoped_to_assigned_teams(db):
     assert db.executes <= 6, _trace(db)
 
 
-def test_overview_access_and_type_checks(db):
-    for caller in (S1, OUTSIDER):
-        with pytest.raises(HTTPException) as exc:
-            assignments.get_instructor_tsr_overview(caller, A_TSR)
-        assert exc.value.status_code == 403
+def test_the_tsr_overview_refuses_an_assignment_that_is_not_a_tsr(db):
     with pytest.raises(HTTPException) as not_tsr:
         assignments.get_instructor_tsr_overview(INSTR, A_FB)
     assert not_tsr.value.status_code == 400
-    with pytest.raises(HTTPException) as missing:
-        assignments.get_instructor_tsr_overview(INSTR, "no-such-assignment")
-    assert missing.value.status_code == 404
 
 
 # -------------------------------------------------------- feedback overview
@@ -445,12 +434,6 @@ def test_feedback_overview_shape_and_budget(db):
     assert db.executes <= 5, _trace(db)
 
 
-def test_feedback_overview_denies_non_owner(db):
-    with pytest.raises(HTTPException) as exc:
-        assignments.get_feedback_overview(OTHER_INSTR, A_FB)
-    assert exc.value.status_code == 403
-
-
 def test_feedback_submission_timestamp_is_timezone_aware(db, clock):
     clock(dt.datetime(2026, 3, 5, 7, 0, tzinfo=dt.UTC))  # inside the feedback window
     row = assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
@@ -472,15 +455,6 @@ def test_my_submissions_lists_only_the_callers_rows(db):
     }
     assert db.executes <= 5, _trace(db)
     assert assignments.get_my_submissions(S3, CLASS) == {"tsrs": [], "feedback_assignment_ids": []}
-
-
-def test_my_submissions_access(db):
-    with pytest.raises(HTTPException) as outsider:
-        assignments.get_my_submissions(OUTSIDER, CLASS)
-    assert outsider.value.status_code == 403
-    with pytest.raises(HTTPException) as missing:
-        assignments.get_my_submissions(S1, "no-such-class")
-    assert missing.value.status_code == 404
 
 
 CLASS_UUID = "cccccccc-0000-0000-0000-000000000001"

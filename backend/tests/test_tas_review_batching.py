@@ -133,15 +133,6 @@ def test_final_review_detail_is_bounded(db):
     assert db.executes <= 6, _trace(db)  # the instructor needs no enrollment lookup
 
 
-def test_final_review_detail_still_denies_students_and_404s(db):
-    with pytest.raises(HTTPException) as student:
-        tas.get_final_review_detail(S1, P1)
-    assert student.value.status_code == 403
-    with pytest.raises(HTTPException) as missing:
-        tas.get_final_review_detail(INSTR, "no-such-project")
-    assert missing.value.status_code == 404
-
-
 def test_save_notes_is_one_upsert_on_the_project_key(db):
     out = tas.save_final_review_notes(TA2, P1, {"project_scope": "v1"}, 1)
     assert out["message"] == "Notes saved" and out["project_id"] == P1
