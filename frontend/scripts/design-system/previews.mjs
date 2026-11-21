@@ -181,7 +181,7 @@ const PREVIEW_STYLE = [
   '.ds-section { display: flex; flex-direction: column; gap: 8px; }',
   '.ds-caption { margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--gt-text-tertiary); }',
   '.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }',
-  '.ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }',
+  '.ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 320px)); gap: 16px; align-items: start; }',
 ];
 
 const escapeAttribute = (text) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

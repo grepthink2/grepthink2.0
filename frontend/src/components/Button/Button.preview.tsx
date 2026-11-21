@@ -3,7 +3,7 @@ import { ArrowRight, Plus, Trash2 } from 'lucide-react';
 import type { PreviewMeta } from '@components/previewMeta';
 import { Button } from './Button';
 
-export const meta: PreviewMeta = { group: 'Primitives', height: 360 };
+export const meta: PreviewMeta = { group: 'Primitives', height: 400 };
 
 export default function ButtonPreview() {
   const [showTable, setShowTable] = useState(true);
