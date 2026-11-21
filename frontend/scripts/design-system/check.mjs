@@ -8,8 +8,9 @@
  * bundle header, and every name in it on the namespace once React 18 and the bundle have run in
  * jsdom; tokens.json's shape, names and colour values; every token of the token stylesheets either
  * in tokens.json or still declared in bundle.css; every rule of the kit's compiled CSS inside the
- * base layer's scope; and the icon list built in equal to the lucide icons src/ imports now.
- * A guide and a preview per component are not checked yet.
+ * base layer's scope; the icon list built in equal to the lucide icons src/ imports now; and, for
+ * every preview the kit carries (previews.mjs), its `components/<Name>/preview.html`, rendered on
+ * React 18 against the built bundle by checkPreview.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -19,6 +20,7 @@ import { firstCompoundClasses, selectorsOf } from '../ownership.mjs';
 import { bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
 import { NAMESPACE } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
+import { checkPreview, collectPreviews, iconPreview } from './previews.mjs';
 import { BUNDLE_CSS_CAP, topLevelBlocks } from './styles.mjs';
 import { TOKEN_NAME, parseTokenCss } from './tokens.mjs';
 
@@ -117,11 +119,15 @@ function filesUnder(dir) {
 
 /**
  * @param {string} dir the tree to publish (.design-system/project)
- * @param {{ srcDir?: string; reportFile?: string }} [options] the app's src/ (token stylesheets
- *   and lucide imports), and the build report beside the tree (its icon list)
- * @returns {string[]} the problems, empty when the tree is publishable
+ * @param {{ srcDir?: string; reportFile?: string; runtimeDir?: string }} [options] the app's src/
+ *   (token stylesheets, lucide imports, the kit's previews), the build report beside the tree (its
+ *   icon list), and the design-system runtime (Icon's preview)
+ * @returns {Promise<string[]>} the problems, empty when the tree is publishable
  */
-export function checkTree(dir, { srcDir = join(FRONTEND, 'src'), reportFile = join(dir, '..', 'report.json') } = {}) {
+export async function checkTree(
+  dir,
+  { srcDir = join(FRONTEND, 'src'), reportFile = join(dir, '..', 'report.json'), runtimeDir = join(FRONTEND, 'design-system/runtime') } = {},
+) {
   const problems = [];
   for (const path of REQUIRED) if (!existsSync(join(dir, path))) problems.push(`missing ${path}`);
   for (const path of PAGE_FILES) {
@@ -140,11 +146,14 @@ export function checkTree(dir, { srcDir = join(FRONTEND, 'src'), reportFile = jo
   }
 
   const header = parseBundleHeader(bundle);
+  // Previews are rendered only against a bundle that loads and holds every name in its header.
+  let bundleLoads = false;
   if (!header) {
     problems.push('bundle.js has no @ds-bundle header on line 1');
   } else if (header.namespace !== NAMESPACE) {
     problems.push(`bundle.js header names namespace ${header.namespace}, not ${NAMESPACE}`);
   } else {
+    const before = problems.length;
     try {
       const window = loadInJsdom([...LIBRARIES.map((path) => read(dir, path)), bundle]);
       const namespace = window[NAMESPACE];
@@ -153,6 +162,7 @@ export function checkTree(dir, { srcDir = join(FRONTEND, 'src'), reportFile = jo
       }
       const errors = namespace?.__errors;
       if (errors && Object.keys(errors).length) problems.push(`window.${NAMESPACE}.__errors is not empty: ${JSON.stringify(errors)}`);
+      bundleLoads = problems.length === before;
       window.close();
     } catch (error) {
       problems.push(`bundle.js does not load after React 18: ${error.message}`);
@@ -209,12 +219,38 @@ export function checkTree(dir, { srcDir = join(FRONTEND, 'src'), reportFile = jo
       );
     }
   }
+
+  if (bundleLoads) problems.push(...(await previewProblems(dir, { header, bundle, css, tokens: tokens ?? {}, srcDir, runtimeDir })));
+  return problems;
+}
+
+// Every preview the kit carries, built into the tree and rendered against the built bundle.
+async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runtimeDir }) {
+  const exports = header.components ?? [];
+  const componentsDir = join(srcDir, 'components');
+  let previews;
+  try {
+    previews = [...(existsSync(componentsDir) ? collectPreviews(componentsDir, exports) : []), iconPreview(runtimeDir, exports)].filter(Boolean);
+  } catch (error) {
+    return [error.message];
+  }
+  const problems = [];
+  const libs = LIBRARIES.map((path) => read(dir, path));
+  for (const { component, meta } of previews) {
+    const path = `components/${component}/preview.html`;
+    if (!existsSync(join(dir, path))) {
+      problems.push(`missing ${path}`);
+      continue;
+    }
+    const found = await checkPreview({ html: read(dir, path), libs, bundleJs: bundle, bundleCss: css, tokensJson: tokens, expects: meta.expects });
+    problems.push(...found.map((problem) => `${path}: ${problem}`));
+  }
   return problems;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const tree = join(FRONTEND, '.design-system/project');
-  const problems = existsSync(tree) ? checkTree(tree) : ['missing .design-system/project: run npm run design:build first'];
+  const problems = existsSync(tree) ? await checkTree(tree) : ['missing .design-system/project: run npm run design:build first'];
   if (problems.length) {
     for (const problem of problems) console.error(`design:check: ${problem}`);
     process.exit(1);

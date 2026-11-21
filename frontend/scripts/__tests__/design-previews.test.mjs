@@ -1,13 +1,24 @@
 // @vitest-environment node
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, describe, expect, it } from 'vitest';
-import { collectKitExports } from '../design-system/exports.mjs';
-import { PREVIEW_FOLDERS_LEFT_OUT, collectPreviews } from '../design-system/previews.mjs';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { buildBundle, finishBundleJs } from '../design-system/bundle.mjs';
+import { NAMESPACE, collectKitExports } from '../design-system/exports.mjs';
+import {
+  CLOCKS,
+  PREVIEW_FOLDERS_LEFT_OUT,
+  buildPreviews,
+  checkPreview,
+  collectPreviews,
+  renderPreviewHtml,
+} from '../design-system/previews.mjs';
 
-const kitDir = fileURLToPath(new URL('../../src/components/', import.meta.url));
+const frontend = fileURLToPath(new URL('../../', import.meta.url));
+const kitDir = join(frontend, 'src/components');
+const lib = (file) => readFileSync(join(frontend, 'node_modules', file), 'utf8');
+const LIBS = [lib('react18/umd/react.production.min.js'), lib('react-dom18/umd/react-dom.production.min.js')];
 
 const scratch = mkdtempSync(join(tmpdir(), 'design-previews-'));
 
@@ -151,5 +162,155 @@ describe('collectPreviews', () => {
       "import type { Row } from '@/lib/rows';",
     ].join('\n');
     expect(collectAlpha(preview('Alpha', "{ group: 'Primitives', height: 220 }", fine))).toHaveLength(1);
+  });
+});
+
+describe('renderPreviewHtml', () => {
+  const html = renderPreviewHtml({ meta: { group: 'Primitives', height: 220 }, script: 'void 0;', title: 'Button' });
+
+  it('puts the @dsCard marker on line 1, then a small complete document with one script', () => {
+    const lines = html.split('\n');
+    expect(lines[0]).toBe('<!-- @dsCard group="Primitives" height=220 -->');
+    expect(lines[1]).toBe('<!doctype html>');
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<meta charset="utf-8">');
+    expect(html).toContain('<title>Button</title>');
+    expect(html).toContain(
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&amp;family=Poppins:wght@400;500;600;700&amp;display=swap">',
+    );
+    expect(html).toMatch(/body \{ margin: 0; padding: 16px; background: var\(--gt-surface\); font-family: var\(--gt-font-sans\);/);
+    expect(html).toContain('<div id="ds-preview"></div>');
+    expect(html.match(/<script/g)).toHaveLength(1);
+  });
+
+  it('escapes a subtitle in the marker and the strings that would end the script', () => {
+    const marked = renderPreviewHtml({
+      meta: { group: 'Display', height: 300, subtitle: 'The "status" map & <more>' },
+      script: 'var a = "</script>", b = "<!-- x";',
+      title: 'Badge',
+    });
+    expect(marked.split('\n')[0]).toBe('<!-- @dsCard group="Display" height=300 subtitle="The &quot;status&quot; map &amp; &lt;more&gt;" -->');
+    expect(marked).toContain('var a = "<\\/script>", b = "<\\!-- x";');
+    expect(marked.match(/<\/script/g)).toHaveLength(1);
+  });
+});
+
+/** A bundle that puts a Box and a Clock component on the namespace. */
+const BUNDLE = [
+  '(function (R) {',
+  `  window.${NAMESPACE} = {`,
+  "    Box: function (props) { return R.createElement('div', { className: 'gt-box', role: props.role }, props.children); },",
+  "    Clock: function () { return R.createElement('p', null, String(new Date().getFullYear())); },",
+  "    Broken: function () { throw new Error('Broken renders nothing'); },",
+  '  };',
+  '})(React);',
+].join('\n');
+const TOKENS = JSON.stringify({ color: { tokens: [{ name: 'gt-surface', value: '#ffffff' }] }, type: { fonts: [], families: {}, groups: [] } });
+
+/** A preview document whose script renders `element` (source text) into the root. */
+const page = (element, { meta = { group: 'Display', height: 120 }, before = '' } = {}) =>
+  renderPreviewHtml({
+    meta,
+    title: 'Box',
+    script: `${before}(function () { var ns = window.${NAMESPACE}; ReactDOM.createRoot(document.getElementById('ds-preview')).render(${element}); })();`,
+  });
+const check = (html, expects) => checkPreview({ html, libs: LIBS, bundleJs: BUNDLE, bundleCss: '.gt-box{color:red}', tokensJson: TOKENS, expects });
+
+describe('checkPreview', () => {
+  it('finds nothing wrong with a preview that renders the bundle', async () => {
+    expect(await check(page("React.createElement(ns.Box, { role: 'dialog' }, 'Hello')"), '[role="dialog"]')).toEqual([]);
+  });
+
+  it('reports a script that throws, as it runs or as it renders', async () => {
+    expect(await check(page('null', { before: "throw new Error('boom');" }))).toEqual(['threw: boom', '#ds-preview is empty']);
+    const problems = await check(page('React.createElement(ns.Broken)'));
+    expect(problems).toContain('threw: Broken renders nothing');
+    expect(problems).toContain('#ds-preview is empty');
+  });
+
+  it('reports a console error, quoting it', async () => {
+    expect(await check(page("React.createElement(ns.Box, null, 'Hi')", { before: "console.error('Warning: %s is odd', 'Box');" }))).toEqual([
+      'console.error: Warning: Box is odd',
+    ]);
+  });
+
+  it('reports an empty root, and an `expects` that matches nothing', async () => {
+    expect(await check(page('null'))).toEqual(['#ds-preview is empty']);
+    expect(await check(page("React.createElement(ns.Box, null, 'Hi')"), '[role="dialog"]')).toEqual([
+      'nothing in the document matches [role="dialog"]',
+    ]);
+  });
+
+  it('reports a render that depends on the clock', async () => {
+    expect(await check(page('React.createElement(ns.Clock)'))).toEqual([
+      `renders differently with the clock at ${CLOCKS[0]} and at ${CLOCKS[1]}`,
+    ]);
+  });
+
+  it('holds the document to the format: marker, size, tags, scripts and fetches', async () => {
+    const good = page("React.createElement(ns.Box, null, 'Hi')");
+    expect(await check(good.replace('<div id="ds-preview"></div>', '<div id="ds-preview"></div><iframe src="about:blank"></iframe>'))).toEqual([
+      'preview.html holds an <iframe>',
+    ]);
+    expect(await check(good.replace('</body>', '<embed src="x.swf"><object data="x"></object></body>'))).toEqual([
+      'preview.html holds an <object>',
+      'preview.html holds an <embed>',
+    ]);
+    expect(await check(good.split('\n').slice(1).join('\n'))).toEqual(['line 1 is not a @dsCard marker with a group and a height']);
+    expect(await check(good.replace('group="Display" height=120', 'group="Other" height=120'))).toEqual([
+      '@dsCard group "Other" is not one of Primitives, Display, Feedback, Navigation',
+    ]);
+    expect(await check(good.replace('height=120', 'height=20'))).toEqual(['@dsCard height 20 is outside 40–4000']);
+    expect(await check(`${good}<!--${'x'.repeat(256 * 1024)}-->`)).toEqual(['preview.html is over 256 KB']);
+    expect(await check(good.replace('</head>', '<script src="https://cdn.example.com/x.js"></script></head>'))).toEqual([
+      'preview.html holds 2 scripts; a preview has one inline script',
+    ]);
+    expect(await check(good.replace('</head>', '<link rel="stylesheet" href="https://cdn.example.com/x.css"></head>'))).toEqual([
+      'preview.html fetches https://cdn.example.com/x.css; only the Google Fonts stylesheet may be fetched',
+    ]);
+  });
+
+  it('reports a bundle that does not load', async () => {
+    const problems = await checkPreview({
+      html: page("React.createElement(ns.Box, null, 'Hi')"),
+      libs: LIBS,
+      bundleJs: 'throw new Error("no bundle");',
+      bundleCss: '',
+      tokensJson: TOKENS,
+    });
+    expect(problems[0]).toBe('the bundle does not load: no bundle');
+  });
+});
+
+describe('buildPreviews on the kit', () => {
+  let previews;
+  let bundleJs;
+  let bundleCss;
+  let tokensJson;
+
+  beforeAll(async () => {
+    const kit = collectKitExports(kitDir);
+    const bundle = await buildBundle({ root: frontend });
+    bundleJs = finishBundleJs(bundle.js, bundle.exports);
+    bundleCss = bundle.css;
+    tokensJson = JSON.stringify({ color: { tokens: [] }, type: { fonts: [], families: {}, groups: [] } });
+    previews = await buildPreviews({ root: frontend, exports: kit });
+  }, 120_000);
+
+  it('compiles each preview into a document that renders on React 18 against the built bundle', async () => {
+    const names = previews.map((preview) => preview.component);
+    expect(names).toContain('Button');
+    expect(names).toContain('Modal');
+    for (const { component, html, meta } of previews.filter((p) => ['Button', 'Modal'].includes(p.component))) {
+      const problems = await checkPreview({ html, libs: LIBS, bundleJs, bundleCss, tokensJson, expects: meta.expects });
+      expect({ component, problems }).toEqual({ component, problems: [] });
+    }
+  }, 60_000);
+
+  it("reads the kit from the bundle's namespace instead of carrying its source", () => {
+    const button = previews.find((preview) => preview.component === 'Button').html;
+    expect(button).not.toContain('gt-button__faces');
+    expect(bundleJs).toContain('gt-button__faces');
+    expect(button).toContain(NAMESPACE);
   });
 });

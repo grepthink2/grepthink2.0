@@ -1,6 +1,7 @@
 /**
  * The previews beside the kit's components: `<Folder>/<Folder>.preview.tsx`, one per component
- * folder of src/components/, published as `components/<Name>/preview.html`.
+ * folder of src/components/ (and Icon's, in design-system/runtime/), published as
+ * `components/<Name>/preview.html`.
  *
  * A preview is type-checked TSX that imports the kit the way a feature does:
  *
@@ -13,11 +14,27 @@
  * `expects` is a selector the render check must find. A preview imports kit pieces (through
  * `@components/`, `@/components/` or a relative path), icons from lucide-react and hooks from react,
  * and nothing else; type-only imports are erased and go unchecked.
+ *
+ * buildPreviews compiles each one (vite.design-preview.config.ts, in a Node process of its own as
+ * bundle.mjs runs the bundle's build) into a classic script that reads every kit piece from
+ * `window.GrepThinkDesignSystem_36e7e3`, so a published preview exercises the published bundle, and
+ * renderPreviewHtml wraps it in the document the format asks for. The document's head carries a few
+ * layout classes a preview's own markup may use: `ds-stack` (sections, top to bottom), `ds-section`
+ * (a caption over its examples), `ds-caption`, `ds-row` (examples side by side, wrapping) and
+ * `ds-grid`.
+ *
+ * checkPreview loads a document in jsdom as the Design System's frame does (tokens, bundle.css, React
+ * and React DOM 18, the bundle, then the preview's script), twice, with the clock a year and a half
+ * apart, and returns what keeps it from being published.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import { format } from 'node:util';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import { splitCodeAndComments } from '../ownership.mjs';
+import { NAMESPACE } from './exports.mjs';
 
 /** Folders of src/components/ that hold no kit component, so carry no preview. */
 export const PREVIEW_FOLDERS_LEFT_OUT = ['ErrorBoundary', 'hooks', 'icons', '__tests__'];
@@ -144,4 +161,267 @@ export function collectPreviews(componentsDir, exports) {
     previews.push(readPreview({ path, file, folder, componentsDir, exports }));
   }
   return previews;
+}
+
+/** Icon's preview, beside it in design-system/runtime/, when there is one. */
+export function iconPreview(runtimeDir, exports) {
+  const path = join(runtimeDir, 'Icon.preview.tsx');
+  if (!existsSync(path)) return null;
+  return readPreview({ path, file: 'design-system/runtime/Icon.preview.tsx', folder: 'Icon', componentsDir: runtimeDir, exports });
+}
+
+// ── The document ──────────────────────────────────────────────────────────────────────────────────
+
+export const PREVIEW_CAP = 256 * 1024;
+const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
+const FONT_HOSTS = ['https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
+const PREVIEW_STYLE = [
+  'body { margin: 0; padding: 16px; background: var(--gt-surface); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }',
+  '.ds-stack { display: flex; flex-direction: column; gap: 20px; }',
+  '.ds-section { display: flex; flex-direction: column; gap: 8px; }',
+  '.ds-caption { margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--gt-text-tertiary); }',
+  '.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }',
+  '.ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }',
+];
+
+const escapeAttribute = (text) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Script text that cannot end or confuse the inline `<script>` holding it, as bundle.js is made. */
+export const inlineScript = (code) => code.replaceAll('</script', '<\\/script').replaceAll('<!--', '<\\!--');
+
+/**
+ * @param {{ meta: PreviewMeta; script: string; title: string }} options
+ * @returns {string} preview.html
+ */
+export function renderPreviewHtml({ meta, script, title }) {
+  const marker = `<!-- @dsCard group="${escapeAttribute(meta.group)}" height=${meta.height}${
+    meta.subtitle ? ` subtitle="${escapeAttribute(meta.subtitle)}"` : ''
+  } -->`;
+  return [
+    marker,
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    `<title>${escapeAttribute(title)}</title>`,
+    `<link rel="stylesheet" href="${escapeAttribute(FONTS)}">`,
+    '<style>',
+    ...PREVIEW_STYLE,
+    '</style>',
+    '</head>',
+    '<body>',
+    '<div id="ds-preview"></div>',
+    `<script>\n${inlineScript(script).trimEnd()}\n</script>`,
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
+}
+
+/**
+ * tokens.json as the `:root` block a frame declares: every token of every family but `type`, an
+ * alias (`{gt-gray-0}`) as `var()`.
+ * @param {string | object} tokensJson
+ */
+export function tokensCss(tokensJson) {
+  const tokens = typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson;
+  const lines = [];
+  for (const [family, value] of Object.entries(tokens)) {
+    if (family === 'type' || !Array.isArray(value?.tokens)) continue;
+    for (const token of value.tokens) {
+      const alias = /^\{(.+)\}$/.exec(String(token.value));
+      lines.push(`  --${token.name}: ${alias ? `var(--${alias[1]})` : token.value};`);
+    }
+  }
+  return `:root {\n${lines.join('\n')}\n}\n`;
+}
+
+// ── The check ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The two clocks a preview renders under; its HTML must not differ. */
+export const CLOCKS = ['2026-01-15T12:00:00Z', '2027-06-15T12:00:00Z'];
+const MARKER = /^<!-- @dsCard((?:\s+[a-z]+=(?:"[^"]*"|\d+))*)\s*-->$/;
+const FORBIDDEN_TAGS = ['iframe', 'object', 'embed'];
+
+function documentProblems(html) {
+  const problems = [];
+  if (Buffer.byteLength(html) > PREVIEW_CAP) problems.push('preview.html is over 256 KB');
+  const marker = MARKER.exec(html.slice(0, html.indexOf('\n') === -1 ? undefined : html.indexOf('\n')));
+  const attributes = Object.fromEntries([...(marker?.[1] ?? '').matchAll(/([a-z]+)=(?:"([^"]*)"|(\d+))/g)].map(([, k, q, n]) => [k, q ?? Number(n)]));
+  if (!marker || attributes.group === undefined || attributes.height === undefined) {
+    problems.push('line 1 is not a @dsCard marker with a group and a height');
+  } else {
+    if (!PREVIEW_GROUPS.includes(attributes.group)) {
+      problems.push(`@dsCard group "${attributes.group}" is not one of ${PREVIEW_GROUPS.join(', ')}`);
+    }
+    const { height } = attributes;
+    if (typeof height !== 'number' || height < PREVIEW_HEIGHT.min || height > PREVIEW_HEIGHT.max) {
+      problems.push(`@dsCard height ${height} is outside ${PREVIEW_HEIGHT.min}–${PREVIEW_HEIGHT.max}`);
+    }
+  }
+  // The markup outside the scripts: what the parser sees as tags.
+  const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '<script></script>');
+  for (const tag of FORBIDDEN_TAGS) {
+    if (new RegExp(`<${tag}\\b`, 'i').test(markup)) problems.push(`preview.html holds an <${tag}>`);
+  }
+  const scripts = markup.match(/<script\b/gi) ?? [];
+  if (scripts.length !== 1) problems.push(`preview.html holds ${scripts.length} scripts; a preview has one inline script`);
+  for (const [, url] of markup.matchAll(/\b(?:src|href|data|srcset|poster)\s*=\s*["']?((?:https?:)?\/\/[^"'\s>]+)/gi)) {
+    if (!FONT_HOSTS.some((host) => url.startsWith(host))) {
+      problems.push(`preview.html fetches ${url}; only the Google Fonts stylesheet may be fetched`);
+    }
+  }
+  return problems;
+}
+
+// What a console.error call prints: an Error (from any realm) by its message.
+function consoleText(args) {
+  const plain = args.map((arg) =>
+    arg && typeof arg === 'object' && typeof arg.message === 'string' && typeof arg.stack === 'string' ? arg.message : arg,
+  );
+  return format(...plain);
+}
+
+// Lets the window's event loop run until the document stops changing (at least twice, at most 50 times).
+async function settle(window) {
+  const turn = () => new Promise((resolve) => window.setTimeout(resolve, 0));
+  let last = null;
+  let still = 0;
+  for (let i = 0; i < 50 && still < 2; i++) {
+    await turn();
+    const now = window.document.body.innerHTML;
+    still = i >= 1 && now === last ? still + 1 : 0;
+    last = now;
+  }
+}
+
+/** One render of a preview document in jsdom under a fixed clock: its problems and the body's HTML. */
+async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }) {
+  const problems = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('error', (...args) => problems.push(`console.error: ${consoleText(args)}`));
+  virtualConsole.on('jsdomError', (error) => {
+    if (error.type === 'unhandled-exception') problems.push(`threw: ${error.cause?.message ?? error.message}`);
+  });
+  const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole, url: 'https://preview.invalid/' });
+  const { window } = dom;
+  try {
+    const { document } = window;
+    const style = (text) => {
+      const element = document.createElement('style');
+      element.textContent = text;
+      document.head.prepend(element);
+    };
+    style(bundleCss);
+    style(tokensCss(tokensJson));
+    window.eval(
+      `(() => { const Real = Date; const fixed = Real.parse(${JSON.stringify(clock)});
+        class FixedDate extends Real { constructor(...args) { if (args.length === 0) super(fixed); else super(...args); } static now() { return fixed; } }
+        window.Date = FixedDate; })();`,
+    );
+    try {
+      for (const code of [...libs, bundleJs]) window.eval(code);
+    } catch (error) {
+      problems.push(`the bundle does not load: ${error.message}`);
+      return { problems, body: '', window };
+    }
+    const script = document.querySelector('script')?.textContent ?? '';
+    try {
+      window.eval(script);
+    } catch (error) {
+      problems.push(`threw: ${error.message}`);
+    }
+    await settle(window);
+    if (!document.getElementById('ds-preview')?.firstElementChild) problems.push('#ds-preview is empty');
+    return { problems, body: document.body.innerHTML, window };
+  } catch (error) {
+    window.close();
+    throw error;
+  }
+}
+
+/**
+ * The problems that keep a preview document from being published, none when it can be.
+ * @param {{ html: string; libs: string[]; bundleJs: string; bundleCss: string; tokensJson: string | object; expects?: string }} options
+ *   `libs`: React and React DOM 18, in that order, as the frame loads them
+ * @returns {Promise<string[]>}
+ */
+export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson, expects }) {
+  const problems = documentProblems(html);
+  if (problems.length) return problems;
+  const renders = [];
+  for (const clock of CLOCKS) {
+    const render = await renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock });
+    if (render.window && expects && !render.window.document.querySelector(expects)) {
+      render.problems.push(`nothing in the document matches ${expects}`);
+    }
+    render.window?.close();
+    renders.push(render);
+  }
+  const found = [...new Set(renders.flatMap((render) => render.problems))];
+  if (found.length === 0 && renders[0].body !== renders[1].body) {
+    found.push(`renders differently with the clock at ${CLOCKS[0]} and at ${CLOCKS[1]}`);
+  }
+  return found;
+}
+
+// ── The build ─────────────────────────────────────────────────────────────────────────────────────
+
+const withoutExtension = (path) => path.replace(/\.tsx?$/, '');
+
+/**
+ * Compiles every preview against the bundle's namespace.
+ * @param {{ root: string; exports: { name: string; file: string }[] }} options the frontend
+ *   directory, and the kit's exports as collectKitExports gives them
+ * @returns {Promise<{ component: string; html: string; meta: PreviewMeta }[]>}
+ */
+export async function buildPreviews({ root, exports }) {
+  const componentsDir = join(root, 'src/components');
+  const runtimeDir = join(root, 'design-system/runtime');
+  const bundleExports = [...exports, { name: 'Icon' }];
+  const previews = [...collectPreviews(componentsDir, bundleExports), iconPreview(runtimeDir, bundleExports)].filter(Boolean);
+
+  const gen = join(root, '.design-system/gen/previews');
+  const raw = join(root, '.design-system/raw/previews');
+  rmSync(gen, { recursive: true, force: true });
+  rmSync(raw, { recursive: true, force: true });
+  mkdirSync(gen, { recursive: true });
+
+  // Each kit module, by its path without extension, and the names the namespace holds for it.
+  const kit = {};
+  for (const { name, file } of exports) (kit[withoutExtension(join(componentsDir, file))] ??= []).push(name);
+  kit[withoutExtension(join(runtimeDir, 'Icon.tsx'))] = ['Icon'];
+  writeFileSync(join(gen, 'kit.json'), `${JSON.stringify({ namespace: NAMESPACE, componentsDir, modules: kit }, null, 2)}\n`);
+
+  const entries = previews.map(({ component, path }) => {
+    const entry = join(gen, `${component}.tsx`);
+    writeFileSync(
+      entry,
+      [
+        '// Generated by scripts/design-system/previews.mjs for `npm run design:build`. Do not edit.',
+        "import { createElement } from 'react';",
+        "import { createRoot } from 'react-dom/client';",
+        `import Preview from '${withoutExtension(path).split(sep).join('/')}';`,
+        '',
+        "createRoot(document.getElementById('ds-preview') as HTMLElement).render(createElement(Preview));",
+        '',
+      ].join('\n'),
+    );
+    return { name: component, entry };
+  });
+  writeFileSync(join(gen, 'entries.json'), `${JSON.stringify(entries, null, 2)}\n`);
+
+  // Rolldown's native binding refuses plugin objects made inside a Vitest worker's sandbox.
+  const run = spawnSync(process.execPath, [join(root, 'scripts/design-system/preview-runner.mjs'), join(gen, 'entries.json')], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, NODE_ENV: 'production', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true', NO_COLOR: '1' },
+  });
+  if (run.status !== 0) throw new Error(`the preview build failed:\n${run.stdout}${run.stderr}`);
+
+  return previews.map(({ component, meta }) => ({
+    component,
+    meta,
+    html: renderPreviewHtml({ meta, title: component, script: readFileSync(join(raw, `${component}.js`), 'utf8') }),
+  }));
 }
