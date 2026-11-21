@@ -38,6 +38,8 @@ const fixture = tree('kit', {
   'Alpha/Alpha.tsx': 'export const Alpha = () => null;\nexport default Alpha;\nexport const ALPHA_PX = 4;\n',
   'Alpha/AlphaNote.tsx': 'export default function AlphaNote() { return null; }\n',
   'Alpha/Alpha.test.tsx': 'export function AlsoLeaked() { return null; }\n',
+  'Alpha/Alpha.preview.tsx': "export const meta = { group: 'Primitives', height: 220 };\nexport default function AlphaPreview() { return null; }\n",
+  'previewMeta.ts': 'export type PreviewMeta = { height: number };\nexport const PREVIEW_GROUPS = [];\n',
   'ErrorBoundary/ErrorBoundary.tsx': 'export class ErrorBoundary {}\n',
   'icons/BrandIcons.tsx': 'export function GithubIcon() { return null; }\n',
   'hooks/useGamma.ts': 'export function useGamma() { return 2; }\n',
@@ -75,6 +77,13 @@ describe('collectKitExports', () => {
     expect(names).not.toContain('ErrorBoundary');
     expect(names).not.toContain('GithubIcon');
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("reads no preview: a preview's meta and default export are not the kit's", () => {
+    const kit = collectKitExports(kitDir);
+    expect(kit.map((entry) => entry.name)).not.toContain('meta');
+    expect(kit.filter((entry) => /Preview$/.test(entry.name) || entry.file.includes('.preview.'))).toEqual([]);
+    expect(kit.filter((entry) => entry.file === 'previewMeta.ts')).toEqual([]);
   });
 });
 

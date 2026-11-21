@@ -18,6 +18,8 @@
     "src/components/**/__tests__",
     "src/components/**/*.test.ts",
     "src/components/**/*.test.tsx",
+    "src/components/**/*.preview.tsx",
+    "src/components/previewMeta.ts",
     "src/components/ErrorBoundary",
     "src/components/icons"
   ]
