@@ -1,7 +1,8 @@
 /**
  * The lucide icons the design-system `Icon` carries: exactly those the app imports from
- * `lucide-react` anywhere under src/ (tests left out), found again on every build, so an icon
- * the app starts to use reaches the system with no list to edit.
+ * `lucide-react` anywhere under src/ (tests and the kit's previews left out: a preview bundles its
+ * own icons, and an icon only a preview shows is not one the app uses), found again on every
+ * build, so an icon the app starts to use reaches the system with no list to edit.
  *
  * Imports are read by pattern over the source with comments and strings blanked (names.mjs reads
  * declarations the same way): `import { A, B as C } from 'lucide-react'` gives A and B, and a
@@ -26,7 +27,7 @@ function sourceFiles(dir) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) {
       if (entry !== '__tests__') files.push(...sourceFiles(path));
-    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts') && !entry.includes('.test.')) {
+    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts') && !entry.includes('.test.') && !entry.endsWith('.preview.tsx')) {
       files.push(path);
     }
   }

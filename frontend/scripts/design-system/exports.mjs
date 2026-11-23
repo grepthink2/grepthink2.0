@@ -3,8 +3,9 @@
  *
  * Every value export of every source file in a component folder of src/components/ and in its
  * hooks/ folder: components, hooks and helpers alike, since code decides what the system holds.
- * Left out: tests, the ErrorBoundary folder (app plumbing) and icons/ (brand marks, which Icon
- * does not carry either). Types are not values and are left to index.d.ts.
+ * Left out: tests, previews (`<Folder>.preview.tsx`, the design build's own pages, and
+ * previewMeta.ts, their contract), the ErrorBoundary folder (app plumbing) and icons/ (brand marks,
+ * which Icon does not carry either). Types are not values and are left to index.d.ts.
  *
  * Exports are read by pattern over the source with comments and strings blanked, as names.mjs
  * reads them: a top-level `export function|const|class`, `export default function Name`, and
@@ -85,11 +86,22 @@ function sourceFiles(dir) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) {
       if (!LEFT_OUT_FOLDERS.has(entry)) files.push(...sourceFiles(path));
-    } else if (/\.tsx?$/.test(entry) && !entry.endsWith('.d.ts') && !entry.includes('.test.')) {
+    } else if (isKitSource(entry)) {
       files.push(path);
     }
   }
   return files;
+}
+
+/** A source file of the kit: not a test, a declaration file, a preview or the preview contract. */
+export function isKitSource(fileName) {
+  return (
+    /\.tsx?$/.test(fileName) &&
+    !fileName.endsWith('.d.ts') &&
+    !fileName.includes('.test.') &&
+    !fileName.endsWith('.preview.tsx') &&
+    fileName !== 'previewMeta.ts'
+  );
 }
 
 const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);

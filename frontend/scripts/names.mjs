@@ -28,8 +28,9 @@
  * another file of the folder, or nowhere, it is a warning. A family whose folder does not exist
  * yet is noted once.
  *
- * Tests and the entry files directly in src/ (main.tsx, App.tsx, a local preview page's entry)
- * are not read: none of them is a component's home.
+ * Tests, the entry files directly in src/ (main.tsx, App.tsx, a local preview page's entry) and a
+ * kit component's design-system preview (`<Folder>.preview.tsx`) are not read: none of them is a
+ * component's home.
  *
  * Deliberate differences go in NAMES_ALLOWLIST: a design export the codebase keeps under another
  * name or not at all, with its status, or a folder or file in src/ that no design export names.
@@ -410,9 +411,12 @@ function isTestPath(path) {
 /** main.tsx, App.tsx and a local preview page's entry, directly in src/: no component's home. */
 const isEntryFile = (path) => /^src\/[^/]+$/.test(path);
 
+/** A kit component's design-system preview, which declares `meta` and a gallery, not a component. */
+const isPreview = (path) => path.endsWith('.preview.tsx');
+
 /** Whether checkNames reads a file's declarations. */
 function isRead(path) {
-  return /\.tsx?$/.test(path) && !path.endsWith('.d.ts') && !isTestPath(path) && !isEntryFile(path);
+  return /\.tsx?$/.test(path) && !path.endsWith('.d.ts') && !isTestPath(path) && !isEntryFile(path) && !isPreview(path);
 }
 
 // A top-level declaration starts its line, as the formatter writes it; a nested one is indented

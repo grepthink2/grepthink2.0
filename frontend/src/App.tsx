@@ -123,8 +123,6 @@ function App() {
               <Route path="messages/compose" element={<Messages />} />
               <Route path="messages/:conversationId" element={<Messages />} />
               <Route path="my-classes" element={<MyClasses />} />
-              <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
-              <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:projectId" element={<ProjectDetails />} />

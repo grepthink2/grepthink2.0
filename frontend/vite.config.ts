@@ -87,6 +87,9 @@ export default defineConfig(({ mode }) => {
           'src/test/**',
           'src/**/*.d.ts',
           'src/main.tsx',
+          // The kit's design-system previews and their contract: published pages, never imported by the app.
+          'src/**/*.preview.tsx',
+          'src/components/previewMeta.ts',
         ],
         // text-summary for the terminal, html to browse locally, lcov for Codecov,
         // json-summary for the CI job summary.

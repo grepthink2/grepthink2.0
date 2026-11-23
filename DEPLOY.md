@@ -119,45 +119,28 @@ refuse PROD reads or writes. That is a setting: approve the call, or add an allo
 connector's tools. A file that wraps several steps in its own `BEGIN … COMMIT` is safest pasted
 whole into the SQL editor.
 
-**Applied to PROD on 2026-09-23:** `backend/database/migrations/prod/2026-09/2026-09-20_align_prod.sql`
-(group messaging, the realtime publication, the `handle_new_user` fix, the perf migration, the
-cleanup, the `.edu` verification table and the lockdown). It was verified the same day from a
-dump: every check in its step 10 passes. PROD and dev then had the same schema, apart from the
-role migration below. Do not re-run it:
-after the role migration below, its step 3 would put the old `handle_new_user` back. Dev has had
-steps 1–7 since 2026-09-20 and steps 8–9 since 2026-09-23.
+**The headers are the record.** Where a file has run is written on the `Applied:` line of its own header
+(`Applied: DEV <date> (…)   PROD <date> (…)`) and nowhere else: whoever applies a file, or finds it already
+applied, updates that line. What may still be due on PROD:
 
-**Applied to PROD on 2026-09-21, on its own:**
-`backend/database/migrations/2026-09/2026-09-21_lock_down_direct_table_access.sql`. Until then any
-signed-in user on PROD could set their own `profiles.role` to `instructor` with the public anon
-key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
-table PROD does not have yet; re-running it is harmless. Applied to dev on 2026-09-23.
+```bash
+grep -rlE 'PROD (— pending|____-)' backend/database/migrations
+```
 
-**Due on PROD, not applied yet (checked 2026-10-11):**
-`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand: the
-code that ran before the 2026-09-24 release could not finish a Google signup once it was applied,
-so it stayed out of the bundle until `beta` was live on `main`, which it has been since 2026-09-24.
-Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `student`: every Google
-signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
-cannot create a class. Applied to dev on 2026-09-23.
+Newer headers say `PROD — pending`; older ones kept a `PROD ____-__-__` placeholder, and some of those were never
+updated after the SQL reached PROD (several went in with `prod/2026-09/2026-09-20_align_prod.sql` on 2026-09-23),
+so check a hit before applying it. Two items are recorded as open: `2026-09/2026-09-21_role_chosen_by_its_owner.sql`
+on PROD (not an expand: its header says when it may run, and where it stands), and dropping the old four-argument
+`scrum_fill_board` (the statement is in `2026-11/2026-11-05_scrum_import.sql`'s header).
 
-**Already on PROD (confirmed from its catalog on 2026-11-05):** `2026-10/2026-10-22_class_sprint_schedule.sql`,
-`2026-10/2026-10-22_burnup_hours.sql`, `2026-10/2026-10-25_scrum_fill_board.sql` and `2026-10/2026-10-27_mcp_oauth.sql`.
-That check covers what each file adds (columns, tables, constraint, index, function), not the function's body.
-
-**Due on PROD, not applied yet (2026-11-05):** `2026-11/2026-11-05_scrum_import.sql`, after a dump (below), pasted whole
-into the SQL editor. **Before the release that carries the connector's import**, because every `fill_board` call then
-needs the new column and the new `scrum_fill_board` signature. It is additive and leaves the old function in place, so
-it is safe to apply early. After that code is live, drop the old function (the file's header has the statement).
-
-**Check, then mark.** Three older files still say "PROD — pending" in their headers:
-- `2026-10/2026-10-16_class_external_tasks_url.sql`
-- `2026-10/2026-10-18_final_review_slots.sql`
-- `2026-10/2026-10-18_team_meetings.sql`
-
-PROD may have them already, since its schema has run ahead of these headers before. Check each with a
-`SELECT` against the columns or tables it adds. Apply the ones missing, after a dump (below), then record the
-date in the header.
+**Checking a file, read-only.** Never run a migration to see whether it is there, and never write to check one.
+Write one `SELECT` for what the file adds and run it on that environment, through
+`scripts/supabase.sh dev|prod db query --linked -f <absolute path>` or the SQL editor: a column in
+`information_schema.columns`, a table with `to_regclass('public.<table>')`, a function with
+`to_regproc('public.<name>')` (NULL as well when the name is overloaded; `to_regprocedure` takes the argument
+types), an index in `pg_indexes`, a scheduled job in `cron.job`, and for a data fix the rows it wrote. Such a check
+shows what exists, not that a function's body matches the file. A PROD read needs the maintainer's go-ahead.
+Record what it found on the `Applied:` line, for example `PROD — applied, verified 2026-11-19 (catalog check)`.
 
 Also for PROD, outside SQL:
 - **`PUBLIC_API_URL`** on the backend project must be the API's host with no path (`https://api.grepthink2.com`),

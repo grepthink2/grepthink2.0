@@ -25,7 +25,8 @@ review shape below, not the skill's own.
   dependency bumps, git chores): no spec and no plan. Make the change, run the gates for the side you
   touched, and open a pull request.
 - **Feature, or a change across several files or layers:**
-  1. Agree a spec with the maintainer, committed under `docs/superpowers/specs/`.
+  1. Agree a spec with the maintainer, and commit it in the feature's first pull request under
+     `docs/superpowers/specs/` (no separate pull request for the spec).
   2. Write a plan. It stays local: `docs/superpowers/plans/` is gitignored.
   3. Implement it with one implementer, yourself or one subagent.
   4. Run one whole-branch review, and fix what it finds before the pull request. Don't review after
@@ -164,7 +165,8 @@ frontend/src/
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
-  components/         # the shared UI kit (what it holds and its rules: docs/agents/frontend.md)
+  components/         # the shared UI kit, each component with its README.md guide and <Folder>.preview.tsx
+                      # (what it holds and its rules: docs/agents/frontend.md)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -244,9 +246,9 @@ npm run lint                                # oxlint: any finding fails (the rea
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
 npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
-npm run design:build                        # the Design System artifact's files from the kit, in .design-system/ (build output)
+npm run design:build                        # the Design System artifact's files from the kit (guides and previews too), in .design-system/ (build output)
 npm run design:test                         # the kit's tests on React 18, through the ref adapter
-npm run design:check                        # the built tree against the artifact's format
+npm run design:check                        # the built tree against the artifact's format; renders every preview on React 18
 ```
 
 ## API surface

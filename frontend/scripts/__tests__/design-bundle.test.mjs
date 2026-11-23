@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUNDLE_JS_CAP, buildBundle, finishBundleJs, loadInJsdom, parseBundleHeader } from '../design-system/bundle.mjs';
-import { NAMESPACE } from '../design-system/exports.mjs';
+import { NAMESPACE, collectKitExports } from '../design-system/exports.mjs';
+import { buildPreviews, checkPreview } from '../design-system/previews.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -108,5 +109,33 @@ describe('built bundle', () => {
 
   it('emits the kit stylesheet', () => {
     expect(built.css).toContain('.gt-button');
+  });
+
+  // Built in this file, after the bundle: the two builds share .design-system/, so a test file of
+  // their own would run them side by side in another worker.
+  describe('the previews, compiled against it', () => {
+    let previews;
+    const libs = [lib('react18/umd/react.production.min.js'), lib('react-dom18/umd/react-dom.production.min.js')];
+    const tokensJson = JSON.stringify({ color: { tokens: [] }, type: { fonts: [], families: {}, groups: [] } });
+
+    beforeAll(async () => {
+      previews = await buildPreviews({ root, exports: collectKitExports(`${root}src/components`) });
+    }, 120_000);
+
+    it('compiles each preview into a document that renders on React 18 against the built bundle', async () => {
+      const names = previews.map((preview) => preview.component);
+      for (const name of ['Button', 'Modal', 'MarkdownText', 'Icon']) expect(names).toContain(name);
+      for (const { component, html, meta } of previews.filter((p) => ['Button', 'Modal', 'MarkdownText'].includes(p.component))) {
+        const problems = await checkPreview({ html, libs, bundleJs: finished, bundleCss: built.css, tokensJson, expects: meta.expects });
+        expect({ component, problems }).toEqual({ component, problems: [] });
+      }
+    }, 60_000);
+
+    it("reads the kit from the bundle's namespace instead of carrying its source", () => {
+      const button = previews.find((preview) => preview.component === 'Button').html;
+      expect(button).not.toContain('gt-button__faces');
+      expect(finished).toContain('gt-button__faces');
+      expect(button).toContain(NAMESPACE);
+    });
   });
 });

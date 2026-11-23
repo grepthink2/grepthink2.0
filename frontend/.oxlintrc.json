@@ -136,6 +136,18 @@
         "es2020": true,
         "browser": true
       }
+    },
+    {
+      "files": [
+        "**/*.preview.tsx"
+      ],
+      "rules": {
+        "react/only-export-components": "off"
+      },
+      "plugins": [
+        "typescript",
+        "react"
+      ]
     }
   ]
 }

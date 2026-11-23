@@ -31,7 +31,8 @@
 --
 -- Idempotent. Apply before the code that calls it deploys.
 --
--- Applied: DEV 2026-11-05 (by Claude, via the Supabase CLI)   PROD pending
+-- Applied: DEV 2026-11-05 (by Claude, via the Supabase CLI)   PROD applied, per the maintainer (2026-11-07)
+-- The DROP FUNCTION above: DEV — pending   PROD — pending (no run recorded on either)
 
 BEGIN;
 

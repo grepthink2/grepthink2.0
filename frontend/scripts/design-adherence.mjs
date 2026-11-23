@@ -9,6 +9,9 @@
  *   3. Design-export names: a kit component in src/components/ whose folder or file is not named
  *      after its export in design/_ds_manifest.json (names.mjs, where the rules are described).
  *      Its findings in the feature layers and constants are warnings, which never fail the run.
+ *   4. Guides and previews: a kit component folder (or Icon's, in design-system/runtime/) without its
+ *      README.md or <Folder>.preview.tsx, a preview whose meta breaks the contract, or a guide whose
+ *      examples its preview does not hold (design-system/kitDocs.mjs).
  *
  * SCOPE of the hex scan (read before trusting a clean run): this scanner matches only bare
  * `#hex`/`#rrggbb`/`#rrggbbaa` literals. It does NOT scan `rgba()`/`rgb()`/
@@ -87,6 +90,7 @@ import {
   splitCodeAndComments,
 } from './ownership.mjs';
 import { checkNames } from './names.mjs';
+import { checkKitDocs } from './design-system/kitDocs.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FRONTEND_ROOT = join(__dirname, '..');
@@ -275,6 +279,15 @@ try {
   namesError = String(error?.message ?? error).split('\n')[0];
 }
 
+// ── Guides and previews (rules in design-system/kitDocs.mjs) ────────────────
+let kitDocs = null;
+let kitDocsError = '';
+try {
+  kitDocs = checkKitDocs({ componentsDir: join(SRC_DIR, 'components'), runtimeDir: join(FRONTEND_ROOT, 'design-system', 'runtime') });
+} catch (error) {
+  kitDocsError = String(error?.message ?? error).split('\n')[0];
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 let failed = false;
 
@@ -386,6 +399,17 @@ if (names === null) {
         `${tally(features)}).`
     );
   }
+}
+
+if (kitDocs === null) {
+  failed = true;
+  console.error(`\ndesign-adherence: the guides and previews check could not run: ${kitDocsError}`);
+} else if (kitDocs.length > 0) {
+  failed = true;
+  console.error(`\ndesign-adherence: ${kitDocs.length} problem(s) with the kit's guides and previews:\n`);
+  for (const line of kitDocs) console.error(`  ${line}`);
+} else {
+  console.log("design-adherence: OK — every kit component carries a guide and a preview that agree.");
 }
 
 process.exit(failed ? 1 : 0);

@@ -170,6 +170,20 @@ describe('checkNames: the kit', () => {
     expect(checkNames(KIT, files, COMBOBOX_LATER).failures).toEqual([]);
   });
 
+  it("reads no preview beside a kit component, nor the preview contract's types", () => {
+    const files = [
+      ...PORTED,
+      {
+        path: 'src/components/Avatar/Avatar.preview.tsx',
+        source: "export const meta = { group: 'Display', height: 120 };\nexport default function AvatarPreview() { return null; }\n",
+      },
+      { path: 'src/components/previewMeta.ts', source: 'export type PreviewMeta = { height: number };\n' },
+    ];
+    const r = checkNames(KIT, files, COMBOBOX_LATER);
+    expect(r.failures).toEqual([]);
+    expect(r.warnings).toEqual([]);
+  });
+
   it('warns for a kit component the codebase lacks, and for a kit constant outside its folder', () => {
     const files = [
       ...PORTED.filter((f) => !f.path.endsWith('avatarHelpers.ts')),

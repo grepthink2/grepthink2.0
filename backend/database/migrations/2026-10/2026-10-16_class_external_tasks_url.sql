@@ -18,7 +18,7 @@
 -- javascript: or data: URL must never be stored, by the API or by hand. Everything the API accepts
 -- passes this CHECK.
 --
--- Applied: DEV 2026-10-16 (by Claude, via the Supabase connector)   PROD — pending
+-- Applied: DEV 2026-10-16 (by Claude, via the Supabase connector)   PROD — applied, verified 2026-11-19 (catalog check)
 
 ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS external_tasks_url text;
 

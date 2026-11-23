@@ -10,7 +10,7 @@
 -- report UPDATE 1. Run ONCE: a re-run would undo any change an instructor has since made in
 -- Class Settings.
 --
--- Applied: PROD — pending
+-- Applied: PROD — applied, verified 2026-11-19 (catalog check)
 
 BEGIN;
 

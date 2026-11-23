@@ -37,6 +37,8 @@ Getting there needs four pieces of data that GrepThink either gets wrong today o
 
 - The Today's Schedule card and the `/app/schedule` agenda (the Schedule handoff). The data built here
   feeds them later through a `GET /api/schedule` endpoint that is not part of this design.
+  Later: `/app/schedule` redirects to Home, which shows the week (`2026-11-09-home-schedule-design.md`,
+  amendment 2026-11-12).
 - Screens and permissions for marking attendance at team meetings (the data model supports it; who
   marks it and where is a follow-up with its own design pass).
 - Lectures and office hours (no data model yet), holiday skipping for weekly meetings, assignment

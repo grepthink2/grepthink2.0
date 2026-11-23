@@ -1,8 +1,8 @@
 # Scrum Board Task Estimates in Hours — Design Spec
 
 **Date:** 2026-10-16
-**Branch:** `feat/scrum-task-hours`, stacked on `feat/scrum-sprint-picker` (head `039a6c63`; batches 1 and 2 are
-not yet merged). Code references below are to that head.
+**Branch:** `feat/scrum-task-hours`, stacked on `feat/scrum-sprint-picker` (head `039a6c63`). Code references
+below are to that head. Merged 2026-10-16: #227 into that branch, and onto `beta` with #229.
 **Status:** Approved in conversation (maintainer, 2026-10-16); implementation-ready.
 
 ## The ask (maintainer, 2026-10-15, Board note 4)

@@ -4,5 +4,5 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.design.tsbuildinfo",
     "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["design-system", "src/test/setup.ts", "vite.design.config.ts", "vitest.design.config.ts"]
+  "include": ["design-system", "src/test/setup.ts", "vite.design.config.ts", "vite.design-preview.config.ts", "vitest.design.config.ts"]
 }

@@ -135,7 +135,7 @@ this is a student or an instructor. The flow is:
    (`2026-09-21_role_chosen_by_its_owner.sql` — before it,
    `profiles_role_sanitizer` turned that `NULL` into `'student'`, which made
    this chooser unreachable after Google sign-in). On PROD that migration is
-   still pending (DEPLOY.md, "Due on PROD"), so a Google signup there still
+   still pending (its header's `Applied:` line), so a Google signup there still
    lands as a student.
 5. If `role` is null → navigate to `/select` (or, when the flow started from
    the login page, back to `/login` with "please sign up first"). If non-null
@@ -427,8 +427,9 @@ which hand-signs an HS256 JWT using the test secret. Invalid tokens
 use `make_token(..., secret='wrong-secret')` or
 `make_token(..., expired=True)`.
 
-Test-only dependencies (`pytest`, `httpx`) are listed under a
-`# Test-only` block in `backend/requirements.txt`.
+Test-only dependencies (`pytest`, `pytest-cov`, and `httpx2`, the
+transport FastAPI's `TestClient` uses) are listed in
+`backend/requirements-dev.txt`, which installs `requirements.txt` first.
 
 ---
 

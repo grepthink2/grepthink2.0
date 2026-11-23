@@ -25,26 +25,33 @@ role-gated (instructor / TA / student).
   scrum master, admin, member.
 - **Assignment / Module**: an instructor-created task with open/close dates — either a
   TSR round or a feedback survey.
+- **Late window**: a class-wide period after an assignment's deadline when late submissions
+  are still accepted, opened by the instructor or by a TA the instructor allows.
 - **TSR (Team Status Report)**: a weekly peer evaluation a student submits about each
   teammate (contribution %, positive + constructive feedback).
-- **TA**: an enrolled student promoted to a class-level TA. A team's assigned TA runs
-  its weekly meeting, takes attendance and reviews its TSRs; a second class TA can be
-  appointed as the team's end-of-quarter reviewer.
-- **Scrum board**: a team's sprints, stories and tasks, with a burnup chart per sprint.
+- **TA**: an enrolled student promoted to a class-level TA. A team's Meeting TA runs its
+  weekly meeting, takes attendance, reviews its TSRs and is its first final reviewer; its
+  Review TA, a different class TA, is the second final reviewer.
+- **Slot**: a scheduled time: a TA's weekly meeting slot, or a final-review slot the
+  instructor posts and a team books. A team meeting is a one-off meeting the team's
+  Product Owner schedules.
+- **Schedule**: the week ahead on Home: a person's TA meetings, team meetings, final
+  reviews, assignment deadlines and sprint starts and ends in one class.
+- **Scrum board**: a team's sprints, ranked user stories with acceptance criteria, and
+  tasks, with a burnup chart in task hours or points. The class sets the sprint schedule.
+- **Project documents**: a team's sprint reports, release summary, and test plan and
+  report. Each save is a revision; finalizing a document hands it in and freezes the
+  sections drawn from the board.
+- **Messages**: direct messages between people who share a class, and three channels per
+  team: members only, with its Meeting TA, and with the instructor.
 - **Staffing / interest form**: students rank project preferences; instructors assign
   students to teams (manually or auto-assign).
+- **Scrum board connector**: an MCP server at `/mcp`. A student connects an AI assistant,
+  which reads their team's board and, once the student approves its plan, adds sprints,
+  stories and tasks. Its own OAuth server issues tokens that only `/mcp` accepts.
 
 ## Acting as an agent
-There are two ways in.
-
-**The scrum board connector (MCP).** A team member connects an AI assistant from the
-board's "Connect an AI assistant" panel, which shows the connector's address (`/mcp` on
-the API host). The assistant signs in through GrepThink's own OAuth and holds a GrepThink
-token, never a Supabase one. It can list the member's projects, read a board's rules and
-contents, and add sprints, stories and tasks once the student approves the plan. It only
-adds: it never edits, moves or deletes what is on the board.
-
-**The REST API.** Its write actions require a Supabase-authenticated session
+All write actions under `/api` require a Supabase-authenticated session
 (`Authorization: Bearer <jwt>`) and are role-gated. A machine-readable catalog of
 the available actions — workflow id, HTTP method + endpoint, required role, and form
 parameters — is published at:

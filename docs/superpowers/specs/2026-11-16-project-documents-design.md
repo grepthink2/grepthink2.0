@@ -2,8 +2,9 @@
 
 **Date:** 2026-11-16
 **Base:** `origin/beta` at `f2913662`.
-**Status:** draft for the maintainer's approval. Decisions marked ⚑ are mine; the others are the
-maintainer's (2026-10-21 to 2026-11-16). Nothing in this spec is built.
+**Status:** agreed. Decisions marked ⚑ are mine; the others are the maintainer's (2026-10-21 to
+2026-11-16). Parts 1 to 3 shipped in #329, #330 and #331 (merged 2026-11-17, released in 0.95.0);
+Parts 4 and 5 (release plan, sprint plan) are not built.
 **Supersedes** Parts 1 to 6 of `2026-10-22-sprint-plan-docs-design.md` (its Part 0, the class sprint
 schedule and the burnup units, shipped in 0.92.0). That spec's sprint-plan decisions D1 to D9 and D13 to
 D19 still hold and are restated here where they apply; D10 to D12 (AI refine, the shared model client,
