@@ -87,7 +87,7 @@
 }
 
 .fr-zoom__link {
-  color: $accent-color;
+  color: var(--gt-text-link);
   text-decoration: none;
   overflow-wrap: anywhere;
 

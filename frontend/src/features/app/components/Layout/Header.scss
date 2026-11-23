@@ -301,7 +301,7 @@ $app-header-text: var(--gt-text-secondary);
     cursor: pointer;
     font-size: 12px;
     font-family: $primary-font;
-    color: var(--gt-accent);
+    color: var(--gt-text-link);
     white-space: nowrap;
 
     &:hover {

@@ -247,7 +247,7 @@ $gt-not-reg-text:     #6b7280;
   }
 
   &__email-link {
-    color: $accent-color;
+    color: var(--gt-text-link);
     text-decoration: none;
     font-size: $font-size-sm;
     white-space: nowrap;

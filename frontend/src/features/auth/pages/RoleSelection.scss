@@ -149,7 +149,7 @@
 
 .login-link {
   font-family: $primary-font;
-  color: $accent-color;
+  color: var(--gt-text-link);
   font-size: $font-size-base;
   font-weight: $font-weight-semibold;
   text-decoration: none;

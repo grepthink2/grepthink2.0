@@ -30,7 +30,7 @@
     line-height: 1.5;
 
     a {
-      color: $accent-color;
+      color: var(--gt-text-link);
       font-weight: 600;
       text-decoration: underline;
 
