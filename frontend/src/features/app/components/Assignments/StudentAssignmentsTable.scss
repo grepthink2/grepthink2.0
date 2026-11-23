@@ -119,7 +119,7 @@
 $status-not-started-bg: #eeeeee;
 $status-not-started-text: #616161;
 $status-in-progress-bg: #dce8f5;
-$status-in-progress-text: #2771ff;
+$status-in-progress-text: var(--gt-info-text);
 $status-submitted-bg: #d4f5ee;
 $status-submitted-text: #018156;
 .status-badge {

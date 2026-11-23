@@ -1,12 +1,14 @@
 @use '@styles/index.scss' as *;
 
 // This file predates the --gt-* design-token system: the count-badge/alert-icon
-// colors (#b3261e, #d08700) and the active/complete status-pill pairs
-// (#d4f5ee+#018156, #dce8f5+#2771ff — the same pill palette copy-pasted across
+// colors (#b3261e, #d08700) and the status-pill hex (#d4f5ee+#018156 active,
+// #dce8f5 complete background — the same pill palette copy-pasted across
 // several Home/roster files) are raw hex left over from before the token
 // sweep, not a reviewed bespoke choice. Left as-is (not part of this token
 // sweep's touched scope) rather than churned as a side effect of wiring the
-// adherence lint — a real value sweep is follow-up work.
+// adherence lint — a real value sweep is follow-up work. The complete pill's
+// text is --gt-info-text: the old #2771ff was only 3.46:1 on #dce8f5
+// (WCAG 1.4.3 needs 4.5:1).
 
 .instructor-home {
   min-height: calc(100vh - 64px);
@@ -341,7 +343,7 @@
 
   &--complete {
     background-color: #dce8f5;
-    color: #2771ff;
+    color: var(--gt-info-text);
   }
 }
 

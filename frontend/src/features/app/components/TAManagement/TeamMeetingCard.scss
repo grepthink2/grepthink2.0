@@ -190,7 +190,7 @@ $ta-pill-green-bg: var(--gt-primary-soft);
 
   &--add {
     background: $white;
-    color: $accent-color;
+    color: var(--gt-info-text);
     border: 1px dashed $accent-color;
   }
 
