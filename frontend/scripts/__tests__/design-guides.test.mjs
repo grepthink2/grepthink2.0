@@ -6,9 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { collectKitExports } from '../design-system/exports.mjs';
 import { GUIDE_CAP, checkGuide, collectGuides } from '../design-system/guides.mjs';
-import { collectPreviews } from '../design-system/previews.mjs';
+import { collectPreviews, iconPreview } from '../design-system/previews.mjs';
 
 const kitDir = fileURLToPath(new URL('../../src/components/', import.meta.url));
+const runtimeDir = fileURLToPath(new URL('../../design-system/runtime/', import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), 'design-guides-'));
 
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -127,9 +128,9 @@ describe('collectGuides', () => {
 describe("the kit's guides", () => {
   it('pass against their previews', () => {
     const exports = [...collectKitExports(kitDir), { name: 'Icon' }];
-    const previews = collectPreviews(kitDir, exports);
+    const previews = [...collectPreviews(kitDir, exports), iconPreview(runtimeDir, exports)].filter(Boolean);
     const guides = collectGuides(kitDir, previews);
-    for (const name of ['Button', 'Modal']) expect(guides.map((g) => g.component)).toContain(name);
+    for (const name of ['Button', 'Modal', 'Icon']) expect(guides.map((g) => g.component)).toContain(name);
     for (const { component, text } of guides) {
       const preview = previews.find((p) => p.component === component);
       const problems = checkGuide({ text, previewSource: readFileSync(preview.path, 'utf8'), exports });

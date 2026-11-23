@@ -327,6 +327,7 @@ describe('buildPreviews on the kit', () => {
     const names = previews.map((preview) => preview.component);
     expect(names).toContain('Button');
     expect(names).toContain('Modal');
+    expect(names).toContain('Icon');
     for (const { component, html, meta } of previews.filter((p) => ['Button', 'Modal'].includes(p.component))) {
       const problems = await checkPreview({ html, libs: LIBS, bundleJs, bundleCss, tokensJson, expects: meta.expects });
       expect({ component, problems }).toEqual({ component, problems: [] });
