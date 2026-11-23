@@ -12,6 +12,7 @@ import {
   buildPreviews,
   checkPreview,
   collectPreviews,
+  kitIndex,
   renderPreviewHtml,
 } from '../design-system/previews.mjs';
 
@@ -165,6 +166,29 @@ describe('collectPreviews', () => {
   });
 });
 
+describe('kitIndex', () => {
+  it("lists each kit module's namespace names, its default export apart, and Icon's", () => {
+    const index = kitIndex({
+      exports: [
+        { name: 'Alpha', file: 'Alpha/Alpha.tsx' },
+        { name: 'ALPHA_PX', file: 'Alpha/Alpha.tsx' },
+        { name: 'MarkdownText', file: 'Markdown/MarkdownText.tsx', isDefault: true },
+      ],
+      componentsDir: '/kit',
+      runtimeDir: '/runtime',
+    });
+    expect(index).toEqual({
+      namespace: NAMESPACE,
+      componentsDir: '/kit',
+      modules: {
+        '/kit/Alpha/Alpha': { names: ['Alpha', 'ALPHA_PX'] },
+        '/kit/Markdown/MarkdownText': { names: [], default: 'MarkdownText' },
+        '/runtime/Icon': { names: ['Icon'] },
+      },
+    });
+  });
+});
+
 describe('renderPreviewHtml', () => {
   const html = renderPreviewHtml({ meta: { group: 'Primitives', height: 220 }, script: 'void 0;', title: 'Button' });
 
@@ -178,7 +202,9 @@ describe('renderPreviewHtml', () => {
     expect(html).toContain(
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&amp;family=Poppins:wght@400;500;600;700&amp;display=swap">',
     );
-    expect(html).toMatch(/body \{ margin: 0; padding: 16px; background: var\(--gt-surface\); font-family: var\(--gt-font-sans\);/);
+    expect(html).toMatch(
+      /body \{ margin: 0; padding: 16px; background: var\(--gt-surface\); font-family: var\(--gt-font-sans\); font-size: var\(--gt-text-body\);/,
+    );
     expect(html).toContain('<div id="ds-preview"></div>');
     expect(html.match(/<script/g)).toHaveLength(1);
   });

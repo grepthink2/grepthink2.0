@@ -9,8 +9,9 @@
  *   `window.ReactDOM`, and the JSX runtime is the ref adapter's.
  * - The kit is the published bundle: an import that resolves to a kit module under src/components/
  *   (or to Icon) becomes a module reading the same names from `window.GrepThinkDesignSystem_36e7e3`,
- *   so the preview carries none of the kit's source. A name the namespace does not hold for that
- *   module fails the build, naming it.
+ *   so the preview carries none of the kit's source (a module's default export, MarkdownText's, is
+ *   its namespace name). A name the namespace does not hold for that module fails the build, naming
+ *   it.
  * - lucide-react is bundled in: a preview's icons are its own.
  *
  * The app's build (vite.config.ts) does not read this file.
@@ -25,7 +26,8 @@ import { react18 } from './design-system/react18-plugin';
 const app = appConfig({ mode: 'production', command: 'build' });
 const here = (file: string) => path.resolve(__dirname, file);
 
-type KitIndex = { namespace: string; componentsDir: string; modules: Record<string, string[]> };
+type KitModule = { names: string[]; default?: string };
+type KitIndex = { namespace: string; componentsDir: string; modules: Record<string, KitModule> };
 
 const KIT_PREFIX = '\0design-system-kit:';
 const withoutExtension = (file: string) => file.replace(/\.tsx?$/, '');
@@ -48,13 +50,14 @@ function kitFromNamespace(index: KitIndex): Plugin {
     },
     load(id) {
       if (!id.startsWith(KIT_PREFIX)) return null;
-      const names = index.modules[id.slice(KIT_PREFIX.length)] ?? [];
+      const module = index.modules[id.slice(KIT_PREFIX.length)] ?? { names: [] };
       return {
         moduleType: 'js',
         code: [
           `const kit = window.${index.namespace};`,
           `if (!kit) throw new Error('window.${index.namespace} is missing: the design system bundle runs before a preview');`,
-          ...names.map((name) => `export const ${name} = kit.${name};`),
+          ...module.names.map((name) => `export const ${name} = kit.${name};`),
+          ...(module.default ? [`export default kit.${module.default};`] : []),
           '',
         ].join('\n'),
       };

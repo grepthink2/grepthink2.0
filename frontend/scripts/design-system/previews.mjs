@@ -176,7 +176,7 @@ export const PREVIEW_CAP = 256 * 1024;
 const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
 const FONT_HOSTS = ['https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 const PREVIEW_STYLE = [
-  'body { margin: 0; padding: 16px; background: var(--gt-surface); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }',
+  'body { margin: 0; padding: 16px; background: var(--gt-surface); font-family: var(--gt-font-sans); font-size: var(--gt-text-body); line-height: 1.5; color: var(--gt-text-primary); }',
   '.ds-stack { display: flex; flex-direction: column; gap: 20px; }',
   '.ds-section { display: flex; flex-direction: column; gap: 8px; }',
   '.ds-caption { margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--gt-text-tertiary); }',
@@ -370,6 +370,24 @@ export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson
 const withoutExtension = (path) => path.replace(/\.tsx?$/, '');
 
 /**
+ * What vite.design-preview.config.ts reads to swap a kit module for the bundle's namespace: each kit
+ * module by its absolute path without extension, with the names the namespace holds for it, and the
+ * one it exports as its default (MarkdownText's module), which keeps its namespace name.
+ * @param {{ exports: { name: string; file: string; isDefault?: boolean }[]; componentsDir: string; runtimeDir: string }} options
+ * @returns {{ namespace: string; componentsDir: string; modules: Record<string, { names: string[]; default?: string }> }}
+ */
+export function kitIndex({ exports, componentsDir, runtimeDir }) {
+  const modules = {};
+  for (const { name, file, isDefault } of exports) {
+    const module = (modules[withoutExtension(join(componentsDir, file))] ??= { names: [] });
+    if (isDefault) module.default = name;
+    else module.names.push(name);
+  }
+  modules[withoutExtension(join(runtimeDir, 'Icon.tsx'))] = { names: ['Icon'] };
+  return { namespace: NAMESPACE, componentsDir, modules };
+}
+
+/**
  * Compiles every preview against the bundle's namespace.
  * @param {{ root: string; exports: { name: string; file: string }[] }} options the frontend
  *   directory, and the kit's exports as collectKitExports gives them
@@ -387,11 +405,7 @@ export async function buildPreviews({ root, exports }) {
   rmSync(raw, { recursive: true, force: true });
   mkdirSync(gen, { recursive: true });
 
-  // Each kit module, by its path without extension, and the names the namespace holds for it.
-  const kit = {};
-  for (const { name, file } of exports) (kit[withoutExtension(join(componentsDir, file))] ??= []).push(name);
-  kit[withoutExtension(join(runtimeDir, 'Icon.tsx'))] = ['Icon'];
-  writeFileSync(join(gen, 'kit.json'), `${JSON.stringify({ namespace: NAMESPACE, componentsDir, modules: kit }, null, 2)}\n`);
+  writeFileSync(join(gen, 'kit.json'), `${JSON.stringify(kitIndex({ exports, componentsDir, runtimeDir }), null, 2)}\n`);
 
   const entries = previews.map(({ component, path }) => {
     const entry = join(gen, `${component}.tsx`);
@@ -415,7 +429,7 @@ export async function buildPreviews({ root, exports }) {
   const run = spawnSync(process.execPath, [join(root, 'scripts/design-system/preview-runner.mjs'), join(gen, 'entries.json')], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, NODE_ENV: 'production', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true', NO_COLOR: '1' },
+    env: { ...process.env, NODE_ENV: 'production', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true', NO_COLOR: '1', FORCE_COLOR: '0' },
   });
   if (run.status !== 0) throw new Error(`the preview build failed:\n${run.stdout}${run.stderr}`);
 
