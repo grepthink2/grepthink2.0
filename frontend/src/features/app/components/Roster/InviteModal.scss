@@ -64,12 +64,13 @@
     // four different accent-blue intensities (.06/.18/.4/.1) for four
     // different sub-elements; none is close enough to a single --gt-*
     // token to convert without erasing that gradation, so left as rgba on
-    // the existing $accent-color scss var.
+    // the existing $accent-color scss var. Text uses --gt-info-text instead:
+    // blue-500 on the 6% tint is only ~3.98:1 (WCAG 1.4.3 needs 4.5:1).
     background: rgba($accent-color, 0.06);
     border-bottom: 1px solid rgba($accent-color, 0.18);
     font-family: $primary-font;
     font-size: 0.75rem;
-    color: $accent-color;
+    color: var(--gt-info-text);
     flex-shrink: 0;
 
     span {
@@ -85,7 +86,7 @@
     font-family: $primary-font;
     font-size: 0.75rem;
     font-weight: 500;
-    color: $accent-color;
+    color: var(--gt-info-text);
     cursor: pointer;
     white-space: nowrap;
     @include gt-transition(background);
@@ -99,7 +100,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: $accent-color;
+    color: var(--gt-info-text);
     opacity: 0.6;
     display: flex;
     align-items: center;

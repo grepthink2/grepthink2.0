@@ -292,7 +292,7 @@ $gt-not-reg-text:     #6b7280;
     align-items: center;
     padding: 2px 6px;
     background-color: var(--gt-info-soft);
-    color: $accent-color;
+    color: var(--gt-info-text);
     border-radius: $border-radius-sm;
     font-size: 0.72rem;
     font-weight: $font-weight-medium;

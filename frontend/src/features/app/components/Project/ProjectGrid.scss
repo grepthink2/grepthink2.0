@@ -1,10 +1,11 @@
 @use '@styles/index.scss' as *;
 
-// $tag-closed-* and the banner placeholder gray further down predate the
+// $tag-closed-bg and the banner placeholder gray further down predate the
 // --gt-* design-token system; left as-is rather than churned as a side
-// effect of wiring the adherence lint.
+// effect of wiring the adherence lint. $tag-closed-text is --gt-info-text
+// because blue-500 on #dce8f5 is only 3.46:1 (WCAG 1.4.3 needs 4.5:1).
 $tag-closed-bg: #dce8f5;
-$tag-closed-text: #2771ff;
+$tag-closed-text: var(--gt-info-text);
 
 // ── Grid ───────────────────────────────────────────────────────
 .project-grid {
