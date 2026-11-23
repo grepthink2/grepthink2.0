@@ -216,6 +216,9 @@ there first, then the component reads it. The design's component CSS carries **n
 - **Unread red:** UnreadBadge is solid `--gt-error` (#DC2626, 4.8:1 behind white). The sidebar's `#FF3B30` (3.5:1)
   retires with it; `--gt-error-icon` stays only as a token.
 - **Field boundaries** move from `--gt-border` (#DADADA, 1.4:1) to `--gt-border-control` (3.7:1) — WCAG 1.4.11.
+- **Link text** moves from `--gt-blue-500` (#2771FF, 4.3:1 on white, 3.7:1 on the canvas) to `--gt-blue-600` (#1B57D6, 6.2:1 / 5.4:1) — WCAG 1.4.3
+  (2026-11, codebase first; `tokens/colors.css` and the reference copy are synced). Only `--gt-text-link` moves: `--gt-accent`, the focus rings,
+  `--gt-info` and the chart slot stay blue-500. Link text that read `$accent-color` / `--gt-accent` now reads `--gt-text-link`.
 - **Error red — converged (2026-10):** `$error-color: #DC2626` (+ soft / text) everywhere.
 - **Codebase-side scrum deltas** (header of `features/scrum/scrum.scss`, keep on re-port): `.gt-aidraft` omitted;
   `.gt-pointpicker__chip--blocked`; `.gt-story--active` soft fill; `.gt-comments__input` background.

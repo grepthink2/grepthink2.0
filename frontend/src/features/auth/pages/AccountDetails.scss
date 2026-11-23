@@ -147,7 +147,7 @@
   align-self: center;
   font-family: $primary-font;
   font-size: 13px;
-  color: $accent-color;
+  color: var(--gt-text-link);
   cursor: pointer;
 
   &:hover {

@@ -97,7 +97,7 @@
   padding: 0;
   margin: 0;
   font: inherit;
-  color: $accent-color;
+  color: var(--gt-text-link);
   font-family: $primary-font;
   font-size: 14px;
   cursor: pointer;
@@ -277,7 +277,7 @@
   margin: 0;
   font: inherit;
   font-family: $primary-font;
-  color: $accent-color;
+  color: var(--gt-text-link);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
