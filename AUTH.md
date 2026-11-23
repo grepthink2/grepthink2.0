@@ -135,7 +135,7 @@ this is a student or an instructor. The flow is:
    (`2026-09-21_role_chosen_by_its_owner.sql` — before it,
    `profiles_role_sanitizer` turned that `NULL` into `'student'`, which made
    this chooser unreachable after Google sign-in). On PROD that migration is
-   still pending (DEPLOY.md, "Due on PROD"), so a Google signup there still
+   still pending (its header's `Applied:` line), so a Google signup there still
    lands as a student.
 5. If `role` is null → navigate to `/select` (or, when the flow started from
    the login page, back to `/login` with "please sign up first"). If non-null

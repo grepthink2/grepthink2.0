@@ -61,7 +61,8 @@
 -- DEV before the branch is tested there, and on PROD before the release that ships it.
 --
 -- Applied: DEV 2026-11-17 (by Claude, via the Supabase connector, after a rolled-back rehearsal: first the
--- earlier text with story_ids and done_story_ids, then this text's sprint_burnup_days statements)   PROD — pending
+-- earlier text with story_ids and done_story_ids, then this text's sprint_burnup_days statements)
+--          PROD — applied, verified 2026-11-19 (catalog check)
 --
 -- PREFLIGHT (expect no rows. On a re-run, exactly the two tables, the sprint_burnup_days column stories (jsonb)
 -- or, where only the earlier text ran, story_ids and done_story_ids (ARRAY), and the four functions, with the

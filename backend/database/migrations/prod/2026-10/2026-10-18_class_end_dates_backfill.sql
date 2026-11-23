@@ -1,6 +1,6 @@
 -- 2026-10-18 — PROD data: the live classes' last day of classes (classes.end_date)
 --
--- STAGED, NOT APPLIED. Nothing runs the files in this directory. Target: PROD.
+-- APPLIED, verified 2026-11-19. Nothing runs the files in this directory. Target: PROD.
 --
 -- ⚠️  ORDER: run this right after 2026-10/2026-10-18_class_end_dates.sql (the column and its
 --     CHECK), and BEFORE the release that carries the code. That file must be on PROD before the
@@ -30,7 +30,7 @@
 -- Three parts. Run 1 on its own and read it; run 2 and 3 only when both rows show matched = true
 -- and a start_date.
 --
--- Applied: PROD — pending
+-- Applied: PROD — applied, verified 2026-11-19 (catalog check)
 
 
 -- ── 1. Preview (read-only) ─────────────────────────────────────────────────────────────────────

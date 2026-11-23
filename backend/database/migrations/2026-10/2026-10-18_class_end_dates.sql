@@ -29,7 +29,7 @@
 --
 -- Applied: DEV 2026-10-18 (by Claude, via the Supabase connector), with the CHECK as end_date >=
 --          start_date alone; the controller re-applies this file on DEV to add the 370-day bound
---          (the CHECK is dropped and added again)   PROD — pending
+--          (the CHECK is dropped and added again)   PROD — applied, verified 2026-11-19 (catalog check)
 
 ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS end_date date;
 
