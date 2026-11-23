@@ -1,7 +1,8 @@
 # AGENTS.md — GrepThink 2.0
 
 Team-project management platform for the UCSC **CSE 115 series** (Software Engineering).
-Students join teams and submit team self-reviews (TSRs); instructors run classes,
+Students join teams and submit Team Status Reports (TSRs: a weekly peer evaluation of each
+teammate); instructors run classes,
 rosters, and project teams; TAs run weekly meetings + take attendance and review
 TSRs. This is the v2 rebuild of [grepthink.com](https://www.grepthink.com).
 
@@ -199,7 +200,7 @@ design/               # Claude Design export (design system); replace it wholesa
   maintainer on a student account opens `/app/analytics` directly), and the web client falls back
   on it when no class is selected (Home's dashboard, the sidebar while the classes load).
 - **Class-scoped** (every other decision): instructor = `classes.created_by`; **TA** =
-  `class_enrollments.enrollment_role = 'ta'` (single source of truth — see TA gotcha); student =
+  `class_enrollments.enrollment_role = 'ta'` (single source of truth: `docs/agents/meetings-and-time.md`); student =
   any other enrollment. One account can hold a different role in each class. `GET /api/classes`
   returns `my_role` for every class; the web client reads it with `useSelectedClassRole()` /
   `useClassRole(classId)` from `lib/classContext.tsx`.
@@ -213,9 +214,9 @@ Use these words in code, copy, comments and the agent catalog:
 - **Slot**: a scheduled time. It means a final-review slot (`final_review_slots`, posted by the
   instructor and booked by a team) or a TA's weekly meeting slot (`meetings`, `kind = 'ta_meeting'`).
   A team's review time is `projects.final_review_at`.
-- **Meeting TA** (`projects.assigned_ta_id`, runs the weekly meeting) and **Review TA**
-  (`project_review_tas`, the team's second final reviewer). Never call the Review TA's place a
-  "slot": say "Review TA", or "seat" in comments.
+- **Meeting TA** (`projects.assigned_ta_id`: runs the weekly meeting, takes attendance and reviews
+  the team's TSRs) and **Review TA** (`project_review_tas`, the team's second final reviewer). Never
+  call the Review TA's place a "slot": say "Review TA", or "seat" in comments.
 - **TA meeting** (weekly, `kind = 'ta_meeting'`) and **team meeting** (one-off,
   `kind = 'team_meeting'`, scheduled by the team's Product Owner).
 - **Product Owner** in prose and copy; `product owner` is the stored `project_members.role` value.

@@ -16,29 +16,39 @@ from pydantic import BaseModel, Field
 class NewTask(BaseModel):
     title: str
     description_md: str | None = None
-    points: int | None = None
-    estimate_hours: int | None = None
-    assignee_id: str | None = None
-    tags: list[str] = Field(default_factory=list)
-    #: Where the task starts on the board. Anything but To do is only for a team's move-in.
-    status: Literal["todo", "in_progress", "done"] = "todo"
-    #: The day a done task was finished, at the school.
-    done_on: date | None = None
+    points: int | None = Field(None, description="One of the board's allowed_points.")
+    estimate_hours: int | None = Field(
+        None, description="Whole hours, within the board's hours_range."
+    )
+    assignee_id: str | None = Field(None, description="A user_id from the board's members.")
+    tags: list[str] = Field(default_factory=list, description="From the board's tags.")
+    status: Literal["todo", "in_progress", "done"] = Field(
+        "todo",
+        description="Where the task starts on the board. Anything but todo is only for a team's move-in.",
+    )
+    done_on: date | None = Field(
+        None, description="The day a done task was finished, at the school."
+    )
 
 
 class NewStory(BaseModel):
     title: str
     description_md: str | None = None
-    points: int | None = None
-    assignee_id: str | None = None
-    #: A new sprint's ``ref`` from this batch, or an existing sprint's id; None = backlog.
-    sprint: str | None = None
+    points: int | None = Field(
+        None, description="One of the board's allowed_points; the sum of its tasks' points."
+    )
+    assignee_id: str | None = Field(None, description="A user_id from the board's members.")
+    sprint: str | None = Field(
+        None,
+        description="A new sprint's ref from this batch, or an existing sprint's id. Omit for the backlog.",
+    )
     tasks: list[NewTask] = Field(default_factory=list)
 
 
 class NewSprint(BaseModel):
-    #: A label of the app's choosing that stories in the same batch use to name this sprint.
-    ref: str
+    ref: str = Field(
+        description="A label of your choosing that stories in the same batch use to name this sprint."
+    )
     name: str
     starts_at: date
     ends_at: date

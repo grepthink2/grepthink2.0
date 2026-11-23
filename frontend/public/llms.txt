@@ -30,11 +30,21 @@ role-gated (instructor / TA / student).
 - **TA**: an enrolled student promoted to a class-level TA. A team's assigned TA runs
   its weekly meeting, takes attendance and reviews its TSRs; a second class TA can be
   appointed as the team's end-of-quarter reviewer.
+- **Scrum board**: a team's sprints, stories and tasks, with a burnup chart per sprint.
 - **Staffing / interest form**: students rank project preferences; instructors assign
   students to teams (manually or auto-assign).
 
 ## Acting as an agent
-All write actions require a Supabase-authenticated session
+There are two ways in.
+
+**The scrum board connector (MCP).** A team member connects an AI assistant from the
+board's "Connect an AI assistant" panel, which shows the connector's address (`/mcp` on
+the API host). The assistant signs in through GrepThink's own OAuth and holds a GrepThink
+token, never a Supabase one. It can list the member's projects, read a board's rules and
+contents, and add sprints, stories and tasks once the student approves the plan. It only
+adds: it never edits, moves or deletes what is on the board.
+
+**The REST API.** Its write actions require a Supabase-authenticated session
 (`Authorization: Bearer <jwt>`) and are role-gated. A machine-readable catalog of
 the available actions — workflow id, HTTP method + endpoint, required role, and form
 parameters — is published at:
