@@ -2,7 +2,7 @@ import type { PreviewMeta } from '@components/previewMeta';
 import { Button } from '@components/Button/Button';
 import { Modal } from './Modal';
 
-export const meta: PreviewMeta = { group: 'Feedback', height: 420, expects: '[role="dialog"]' };
+export const meta: PreviewMeta = { group: 'Feedback', height: 300, expects: '[role="dialog"]' };
 
 const close = () => {};
 

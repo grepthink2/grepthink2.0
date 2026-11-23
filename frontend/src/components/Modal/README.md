@@ -45,3 +45,7 @@ The header and footer stay put while the body scrolls, up to 88% of the window's
 - Don't open a dialog over a dialog. A delete inside a dialog is an InlineConfirm row; a destructive action on a page is a ConfirmDialog.
 - Don't use a Modal for a side panel that keeps the page in view: that is a Drawer.
 - Don't put the primary action anywhere but the footer.
+
+## useDialog
+
+The behaviour Modal, Drawer and ConfirmDialog share, for a dialog shell the kit does not have: `useDialog({ open, onClose, closeDisabled, initialFocusRef, sheetRef, exitMs, inPlace })` returns `{ mounted, closing, onScrimDown }`. Render while `mounted`, add your closing class while `closing` (it stays mounted `exitMs`, default 150, for the fade), and put `onScrimDown` on the scrim's `onMouseDown`. It keeps the stack of open dialogs, so Esc and the scrim reach only the topmost; moves focus in and keeps Tab inside `sheetRef`; locks the page's scroll; and gives focus back on close. `inPlace` turns all of that off, for a dialog drawn in a gallery. The stack and the lock are exported too, as `pushDialog`, `popDialog`, `isTopDialog` and `lockBodyScroll`.
