@@ -11,7 +11,7 @@
 </p>
 
 **GrepThink** is team-project management for software-engineering courses. Students form project
-teams and submit team self-reviews; TAs run the weekly meetings and review the submissions;
+teams and submit Team Status Reports (TSRs); TAs run the weekly meetings and review the submissions;
 instructors run classes, rosters and staffing. It is the platform behind UC Santa Cruz's CSE 115
 series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is live at
 [grepthink2.com](https://grepthink2.com).
@@ -21,7 +21,7 @@ series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is 
 - **Classes and rosters:** instructors create a class under their school, import a roster,
   invite students and designate TAs. One account can hold a different role in each class.
 - **Projects and teams:** students create or join project teams, and instructors can assign them.
-- **Reviews:** team self-reviews (TSRs) and assignments that TAs review, plus end-of-quarter
+- **Reviews:** Team Status Reports (TSRs) and assignments that TAs review, plus end-of-quarter
   final reviews.
 - **TA meetings and attendance:** each project has a weekly meeting run by its TA.
 - **Scrum board** for every project: sprints, user stories, tasks, burnup charts, comments and

@@ -92,7 +92,11 @@ async def _run(fn, /, **kwargs):
 @mcp.tool(
     title="List my projects",
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False),
-    description="The GrepThink projects (teams) the signed-in student is a member of, with their class.",
+    description="""The GrepThink projects (teams) the signed-in student is a member of, with their class.
+
+Call it first: each entry's project_id is what get_board_context and fill_board take, and name,
+class_name, course_code, term and year tell one project from another. It lists team memberships
+only, so class staff who are on no team get an empty list.""",
 )
 async def list_my_projects() -> list[dict[str, Any]]:
     user_id, _ = _caller()
@@ -115,7 +119,7 @@ Tasks are the concrete work to deliver it, each small enough for one person in a
   with one task carrying its points, hours and status.
 - estimate_hours: tasks only, a whole number in hours_range.
 - tags: tasks only, from tags.
-- assignee: a user_id from members. Where the plan doesn't say, spread the work across the team
+- assignee_id: a user_id from members. Where the plan doesn't say, spread the work across the team
   by role.
 - sprints: existing sprints have an id and a status; stories can join planned or active ones,
   and finished ones too while import_window_open is true.
@@ -123,6 +127,8 @@ Tasks are the concrete work to deliver it, each small enough for one person in a
   then can tasks arrive as in_progress or done. Stories imported earlier don't close it.
 - sprint_rules: new sprints must fall between first_day and last_day, and a class with
   max_sprints allows only new_sprints_allowed more.
+- limits: the longest title, description_md and sprint name, in characters, and how many sprints,
+  stories and tasks one fill_board call takes. Split a larger board into several calls.
 - existing: items already on the board. Don't add duplicates; list what you skipped.
 - today: the date at the student's school, for relative dates. Never invent sprint dates: ask.
 can_write is false for staff, who can read the board but not add to it.""",

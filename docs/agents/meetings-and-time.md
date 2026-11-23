@@ -2,11 +2,11 @@
 
 Read this before changing attendance, TA assignment, team meetings, final reviews, assignments' deadlines, the schedule, or anything that computes or shows a date.
 
-- **Two project-TA roles (by design):** `projects.assigned_ta_id` = the team's *assigned TA*
+- **Two project-TA roles (by design):** `projects.assigned_ta_id` = the team's *Meeting TA*
   (runs the weekly meeting, takes attendance and reviews the team's TSRs; set through
-  `app/attendance`). `project_review_tas` = the *second end-of-quarter reviewer* (at most one per
-  team; `app/tas`), a different class TA than the assigned one, who is reviewer #1 and is not
-  stored there. Both draw from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
+  `app/attendance`). `project_review_tas` = the *Review TA*, the second end-of-quarter reviewer (at
+  most one per team; `app/tas`), a different class TA than the Meeting TA, who is reviewer #1 and is
+  not stored there. Both draw from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
 - **`meetings` holds two kinds of row.** `kind = 'ta_meeting'` is a TA's weekly slot
