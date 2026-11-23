@@ -34,9 +34,10 @@ write(
 write('src/c.ts', "export { X } from 'lucide-react';\nimport { Zap } from \"lucide-react\";\n");
 write('src/__tests__/d.test.tsx', "import { InTest } from 'lucide-react';\n");
 write('src/e.test.tsx', "import { AlsoInTest } from 'lucide-react';\n");
+write('src/components/A/A.preview.tsx', "import { InPreview } from 'lucide-react';\n");
 
 describe('collectLucideIcons', () => {
-  it('lists the icons imported from lucide-react outside tests, sorted and once each', () => {
+  it('lists the icons imported from lucide-react outside tests and previews, sorted and once each', () => {
     expect(collectLucideIcons(join(scratch, 'src'))).toEqual(['ArrowRight', 'Check', 'Plus', 'Trash2', 'Zap']);
   });
 

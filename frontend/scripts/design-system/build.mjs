@@ -7,10 +7,13 @@
  *   components/bundle.css                  styles.mjs
  *   components/index.d.ts                  types.mjs
  *   components/lib/react*.production.min.js  React and React DOM 18.3.1, from npm
+ *   components/<Name>/preview.html         previews.mjs, from each kit folder's <Folder>.preview.tsx
+ *   components/<Name>/README.md            guides.mjs, the README.md beside each preview
  *
  * and .design-system/report.json beside it (exports, icons, tokens carried and kept, sizes, the
- * React 18 test skips, components whose props type has another name). The page generates
- * tokens.css, manifest.json and api/: the build never writes them. Exits 1 on any error.
+ * guides with their size and the previews with their group, height and size, the React 18 test
+ * skips, components whose props type has another name). The page generates tokens.css, manifest.json and api/: the build never writes
+ * them. Exits 1 on any error.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -20,6 +23,8 @@ import { fileURLToPath } from 'node:url';
 import { buildBundle, finishBundleJs } from './bundle.mjs';
 import { collectKitExports } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
+import { collectGuides } from './guides.mjs';
+import { buildPreviews, collectPreviews, iconPreview } from './previews.mjs';
 import { buildCss, kitRulesOf } from './styles.mjs';
 import { buildTokens } from './tokens.mjs';
 import { buildTypes, propsNotes } from './types.mjs';
@@ -70,12 +75,26 @@ export async function build(root) {
 
   const types = await buildTypes({ root, exports: kit });
   const props = propsNotes(types, bundle.exports);
+  const previews = await buildPreviews({ root, exports: kit });
+  const withIcon = [...kit, { name: 'Icon' }];
+  const guides = collectGuides(join(root, 'src/components'), [
+    ...collectPreviews(join(root, 'src/components'), withIcon),
+    iconPreview(join(root, 'design-system/runtime'), withIcon),
+  ].filter(Boolean));
 
   writeFileSync(join(out, 'components/bundle.js'), bundleJs);
   writeFileSync(join(out, 'components/bundle.css'), bundleCss);
   writeFileSync(join(out, 'components/index.d.ts'), types);
   writeFileSync(join(out, 'tokens.json'), `${JSON.stringify(tokens, null, 2)}\n`);
   for (const [name, from] of Object.entries(LIBRARIES)) copyFileSync(join(root, from), join(out, 'components/lib', name));
+  for (const { component, html } of previews) {
+    mkdirSync(join(out, 'components', component), { recursive: true });
+    writeFileSync(join(out, 'components', component, 'preview.html'), html);
+  }
+  for (const { component, text } of guides) {
+    mkdirSync(join(out, 'components', component), { recursive: true });
+    writeFileSync(join(out, 'components', component, 'README.md'), text);
+  }
 
   const sizes = {};
   for (const path of ['components/bundle.js', 'components/bundle.css', 'components/index.d.ts', 'tokens.json', ...Object.keys(LIBRARIES).map((n) => `components/lib/${n}`)]) {
@@ -87,6 +106,13 @@ export async function build(root) {
     tokens: { carried: [...carried], kept },
     props,
     sizes,
+    guides: guides.map(({ component, text }) => ({ name: component, bytes: Buffer.byteLength(text) })),
+    previews: previews.map(({ component, meta, html }) => ({
+      name: component,
+      group: meta.group,
+      height: meta.height,
+      bytes: Buffer.byteLength(html),
+    })),
     skips: JSON.parse(readFileSync(join(root, 'design-system/react18-skips.json'), 'utf8')),
   };
   writeFileSync(join(root, '.design-system/report.json'), `${JSON.stringify(report, null, 2)}\n`);
@@ -103,6 +129,9 @@ function summary(report) {
     ...report.tokens.kept.map(({ name, reason }) => `    --${name}: ${reason}`),
     `  props under another name: ${report.props.join('; ') || 'none'}`,
     `  sizes: ${Object.entries(report.sizes).map(([path, bytes]) => `${path} ${kb(bytes)}`).join(', ')}`,
+    `  guides: ${report.guides.length}${report.guides.length ? ` (the largest ${kb(Math.max(...report.guides.map((g) => g.bytes)))})` : ''}`,
+    `  previews: ${report.previews.length}${report.previews.length ? ` (the largest ${kb(Math.max(...report.previews.map((p) => p.bytes)))}):` : ''}`,
+    ...report.previews.map(({ name, group, height, bytes }) => `    ${name}: ${group}, ${height}px, ${kb(bytes)}`),
     `  React 18 test skips: ${report.skips.length}`,
   ].join('\n');
 }
