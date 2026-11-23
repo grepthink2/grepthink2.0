@@ -46,3 +46,5 @@ A busy button and a toggle:
 - Don't use solid `danger` for the first click of a destructive action: it confirms, in a ConfirmDialog or an InlineConfirm row.
 - Don't swap the children to say "Saving…": pass `loading` and `loadingLabel`.
 - Don't put a `title` on a disabled button to explain it.
+
+`buttonClassName({ variant, size, fullWidth, loading })` gives the classes a Button renders, for the rare element that cannot be a Button (a `<label>` that opens a file picker). That element sets `aria-pressed` and `disabled` itself.

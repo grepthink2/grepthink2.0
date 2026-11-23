@@ -24,3 +24,7 @@ The bubble is dark with white text and appears at once. It describes its trigger
 - Do keep it to a few words that add to what is already visible.
 - Don't put anything essential, or anything to click, in a tooltip: a touch screen may never show it. An explanation is an InfoPopover.
 - Don't wrap an IconButton in a Tooltip: its `ariaLabel` already shows as one.
+
+## useTooltipDismiss
+
+The Esc and press behaviour Tooltip and IconButton share, for a hover label the kit does not draw: `useTooltipDismiss(enabled)` returns `{ dismissed, handlers }`. Spread `handlers` on the `.gt-tooltip` element and add `gt-tooltip--dismissed` while `dismissed`; Esc then hides the bubble without reaching a dialog around it, and a press hides it until the pointer comes back or keyboard focus arrives.

@@ -28,3 +28,5 @@ The trigger looks like a field and opens the calendar as a dialog, above everyth
 - Do keep values as these strings from the API to the field; parse them only to compare.
 - Don't pass a `Date` as the value: the field takes and returns strings.
 - Don't use a native date input beside it; one date control across the app.
+
+The folder also exports `parseDateValue(value)` (a value as a local `Date` and its `'HH:mm'` time, or `null`), `formatClock('15:00')` ("3:00 PM"), the formats `DATE_ONLY_FORMAT` and `DATETIME_FORMAT`, and `onCalendarEscape`, which the calendar uses to take Esc before anything around it.
