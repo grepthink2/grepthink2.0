@@ -2,9 +2,8 @@
 
 Team-project management platform for the UCSC **CSE 115 series** (Software Engineering).
 Students join teams and submit Team Status Reports (TSRs: a weekly peer evaluation of each
-teammate); instructors run classes,
-rosters, and project teams; TAs run weekly meetings + take attendance and review
-TSRs. This is the v2 rebuild of [grepthink.com](https://www.grepthink.com).
+teammate); instructors run classes, rosters, and project teams; TAs run weekly meetings + take
+attendance and review TSRs. This is the v2 rebuild of [grepthink.com](https://www.grepthink.com).
 
 **Intended course model** (product intent, see caveat): **115A** = personal
 projects, students form their own teams; **115B/C** = sponsored projects, the
@@ -23,7 +22,9 @@ review shape below, not the skill's own.
 **Size the process to the change.**
 - **Small, well-understood change** (a fix or edit in a file or two, copy or style tweaks, config or
   dependency bumps, git chores): no spec and no plan. Make the change, run the gates for the side you
-  touched, and open a pull request.
+  touched, and open a pull request. Don't invoke a process skill for it (brainstorming, writing-plans,
+  test-driven-development, subagent-driven-development), even when the skill's own text says it
+  applies to every change. If the change turns out bigger than it looked, switch to the next shape.
 - **Feature, or a change across several files or layers:**
   1. Agree a spec with the maintainer, and commit it in the feature's first pull request under
      `docs/superpowers/specs/` (no separate pull request for the spec).
@@ -173,6 +174,7 @@ frontend/public/      # served at site root (llms.txt, .well-known/grepthink-act
 
 docs/agents/          # area rules and gotchas, routed from "Read before you touch"
 docs/superpowers/specs/  # agreed designs, one per feature
+docs/superpowers/handoffs/<date>-<name>/  # briefs handed to Claude Design: README.md, PROMPT.md, sample data
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 design/               # Claude Design export (design system); replace it wholesale on each
