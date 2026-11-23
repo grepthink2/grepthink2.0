@@ -1,11 +1,11 @@
 # Runtime dependencies — pinned so Vercel/Docker/CI builds are reproducible.
 # Upgrade deliberately: bump here, run `pip install -r requirements-dev.txt`,
 # then `python -m pytest`. Dev/test-only tools live in requirements-dev.txt.
-fastapi==0.162.6
+fastapi==0.165.0
 starlette==1.10.0
-pydantic==2.14.3
+pydantic==2.14.4
 uvicorn==0.54.0
-python-multipart==0.0.33   # UploadFile (roster CSV upload)
+python-multipart==0.0.34   # UploadFile (roster CSV upload)
 python-dotenv==1.2.4
 supabase==2.34.1
 httpx==0.28.1              # scrum PR/MR state fetch (app/scrum/pr_links.py); supabase also pulls it in
