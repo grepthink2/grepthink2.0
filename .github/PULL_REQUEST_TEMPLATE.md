@@ -17,6 +17,7 @@
 - [ ] New migration → `backend/database/migrations/<YYYY-MM>/`, applied to DEV,
       `supabase/schema.sql` updated (or the follow-up is named above), and this PR labelled
       `needs-prod-sql`
-- [ ] Release (`release/<version>` into `beta`): `notes/<version>.md` added and `frontend/package.json` raised to it
+- [ ] Release (`beta` into `main`): one `release: <version>` commit, pushed straight to `beta`, adds
+      `notes/<version>.md` and raises `frontend/package.json` to it
 - [ ] Docs that describe the changed behaviour are updated (README, AGENTS.md, `docs/agents/`, DEPLOY.md, AUTH.md)
 - [ ] No secrets, student data or local plans (`docs/superpowers/plans/`) in the diff

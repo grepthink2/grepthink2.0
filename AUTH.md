@@ -427,8 +427,9 @@ which hand-signs an HS256 JWT using the test secret. Invalid tokens
 use `make_token(..., secret='wrong-secret')` or
 `make_token(..., expired=True)`.
 
-Test-only dependencies (`pytest`, `httpx`) are listed under a
-`# Test-only` block in `backend/requirements.txt`.
+Test-only dependencies (`pytest`, `pytest-cov`, and `httpx2`, the
+transport FastAPI's `TestClient` uses) are listed in
+`backend/requirements-dev.txt`, which installs `requirements.txt` first.
 
 ---
 

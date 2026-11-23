@@ -42,8 +42,9 @@ def _trace(db) -> list[str]:
 
 @pytest.fixture
 def db(monkeypatch):
-    """Fall class in its third week on TODAY, 2 meetings/week. TA1 is P1's assigned TA.
-    P1 = {S1, S2}, P2 = {S1, S3}."""
+    """A class seeded with two meetings a week (the cadence is per class,
+    `classes.meetings_per_week`, default 1; the term label is fixture data), in its third
+    week on TODAY. TA1 is P1's assigned TA. P1 = {S1, S2}, P2 = {S1, S3}."""
     start = (TODAY - datetime.timedelta(days=14)).isoformat()
     fake = FakeSupabase(
         profiles=[

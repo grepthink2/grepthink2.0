@@ -1,7 +1,8 @@
 # Scrum Board Sprint Picker with Progress — Design Spec
 
 **Date:** 2026-10-16
-**Branch:** `feat/scrum-sprint-picker`, stacked on `fix/scrum-board-batch1` (head `21a99779`; not yet merged)
+**Branch:** `feat/scrum-sprint-picker`, stacked on `fix/scrum-board-batch1` (head `21a99779`). Merged
+2026-10-16: #226 into that branch, and onto `beta` with #229.
 **Status:** Reviewed against the code on 2026-10-16 (Fable); implementation-ready. The maintainer asked
 to "plan and do" this batch, so every open question below ends in a decision. Amended the same day after
 browser verification: D7.
