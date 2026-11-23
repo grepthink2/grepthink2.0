@@ -3,7 +3,8 @@
  * preview-runner.mjs): the generated entry named by DESIGN_PREVIEW_ENTRY, which mounts a kit
  * component's `<Folder>.preview.tsx`, as a classic script for the preview's page.
  *
- * - An IIFE library build, not minified, to .design-system/raw/previews/<DESIGN_PREVIEW_NAME>.js.
+ * - An IIFE library build, not minified, to .design-system/raw-previews/<DESIGN_PREVIEW_NAME>.js (out of
+ *   .design-system/raw/, which the bundle's build empties).
  * - React stays the page's, as in the bundle (vite.design.config.ts): `react` is
  *   design-system/runtime/react.ts over `window.React`, `react-dom` and `react-dom/client` are
  *   `window.ReactDOM`, and the JSX runtime is the ref adapter's.
@@ -85,7 +86,7 @@ export default defineConfig((): UserConfig => {
       ],
     },
     build: {
-      outDir: here('.design-system/raw/previews'),
+      outDir: here('.design-system/raw-previews'),
       emptyOutDir: false,
       minify: false,
       sourcemap: false,

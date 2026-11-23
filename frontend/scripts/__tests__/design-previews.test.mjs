@@ -3,13 +3,11 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildBundle, finishBundleJs } from '../design-system/bundle.mjs';
+import { afterAll, describe, expect, it } from 'vitest';
 import { NAMESPACE, collectKitExports } from '../design-system/exports.mjs';
 import {
   CLOCKS,
   PREVIEW_FOLDERS_LEFT_OUT,
-  buildPreviews,
   checkPreview,
   collectPreviews,
   kitIndex,
@@ -305,39 +303,5 @@ describe('checkPreview', () => {
       tokensJson: TOKENS,
     });
     expect(problems[0]).toBe('the bundle does not load: no bundle');
-  });
-});
-
-describe('buildPreviews on the kit', () => {
-  let previews;
-  let bundleJs;
-  let bundleCss;
-  let tokensJson;
-
-  beforeAll(async () => {
-    const kit = collectKitExports(kitDir);
-    const bundle = await buildBundle({ root: frontend });
-    bundleJs = finishBundleJs(bundle.js, bundle.exports);
-    bundleCss = bundle.css;
-    tokensJson = JSON.stringify({ color: { tokens: [] }, type: { fonts: [], families: {}, groups: [] } });
-    previews = await buildPreviews({ root: frontend, exports: kit });
-  }, 120_000);
-
-  it('compiles each preview into a document that renders on React 18 against the built bundle', async () => {
-    const names = previews.map((preview) => preview.component);
-    expect(names).toContain('Button');
-    expect(names).toContain('Modal');
-    expect(names).toContain('Icon');
-    for (const { component, html, meta } of previews.filter((p) => ['Button', 'Modal'].includes(p.component))) {
-      const problems = await checkPreview({ html, libs: LIBS, bundleJs, bundleCss, tokensJson, expects: meta.expects });
-      expect({ component, problems }).toEqual({ component, problems: [] });
-    }
-  }, 60_000);
-
-  it("reads the kit from the bundle's namespace instead of carrying its source", () => {
-    const button = previews.find((preview) => preview.component === 'Button').html;
-    expect(button).not.toContain('gt-button__faces');
-    expect(bundleJs).toContain('gt-button__faces');
-    expect(button).toContain(NAMESPACE);
   });
 });

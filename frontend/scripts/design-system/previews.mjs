@@ -32,7 +32,6 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { format } from 'node:util';
-import { JSDOM, VirtualConsole } from 'jsdom';
 import { splitCodeAndComments } from '../ownership.mjs';
 import { NAMESPACE } from './exports.mjs';
 
@@ -297,6 +296,8 @@ async function settle(window) {
 
 /** One render of a preview document in jsdom under a fixed clock: its problems and the body's HTML. */
 async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }) {
+  // Loaded here, not with the module: lint:design reads previews without rendering one.
+  const { JSDOM, VirtualConsole } = await import('jsdom');
   const problems = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('error', (...args) => problems.push(`console.error: ${consoleText(args)}`));
@@ -400,7 +401,7 @@ export async function buildPreviews({ root, exports }) {
   const previews = [...collectPreviews(componentsDir, bundleExports), iconPreview(runtimeDir, bundleExports)].filter(Boolean);
 
   const gen = join(root, '.design-system/gen/previews');
-  const raw = join(root, '.design-system/raw/previews');
+  const raw = join(root, '.design-system/raw-previews');
   rmSync(gen, { recursive: true, force: true });
   rmSync(raw, { recursive: true, force: true });
   mkdirSync(gen, { recursive: true });

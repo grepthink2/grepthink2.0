@@ -35,7 +35,8 @@ Read this before changing anything under `frontend/`. The root [AGENTS.md](../..
   component takes the name `design/_ds_manifest.json` gives it, at `src/components/<Name>/<Name>.tsx`
   (an export the design ships inside another component's file may sit in that component's folder);
   `lint:design` fails otherwise, and a deliberate difference goes in `NAMES_ALLOWLIST`
-  (`frontend/scripts/names.mjs`) with its reason.
+  (`frontend/scripts/names.mjs`) with its reason. A new kit component lands with its guide and its
+  preview (below, "Guides and previews"): `lint:design` fails for a component folder without them.
 - **The frontend lints with oxlint and type-checks with TypeScript 7.** `frontend/.oxlintrc.json`
   lists the rules it runs, each as an error; nothing is enabled by category (its `off` entries are
   typescript-eslint's overlay, which turns core rules off on TypeScript files). The rule names are
@@ -82,7 +83,8 @@ design copies. In `frontend/`:
   React DOM 18 from the `react18` / `react-dom18` packages, the ref adapter's JSX runtime, and
   `design-system/runtime/react.ts` for every `react` import (React 19's `ref` prop and
   `useEffectEvent` on React 18). `react-router-dom` stays the real package there.
-- `npm run design:check` holds the built tree to the artifact's format.
+- `npm run design:check` holds the built tree to the artifact's format, and renders every preview in
+  jsdom on React 18 against the built bundle.
 
 Kit source never changes for React 18: a difference belongs in the adapter or the runtime. A kit test
 that cannot pass on React 18 for a reason the adapter does not cause goes in
@@ -90,6 +92,37 @@ that cannot pass on React 18 for a reason the adapter does not cause goes in
 `design:test`), only once you have shown the adapter is not the cause; the list is empty today and each
 entry is reviewed. A kit stylesheet's root classes start with `gt-`; DatePickerField's `dpf` block is the
 one other, and the base layer's scope follows whatever the compiled CSS uses.
+
+### Guides and previews
+
+Every folder of `src/components/` (but `ErrorBoundary`, `hooks`, `icons` and `__tests__`), and Icon in
+`design-system/runtime/`, carries two files beside the component, published as
+`components/<Name>/README.md` and `components/<Name>/preview.html`:
+
+- `README.md`, the guide, for a designer or an agent composing a screen. It opens with a one-sentence
+  summary (no `#` title: the page adds the name), then `## Use` with `jsx` examples, `## Props that
+  matter`, `## The consumer supplies` and `## Do and don't`, and a `## <Name>` section for each
+  companion the folder exports (`AvatarGroup`, `TabPanel`). Plain words, second person, the app's
+  vocabulary; invented names and `example.edu` emails. Every element in an example is a bundle export
+  or a lucide icon the preview imports, and its opening tag, props and all, is in the preview as
+  written: copy examples from the preview, which is type-checked. No `design/` paths and no pull
+  request numbers.
+- `<Folder>.preview.tsx`, the preview: `export const meta: PreviewMeta = { group, height }` (an object
+  literal of strings and numbers; `subtitle`, `component` when the card's export is not the folder's
+  name, `expects` for a selector the render must find, as an overlay's role) and
+  `export default function <Folder>Preview()`. It imports the kit, lucide-react and react only, shows
+  the states a designer picks between with small `ds-caption` captions (the document also styles
+  `ds-stack`, `ds-section`, `ds-row` and `ds-grid`), holds state so controls work, renders overlays open
+  and in place (`portal={false}`), takes no focus on its own (it would pull focus out of the page
+  around the card), and reads no clock. Set `height` to what the card needs at 800px wide, where the
+  kit draws its desktop sizes.
+
+The design build compiles each preview against the bundle's namespace (`vite.design-preview.config.ts`),
+so a preview proves the published bundle. Previews are left out of the app's build, its coverage, the
+icon list and the `react/only-export-components` rule. `lint:design` fails when a component folder lacks
+either file, when a preview's `meta` breaks the contract, or when a guide's example is not in its
+preview; `design:check` fails when a preview throws, logs an error, renders nothing, misses its
+`expects`, or renders differently with the clock a year apart.
 
 ## Tests
 

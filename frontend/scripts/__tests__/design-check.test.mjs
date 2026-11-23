@@ -62,6 +62,7 @@ beforeAll(() => {
   write(good, 'src/a.tsx', "import { Trash2 } from 'lucide-react';\n");
   write(good, 'src/components/Button/Button.preview.tsx', PREVIEW_SOURCE("{ group: 'Primitives', height: 120 }"));
   write(good, 'project/components/Button/preview.html', previewHtml(`React.createElement(window.${NAMESPACE}.Button)`));
+  write(good, 'project/components/Button/README.md', 'The button for every action.\n');
 });
 
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -198,6 +199,20 @@ describe('checkTree', () => {
   it("reports a preview whose meta the build cannot read", async () => {
     expect(await check((root) => write(root, 'src/components/Button/Button.preview.tsx', PREVIEW_SOURCE("{ group: 'Other', height: 120 }")))).toEqual([
       'Button/Button.preview.tsx: unknown group "Other"',
+    ]);
+  });
+
+  it('needs a guide beside each preview, within 64 KB', async () => {
+    expect(await check((root) => rmSync(join(root, 'project/components/Button/README.md')))).toEqual(['missing components/Button/README.md']);
+    expect(await check((root) => write(root, 'project/components/Button/README.md', '  \n'))).toEqual(['components/Button/README.md is empty']);
+    expect(await check((root) => write(root, 'project/components/Button/README.md', `Big.\n${'x'.repeat(64 * 1024)}`))).toEqual([
+      'components/Button/README.md is over 64 KB',
+    ]);
+  });
+
+  it('refuses a folder under components/ that is not a bundle export', async () => {
+    expect(await check((root) => write(root, 'project/components/Combobox/README.md', 'A combobox.\n'))).toEqual([
+      'components/Combobox/ is not a bundle export',
     ]);
   });
 });

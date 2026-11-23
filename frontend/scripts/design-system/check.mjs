@@ -8,9 +8,10 @@
  * bundle header, and every name in it on the namespace once React 18 and the bundle have run in
  * jsdom; tokens.json's shape, names and colour values; every token of the token stylesheets either
  * in tokens.json or still declared in bundle.css; every rule of the kit's compiled CSS inside the
- * base layer's scope; the icon list built in equal to the lucide icons src/ imports now; and, for
- * every preview the kit carries (previews.mjs), its `components/<Name>/preview.html`, rendered on
- * React 18 against the built bundle by checkPreview.
+ * base layer's scope; the icon list built in equal to the lucide icons src/ imports now; for every
+ * preview the kit carries (previews.mjs), its `components/<Name>/preview.html`, rendered on React 18
+ * against the built bundle by checkPreview, and its `components/<Name>/README.md`, within the
+ * guide's size; and no folder under components/ but lib/ and the bundle's exports.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -20,6 +21,7 @@ import { firstCompoundClasses, selectorsOf } from '../ownership.mjs';
 import { bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
 import { NAMESPACE } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
+import { GUIDE_CAP } from './guides.mjs';
 import { checkPreview, collectPreviews, iconPreview } from './previews.mjs';
 import { BUNDLE_CSS_CAP, topLevelBlocks } from './styles.mjs';
 import { TOKEN_NAME, parseTokenCss } from './tokens.mjs';
@@ -220,6 +222,13 @@ export async function checkTree(
     }
   }
 
+  if (header) {
+    const names = new Set((header.components ?? []).map((component) => component.name));
+    for (const entry of readdirSync(join(dir, 'components')).sort()) {
+      if (entry === 'lib' || names.has(entry) || !statSync(join(dir, 'components', entry)).isDirectory()) continue;
+      problems.push(`components/${entry}/ is not a bundle export`);
+    }
+  }
   if (bundleLoads) problems.push(...(await previewProblems(dir, { header, bundle, css, tokens: tokens ?? {}, srcDir, runtimeDir })));
   return problems;
 }
@@ -237,6 +246,10 @@ async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runti
   const problems = [];
   const libs = LIBRARIES.map((path) => read(dir, path));
   for (const { component, meta } of previews) {
+    const guide = `components/${component}/README.md`;
+    if (!existsSync(join(dir, guide))) problems.push(`missing ${guide}`);
+    else if (!read(dir, guide).trim()) problems.push(`${guide} is empty`);
+    else if (statSync(join(dir, guide)).size > GUIDE_CAP) problems.push(`${guide} is over 64 KB`);
     const path = `components/${component}/preview.html`;
     if (!existsSync(join(dir, path))) {
       problems.push(`missing ${path}`);
