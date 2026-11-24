@@ -196,3 +196,74 @@ export function buildTokens(files, meta) {
   tokens.meta = meta;
   return { tokens, carried, kept };
 }
+
+/**
+ * Line 1 of tokens.css. The page takes a file whose first comment ends with "generated from
+ * tokens.json" for one compiled from tokens.json.
+ * @param {string} title the system's name
+ */
+export const tokensCssHead = (title) => `/* ${title} — generated from tokens.json */`;
+
+// A token name as a CSS identifier: a dot escaped, a leading digit as its code point.
+function ident(name) {
+  const escaped = name.replace(/\./g, '\\.');
+  return /^[0-9]/.test(escaped) ? `\\3${escaped[0]} ${escaped.slice(1)}` : escaped;
+}
+
+const FONT_FORMATS = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' };
+
+/**
+ * tokens.css, compiled from tokens.json in the format's layout: the colours and shadows under
+ * `:root` and the first theme's `[data-theme]` (an alias `{name}` as `var(--name)`), every other
+ * family and each type family (`--font-<key>`) under `:root`, a class per type style, and an
+ * `@font-face` per font file. The page generates this file only when someone saves an edit there,
+ * and the page of a system synced from code saves nothing, so the build writes it.
+ * @param {object} tokens tokens.json
+ * @returns {string}
+ */
+export function tokensCss(tokens) {
+  const out = [tokensCssHead(tokens.name ?? 'Design system')];
+  const theme = tokens.color?.themes?.[0]?.id;
+  const valueOf = (token) => {
+    const value = token.value !== null && typeof token.value === 'object' ? token.value[theme] : token.value;
+    const alias = /^\{(.+)\}$/.exec(String(value));
+    return alias ? `var(--${ident(alias[1])})` : String(value);
+  };
+  const themed = [...(tokens.color?.tokens ?? []), ...(tokens.shadow?.tokens ?? [])];
+  if (themed.length) {
+    out.push(theme ? `:root, [data-theme="${theme}"] {` : ':root {', ...themed.map((token) => `  --${ident(token.name)}: ${valueOf(token)};`), '}');
+  }
+  const root = Object.entries(tokens)
+    .filter(([key, family]) => !['color', 'shadow', 'type'].includes(key) && Array.isArray(family?.tokens))
+    .flatMap(([, family]) => family.tokens.map((token) => `  --${ident(token.name)}: ${token.value};`));
+  for (const [key, stack] of Object.entries(tokens.type?.families ?? {})) root.push(`  --font-${ident(key)}: ${stack};`);
+  if (root.length) out.push(':root {', ...root, '}');
+  for (const group of tokens.type?.groups ?? []) {
+    for (const style of group.styles ?? []) {
+      const family = style.family ?? group.family;
+      out.push(
+        `.${ident(style.name)} {`,
+        ...(family ? [`  font-family: var(--font-${ident(family)});`] : []),
+        `  font-size: ${style.fontSize};`,
+        `  line-height: ${style.lineHeight ?? 1.4};`,
+        `  font-weight: ${style.fontWeight ?? 400};`,
+        `  letter-spacing: ${style.letterSpacing ?? 0};`,
+        '}',
+      );
+    }
+  }
+  for (const font of tokens.type?.fonts ?? []) {
+    const file = font.file.includes('/') ? font.file : `fonts/${font.file}`;
+    const format = FONT_FORMATS[file.slice(file.lastIndexOf('.') + 1).toLowerCase()];
+    out.push(
+      '@font-face {',
+      `  font-family: "${font.family}";`,
+      `  src: url("${file.split('/').map(encodeURIComponent).join('/')}")${format ? ` format("${format}")` : ''};`,
+      `  font-weight: ${font.weight};`,
+      `  font-style: ${font.style ?? 'normal'};`,
+      '  font-display: swap;',
+      '}',
+    );
+  }
+  return `${out.join('\n')}\n`;
+}

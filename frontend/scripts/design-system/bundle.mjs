@@ -8,6 +8,8 @@
  *
  * finishBundleJs makes the script publishable: the `@ds-bundle` header on line 1, no text that
  * would end or confuse an inline `<script>`, no module statement, and within the format's size.
+ * The header names the cards: the components with a guide and a preview. The page draws a card for
+ * every name in it, so a companion, hook or helper stays on the namespace without one.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -76,15 +78,15 @@ export function bundleJsProblems(bundle) {
 /**
  * @param {string} js the raw library build
  * @param {{ name: string; kind: string }[]} exports
+ * @param {Iterable<string>} cards the exports with a guide and a preview, which the header names in
+ *   export order
  * @returns {string} the publishable bundle.js
  */
-export function finishBundleJs(js, exports) {
-  const names = [];
-  for (const wanted of [true, false]) {
-    for (const { name, kind } of exports) {
-      if ((kind === 'component') === wanted && !names.includes(name)) names.push(name);
-    }
-  }
+export function finishBundleJs(js, exports, cards) {
+  const wanted = new Set(cards);
+  const unknown = [...wanted].filter((name) => !exports.some((entry) => entry.name === name));
+  if (unknown.length) throw new Error(`a card names no bundle export: ${unknown.join(', ')}`);
+  const names = [...new Set(exports.map(({ name }) => name))].filter((name) => wanted.has(name));
   const header = { format: 4, namespace: NAMESPACE, components: names.map((name) => ({ name })) };
   const code = js.replaceAll('</script', '<\\/script').replaceAll('<!--', '<\\!--');
   const bundle = `/* @ds-bundle: ${JSON.stringify(header)} */\n${code}`;

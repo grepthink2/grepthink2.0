@@ -28,7 +28,7 @@ A tab strip on a grey track for switching between panels of different content (a
 - `size`, default `md`; `sm` (28px tabs) for an editor bar.
 - `collapseOnPhone`: under 768px a tab with an icon shows only the icon, and keeps its label as its name.
 
-Tabs stretch across the track; the chosen one is white with bold text. The arrow keys move between tabs, and Home and End go to the ends.
+Tabs stretch across the track; the chosen one is white with bold text. The arrow keys move between tabs, and Home and End go to the ends. The bundle also exports the hook behind those keys, `useRovingFocus`, which SegmentedControl and FilterChipGroup share: a group of your own that should move the same way takes it rather than its own key handling.
 
 ## The consumer supplies
 

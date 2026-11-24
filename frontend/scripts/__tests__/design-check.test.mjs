@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { checkTree } from '../design-system/check.mjs';
 import { NAMESPACE } from '../design-system/exports.mjs';
-import { renderPreviewHtml } from '../design-system/previews.mjs';
+import { FONTS, renderPreviewHtml } from '../design-system/previews.mjs';
 import { baseLayer } from '../design-system/styles.mjs';
+import { tokensCss } from '../design-system/tokens.mjs';
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), 'design-check-'));
@@ -36,6 +37,8 @@ const CSS = [
   '',
 ].join('\n');
 
+const README = `Plain, task-first.\n\n\`\`\`html\n<link rel="stylesheet" href="${FONTS}">\n\`\`\`\n\nIcons: \`Trash2\`.\n`;
+
 const PREVIEW_SOURCE = (meta) =>
   `import { Button } from './Button';\nexport const meta = ${meta};\nexport default function ButtonPreview() { return <Button />; }\n`;
 const previewHtml = (element) =>
@@ -51,7 +54,9 @@ function write(root, path, text) {
 }
 
 beforeAll(() => {
+  write(good, 'project/README.md', README);
   write(good, 'project/tokens.json', JSON.stringify(TOKENS));
+  write(good, 'project/tokens.css', tokensCss(TOKENS));
   write(good, 'project/components/bundle.js', BUNDLE);
   write(good, 'project/components/bundle.css', CSS);
   write(good, 'project/components/index.d.ts', "import * as React from 'react';\n");
@@ -76,10 +81,12 @@ async function check(change = () => {}) {
   return checkTree(join(root, 'project'), { srcDir: join(root, 'src'), runtimeDir: join(root, 'runtime') });
 }
 
+// tokens.json changed, and tokens.css compiled from it as the build does.
 const tokensWith = (change) => (root) => {
   const tokens = structuredClone(TOKENS);
   change(tokens);
   write(root, 'project/tokens.json', JSON.stringify(tokens));
+  write(root, 'project/tokens.css', tokensCss(tokens));
 };
 
 describe('checkTree', () => {
@@ -92,12 +99,31 @@ describe('checkTree', () => {
     expect(await check((root) => rmSync(join(root, 'project/components/lib/react-dom.production.min.js')))).toEqual([
       'missing components/lib/react-dom.production.min.js',
     ]);
+    expect(await check((root) => rmSync(join(root, 'project/tokens.css')))).toEqual(['missing tokens.css']);
+    expect(await check((root) => rmSync(join(root, 'project/README.md')))).toEqual(['missing README.md']);
   });
 
   it("refuses the files the page generates", async () => {
-    expect(await check((root) => write(root, 'project/tokens.css', ''))).toEqual(["tokens.css is the page's to generate; the build must not write it"]);
     expect(await check((root) => write(root, 'project/manifest.json', '{}'))).toEqual(["manifest.json is the page's to generate; the build must not write it"]);
     expect(await check((root) => write(root, 'project/api/Button.json', '{}'))).toEqual(["api is the page's to generate; the build must not write it"]);
+  });
+
+  it('needs tokens.css to be tokens.json compiled', async () => {
+    expect(await check((root) => write(root, 'project/tokens.css', ''))).toEqual(['tokens.css is not tokens.json compiled: run npm run design:build']);
+    const stale = structuredClone(TOKENS);
+    stale.color.tokens[0].value = '#000000';
+    expect(await check((root) => write(root, 'project/tokens.json', JSON.stringify(stale)))).toEqual([
+      'tokens.css is not tokens.json compiled: run npm run design:build',
+    ]);
+  });
+
+  it('needs the brand book to list the icons and give the fonts link, within 200 KB', async () => {
+    expect(await check((root) => write(root, 'project/README.md', README.replace('`Trash2`', 'none')))).toEqual(['README.md does not list the icons Trash2']);
+    expect(await check((root) => write(root, 'project/README.md', `${README}<!-- icons -->\n`))).toEqual(['README.md still holds the <!-- icons --> line']);
+    expect(await check((root) => write(root, 'project/README.md', README.replace(FONTS, 'https://example.com/fonts.css')))).toEqual([
+      'README.md does not give the fonts link the previews load',
+    ]);
+    expect(await check((root) => write(root, 'project/README.md', `${README}${'x'.repeat(200 * 1024)}`))).toEqual(['README.md is over 200 KB']);
   });
 
   it('holds bundle.js to its size and to what an inline script may contain', async () => {
@@ -177,6 +203,7 @@ describe('checkTree', () => {
   it('needs the icons built in to be those src/ imports now', async () => {
     expect(await check((root) => write(root, 'report.json', JSON.stringify({ icons: ['Plus'] })))).toEqual([
       'the icons built in differ from those src/ imports: missing Trash2; no longer imported Plus',
+      'README.md does not list the icons Plus',
     ]);
     expect(await check((root) => write(root, 'src/b.tsx', "import { Plus } from 'lucide-react';\n"))).toEqual([
       'the icons built in differ from those src/ imports: missing Plus',
@@ -210,9 +237,27 @@ describe('checkTree', () => {
     ]);
   });
 
-  it('refuses a folder under components/ that is not a bundle export', async () => {
+  it('refuses a folder under components/ that is not in the bundle header', async () => {
     expect(await check((root) => write(root, 'project/components/Combobox/README.md', 'A combobox.\n'))).toEqual([
-      'components/Combobox/ is not a bundle export',
+      'components/Combobox/ is not in the bundle header',
     ]);
+  });
+
+  it('names in the header only the components with a preview in the kit', async () => {
+    const both = `${header(['Button', 'Card'])}\n(function(R){window.${NAMESPACE}={Button:function(){return R.createElement("button")},Card:function(){return null}}})(React);\n`;
+    expect(await check((root) => write(root, 'project/components/bundle.js', both))).toEqual(['Card is in the bundle header but has no preview in the kit']);
+  });
+
+  it('needs every export without a card named in some guide', async () => {
+    const withHook = BUNDLE.replace('Button:function', 'useThing:function(){},Button:function');
+    expect(await check((root) => write(root, 'project/components/bundle.js', withHook))).toEqual([
+      `useThing is on window.${NAMESPACE} without a card, and no guide names it`,
+    ]);
+    expect(
+      await check((root) => {
+        write(root, 'project/components/bundle.js', withHook);
+        write(root, 'project/components/Button/README.md', 'The button for every action; `useThing` moves its focus.\n');
+      }),
+    ).toEqual([]);
   });
 });

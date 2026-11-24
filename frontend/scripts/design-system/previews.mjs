@@ -34,6 +34,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { format } from 'node:util';
 import { splitCodeAndComments } from '../ownership.mjs';
 import { NAMESPACE } from './exports.mjs';
+import { tokensCss } from './tokens.mjs';
 
 /** Folders of src/components/ that hold no kit component, so carry no preview. */
 export const PREVIEW_FOLDERS_LEFT_OUT = ['ErrorBoundary', 'hooks', 'icons', '__tests__'];
@@ -172,7 +173,8 @@ export function iconPreview(runtimeDir, exports) {
 // ── The document ──────────────────────────────────────────────────────────────────────────────────
 
 export const PREVIEW_CAP = 256 * 1024;
-const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
+/** The Google Fonts stylesheet every preview links, and the brand book tells a canvas to add. */
+export const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
 const FONT_HOSTS = ['https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 const PREVIEW_STYLE = [
   'body { margin: 0; padding: 16px; background: var(--gt-surface); font-family: var(--gt-font-sans); font-size: var(--gt-text-body); line-height: 1.5; color: var(--gt-text-primary); }',
@@ -215,24 +217,6 @@ export function renderPreviewHtml({ meta, script, title }) {
     '</html>',
     '',
   ].join('\n');
-}
-
-/**
- * tokens.json as the `:root` block a frame declares: every token of every family but `type`, an
- * alias (`{gt-gray-0}`) as `var()`.
- * @param {string | object} tokensJson
- */
-export function tokensCss(tokensJson) {
-  const tokens = typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson;
-  const lines = [];
-  for (const [family, value] of Object.entries(tokens)) {
-    if (family === 'type' || !Array.isArray(value?.tokens)) continue;
-    for (const token of value.tokens) {
-      const alias = /^\{(.+)\}$/.exec(String(token.value));
-      lines.push(`  --${token.name}: ${alias ? `var(--${alias[1]})` : token.value};`);
-    }
-  }
-  return `:root {\n${lines.join('\n')}\n}\n`;
 }
 
 // ── The check ─────────────────────────────────────────────────────────────────────────────────────
@@ -314,7 +298,8 @@ async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }
       document.head.prepend(element);
     };
     style(bundleCss);
-    style(tokensCss(tokensJson));
+    // The frame preloads the published tokens.css, which the build compiles from tokens.json.
+    style(tokensCss(typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson));
     window.eval(
       `(() => { const Real = Date; const fixed = Real.parse(${JSON.stringify(clock)});
         class FixedDate extends Real { constructor(...args) { if (args.length === 0) super(fixed); else super(...args); } static now() { return fixed; } }
