@@ -23,6 +23,7 @@ import { documentsApi } from './api/documents';
 import { analyticsApi } from './api/analytics';
 import { searchApi } from './api/search';
 import { mcpApi } from './api/mcp';
+import { profilesApi } from './api/profiles';
 
 export * from './api/types';
 export { ApiError, apiRequest, apiUpload } from './api/client';
@@ -45,4 +46,5 @@ export const api = {
   ...analyticsApi,
   ...searchApi,
   ...mcpApi,
+  ...profilesApi,
 };

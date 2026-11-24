@@ -367,6 +367,11 @@
       "method": "GET", "endpoint": "/api/search/index", "rateLimit": "60/min", "params": {}
     },
     {
+      "id": "get_person_profile", "title": "Show a person I share a class with (their classes, role and team)", "role": "any",
+      "method": "GET", "endpoint": "/api/profiles/{user_id}", "rateLimit": "120/min",
+      "params": {"user_id": "uuid!"}, "uiRoute": "/app/people/{user_id}"
+    },
+    {
       "id": "update_profile", "title": "Update my profile", "role": "any",
       "method": "PATCH", "endpoint": "/api/profiles/me",
       "params": {"first_name": "string", "last_name": "string", "linkedin": "string", "github": "string", "image_url": "string"}, "uiRoute": "/app/settings", "multiStep": true
