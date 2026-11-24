@@ -7,6 +7,7 @@ import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import ClassRouteGuard from '@features/app/components/Layout/ClassRouteGuard';
 import { lazyModal } from '@/lib/lazyModal';
 import { OPEN_CLASS_SELECTOR_EVENT } from '@/lib/openClassSelector';
+import { OPEN_SETTINGS_EVENT, type SettingsSection } from '@/lib/openSettings';
 import PageFallback from '@features/app/components/PageFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { Alert } from '@/components/Alert/Alert';
@@ -57,7 +58,8 @@ const AppView: React.FC = () => {
   const { isPreviewing } = usePreview();
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // The section Settings is open on; null while it is closed.
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchIndex = useSearchIndex(user?.id ?? null);
@@ -71,6 +73,15 @@ const AppView: React.FC = () => {
     };
     window.addEventListener(OPEN_CLASS_SELECTOR_EVENT, openDrawer);
     return () => window.removeEventListener(OPEN_CLASS_SELECTOR_EVENT, openDrawer);
+  }, []);
+
+  // A page asks for Settings on a section ("Edit profile"); the header and the sidebar open it on Profile.
+  useEffect(() => {
+    const open = (event: Event) => {
+      setSettingsSection((event as CustomEvent<{ section?: SettingsSection }>).detail?.section ?? 'profile');
+    };
+    window.addEventListener(OPEN_SETTINGS_EVENT, open);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, open);
   }, []);
 
   const handleOpenCreateClassModal = () => {
@@ -121,7 +132,7 @@ const AppView: React.FC = () => {
         <Sidebar
           onOpenCreateClass={handleOpenCreateClassModal}
           onOpenJoinClass={handleOpenJoinClassModal}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={() => setSettingsSection('profile')}
           mobileOpen={mobileNavOpen}
           onMobileClose={() => setMobileNavOpen(false)}
         />
@@ -137,7 +148,7 @@ const AppView: React.FC = () => {
 
         <main className="app-main">
           <Header
-            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSettings={() => setSettingsSection('profile')}
             onToggleNav={() => setMobileNavOpen((open) => !open)}
             onOpenSearch={() => setSearchOpen(true)}
             onPrefetchSearch={() => searchIndex.refresh()}
@@ -175,7 +186,11 @@ const AppView: React.FC = () => {
           />
         </ErrorBoundary>
         <ErrorBoundary fallback={modalLoadError}>
-          <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          <Settings
+            isOpen={settingsSection !== null}
+            onClose={() => setSettingsSection(null)}
+            initialSection={settingsSection ?? undefined}
+          />
         </ErrorBoundary>
 
         {/* Global ⌘K search — one instance for every /app route (spec §3). */}
