@@ -175,6 +175,11 @@ describe('Header', () => {
     expect(screen.queryByText('Access Code:')).not.toBeInTheDocument();
   });
 
+  it('names a person\'s page "Profile", whoever it shows', () => {
+    renderAt('/app/people/00000000-0000-4000-8000-000000000001');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Profile');
+  });
+
   it('names the Analytics page, which belongs to no class', () => {
     renderAt('/app/analytics');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Analytics');

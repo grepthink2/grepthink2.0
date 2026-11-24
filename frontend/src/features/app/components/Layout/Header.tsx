@@ -143,7 +143,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
   );
   const isClassRoute = breadcrumbs !== null;
   const showInstructorClassMeta = isClassRoute && classRole === 'instructor';
-  const standaloneTitle = pageTitles[path] ?? 'GrepThink';
+  // A person's page has the person in its path, so it is named by its prefix.
+  const standaloneTitle = pageTitles[path] ?? (path.startsWith('/app/people/') ? 'Profile' : 'GrepThink');
 
   const handleNotificationClick = async (notification: typeof notifications[number]) => {
     if (!notification.read_at) {

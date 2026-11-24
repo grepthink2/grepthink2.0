@@ -51,6 +51,7 @@ const ScrumBoardPage = lazy(() => import('@features/scrum/pages/ScrumBoardPage')
 const DocumentPage = lazy(() => import('@features/documents/pages/DocumentPage'));
 const DocumentRedirect = lazy(() => import('@features/documents/pages/DocumentRedirect'));
 const AnalyticsPage = lazy(() => import('@features/analytics/pages/AnalyticsPage'));
+const PersonPage = lazy(() => import('@features/people/pages/PersonPage'));
 const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
 // Assign is Staffing's sibling in the same folder/pattern — same size
 // profile, fully isolated component subtree (no other route imports it).
@@ -130,6 +131,7 @@ function App() {
               <Route path="projects/:projectId/documents/:documentId" element={<DocumentPage />} />
               <Route path="documents/:documentId" element={<DocumentRedirect />} />
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="people/:userId" element={<PersonPage />} />
               <Route path="roster" element={<Roster />} />
               <Route path="modules" element={<Modules />} />
               <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
