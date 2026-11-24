@@ -20,7 +20,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { firstCompoundClasses, selectorsOf } from '../ownership.mjs';
-import { bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
+import { REPLACEMENT_CHARACTER, bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
 import { NAMESPACE } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
 import { GUIDE_CAP } from './guides.mjs';
@@ -263,12 +263,15 @@ export async function checkTree(
       if (!guides.some((text) => named.test(text))) problems.push(`${name} is on window.${NAMESPACE} without a card, and no guide names it`);
     }
   }
-  // A published file names no folder of the machine that built it (a build's module labels can).
+  // A published file names no folder of the machine that built it (a build's module labels can), and
+  // holds no U+FFFD, which the artifact refuses.
   const machine = resolve(FRONTEND, '..');
-  if (machine.split(sep).filter(Boolean).length >= 2) {
-    for (const path of filesUnder(dir)) {
-      if (readFileSync(path, 'utf8').includes(machine + sep)) problems.push(`${relative(dir, path).split(sep).join('/')} holds the build machine's path ${machine}`);
-    }
+  const deep = machine.split(sep).filter(Boolean).length >= 2;
+  for (const path of filesUnder(dir)) {
+    const name = relative(dir, path).split(sep).join('/');
+    const text = readFileSync(path, 'utf8');
+    if (deep && text.includes(machine + sep)) problems.push(`${name} holds the build machine's path ${machine}`);
+    if (text.includes(REPLACEMENT_CHARACTER)) problems.push(`${name} holds U+FFFD, which the artifact refuses`);
   }
   if (bundleLoads) problems.push(...(await previewProblems(dir, { header, exportNames, bundle, css, srcDir, runtimeDir })));
   return problems;

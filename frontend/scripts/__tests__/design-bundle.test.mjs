@@ -43,6 +43,15 @@ describe('finishBundleJs', () => {
     expect(() => finishBundleJs(out.split('\n').slice(1).join('\n'), exports, cards)).not.toThrow();
   });
 
+  it('writes U+FFFD as its escape, which the artifact accepts and which means the same', () => {
+    const replacement = String.fromCharCode(0xfffd);
+    const out = finishBundleJs(`var a=\`x${replacement}y\`;\n`, exports, cards);
+    expect(out).not.toContain(replacement);
+    const body = out.split('\n').slice(1).join('\n');
+    // Run the finished statement: the template keeps its value.
+    expect(new Function(`${body}; return a;`)()).toBe(`x${replacement}y`);
+  });
+
   it('refuses a bundle over 6 MB', () => {
     expect(() => finishBundleJs('x'.repeat(BUNDLE_JS_CAP + 1), exports, cards)).toThrow('bundle.js is over 6 MB');
   });

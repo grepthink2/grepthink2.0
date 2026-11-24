@@ -264,6 +264,13 @@ describe('checkTree', () => {
     ]);
   });
 
+  it('refuses a file holding U+FFFD, which the artifact will not take', async () => {
+    const replacement = String.fromCharCode(0xfffd);
+    expect(await check((root) => write(root, 'project/components/Button/README.md', `The button ${replacement} for every action.\n`))).toEqual([
+      'components/Button/README.md holds U+FFFD, which the artifact refuses',
+    ]);
+  });
+
   it('refuses a folder under components/ that is not in the bundle header', async () => {
     expect(await check((root) => write(root, 'project/components/Combobox/README.md', 'A combobox.\n'))).toEqual([
       'components/Combobox/ is not in the bundle header',
