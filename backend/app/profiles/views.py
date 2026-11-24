@@ -3,11 +3,12 @@ Profile views — parameter handling and responses
 """
 
 import logging
-from uuid import UUID
 
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Request
+from slowapi.util import get_remote_address
 
 from app.dependencies import require_user, require_user_payload
+from app.limiter import limiter
 from app.profiles import controller
 from app.profiles.models import (
     ProfileUpdateRequest,
@@ -42,27 +43,35 @@ def get_my_profile(
         raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
 
-def get_user_profile(
+def _caller(request: Request, user_id: str = Depends(require_user)) -> str:
+    """The signed-in user, also kept on the request as its rate-limit key (``_profiles_rate_key``)."""
+    request.state.profiles_rate_key = user_id
+    return user_id
+
+
+def _profiles_rate_key(request: Request) -> str:
+    """The rate-limit bucket of a profile request: the signed-in user's own.
+
+    On Vercel every request arrives from the proxy's address, so a limit keyed by address would be
+    one bucket shared by everybody. The limit is checked after the route's dependencies have run,
+    so ``_caller`` has set the key by then; the address is only a fallback.
+    """
+    return getattr(request.state, "profiles_rate_key", None) or get_remote_address(request)
+
+
+@limiter.limit("120/minute", key_func=_profiles_rate_key)
+def get_person_profile(
+    request: Request,
     user_id: str,
-    class_id: UUID = Query(..., description="Class context — both users must belong to it"),
-    viewer_id: str = Depends(require_user),
-):
+    viewer_id: str = Depends(_caller),
+) -> dict:
     """
-    View another user's profile when you share a class roster.
+    One person, as the caller may see them: someone they share a class with, or themself.
+
+    ``user_id`` is read as text, so an id that is not a UUID gets the same 404 as one that names
+    nobody the caller may see.
     """
-    try:
-        profile = controller.get_profile_for_class_member(viewer_id, user_id, str(class_id))
-        return {"profile": profile}
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception(
-            "get_user_profile failed | viewer=%s target=%s class=%s",
-            viewer_id,
-            user_id,
-            class_id,
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch profile")
+    return controller.get_person_profile(viewer_id, user_id)
 
 
 def update_my_profile(
