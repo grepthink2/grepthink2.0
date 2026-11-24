@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ApiPersonProfile, ApiPersonSharedClass } from '@/lib/api';
 import {
-  classLabel,
   classRoleLabel,
   displayName,
   githubLink,
@@ -20,8 +19,7 @@ import {
 
 const cls = (over: Partial<ApiPersonSharedClass> = {}): ApiPersonSharedClass => ({
   class_id: 'c1',
-  class_name: 'Software Engineering',
-  course_code: 'CSE 115A',
+  class_name: 'CSE 115A',
   term: 'Fall',
   year: 2026,
   status: 'active',
@@ -49,8 +47,6 @@ describe('peopleModel', () => {
     expect(classRoleLabel('student')).toBe('Student');
     expect(classRoleLabel('ta')).toBe('TA');
     expect(classRoleLabel('instructor')).toBe('Instructor');
-    expect(classLabel(cls())).toBe('CSE 115A');
-    expect(classLabel(cls({ course_code: null }))).toBe('Software Engineering');
     expect(termLabel('Fall', 2026)).toBe('Fall 2026');
     expect(termLabel(null, 2026)).toBe('2026');
     expect(termLabel('Fall', null)).toBe('Fall');

@@ -3,7 +3,7 @@ import { ChevronRight, FileText, SquareKanban } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card } from '@components/Card/Card';
 import type { ApiPersonSharedClass } from '@/lib/api';
-import { classLabel, type StaffLink } from '../peopleModel';
+import type { StaffLink } from '../peopleModel';
 
 const ICONS: Record<StaffLink['key'], ReactNode> = {
   board: <SquareKanban size={16} aria-hidden="true" />,
@@ -23,7 +23,7 @@ interface ProfileStaffLinksProps {
 export function ProfileStaffLinks({ groups }: ProfileStaffLinksProps) {
   if (groups.length === 0) return null;
   const many = groups.length > 1;
-  const whose = many ? 'these classes' : classLabel(groups[0].entry);
+  const whose = many ? 'these classes' : groups[0].entry.class_name;
   return (
     <Card
       titleAs="h3"
@@ -37,10 +37,10 @@ export function ProfileStaffLinks({ groups }: ProfileStaffLinksProps) {
           <div key={entry.class_id} className="gt-profile-staff__group">
             {many && (
               <p className="gt-profile-staff__class">
-                {classLabel(entry)} · {team}
+                {entry.class_name} · {team}
               </p>
             )}
-            <ul className="gt-profile-staff__links" aria-label={`${classLabel(entry)}, ${team}`}>
+            <ul className="gt-profile-staff__links" aria-label={`${entry.class_name}, ${team}`}>
               {links.map((link) => (
                 <li key={link.key}>
                   <Link className="gt-profile-staff__link" to={link.to}>

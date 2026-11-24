@@ -374,8 +374,8 @@ export interface ApiPersonTeam {
 /** A class the viewer and the person are both in, with each one's role there. */
 export interface ApiPersonSharedClass {
   class_id: string;
+  /** The class's name ("CSE 115A"). Its `course_code` is the code that joins it, and is never sent. */
   class_name: string;
-  course_code: string | null;
   term: string | null;
   year: number | null;
   status: 'active' | 'complete';

@@ -101,7 +101,7 @@ does not exist.
 {
   "person": { "id", "name", "image_url", "github", "linkedin", "school_email" },
   "shared": [{
-    "class_id", "class_name", "course_code", "term", "year", "status",
+    "class_id", "class_name", "term", "year", "status",
     "institution": { "id", "name" } | null,
     "role": "student" | "ta" | "instructor",
     "viewer_role": "student" | "ta" | "instructor",
@@ -121,6 +121,8 @@ does not exist.
   person's `name` is empty, here and in `team.members`, and the page reads "No name yet".
 - `shared` holds the classes both people are in; for the person's own page, all of theirs. Completed
   classes are included, with their `status`.
+- A class is labelled by its `name` ("CSE 115A"). `classes.course_code` is the code a student joins
+  the class with (the instructor's "Access Code"), so the answer never carries it.
 - `team.members` are the person's teammates, without the person. Only those in the team's class
   are listed (its instructor, or enrolled in it): adding a member to a team does not check
   enrollment, so a team can hold someone the viewer shares no class with.

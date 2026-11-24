@@ -8,7 +8,6 @@ import { useMessageUser } from '@features/messages/hooks/useMessageUser';
 import { openSettings } from '@/lib/openSettings';
 import type { ApiPersonProfile } from '@/lib/api';
 import {
-  classLabel,
   classRoleLabel,
   displayName,
   githubLink,
@@ -106,7 +105,7 @@ export function ProfileHeader({ profile, isPreviewing }: ProfileHeaderProps) {
             {shared.map((entry) => (
               <li key={entry.class_id}>
                 <Tag>
-                  {classLabel(entry)} · {classRoleLabel(entry.role)}
+                  {entry.class_name} · {classRoleLabel(entry.role)}
                 </Tag>
               </li>
             ))}

@@ -84,9 +84,8 @@ PROFILE_NOT_FOUND = "Profile not found"
 
 # What another person may be shown of a profile. Never ``email`` or ``role``.
 _PERSON_FIELDS = "id, first_name, last_name, image_url, github, linkedin, edu_email"
-_SHARED_CLASS_FIELDS = (
-    "id, name, course_code, term, year, status, created_by, institutions(id, name)"
-)
+# Never ``course_code``: that is the code a student joins the class with, not a label for it.
+_SHARED_CLASS_FIELDS = "id, name, term, year, status, created_by, institutions(id, name)"
 # Each member comes with the classes they are enrolled in: a team can hold someone from outside
 # its class, and that person is no teammate to show (see ``_team_of``).
 _TEAM_FIELDS = (
@@ -256,7 +255,6 @@ def get_person_profile(viewer_id: str, target_user_id: str) -> dict:
             {
                 "class_id": cls["id"],
                 "class_name": cls.get("name"),
-                "course_code": cls.get("course_code"),
                 "term": cls.get("term"),
                 "year": cls.get("year"),
                 "status": cls.get("status"),

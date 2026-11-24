@@ -4,7 +4,7 @@ import { AvatarGroup } from '@components/Avatar/Avatar';
 import { Badge } from '@components/Badge/Badge';
 import { Card } from '@components/Card/Card';
 import type { ApiPersonSharedClass } from '@/lib/api';
-import { classLabel, classRoleLabel, displayName, teamPath, termLabel } from '../peopleModel';
+import { classRoleLabel, displayName, teamPath, termLabel } from '../peopleModel';
 
 /** What a class's card says when the person has no team there. */
 function noTeamLine(role: ApiPersonSharedClass['role']): string {
@@ -13,12 +13,9 @@ function noTeamLine(role: ApiPersonSharedClass['role']): string {
   return 'Not on a team in this class yet.';
 }
 
-/** "Software Engineering · Fall 2026 · Student": the class's name when the title is its code. */
+/** "Fall 2026 · Student": the class's term, when it has one, and the person's role there. */
 function subtitleOf(entry: ApiPersonSharedClass): string {
-  const titledByCode = Boolean(entry.course_code?.trim());
-  return [titledByCode ? entry.class_name : null, termLabel(entry.term, entry.year), classRoleLabel(entry.role)]
-    .filter(Boolean)
-    .join(' · ');
+  return [termLabel(entry.term, entry.year), classRoleLabel(entry.role)].filter(Boolean).join(' · ');
 }
 
 /**
@@ -44,7 +41,7 @@ export function ProfileTeams({ shared }: { shared: ApiPersonSharedClass[] }) {
                 key={entry.class_id}
                 bordered
                 titleAs="h4"
-                title={classLabel(entry)}
+                title={entry.class_name}
                 subtitle={subtitleOf(entry)}
                 className="gt-profile-team"
               >

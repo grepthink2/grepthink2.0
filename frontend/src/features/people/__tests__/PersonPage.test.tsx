@@ -19,8 +19,7 @@ const getPersonProfile = vi.mocked(api.getPersonProfile);
 
 const cls = (over: Partial<ApiPersonSharedClass> = {}): ApiPersonSharedClass => ({
   class_id: 'c1',
-  class_name: 'Software Engineering',
-  course_code: 'CSE 115A',
+  class_name: 'CSE 115A',
   term: 'Fall',
   year: 2026,
   status: 'active',
@@ -133,7 +132,7 @@ describe('PersonPage', () => {
           cls({ viewer_role: 'ta' }),
           cls({
             class_id: 'c2',
-            course_code: 'CSE 115B',
+            class_name: 'CSE 115B',
             viewer_role: 'instructor',
             team: { project_id: 'p2', name: 'Echo', project_role: 'member', members: [] },
           }),
@@ -233,8 +232,7 @@ describe('PersonPage', () => {
           cls(),
           cls({
             class_id: 'c2',
-            course_code: 'CS 157A',
-            class_name: 'Databases',
+            class_name: 'CS 157A',
             institution: { id: 'i2', name: 'San José State' },
             team: null,
           }),
@@ -247,7 +245,7 @@ describe('PersonPage', () => {
     expect(screen.getByText('San José State · UC Santa Cruz')).toBeInTheDocument();
     const cards = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent);
     expect(cards).toEqual(['CS 157A', 'CSE 115A']);
-    expect(screen.getByText('Databases · Fall 2026 · Student')).toBeInTheDocument();
+    expect(screen.getAllByText('Fall 2026 · Student')).toHaveLength(2);
   });
 
   it.each([404, 422])('a %i is the not-visible state', async (status) => {

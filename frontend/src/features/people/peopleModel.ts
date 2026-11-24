@@ -28,11 +28,6 @@ export function teamPath(projectId: string): string {
   return `/app/projects/${projectId}`;
 }
 
-/** A class as a short label: its course code ("CSE 115A"), or its name when it has none. */
-export function classLabel(entry: Pick<ApiPersonSharedClass, 'course_code' | 'class_name'>): string {
-  return entry.course_code?.trim() || entry.class_name;
-}
-
 /** "Fall 2026", from whichever of the two the class has; null when it has neither. */
 export function termLabel(term: string | null, year: number | null): string | null {
   return [term?.trim(), year == null ? '' : String(year)].filter(Boolean).join(' ') || null;

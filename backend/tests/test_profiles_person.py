@@ -75,9 +75,10 @@ def db(monkeypatch):
             {"id": SJSU, "name": "San José State"},
         ],
         classes=[
-            _class(C115A, "Software Engineering", "CSE 115A", PROF, UCSC),
-            _class(C115B, "Software Engineering II", "CSE 115B", PROF, None, status="complete"),
-            _class(COTHER, "Databases", "CS 157A", PROF2, SJSU),
+            # ``course_code`` is the code a student joins the class with, not a label for it.
+            _class(C115A, "CSE 115A", "JOIN-AAA", PROF, UCSC),
+            _class(C115B, "CSE 115B", "JOIN-BBB", PROF, None, status="complete"),
+            _class(COTHER, "CS 157A", "JOIN-CCC", PROF2, SJSU),
         ],
         class_enrollments=[
             _enrolled(C115A, ANN),
@@ -147,8 +148,7 @@ def test_only_shared_classes_are_listed_with_roles_school_and_team(client, db):
     assert [s["class_id"] for s in shared] == [C115A, C115B]  # not the class Ann is not in
     assert shared[0] == {
         "class_id": C115A,
-        "class_name": "Software Engineering",
-        "course_code": "CSE 115A",
+        "class_name": "CSE 115A",
         "term": "Fall",
         "year": 2026,
         "status": "active",
@@ -326,3 +326,13 @@ def test_only_the_plain_spelling_of_an_id_is_read(client, db, spelling):
     res = get(client, ANN, spelling)
     assert res.status_code == 404
     assert res.json() == NOT_FOUND
+
+
+@pytest.mark.parametrize(
+    "viewer", [ANN, TARA, PROF, BO], ids=["classmate", "TA", "instructor", "self"]
+)
+def test_the_code_that_joins_a_class_is_never_sent(client, db, viewer):
+    res = get(client, viewer, BO)
+    assert res.status_code == 200
+    assert "JOIN-" not in res.text
+    assert "course_code" not in res.text
