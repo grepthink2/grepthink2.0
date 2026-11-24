@@ -154,6 +154,14 @@
   list-style: none;
 }
 
+// A long class name or address shrinks to the card's width and ends in an ellipsis; without
+// these a flex item is as wide as its text, and the page scrolls sideways on a phone.
+.gt-profile-header__roles li,
+.gt-profile-header__links li {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .gt-profile-header__roles .gt-tag {
   max-width: 100%;
 }

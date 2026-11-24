@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-rou
 import type { ApiPersonProfile, ApiPersonSharedClass } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import { OPEN_SETTINGS_EVENT } from '@/lib/openSettings';
+import { cssRules } from '@/test/cssRules';
 import PersonPage from '../pages/PersonPage';
 
 const ctx = vi.hoisted(() => ({ selectedClassId: null as string | null, previewing: false }));
@@ -289,6 +290,15 @@ describe('PersonPage', () => {
     });
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Cy Diaz');
     expect(screen.queryByText('Bo Park')).toBeNull();
+  });
+
+  it('keeps a long class name or link inside the card: the list items may shrink', () => {
+    // jsdom lays nothing out. Without these, a long tag or address makes the page scroll sideways.
+    for (const selector of ['.gt-profile-header__roles li', '.gt-profile-header__links li']) {
+      const [rule] = cssRules(selector);
+      expect(rule?.getPropertyValue('min-width')).toBe('0px');
+      expect(rule?.getPropertyValue('max-width')).toBe('100%');
+    }
   });
 
   it('shows the loading state again for the next person, not the last one', async () => {

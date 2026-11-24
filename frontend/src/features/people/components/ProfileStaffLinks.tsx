@@ -46,7 +46,7 @@ export function ProfileStaffLinks({ groups }: ProfileStaffLinksProps) {
                   <Link className="gt-profile-staff__link" to={link.to}>
                     <span className="gt-profile-staff__icon">{ICONS[link.key]}</span>
                     <span className="gt-profile-staff__text">
-                      <span className="gt-profile-staff__label">{link.label}</span>
+                      <span className="gt-profile-staff__label">{link.label}</span>{' '}
                       <span className="gt-profile-staff__detail">{link.detail}</span>
                     </span>
                     <ChevronRight size={16} aria-hidden="true" />
