@@ -237,6 +237,13 @@ describe('checkTree', () => {
     ]);
   });
 
+  it("refuses a file that names the build machine's folders", async () => {
+    const machine = join(frontend, '..');
+    expect(await check((root) => appendFileSync(join(root, 'project/components/index.d.ts'), `// ${machine}/frontend/src/components/Button/Button\n`))).toEqual([
+      `components/index.d.ts holds the build machine's path ${machine}`,
+    ]);
+  });
+
   it('refuses a folder under components/ that is not in the bundle header', async () => {
     expect(await check((root) => write(root, 'project/components/Combobox/README.md', 'A combobox.\n'))).toEqual([
       'components/Combobox/ is not in the bundle header',

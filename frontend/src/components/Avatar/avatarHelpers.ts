@@ -20,7 +20,7 @@ export const AVATAR_PX: Record<AvatarSize, number> = { xs: 20, sm: 28, md: 36, l
 
 /**
  * "Ashton Liu" → "AL": the first letters of the first and last words. An email reads as its local part,
- * with dots, dashes and underscores as spaces ("aliu@ucsc.edu" → "AL"); one word gives its first two
+ * with dots, dashes and underscores as spaces ("aliu@example.edu" → "AL"); one word gives its first two
  * letters; a blank gives "?". Letters are whole characters, so one outside the 16-bit range is never
  * cut in half.
  */

@@ -253,6 +253,11 @@ export async function checkTree(
       if (!guides.some((text) => named.test(text))) problems.push(`${name} is on window.${NAMESPACE} without a card, and no guide names it`);
     }
   }
+  // A published file names no folder of the machine that built it (a build's module labels can).
+  const machine = resolve(FRONTEND, '..');
+  for (const path of filesUnder(dir)) {
+    if (readFileSync(path, 'utf8').includes(machine)) problems.push(`${relative(dir, path).split(sep).join('/')} holds the build machine's path ${machine}`);
+  }
   if (bundleLoads) problems.push(...(await previewProblems(dir, { header, bundle, css, tokens: tokens ?? {}, srcDir, runtimeDir })));
   return problems;
 }
