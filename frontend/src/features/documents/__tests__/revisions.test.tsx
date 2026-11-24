@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import type { ApiSprintReportBody } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import ChangeList from '../components/ChangeList';
@@ -71,7 +72,7 @@ describe('RevisionsDrawer', () => {
   const REVISIONS = [
     makeRevisionEntry({ number: 4, saved_by_name: 'Alex Kim' }),
     makeRevisionEntry({ number: 3, finalized: true, finalized_at: '2026-11-15T10:00:00Z' }),
-    makeRevisionEntry({ number: 1, source: 'seed', saved_by_name: 'Sam Lee' }),
+    makeRevisionEntry({ number: 1, source: 'seed', saved_by: null, saved_by_name: null }),
   ];
   const bodies: Record<number, ApiSprintReportBody> = {
     1: report(),
@@ -89,6 +90,7 @@ describe('RevisionsDrawer', () => {
 
   const open = (compare: { older: number; newer: number } | null = null) => render(
     <RevisionsDrawer open onClose={vi.fn()} documentId="d1" kind="sprint_report" compare={compare} head={4} storyName={(id) => id} />,
+    { wrapper: MemoryRouter },
   );
 
   it('lists every revision with who saved it, its source and every hand-in', async () => {
@@ -96,6 +98,12 @@ describe('RevisionsDrawer', () => {
     const list = await screen.findByRole('list', { name: 'Revisions, newest first' });
     const rows = within(list).getAllByRole('listitem');
     expect(rows[0]).toHaveTextContent(/Revision 4 Alex Kim · .* Edited/);
+    const saver = within(rows[0]).getByRole('link', { name: 'Alex Kim' });
+    expect(saver).toHaveAttribute('href', '/app/people/u2');
+    expect(saver).toHaveClass('gt-person-link--inline');
+    // A revision nobody is named for reads "Someone", and leads nowhere.
+    expect(rows[2]).toHaveTextContent(/Revision 1 Someone · /);
+    expect(within(rows[2]).queryByRole('link')).toBeNull();
     expect(within(rows[1]).getByText('Handed in')).toBeInTheDocument();
     expect(within(rows[2]).getByText('Started')).toBeInTheDocument();
   });

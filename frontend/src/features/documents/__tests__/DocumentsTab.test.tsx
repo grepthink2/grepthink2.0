@@ -13,7 +13,7 @@ const { api } = await import('@/lib/api');
 const SLOTS = [
   makeSlot({ title: 'Sprint 1 report', sprint: makeSprint({ id: 'sp1', name: 'Sprint 1', starts_at: '2026-09-21', ends_at: '2026-10-04' }), document: makeSummary({ id: 'd1', status: 'final', finalized_revision: 3, edited_since: true, head_revision: 5 }) }),
   makeSlot({ title: 'Sprint 2 report', sprint: makeSprint({ status: 'active' }), document: null }),
-  makeSlot({ kind: 'release_summary', title: 'Release summary', sprint: null, document: makeSummary({ id: 'd2' }) }),
+  makeSlot({ kind: 'release_summary', title: 'Release summary', sprint: null, document: makeSummary({ id: 'd2', saved_by: null, saved_by_name: 'Sam Lee' }) }),
   makeSlot({ kind: 'test_report', title: 'Test plan and report', sprint: null, document: null }),
 ];
 
@@ -51,7 +51,14 @@ describe('DocumentsTab', () => {
     const first = within(sprints).getAllByRole('row')[1];
     expect(within(first).getByText('Final · edited since')).toBeInTheDocument();
     expect(within(first).getByText('Revision 5')).toBeInTheDocument();
-    expect(within(first).getByText(/by Alex Kim/)).toBeInTheDocument();
+    const saver = within(first).getByRole('link', { name: 'Alex Kim' });
+    expect(saver).toHaveAttribute('href', '/app/people/u2');
+    expect(saver).toHaveClass('gt-person-link--inline');
+    expect(saver.closest('td')).toHaveTextContent(/^Nov 16, 2026 by Alex Kim$/);
+    // A name that comes without an id stays text.
+    const release = within(end).getAllByRole('row')[1];
+    expect(release).toHaveTextContent(/by Sam Lee/);
+    expect(within(release).queryByRole('link', { name: 'Sam Lee' })).toBeNull();
     expect(within(end).getAllByRole('row')[2]).toHaveTextContent('Not started');
   });
 

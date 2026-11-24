@@ -315,6 +315,7 @@ const Roster: React.FC = () => {
           <RosterList
             key={selectedClass.id}
             students={filteredStudents}
+            classLabel={selectedClass.name}
             loading={loading}
             error={error}
             showActions={false}
@@ -325,6 +326,7 @@ const Roster: React.FC = () => {
               key={`${selectedClass.id}-tas`}
               group="tas"
               students={filteredTas}
+              classLabel={selectedClass.name}
               loading={false}
               error={null}
               showActions={false}
@@ -381,6 +383,7 @@ const Roster: React.FC = () => {
           <RosterList
             key={selectedClass.id}
             students={filteredStudents}
+            classLabel={selectedClass.name}
             loading={loading}
             error={error}
             showActions
@@ -398,6 +401,7 @@ const Roster: React.FC = () => {
               key={`${selectedClass.id}-tas`}
               group="tas"
               students={filteredTas}
+              classLabel={selectedClass.name}
               loading={false}
               error={null}
               showActions

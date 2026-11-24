@@ -1195,7 +1195,8 @@ export interface ApiDocumentSummary {
   /** Final, and saved again after its finalized revision. */
   edited_since: boolean;
   updated_at: string;
-  /** Who saved the head revision. */
+  /** Who saved the head revision: their id, and their name as the row shows it. */
+  saved_by: string | null;
   saved_by_name: string | null;
 }
 

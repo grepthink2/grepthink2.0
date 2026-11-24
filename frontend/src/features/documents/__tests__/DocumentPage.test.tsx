@@ -75,7 +75,10 @@ describe('DocumentPage: a team member on the head', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Sprint 2 report' })).toBeInTheDocument();
     expect(screen.getByText('Draft')).toBeInTheDocument();
     expect(screen.getByText('Revision 3')).toBeInTheDocument();
-    expect(screen.getByText(/Saved .* by Alex Kim/)).toBeInTheDocument();
+    const saver = screen.getByRole('link', { name: 'Alex Kim' });
+    expect(saver).toHaveAttribute('href', '/app/people/u2');
+    expect(saver).toHaveClass('gt-person-link--inline');
+    expect(saver.parentElement).toHaveTextContent(/^Saved .* by Alex Kim$/);
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.getByText('All changes saved')).toBeInTheDocument();
     expect(screen.getByText('Every check passes: the document can be handed in.')).toBeInTheDocument();
@@ -152,7 +155,9 @@ describe('DocumentPage: a team member on the head', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Finalize' }));
     expect(await screen.findByText('Handed in revision 3. The team’s TAs are told.')).toBeInTheDocument();
     expect(api.finalizeDocument).toHaveBeenCalledWith('d1', 3);
+    // The name came without an id, so it stays text.
     expect(screen.getByText(/Handed in Nov 17, 2026 by Tony Wu, revision 3/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Tony Wu' })).toBeNull();
     expect(screen.getByText('From the board, as handed in')).toBeInTheDocument();
   });
 
@@ -281,6 +286,20 @@ describe('DocumentPage: readers', () => {
     derived_frozen: true,
     body: ready(),
     ...over,
+  });
+
+  it('leads from the hand-in line to whoever handed it in', async () => {
+    vi.mocked(api.getDocument).mockResolvedValue(finalEdited({
+      document: {
+        status: 'final', head_revision: 5, finalized_revision: 3, finalized_at: '2026-11-15T18:00:00Z',
+        finalized_by: 'u7', finalized_by_name: 'Sam Lee', edited_since: true,
+      },
+    }));
+    renderAt();
+    const who = await screen.findByRole('link', { name: 'Sam Lee' });
+    expect(who).toHaveAttribute('href', '/app/people/u7');
+    expect(who).toHaveClass('gt-person-link--inline');
+    expect(who.parentElement).toHaveTextContent(/^Handed in Nov 15, 2026 by Sam Lee, revision 3$/);
   });
 
   it('shows staff the hand-in, read only, with the latest draft one click away', async () => {

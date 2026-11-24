@@ -5,6 +5,7 @@ import { useConversations } from '../hooks/useConversations';
 import { ConversationList } from '../components/ConversationList';
 import { ConversationThread } from '../components/ConversationThread';
 import { NewConversationCompose } from '../components/NewConversationCompose';
+import { ThreadTitle } from '../components/ThreadTitle';
 import './Messages.scss';
 
 const Messages: React.FC = () => {
@@ -45,6 +46,7 @@ const Messages: React.FC = () => {
           <ConversationThread
             conversation={activeConversation}
             onDeleted={() => navigate('/app/messages', { replace: true, viewTransition: true })}
+            renderTitle={(conversation, title) => <ThreadTitle conversation={conversation} title={title} />}
           />
         ) : conversationId ? (
           <div className="messages-thread messages-thread--empty">

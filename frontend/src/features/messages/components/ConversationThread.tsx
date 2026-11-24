@@ -30,6 +30,11 @@ interface Props {
   /** When true, the thread's own header is hidden — used inside the
    *  floating widget where the popover provides its own header. */
   hideHeader?: boolean;
+  /**
+   * Draws the heading's content in place of the plain title. The Messages page passes the link to
+   * the person; it is a prop, not an import, because this component loads with the app shell.
+   */
+  renderTitle?: (conversation: ApiConversationSummary, title: string) => React.ReactNode;
 }
 
 export const ConversationThread: React.FC<Props> = ({
@@ -37,6 +42,7 @@ export const ConversationThread: React.FC<Props> = ({
   onDeleted,
   headerAvatarSize = 'lg',
   hideHeader = false,
+  renderTitle,
 }) => {
   const { user } = useAuth();
   const {
@@ -184,7 +190,9 @@ export const ConversationThread: React.FC<Props> = ({
               decorative
             />
             <div className="messages-thread__header-text">
-              <h2 className="messages-thread__title">{title}</h2>
+              <h2 className="messages-thread__title">
+                {renderTitle ? renderTitle(conversation, title) : title}
+              </h2>
               {isGroup && (
                 <div className="messages-thread__subtitle">
                   {Array.from(senderNames.values()).join(', ')}

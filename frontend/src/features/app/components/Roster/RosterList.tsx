@@ -9,10 +9,14 @@ import { useTableSort, type SortAccessors } from '@/components/Table/useTableSor
 import { Pagination } from '@/components/Pagination/Pagination';
 import { PAGE_SIZE_OPTIONS, usePagination } from '@/components/Pagination/usePagination';
 import { Select } from '@/components/Select/Select';
+import { PersonLink } from '@/components/PersonLink/PersonLink';
+import { roleLine, teamLine } from '@features/people/peopleModel';
 import './RosterList.scss';
 
 interface RosterListProps {
   students: UiStudent[];
+  /** What the class is called ("CSE 115A"), for the line under a name on hover. */
+  classLabel: string;
   loading: boolean;
   error: string | null;
   showActions?: boolean;
@@ -31,6 +35,23 @@ interface RosterListProps {
 }
 
 const PAGE_SIZE_SELECT_OPTIONS = PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }));
+
+/**
+ * A row's name. Someone with an account in the class leads to their page, with their role and
+ * first team on hover; a row from the registrar's list alone names nobody with a page.
+ */
+function StudentName({ student, classLabel }: { student: UiStudent; classLabel: string }) {
+  if (student.grepthinkStatus !== 'registered') return <>{student.name}</>;
+  return (
+    <PersonLink
+      person={{ id: student.id, name: student.name }}
+      card={{
+        roleLine: roleLine(student.isTa ? 'ta' : 'student', classLabel),
+        teamLine: teamLine(student.projects[0]),
+      }}
+    />
+  );
+}
 
 /** Manually added rows can be right-clicked to delete them entirely from the roster. */
 function isManualDeletable(student: UiStudent): boolean {
@@ -70,6 +91,7 @@ const NO_INVITING_EMAILS = new Set<string>();
 
 const RosterList: React.FC<RosterListProps> = ({
   students,
+  classLabel,
   loading,
   error,
   showActions = false,
@@ -206,7 +228,9 @@ const RosterList: React.FC<RosterListProps> = ({
                     onContextMenu={(e) => handleContextMenu(e, student)}
                     className={isManualDeletable(student) ? 'roster-list__tr--deletable' : undefined}
                   >
-                    <td className="roster-list__td-name">{student.name}</td>
+                    <td className="roster-list__td-name">
+                      <StudentName student={student} classLabel={classLabel} />
+                    </td>
                     <td className="roster-list__td-email">
                       <a href={`mailto:${student.email}`} className="roster-list__email-link">
                         {student.email}
@@ -281,7 +305,9 @@ const RosterList: React.FC<RosterListProps> = ({
             >
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
-                  <span className="roster-list__td-name">{student.name}</span>
+                  <span className="roster-list__td-name">
+                    <StudentName student={student} classLabel={classLabel} />
+                  </span>
                   <a href={`mailto:${student.email}`} className="roster-list__email-link">
                     {student.email}
                   </a>

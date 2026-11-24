@@ -1,6 +1,7 @@
 /** The Roster page's invite flow: what the invite modal says when queueing the invite fails. */
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiRosterStudent } from '@/lib/api';
 
@@ -60,7 +61,7 @@ function deferred<T>() {
 /** Opens the page, then the invite modal for the one student who is not registered. */
 async function openInviteModal() {
   const user = userEvent.setup();
-  render(<Roster />);
+  render(<Roster />, { wrapper: MemoryRouter });
   // Enabled once the roster has loaded and one student is not registered.
   const inviteAll = await screen.findByRole('button', { name: /Invite All Not Registered/ });
   await waitFor(() => expect(inviteAll).toBeEnabled());
