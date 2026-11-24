@@ -121,7 +121,9 @@ does not exist.
   person's `name` is empty, here and in `team.members`, and the page reads "No name yet".
 - `shared` holds the classes both people are in; for the person's own page, all of theirs. Completed
   classes are included, with their `status`.
-- `team.members` are the person's teammates, without the person.
+- `team.members` are the person's teammates, without the person. Only those in the team's class
+  are listed (its instructor, or enrolled in it): adding a member to a team does not check
+  enrollment, so a team can hold someone the viewer shares no class with.
 - **Refusal.** No class in common, an unknown id and a malformed id all answer
   `404 {"detail": "Profile not found"}`, the same body. A person's own id always answers, with an
   empty `shared` when they are in no class.

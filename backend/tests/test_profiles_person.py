@@ -23,7 +23,9 @@ def _id(n: int) -> str:
 ANN, BO, CY, TARA, PROF, ZED, NONAME, LONER, GHOST, PROF2 = (_id(n) for n in range(1, 11))
 C115A, C115B, COTHER = _id(101), _id(102), _id(103)
 UCSC, SJSU = _id(201), _id(202)
-TRAILHEAD = _id(301)
+TRAILHEAD, ECHO = _id(301), _id(302)
+# An id with letters in it, so that its case can differ.
+HEXY = "abcdef12-0000-4000-8000-00000000000a"
 NOT_FOUND = {"detail": "Profile not found"}
 
 
@@ -66,6 +68,7 @@ def db(monkeypatch):
             ("classes", "institutions"): ("institution_id", "id", False),
             ("projects", "project_members"): ("id", "project_id", True),
             ("project_members", "profiles"): ("user_id", "id", False),
+            ("profiles", "class_enrollments"): ("id", "user_id", True),
         },
         institutions=[
             {"id": UCSC, "name": "UC Santa Cruz"},
@@ -101,7 +104,7 @@ def db(monkeypatch):
             _profile(CY, "Cy", "Diaz"),
             _profile(TARA, "Tara", "Oh", edu_email="tara@ucsc.edu"),
             _profile(PROF, "Pat", "Ruiz", role="instructor", edu_email="pat@ucsc.edu"),
-            _profile(ZED, "Zed", "Kim"),
+            _profile(ZED, "Zed", "Kim", edu_email="zed@sjsu.edu"),
             _profile(NONAME, None, None),
             _profile(LONER, "Lo", "Ner"),
         ],
@@ -118,6 +121,10 @@ def db(monkeypatch):
 
 def get(client, viewer, target):
     return client.get(f"/api/profiles/{target}", headers=header_for("viewer@gmail.com", viewer))
+
+
+def _join(db, project, user, role="member"):
+    db.rows("project_members").append({"project_id": project, "user_id": user, "role": role})
 
 
 def test_a_classmate_sees_the_person_and_no_email(client, db):
@@ -226,3 +233,96 @@ def test_the_limit_is_per_signed_in_user(client, db):
         assert get(client, CY, BO).status_code == 200
     finally:
         limiter.reset()
+
+
+def test_a_teammate_who_is_not_in_the_class_is_not_listed(client, db):
+    # A team can hold someone from outside its class: adding a member does not check enrollment.
+    _join(db, TRAILHEAD, LONER, "admin")
+    res = get(client, ANN, BO)
+    assert [m["id"] for m in res.json()["shared"][0]["team"]["members"]] == [CY]
+    assert "Lo Ner" not in res.text
+
+
+def test_the_class_instructor_on_a_team_is_listed(client, db):
+    # Pat teaches CSE 115B and is not enrolled in it.
+    db.rows("projects").append({"id": ECHO, "name": "Echo", "class_id": C115B})
+    _join(db, ECHO, BO)
+    _join(db, ECHO, PROF)
+    team = get(client, ANN, BO).json()["shared"][1]["team"]
+    assert team["members"] == [{"id": PROF, "name": "Pat Ruiz", "image_url": None}]
+
+
+def test_a_teammate_with_no_name_is_not_named_by_their_email(client, db):
+    _join(db, TRAILHEAD, NONAME)
+    res = get(client, ANN, BO)
+    assert {"id": NONAME, "name": "", "image_url": None} in res.json()["shared"][0]["team"][
+        "members"
+    ]
+    assert "@" not in res.text
+
+
+def test_staff_of_one_class_get_no_school_email_for_a_fellow_student_of_another(client, db):
+    # Tara and Zed are both TAs of CSE 115A and both students of Databases: in no class is one
+    # of them staff where the other is a student.
+    db.rows("class_enrollments").extend([_enrolled(C115A, ZED, "ta"), _enrolled(COTHER, TARA)])
+    res = get(client, TARA, ZED)
+    body = res.json()
+    assert {(s["viewer_role"], s["role"]) for s in body["shared"]} == {
+        ("ta", "ta"),
+        ("student", "student"),
+    }
+    assert "school_email" not in body["person"]
+    assert "@" not in res.text
+
+
+@pytest.mark.parametrize("staff", [TARA, PROF], ids=["a TA", "the instructor"])
+def test_a_student_gets_no_school_email_for_staff(client, db, staff):
+    res = get(client, ANN, staff)
+    assert res.status_code == 200
+    assert "school_email" not in res.json()["person"]
+    assert "@" not in res.text
+
+
+@pytest.mark.parametrize("viewer", [TARA, BO], ids=["staff", "the person"])
+def test_nobody_is_sent_the_login_email_or_the_account_role(client, db, viewer):
+    res = get(client, viewer, BO)
+    assert set(res.json()["person"]) == {
+        "id",
+        "name",
+        "image_url",
+        "github",
+        "linkedin",
+        "school_email",
+    }
+    assert "gmail.com" not in res.text
+
+
+def test_a_refusal_costs_the_same_whether_or_not_the_person_exists(client, db):
+    counts = []
+    for viewer, target in [(ZED, ANN), (ANN, _id(999))]:
+        db.reset_counter()
+        assert get(client, viewer, target).status_code == 404
+        counts.append(db.executes)
+    assert counts == [3, 3]
+
+
+def test_it_needs_a_sign_in(client, db):
+    assert client.get(f"/api/profiles/{BO}").status_code == 401
+
+
+def test_your_own_id_in_upper_case_is_still_you(client, db):
+    db.rows("profiles").append(_profile(HEXY, "He", "Xy"))
+    body = get(client, HEXY, HEXY.upper()).json()
+    assert body["is_self"] is True
+    assert body["person"]["id"] == HEXY
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    ["{" + BO + "}", "urn:uuid:" + BO, BO.replace("-", ""), BO.replace("-", "_")],
+    ids=["braces", "urn", "no dashes", "underscores"],
+)
+def test_only_the_plain_spelling_of_an_id_is_read(client, db, spelling):
+    res = get(client, ANN, spelling)
+    assert res.status_code == 404
+    assert res.json() == NOT_FOUND

@@ -10,7 +10,6 @@ import logging
 import os
 import re
 import secrets
-import uuid
 
 from fastapi import HTTPException
 
@@ -85,12 +84,19 @@ PROFILE_NOT_FOUND = "Profile not found"
 
 # What another person may be shown of a profile. Never ``email`` or ``role``.
 _PERSON_FIELDS = "id, first_name, last_name, image_url, github, linkedin, edu_email"
-_SHARED_CLASS_FIELDS = "id, name, course_code, term, year, status, institutions(id, name)"
+_SHARED_CLASS_FIELDS = (
+    "id, name, course_code, term, year, status, created_by, institutions(id, name)"
+)
+# Each member comes with the classes they are enrolled in: a team can hold someone from outside
+# its class, and that person is no teammate to show (see ``_team_of``).
 _TEAM_FIELDS = (
     "id, name, class_id, "
-    "project_members(user_id, role, profiles(id, first_name, last_name, image_url))"
+    "project_members(user_id, role, "
+    "profiles(id, first_name, last_name, image_url, class_enrollments(class_id)))"
 )
 _STAFF_ROLES = frozenset({"ta", "instructor"})
+# The one spelling of an id that is read. ``uuid.UUID`` also takes braces, a URN and no dashes.
+_PLAIN_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
 def _full_name(profile: dict) -> str:
@@ -114,8 +120,20 @@ def _class_roles(owned: list[dict], enrolled: list[dict]) -> dict[str, dict[str,
     return roles
 
 
-def _team_of(person_id: str, projects: list[dict]) -> dict[str, dict]:
-    """The person's team in each class, as ``{class_id: team}``, with their teammates."""
+def _in_class(profile: dict, class_id: str, instructor_id: str | None) -> bool:
+    """Whether the person is the class's instructor or enrolled in it."""
+    if str(profile["id"]) == instructor_id:
+        return True
+    return any(str(e.get("class_id")) == class_id for e in profile.get("class_enrollments") or [])
+
+
+def _team_of(person_id: str, projects: list[dict], instructors: dict[str, str]) -> dict[str, dict]:
+    """The person's team in each class, as ``{class_id: team}``, with their teammates.
+
+    A teammate is listed only if they are in the team's class (``instructors`` maps a class to
+    who teaches it). Nothing stops a team from holding someone from outside it, and the viewer
+    shares no class with that person.
+    """
     teams: dict[str, dict] = {}
     for project in sorted(projects, key=lambda p: (p.get("name") or "", str(p["id"]))):
         members = project.get("project_members") or []
@@ -131,7 +149,9 @@ def _team_of(person_id: str, projects: list[dict]) -> dict[str, dict]:
             }
             for m in members
             # A member whose profile row is gone has nothing to show.
-            if str(m.get("user_id")) != person_id and m.get("profiles")
+            if str(m.get("user_id")) != person_id
+            and m.get("profiles")
+            and _in_class(m["profiles"], class_id, instructors.get(class_id))
         ]
         teams[class_id] = {
             "project_id": project["id"],
@@ -152,15 +172,15 @@ def get_person_profile(viewer_id: str, target_user_id: str) -> dict:
     for staff of a shared class in which the person is a student, as the roster shows it. The
     login email and the account role are never read.
 
-    Raises 404 :data:`PROFILE_NOT_FOUND` for an id that is not a UUID, for one that names nobody
+    Raises 404 :data:`PROFILE_NOT_FOUND` for an id that is not a plainly spelled UUID (lower or
+    upper case, with its dashes), for one that names nobody
     and for someone the viewer shares no class with: the same answer for all three.
 
     Round trips: two concurrent waves, three reads and then two.
     """
-    try:
-        target_id = str(uuid.UUID(str(target_user_id)))
-    except ValueError:
-        raise HTTPException(status_code=404, detail=PROFILE_NOT_FOUND) from None
+    target_id = str(target_user_id).lower()
+    if not _PLAIN_UUID.fullmatch(target_id):
+        raise HTTPException(status_code=404, detail=PROFILE_NOT_FOUND)
     viewer = str(viewer_id)
     is_self = target_id == viewer
     people = sorted({viewer, target_id})
@@ -225,7 +245,8 @@ def get_person_profile(viewer_id: str, target_user_id: str) -> dict:
                 ),
             }
         )
-    teams = _team_of(target_id, details["projects"])
+    instructors = {str(c["id"]): str(c.get("created_by")) for c in details["classes"]}
+    teams = _team_of(target_id, details["projects"], instructors)
 
     shared = []
     for cls in sorted(details["classes"], key=lambda c: (c.get("name") or "", str(c["id"]))):

@@ -59,7 +59,6 @@ UNCALLED: dict[tuple[str, str], str] = {
     ("GET", "/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}"): (
         "the TSR responses about one student, for the instructor"
     ),
-    ("GET", "/api/profiles/{user_id}"): "another class member's profile",
     ("POST", "/api/staffing/interest"): (
         "one ranked preference; the interest form saves the whole form through"
         " POST /api/staffing/{class_id}/submission"
