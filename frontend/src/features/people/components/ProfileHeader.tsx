@@ -20,10 +20,8 @@ interface HeaderLink {
   key: string;
   href: string;
   icon: ReactNode;
-  /** What the link shows: the address without its scheme, or the email. */
+  /** What the link shows, and so what it is called: the address without its scheme, or the email. */
   label: string;
-  /** What the link is called: whose it is, and where it leads. */
-  name: string;
   external?: boolean;
   mono?: boolean;
 }
@@ -44,43 +42,23 @@ export function ProfileHeader({ profile, isPreviewing }: ProfileHeaderProps) {
   const { person, shared, is_self: isSelf } = profile;
   const message = useMessageUser();
   const name = displayName(person.name);
-  // Someone with no name is not called "No name yet" in a link's name.
   const named = Boolean(person.name?.trim());
   const schools = schoolsOf(shared);
   const github = githubLink(person.github);
   const linkedin = linkedinLink(person.linkedin);
   const email = schoolEmailOf(profile, isPreviewing);
 
+  // Each link is named by the address it shows ("github.com/bopark"), which says where it leads
+  // and lets someone using voice control ask for it by what they see.
   const links: HeaderLink[] = [];
   if (github) {
-    links.push({
-      key: 'github',
-      href: github.href,
-      icon: <GithubIcon size={15} aria-hidden="true" />,
-      label: github.label,
-      name: named ? `${name} on GitHub` : 'GitHub profile',
-      external: true,
-    });
+    links.push({ key: 'github', href: github.href, icon: <GithubIcon size={15} aria-hidden="true" />, label: github.label, external: true });
   }
   if (linkedin) {
-    links.push({
-      key: 'linkedin',
-      href: linkedin.href,
-      icon: <LinkedinIcon size={15} aria-hidden="true" />,
-      label: linkedin.label,
-      name: named ? `${name} on LinkedIn` : 'LinkedIn profile',
-      external: true,
-    });
+    links.push({ key: 'linkedin', href: linkedin.href, icon: <LinkedinIcon size={15} aria-hidden="true" />, label: linkedin.label, external: true });
   }
   if (email) {
-    links.push({
-      key: 'email',
-      href: `mailto:${email}`,
-      icon: <Mail size={15} aria-hidden="true" />,
-      label: email,
-      name: named ? `Email ${name} at ${email}` : `Email ${email}`,
-      mono: true,
-    });
+    links.push({ key: 'email', href: `mailto:${email}`, icon: <Mail size={15} aria-hidden="true" />, label: email, mono: true });
   }
 
   return (
@@ -118,7 +96,6 @@ export function ProfileHeader({ profile, isPreviewing }: ProfileHeaderProps) {
                 <a
                   className={`gt-profile-header__link${link.mono ? ' gt-profile-header__link--mono' : ''}`}
                   href={link.href}
-                  aria-label={link.name}
                   {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 >
                   {link.icon}

@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
 import { useInstitutions } from '@/lib/institutions';
 import type { SettingsSection } from '@/lib/openSettings';
+import { announceProfileSaved } from '@/lib/profileSaved';
 import { isSchoolEmail } from '@/lib/schoolEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
@@ -182,6 +183,8 @@ const SettingsModal: React.FC<{ onClose: () => void; initialSection: SettingsSec
         method: 'PATCH',
         body: JSON.stringify(updateData),
       });
+      // The name, photo and links are saved, whatever happens to a new school email below.
+      announceProfileSaved();
 
       if (eduEmailChanged && newEduEmail) {
         const sent = await apiRequest<{ delivery?: 'email' | 'log' }>(
@@ -209,6 +212,8 @@ const SettingsModal: React.FC<{ onClose: () => void; initialSection: SettingsSec
   const handleEduVerified = () => {
     if (verifyingEduEmail) originalEduEmailRef.current = verifyingEduEmail;
     setSaveStatus('success');
+    // The school email changed only now, with the code.
+    announceProfileSaved();
   };
 
   const handleEduVerifyClosed = () => {

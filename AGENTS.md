@@ -169,6 +169,7 @@ frontend/src/
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
   lib/openSettings.ts # openSettings(section): the shell opens Settings on that section
+  lib/profileSaved.ts # announceProfileSaved(): Settings saved a profile, so a page showing it asks again
   components/         # the shared UI kit, each component with its README.md guide and <Folder>.preview.tsx
                       # (what it holds and its rules: docs/agents/frontend.md)
   styles/             # design tokens (@use '@styles/index.scss' as *)

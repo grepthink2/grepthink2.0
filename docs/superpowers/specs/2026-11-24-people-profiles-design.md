@@ -1,6 +1,7 @@
 # Profile pages: a page for a person, and names that link to it
 
-**Date:** 2026-11-24 · **Status:** approved by the maintainer, 2026-11-24
+**Date:** 2026-11-24 · **Status:** approved by the maintainer, 2026-11-24 · amended 2026-11-24 while
+it was built (section 15)
 
 ## 1. Why
 
@@ -314,3 +315,22 @@ Afterwards:
 - The rate limit's numbers.
 - Whether `people.scss` keeps the design's class names as they are, if `lint:design` objects to one.
 - How the By-eye check is run (a local harness page or the dev server against DEV).
+
+## 15. Amendments
+
+**2026-11-24, while this was built.** Each is already in the sections above.
+
+- **No `course_code` in the answer** (section 5). The approved text listed it as the class's label.
+  `classes.course_code` is the code a student joins a class with, so the answer never carries it, and
+  a class is labelled by its `name`.
+- **`team.members` lists only people in the team's class** (section 5). Adding a member to a team
+  does not check enrollment, so a team can hold someone the viewer shares no class with. Found by the
+  endpoint's authorization review. The missing check itself is fixed in a pull request of its own.
+- **Only the plain spelling of an id is read** (section 5): braces, a URN and no dashes are refused
+  with the same 404.
+- **The hover card is placed against the window** (section 7), under the name or above it, so a
+  table cell or a card that clips its contents cannot cut it. It closes when the page scrolls.
+- **Your own page asks again after a save in Settings** (section 6), and shows the new answer in
+  place.
+- **A link in the header card is named by the address it shows** (section 6), not "<name> on
+  GitHub", so it can be asked for by what is seen.

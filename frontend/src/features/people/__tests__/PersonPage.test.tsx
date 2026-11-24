@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-rou
 import type { ApiPersonProfile, ApiPersonSharedClass } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import { OPEN_SETTINGS_EVENT } from '@/lib/openSettings';
+import { PROFILE_SAVED_EVENT } from '@/lib/profileSaved';
 import { cssRules } from '@/test/cssRules';
 import PersonPage from '../pages/PersonPage';
 
@@ -90,7 +91,7 @@ describe('PersonPage', () => {
     expect(screen.getByText('Product Owner')).toBeInTheDocument();
     expect(screen.getByText('1 teammate')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open team page, Trailhead' })).toHaveAttribute('href', '/app/projects/p1');
-    const github = screen.getByRole('link', { name: 'Bo Park on GitHub' });
+    const github = screen.getByRole('link', { name: 'github.com/bopark' });
     expect(github).toHaveAttribute('href', 'https://github.com/bopark');
     expect(github).toHaveAttribute('rel', 'noopener noreferrer');
     expect(github).toHaveAttribute('target', '_blank');
@@ -111,10 +112,7 @@ describe('PersonPage', () => {
     getPersonProfile.mockResolvedValue(bo({ shared: [cls({ viewer_role: 'ta' })] }, { school_email: 'bo@ucsc.edu' }));
     show();
     await name('Bo Park');
-    expect(screen.getByRole('link', { name: 'Email Bo Park at bo@ucsc.edu' })).toHaveAttribute(
-      'href',
-      'mailto:bo@ucsc.edu',
-    );
+    expect(screen.getByRole('link', { name: 'bo@ucsc.edu' })).toHaveAttribute('href', 'mailto:bo@ucsc.edu');
     expect(screen.getByRole('heading', { level: 3, name: 'For staff' })).toBeInTheDocument();
     expect(screen.getByText('Only TAs and instructors of CSE 115A see this.')).toBeInTheDocument();
     const staff = within(screen.getByRole('complementary', { name: 'For staff' }));
@@ -180,6 +178,44 @@ describe('PersonPage', () => {
     expect(screen.queryByText(/so teammates know who they are working with/)).toBeNull();
   });
 
+  it('your own page asks again once Settings has saved, and shows the new answer in place', async () => {
+    getPersonProfile
+      .mockResolvedValueOnce(bo({ is_self: true }, { github: null }))
+      .mockResolvedValueOnce(bo({ is_self: true }, { github: 'bopark-new' }));
+    const { container } = show();
+    await name('Bo Park');
+    expect(screen.getByText(/so teammates know who they are working with/)).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new Event(PROFILE_SAVED_EVENT));
+    });
+    // The page stays as it is while the new answer is on its way: no skeleton.
+    expect(container.querySelector('.gt-profile')).not.toHaveAttribute('aria-busy');
+    expect(await screen.findByRole('link', { name: 'github.com/bopark-new' })).toBeInTheDocument();
+    expect(screen.queryByText(/so teammates know who they are working with/)).toBeNull();
+    expect(getPersonProfile).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps what it shows when asking again fails', async () => {
+    getPersonProfile.mockResolvedValueOnce(bo({ is_self: true })).mockRejectedValueOnce(new ApiError(500, 'x', 'Request failed'));
+    show();
+    await name('Bo Park');
+    await act(async () => {
+      window.dispatchEvent(new Event(PROFILE_SAVED_EVENT));
+    });
+    expect(getPersonProfile).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('heading', { level: 2, name: 'Bo Park' })).toBeInTheDocument();
+  });
+
+  it('someone else\'s page does not ask again when you save your own profile', async () => {
+    getPersonProfile.mockResolvedValue(bo());
+    show();
+    await name('Bo Park');
+    act(() => {
+      window.dispatchEvent(new Event(PROFILE_SAVED_EVENT));
+    });
+    expect(getPersonProfile).toHaveBeenCalledTimes(1);
+  });
+
   it('an empty own page nudges, and says when you are in no class', async () => {
     getPersonProfile.mockResolvedValue(bo({ is_self: true, shared: [] }, { github: null }));
     show();
@@ -193,11 +229,19 @@ describe('PersonPage', () => {
     expect(screen.queryByRole('list', { name: 'Your classes' })).toBeNull();
   });
 
-  it('a person with no name reads "No name yet", and their links are named without one', async () => {
+  it('a person with no name reads "No name yet"', async () => {
     getPersonProfile.mockResolvedValue(bo({}, { name: '' }));
     show();
     await name('No name yet');
-    expect(screen.getByRole('link', { name: 'GitHub profile' })).toHaveAttribute('href', 'https://github.com/bopark');
+  });
+
+  it('names each link by the address it shows, so it can be asked for by what is seen', async () => {
+    getPersonProfile.mockResolvedValue(bo({}, { linkedin: 'bo-park', school_email: 'bo@ucsc.edu' }));
+    show();
+    await name('Bo Park');
+    const links = within(screen.getByRole('list', { name: 'Links' })).getAllByRole('link');
+    expect(links.map((a) => a.textContent)).toEqual(['github.com/bopark', 'linkedin.com/in/bo-park', 'bo@ucsc.edu']);
+    for (const link of links) expect(link).not.toHaveAttribute('aria-label');
   });
 
   it('shows no link for a value that is not a handle on that site', async () => {

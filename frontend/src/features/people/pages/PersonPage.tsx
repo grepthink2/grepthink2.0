@@ -9,6 +9,7 @@ import { api, type ApiPersonProfile } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
 import { useClass } from '@/lib/classContext';
 import { openSettings } from '@/lib/openSettings';
+import { PROFILE_SAVED_EVENT } from '@/lib/profileSaved';
 import { usePreview } from '@/lib/previewContext';
 import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileStaffLinks } from '../components/ProfileStaffLinks';
@@ -22,7 +23,7 @@ type Outcome = { kind: 'ready'; profile: ApiPersonProfile } | { kind: 'hidden' }
  * A person's page, `/app/people/:userId`. Read-only, and it shows only what the answer carries:
  * the header card, "Teams" and, for staff of a class shared with a student, "For staff" beside it.
  * Your own page adds "Edit profile", a nudge when nothing is filled in, and a line on who sees the
- * page.
+ * page; once Settings has saved, it asks again and shows the new answer in place.
  *
  * While the answer is on its way the page is a skeleton. A 404 is "You can't see this person": the
  * same words for nobody by that id and for somebody the viewer shares no class with, so the page
@@ -54,6 +55,27 @@ export default function PersonPage() {
   }, [userId, asked]);
 
   const outcome = answer?.asked === asked ? answer.outcome : null;
+
+  // Your own page sits behind Settings while you edit. When a save lands, ask again and swap the
+  // answer in: no skeleton, and a failure leaves the page as it is.
+  const isSelf = outcome?.kind === 'ready' && outcome.profile.is_self;
+  useEffect(() => {
+    if (!isSelf) return;
+    let left = false;
+    const askAgain = () => {
+      api.getPersonProfile(userId).then(
+        (profile) => {
+          if (!left) setAnswer({ asked, outcome: { kind: 'ready', profile } });
+        },
+        () => {},
+      );
+    };
+    window.addEventListener(PROFILE_SAVED_EVENT, askAgain);
+    return () => {
+      left = true;
+      window.removeEventListener(PROFILE_SAVED_EVENT, askAgain);
+    };
+  }, [isSelf, userId, asked]);
 
   if (!outcome) {
     return (
