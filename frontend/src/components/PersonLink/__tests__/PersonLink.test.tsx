@@ -126,6 +126,69 @@ describe('PersonLink', () => {
       expect(card()).toBeNull();
     });
 
+    describe('where the card goes', () => {
+      // jsdom lays nothing out, so the name's box and the card's size are given.
+      const at = (left: number, top: number) =>
+        ({ left, top, right: left + 80, bottom: top + 20, width: 80, height: 20, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+      const openAt = (left: number, top: number) => {
+        show(<PersonLink person={bo} card={lines} />);
+        vi.spyOn(link(), 'getBoundingClientRect').mockReturnValue(at(left, top));
+        rest();
+        wait(150);
+        return card()!.closest('.gt-popover') as HTMLElement;
+      };
+      beforeEach(() => {
+        vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(280);
+        vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(120);
+      });
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      it('is placed against the window, under the name, so a cell that clips cannot cut it', () => {
+        const popover = openAt(100, 30);
+        expect(cssRules('.gt-popover.gt-person-link__popover')[0].getPropertyValue('position')).toBe('fixed');
+        expect(popover.style.top).toBe('56px');
+        expect(popover.style.left).toBe('100px');
+      });
+
+      it('goes above the name when there is no room under it', () => {
+        const popover = openAt(100, window.innerHeight - 40);
+        expect(popover.style.top).toBe(`${window.innerHeight - 40 - 6 - 120}px`);
+      });
+
+      it('stays under the name when there is no room above either', () => {
+        vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(window.innerHeight);
+        const popover = openAt(100, 30);
+        expect(popover.style.top).toBe('56px');
+      });
+
+      it('stays inside the window on the right', () => {
+        expect(openAt(window.innerWidth - 50, 30).style.left).toBe(`${window.innerWidth - 280 - 8}px`);
+      });
+
+      it('stays inside the window on the left', () => {
+        expect(openAt(-40, 30).style.left).toBe('8px');
+      });
+
+      it('closes when the page scrolls or the window changes size, since it would be left behind', () => {
+        openAt(100, 30);
+        fireEvent.scroll(document.body);
+        expect(card()).toBeNull();
+        rest();
+        wait(150);
+        expect(card()).not.toBeNull();
+        fireEvent(window, new Event('resize'));
+        expect(card()).toBeNull();
+      });
+
+      it('lets a long name shrink to its cell, and keeps the cell from styling the card', () => {
+        expect(cssRules('.gt-person-link-wrap .gt-person-link')[0].getPropertyValue('text-overflow')).toBe('ellipsis');
+        expect(cssRules('.gt-person-link-wrap')[0].getPropertyValue('min-width')).toBe('0px');
+        expect(cssRules('.gt-person-card')[0].getPropertyValue('white-space')).toBe('normal');
+      });
+    });
+
     it('leaves no timer running after it unmounts', () => {
       const { unmount } = show(<PersonLink person={bo} card={lines} />);
       rest();

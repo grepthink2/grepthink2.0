@@ -28,10 +28,13 @@ The link never takes the accent blue: it reads as part of its row or sentence.
 - Do use `inline` inside running text and `plain` everywhere else.
 - Don't give a card to a name that already sits inside a hover panel: a hover inside a hover is hard to hold.
 - Don't link a name to a page its reader cannot open, such as someone they no longer share a class with: show plain text.
+- Don't put a link that has a `card` inside a `<p>`: the card is a block, which a paragraph cannot hold. A table cell, a list row or a `<span>` can.
 
 ## PersonHoverCard
 
 The small card a resting pointer opens: a 48px Avatar, the name, one line for the person's role in the class the viewer shares with them, one for their team, and "View profile". It shows only what the row it opens from already showed.
+
+PersonLink places it against the window, under the name, or above it when only there is room, and keeps it inside the window. A table cell or a card that clips its contents does not cut it. It closes when the page scrolls or the window changes size.
 
 ```jsx
 <PersonHoverCard person={maya} roleLine="Student · CSE 115A" teamLine="Trailhead · Product Owner" />
