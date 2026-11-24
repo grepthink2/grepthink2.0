@@ -1,5 +1,11 @@
 # Porting: design system → codebase
 
+> **Frozen on 2026-11-23.** The design system is now built from the code (`frontend/src/components`,
+> each component with its guide and preview, and `frontend/src/styles/tokens`) by `npm run design:build`,
+> and published to the Design System artifact as `docs/agents/frontend.md` describes ("The design
+> system, built from the kit"). Nothing is ported from this folder any more: this recipe is history, and
+> `lint:design` still reads `design/_ds_manifest.json` for kit names.
+
 This folder is the **design side** of GrepThink. Look-and-feel changes are made here first, then ported into
 `frontend/src/` — the reverse of `/design-sync`. This file is the recipe.
 

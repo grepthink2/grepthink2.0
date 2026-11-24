@@ -1,6 +1,6 @@
 # Frontend: rules and gotchas
 
-Read this before changing anything under `frontend/`. The root [AGENTS.md](../../AGENTS.md) holds the rules for every change; `frontend/README.md` covers the layout and conventions, `design/PORTING.md` a design import.
+Read this before changing anything under `frontend/`. The root [AGENTS.md](../../AGENTS.md) holds the rules for every change; `frontend/README.md` covers the layout and conventions, and "The design system, built from the kit" below how the Design System artifact is built and published.
 
 ## Components, lint and the bundle
 
@@ -8,7 +8,7 @@ Read this before changing anything under `frontend/`. The root [AGENTS.md](../..
   read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
   no backend act-as, so it does not show a specific student's real data.
 - **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
-  tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
+  tabs) come from `frontend/src/components/`, which the Design System artifact is built from; today
   the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
   SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
   dialogs (Modal, with a dark tone for the landing page, Drawer, ConfirmDialog with InlineConfirm), Alert,
@@ -72,19 +72,24 @@ The Design System artifact's code-derived files come from the shared kit and its
 design copies. In `frontend/`:
 
 - `npm run design:build` writes `.design-system/project/` (git-ignored build output) as it is
-  published: `components/bundle.js` (the kit, its hooks and helpers, and `Icon`, as one classic script
-  assigning `window.GrepThinkDesignSystem_36e7e3` for a page that supplies React 18), `bundle.css`,
-  `index.d.ts`, `tokens.json` and React and React DOM 18.3.1 under `components/lib/`, plus
-  `.design-system/report.json` and a summary (the tokens kept in `bundle.css` and why). It never writes
-  `tokens.css`, `manifest.json` or `api/`: the page generates those. The scripts are in
-  `scripts/design-system/`, the runtime the bundle carries in `design-system/runtime/`, the build config
-  in `vite.design.config.ts`.
+  published: `README.md` (the brand book, below), `tokens.json`, `tokens.css` (tokens.json compiled
+  as the format lays it out), `components/bundle.js` (the kit, its hooks and helpers, and `Icon`, as one
+  classic script assigning `window.GrepThinkDesignSystem_36e7e3` for a page that supplies React 18),
+  `bundle.css`, `index.d.ts`, React and React DOM 18.3.1 under `components/lib/`, and each card's guide
+  and preview, plus `.design-system/report.json` and a summary (the tokens kept in `bundle.css` and why).
+  The bundle's `@ds-bundle` header names only the cards, the components with a guide and a preview: the
+  page draws a card for every name in it. Companions, hooks and helpers stay on the namespace and in
+  `index.d.ts`, each named in the guide of the component it belongs to. The build never writes
+  `manifest.json` or `api/`, which are the page's. The scripts are in `scripts/design-system/`, the
+  runtime the bundle carries in `design-system/runtime/`, the build config in `vite.design.config.ts`.
 - `npm run design:test` runs the kit's own tests on React 18 (`vitest.design.config.ts`): React and
   React DOM 18 from the `react18` / `react-dom18` packages, the ref adapter's JSX runtime, and
   `design-system/runtime/react.ts` for every `react` import (React 19's `ref` prop and
   `useEffectEvent` on React 18). `react-router-dom` stays the real package there.
 - `npm run design:check` holds the built tree to the artifact's format, and renders every preview in
-  jsdom on React 18 against the built bundle.
+  jsdom on React 18 against the built bundle. It also fails when the header names a component without a
+  preview, when an export without a card is named in no guide, when `tokens.css` is not `tokens.json`
+  compiled, or when the brand book misses an icon or the fonts link.
 
 Kit source never changes for React 18: a difference belongs in the adapter or the runtime. A kit test
 that cannot pass on React 18 for a reason the adapter does not cause goes in
@@ -123,6 +128,42 @@ icon list and the `react/only-export-components` rule. `lint:design` fails when 
 either file, when a preview's `meta` breaks the contract, or when a guide's example is not in its
 preview; `design:check` fails when a preview throws, logs an error, renders nothing, misses its
 `expects`, or renders differently with the clock a year apart.
+
+### The brand book
+
+`design-system/README.md` is the brand book, published as the artifact's `README.md`: the rules a
+designer or an agent follows (content, visual foundations, the marketing surface, iconography, fonts),
+with no title (the page shows the system's name) and no index of files. Its "Using this system" section
+says what to load and where everything is, since the page of a system synced from code appends nothing.
+The build replaces its `<!-- icons -->` line with the icons `Icon` carries. Name a token, a component or
+a path in it only when the build has it.
+
+### Publishing to the artifact
+
+The GrepThink Design System artifact (`https://claude.ai/code/artifact/96b68559-7d84-4da1-b9bd-dbeed3238b0d`)
+is synced from code: its index carries `"editing": "code"`, so its page is read-only and generates
+nothing, and a change reaches it as a change here and a new publish. `/design-sync` cannot publish this
+build (it sends only what its own converter built), so a sync is these steps, in Claude Code with the
+Artifact tool, from a clean checkout of `beta` or `main` unless the maintainer says otherwise:
+
+1. Run the frontend gates, then `npm run design:build && npm run design:test && npm run design:check`.
+   Stop on any failure.
+2. Read the artifact (`action: "read"` with its link alone), list its files (`scope: "files"`), and read
+   `_files.json`, the service's list of its files with their sha256. Keep both.
+3. Publish every built file whose sha256 differs, from `root` `frontend/.design-system`, each at
+   `project/<its path>`, at most 255 paths a call. A card that left the kit moves aside in the same
+   call: its files go to `project/archived/components/<Name>/`, exactly as you last read them, and their
+   old paths are sent as `null`.
+4. Last and alone, `project/design-system.json`, read again right before: every key kept but
+   `lastChange` (`by` the maintainer, `via` `Claude Code · grepthink2.0@<short sha>`, `at` now, a
+   `note` of at most 280 characters), `libraries`, `namespace` and `editing` (`"code"`).
+5. Read `_files.json` again and compare each built file's sha256, then open the page: no card says
+   "No preview yet". Report what changed, by path, and the commit published.
+
+A sync owns `README.md`, `tokens.json`, `tokens.css`, `components/bundle.js`, `bundle.css`,
+`index.d.ts`, `components/lib/**`, `components/<Name>/**` for the cards, and those keys of the index.
+It leaves everything else as it is: `archived/`, `assets/`, `explorations/`, `uploads/`,
+`design_handoff_*/`, `PORTING.md`, and the `api/` cards the page wrote while it was editable.
 
 ## Tests
 
