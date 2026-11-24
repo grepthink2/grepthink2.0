@@ -17,13 +17,15 @@ Read this before changing anything under `frontend/`. The root [AGENTS.md](../..
   with AvatarGroup, Card, StatCard, ProgressBar, Tabs with TabPanel, SegmentedControl,
   Pagination with `usePagination`, Table with
   SortableHeader and `useTableSort`, Popover, Menu (with MenuGroup and a `trailing` slot on MenuItem),
-  Tooltip, Toast, Skeleton and Markdown. Tabs switch
+  Tooltip, Toast, Skeleton, Markdown and PersonLink with PersonHoverCard. Tabs switch
   panels of different content, a SegmentedControl the view of the same content, and a FilterChip narrows
   a list. A table row that opens something carries a link or button in its first cell (Table's
   `rowHref` / `onRowClick`), never `<tr onClick>`. A status pill names its status
   (`<Badge status="attendance.late" />`), never a colour: `components/Badge/badgeStatus.ts` maps it. Avatars
   take their colour from the one palette and hash in `components/Avatar/avatarHelpers.ts`
-  (`lib/avatarColors.ts` is the landing page's hex copy). A field's `maxLength` is a soft
+  (`lib/avatarColors.ts` is the landing page's hex copy). A person's name that leads to their page
+  (`/app/people/<id>`) is a PersonLink; its hover card shows only what the row already holds, and never
+  fetches. A field's `maxLength` is a soft
   limit: the text past it is kept and flagged, so the form's own validation must refuse it. The dialogs
   share `useDialog` (`components/Modal/`): Esc and the scrim close only the topmost, so a layer inside a
   dialog that handles Esc itself (a popover, a calendar, an inline form) must take it first: in the
