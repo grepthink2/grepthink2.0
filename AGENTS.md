@@ -91,7 +91,7 @@ review shape below, not the skill's own.
 | A release, or the Supabase, Vercel or Cloudflare CLI | [docs/agents/release-and-ops.md](docs/agents/release-and-ops.md) |
 | Sign-up, login, email verification | `AUTH.md` |
 | Deploys, environments, applying migrations | `DEPLOY.md` |
-| A design import | `design/PORTING.md` |
+| The Design System artifact: its build, the brand book, a re-sync | [docs/agents/frontend.md](docs/agents/frontend.md), "The design system, built from the kit" |
 
 ## Rules for every change
 
@@ -171,14 +171,16 @@ frontend/src/
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
+frontend/design-system/  # the Design System build: README.md (the brand book), the React 18 runtime,
+                         # Icon (npm run design:build writes the artifact's files to .design-system/)
 
 docs/agents/          # area rules and gotchas, routed from "Read before you touch"
 docs/superpowers/specs/  # agreed designs, one per feature
 docs/superpowers/handoffs/<date>-<name>/  # briefs handed to Claude Design: README.md, PROMPT.md, sample data
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
-design/               # Claude Design export (design system); replace it wholesale on each
-                      # import, then port `git diff design/` per design/PORTING.md
+design/               # the last Claude Design export, frozen: the system is built from the kit now
+                      # (lint:design still reads its _ds_manifest.json for kit names)
 ```
 
 ## Architecture

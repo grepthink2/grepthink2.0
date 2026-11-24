@@ -33,7 +33,11 @@ type KitIndex = { namespace: string; componentsDir: string; modules: Record<stri
 const KIT_PREFIX = '\0design-system-kit:';
 const withoutExtension = (file: string) => file.replace(/\.tsx?$/, '');
 
-/** Kit modules read from the bundle's namespace instead of compiled in. */
+/**
+ * Kit modules read from the bundle's namespace instead of compiled in. A kit module's id carries its
+ * path from frontend/, not from the disk's root: the build labels each module with its id, and a
+ * published preview names no machine's folders.
+ */
 function kitFromNamespace(index: KitIndex): Plugin {
   const kitDir = index.componentsDir + path.sep;
   return {
@@ -46,12 +50,12 @@ function kitFromNamespace(index: KitIndex): Plugin {
       const file = resolved.id.split('?')[0];
       if (file.endsWith('.preview.tsx')) return null;
       const key = withoutExtension(file);
-      if (key in index.modules || file.startsWith(kitDir)) return KIT_PREFIX + key;
+      if (key in index.modules || file.startsWith(kitDir)) return KIT_PREFIX + path.relative(__dirname, key).split(path.sep).join('/');
       return null;
     },
     load(id) {
       if (!id.startsWith(KIT_PREFIX)) return null;
-      const module = index.modules[id.slice(KIT_PREFIX.length)] ?? { names: [] };
+      const module = index.modules[path.join(__dirname, id.slice(KIT_PREFIX.length))] ?? { names: [] };
       return {
         moduleType: 'js',
         code: [

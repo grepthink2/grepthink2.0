@@ -92,7 +92,7 @@
   --gt-primary-soft:   var(--gt-green-50);
   --gt-accent:         var(--gt-blue-500);
 
-  /* Focus ring — standardized on accent blue, 2px (see readme conflict note) */
+  /* Focus ring — standardized on accent blue, 2px, on every gt-* component (index.css :focus-visible) */
   --gt-focus-ring: 0 0 0 2px var(--gt-gray-0), 0 0 0 4px var(--gt-blue-500);
   --gt-focus-ring-tight: 0 0 0 2px var(--gt-blue-500);
 

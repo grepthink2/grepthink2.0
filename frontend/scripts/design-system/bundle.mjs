@@ -8,6 +8,8 @@
  *
  * finishBundleJs makes the script publishable: the `@ds-bundle` header on line 1, no text that
  * would end or confuse an inline `<script>`, no module statement, and within the format's size.
+ * The header names the cards: the components with a guide and a preview. The page draws a card for
+ * every name in it, so a companion, hook or helper stays on the namespace without one.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -18,6 +20,14 @@ import { NAMESPACE, collectKitExports, writeEntry } from './exports.mjs';
 import { collectLucideIcons, writeIconMap } from './icons.mjs';
 
 export const BUNDLE_JS_CAP = 6 * 1024 * 1024;
+
+/**
+ * U+FFFD, which the artifact refuses in a file it is sent (it reads as text decoded badly). The
+ * Markdown parser the bundle carries uses it for an invalid character reference; in a bundle it can
+ * sit only in a string, a template or a regular expression, where its escape means the same.
+ */
+export const REPLACEMENT_CHARACTER = String.fromCharCode(0xfffd);
+const ESCAPED_REPLACEMENT_CHARACTER = `${'\\'}ufffd`;
 
 const HEADER = /^\/\* @ds-bundle: (\{.*\}) \*\/$/;
 const MODULE_STATEMENT = /^[ \t]*(?:import[ \t]*[\w{*'"]|export[ \t]*[\w{*])/m;
@@ -70,23 +80,27 @@ export function bundleJsProblems(bundle) {
   if (bundle.includes('</script')) problems.push('bundle.js contains </script');
   if (bundle.includes('<!--')) problems.push('bundle.js contains <!--');
   if (MODULE_STATEMENT.test(bundle)) problems.push('bundle.js has a top-level import or export');
+  if (bundle.includes(REPLACEMENT_CHARACTER)) problems.push('bundle.js contains U+FFFD, which the artifact refuses');
   return problems;
 }
 
 /**
  * @param {string} js the raw library build
  * @param {{ name: string; kind: string }[]} exports
+ * @param {Iterable<string>} cards the exports with a guide and a preview, which the header names in
+ *   export order
  * @returns {string} the publishable bundle.js
  */
-export function finishBundleJs(js, exports) {
-  const names = [];
-  for (const wanted of [true, false]) {
-    for (const { name, kind } of exports) {
-      if ((kind === 'component') === wanted && !names.includes(name)) names.push(name);
-    }
-  }
+export function finishBundleJs(js, exports, cards) {
+  const wanted = new Set(cards);
+  const unknown = [...wanted].filter((name) => !exports.some((entry) => entry.name === name));
+  if (unknown.length) throw new Error(`a card names no bundle export: ${unknown.join(', ')}`);
+  const names = [...new Set(exports.map(({ name }) => name))].filter((name) => wanted.has(name));
   const header = { format: 4, namespace: NAMESPACE, components: names.map((name) => ({ name })) };
-  const code = js.replaceAll('</script', '<\\/script').replaceAll('<!--', '<\\!--');
+  const code = js
+    .replaceAll('</script', '<\\/script')
+    .replaceAll('<!--', '<\\!--')
+    .replaceAll(REPLACEMENT_CHARACTER, ESCAPED_REPLACEMENT_CHARACTER);
   const bundle = `/* @ds-bundle: ${JSON.stringify(header)} */\n${code}`;
   const [problem] = bundleJsProblems(bundle);
   if (problem) throw new Error(problem);

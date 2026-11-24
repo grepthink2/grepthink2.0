@@ -196,3 +196,95 @@ export function buildTokens(files, meta) {
   tokens.meta = meta;
   return { tokens, carried, kept };
 }
+
+/**
+ * Line 1 of tokens.css. The page takes a file whose first comment ends with "generated from
+ * tokens.json" for one compiled from tokens.json.
+ * @param {string} title the system's name
+ */
+export const tokensCssHead = (title) => `/* ${title} — generated from tokens.json */`;
+
+// A token name as a CSS identifier: a dot escaped, a leading digit as its code point.
+function ident(name) {
+  const escaped = name.replace(/\./g, '\\.');
+  return /^[0-9]/.test(escaped) ? `\\3${escaped[0]} ${escaped.slice(1)}` : escaped;
+}
+
+const FONT_FORMATS = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' };
+
+/**
+ * tokens.css, compiled from tokens.json in the format's layout: the colours and shadows under
+ * `:root` and the first theme's `[data-theme]`, a `[data-theme]` block per further theme (its own
+ * values, and every alias declared again so that it resolves in that theme), every other family and
+ * each type family (`--font-<key>`) under `:root`, a class per type style, and an `@font-face` per
+ * font file. An alias `{name}` is `var(--name)`; a value only a later theme has stands in for the
+ * first; a bare number is px in a length (spacing, radius, a style's size and tracking), and stays a
+ * number anywhere else. The page generates this file only when someone saves an
+ * edit there, and the page of a system synced from code saves nothing, so the build writes it.
+ * @param {object} tokens tokens.json
+ * @returns {string}
+ */
+export function tokensCss(tokens) {
+  const out = [tokensCssHead(tokens.name ?? 'Design system')];
+  const themes = (tokens.color?.themes ?? []).map((theme) => theme.id);
+  const perTheme = (token) => token.value !== null && typeof token.value === 'object';
+  // A token's value in a theme; in the first, a value only a later theme has.
+  const raw = (token, theme) => {
+    if (!perTheme(token)) return theme === themes[0] || theme === undefined ? token.value : undefined;
+    if (theme !== themes[0] && theme !== undefined) return token.value[theme];
+    return token.value[themes[0]] ?? themes.map((id) => token.value[id]).find((value) => value !== undefined);
+  };
+  const css = (value) => {
+    const alias = /^\{(.+)\}$/.exec(String(value));
+    return alias ? `var(--${ident(alias[1])})` : String(value);
+  };
+  const isAlias = (value) => /^\{.+\}$/.test(String(value));
+  const length = (value) => (typeof value === 'number' && value !== 0 ? `${value}px` : String(value));
+  const themed = [...(tokens.color?.tokens ?? []), ...(tokens.shadow?.tokens ?? [])].filter((token) => raw(token, themes[0]) !== undefined);
+  if (themed.length) {
+    out.push(themes.length ? `:root, [data-theme="${themes[0]}"] {` : ':root {', ...themed.map((token) => `  --${ident(token.name)}: ${css(raw(token, themes[0]))};`), '}');
+  }
+  for (const theme of themes.slice(1)) {
+    const lines = themed.flatMap((token) => {
+      const own = raw(token, theme);
+      const value = own ?? (isAlias(raw(token, themes[0])) ? raw(token, themes[0]) : undefined);
+      return value === undefined ? [] : [`  --${ident(token.name)}: ${css(value)};`];
+    });
+    if (lines.length) out.push(`[data-theme="${theme}"] {`, ...lines, '}');
+  }
+  const root = Object.entries(tokens)
+    .filter(([key, family]) => !['color', 'shadow', 'type'].includes(key) && Array.isArray(family?.tokens))
+    .flatMap(([key, family]) =>
+      family.tokens.map((token) => `  --${ident(token.name)}: ${['spacing', 'radius'].includes(key) ? length(token.value) : String(token.value)};`),
+    );
+  for (const [key, stack] of Object.entries(tokens.type?.families ?? {})) root.push(`  --font-${ident(key)}: ${stack};`);
+  if (root.length) out.push(':root {', ...root, '}');
+  for (const group of tokens.type?.groups ?? []) {
+    for (const style of group.styles ?? []) {
+      const family = style.family ?? group.family;
+      out.push(
+        `.${ident(style.name)} {`,
+        ...(family ? [`  font-family: var(--font-${ident(family)});`] : []),
+        `  font-size: ${length(style.fontSize)};`,
+        `  line-height: ${style.lineHeight ?? 1.4};`,
+        `  font-weight: ${style.fontWeight ?? 400};`,
+        `  letter-spacing: ${length(style.letterSpacing ?? 0)};`,
+        '}',
+      );
+    }
+  }
+  for (const font of tokens.type?.fonts ?? []) {
+    const file = font.file.includes('/') ? font.file : `fonts/${font.file}`;
+    const format = FONT_FORMATS[file.slice(file.lastIndexOf('.') + 1).toLowerCase()];
+    out.push(
+      '@font-face {',
+      `  font-family: "${font.family}";`,
+      `  src: url("${file.split('/').map(encodeURIComponent).join('/')}")${format ? ` format("${format}")` : ''};`,
+      `  font-weight: ${font.weight};`,
+      `  font-style: ${font.style ?? 'normal'};`,
+      '  font-display: swap;',
+      '}',
+    );
+  }
+  return `${out.join('\n')}\n`;
+}

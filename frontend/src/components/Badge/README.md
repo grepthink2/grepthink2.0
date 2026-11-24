@@ -30,7 +30,7 @@ A Badge is not interactive and sets no ARIA role.
 
 ## The consumer supplies
 
-- The status key from the data. `badgeStatus` exports `BADGE_STATUS`, `BADGE_CATEGORY` and `PROJECT_ROLES` (each key's look and words) and `toProjectRoleKey` for a stored role.
+- The status key from the data. `badgeStatus` exports `BADGE_STATUS`, `BADGE_CATEGORY` and `PROJECT_ROLES` (each key's look and words), `toProjectRoleKey` for a stored role, and `roleKey`, which turns any role text into a key the same way ('Product Owner' → `product_owner`).
 
 ## Do and don't
 

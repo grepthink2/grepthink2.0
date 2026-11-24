@@ -3,34 +3,45 @@
  * can be published to the Design System artifact. checkTree returns the problems, none when it
  * can; run as a script, it prints them and exits 1 if there are any.
  *
- * Checked: the files the build owns are there and the page's own files are not (tokens.css,
- * manifest.json, api/); the size caps and the text an inline script or style must not hold; the
- * bundle header, and every name in it on the namespace once React 18 and the bundle have run in
- * jsdom; tokens.json's shape, names and colour values; every token of the token stylesheets either
- * in tokens.json or still declared in bundle.css; every rule of the kit's compiled CSS inside the
- * base layer's scope; the icon list built in equal to the lucide icons src/ imports now; for every
- * preview the kit carries (previews.mjs), its `components/<Name>/preview.html`, rendered on React 18
- * against the built bundle by checkPreview, and its `components/<Name>/README.md`, within the
- * guide's size; and no folder under components/ but lib/ and the bundle's exports.
+ * Checked: the files the build owns are there and the page's own files are not (manifest.json,
+ * api/); the size caps and the text an inline script or style must not hold; the bundle header, and
+ * every name in it on the namespace once React 18 and the bundle have run in jsdom; every export
+ * without a card named in some guide; tokens.json's shape, names and colour values, and tokens.css
+ * equal to tokens.json compiled; every token of the token stylesheets either in tokens.json or still
+ * declared in bundle.css; every rule of the kit's compiled CSS inside the base layer's scope; the icon
+ * list built in equal to the lucide icons src/ imports now, and the brand book listing each of them;
+ * for every preview the kit carries (previews.mjs), its `components/<Name>/preview.html`, rendered on
+ * React 18 against the built bundle by checkPreview, and its `components/<Name>/README.md`, within
+ * the guide's size; the header naming exactly those cards; and no folder under components/ but lib/
+ * and the header's names.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { firstCompoundClasses, selectorsOf } from '../ownership.mjs';
-import { bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
+import { REPLACEMENT_CHARACTER, bundleJsProblems, loadInJsdom, parseBundleHeader } from './bundle.mjs';
 import { NAMESPACE } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
 import { GUIDE_CAP } from './guides.mjs';
 import { checkPreview, collectPreviews, iconPreview } from './previews.mjs';
+import { brandBookProblems } from './readme.mjs';
 import { BUNDLE_CSS_CAP, topLevelBlocks } from './styles.mjs';
-import { TOKEN_NAME, parseTokenCss } from './tokens.mjs';
+import { TOKEN_NAME, parseTokenCss, tokensCss } from './tokens.mjs';
 
 const FRONTEND = fileURLToPath(new URL('../../', import.meta.url));
 
 export const LIBRARIES = ['components/lib/react.production.min.js', 'components/lib/react-dom.production.min.js'];
-export const REQUIRED = ['tokens.json', 'components/bundle.js', 'components/bundle.css', 'components/index.d.ts', ...LIBRARIES];
-const PAGE_FILES = ['tokens.css', 'manifest.json', 'api'];
+export const REQUIRED = [
+  'README.md',
+  'tokens.json',
+  'tokens.css',
+  'components/bundle.js',
+  'components/bundle.css',
+  'components/index.d.ts',
+  ...LIBRARIES,
+];
+const PAGE_FILES = ['manifest.json', 'api'];
 const LIBRARY_CAP = 2 * 1024 * 1024;
 const COLOUR_CAP = 600;
 const FAMILY_CAP = 60;
@@ -150,6 +161,7 @@ export async function checkTree(
   const header = parseBundleHeader(bundle);
   // Previews are rendered only against a bundle that loads and holds every name in its header.
   let bundleLoads = false;
+  let exportNames = [];
   if (!header) {
     problems.push('bundle.js has no @ds-bundle header on line 1');
   } else if (header.namespace !== NAMESPACE) {
@@ -164,6 +176,7 @@ export async function checkTree(
       }
       const errors = namespace?.__errors;
       if (errors && Object.keys(errors).length) problems.push(`window.${NAMESPACE}.__errors is not empty: ${JSON.stringify(errors)}`);
+      exportNames = Object.keys(namespace ?? {}).filter((name) => !name.startsWith('__'));
       bundleLoads = problems.length === before;
       window.close();
     } catch (error) {
@@ -178,7 +191,20 @@ export async function checkTree(
     problems.push('tokens.json is not valid JSON');
   }
   if (tokens) {
-    problems.push(...tokensProblems(tokens));
+    const shape = tokensProblems(tokens);
+    problems.push(...shape);
+    const compiled = read(dir, 'tokens.css');
+    if (compiled.includes('</style')) problems.push('tokens.css contains </style');
+    // Only a tokens.json of the format's shape compiles; one that is not has its problems listed above.
+    if (!shape.length) {
+      let expected;
+      try {
+        expected = tokensCss(tokens);
+      } catch (error) {
+        problems.push(`tokens.json does not compile to tokens.css: ${error.message}`);
+      }
+      if (expected !== undefined && compiled !== expected) problems.push('tokens.css is not tokens.json compiled: run npm run design:build');
+    }
     const carried = tokenNamesOf(tokens);
     const declared = new Set(parseTokenCss(css).map((token) => token.name));
     const tokensDir = join(srcDir, 'styles/tokens');
@@ -220,22 +246,42 @@ export async function checkTree(
           .join('; ')}`,
       );
     }
+    problems.push(...brandBookProblems(read(dir, 'README.md'), built));
   }
 
   if (header) {
     const names = new Set((header.components ?? []).map((component) => component.name));
     for (const entry of readdirSync(join(dir, 'components')).sort()) {
       if (entry === 'lib' || names.has(entry) || !statSync(join(dir, 'components', entry)).isDirectory()) continue;
-      problems.push(`components/${entry}/ is not a bundle export`);
+      problems.push(`components/${entry}/ is not in the bundle header`);
+    }
+    // An export without a card is found through a guide: a companion's parent, a hook's user.
+    const guides = [...names].filter((name) => existsSync(join(dir, `components/${name}/README.md`))).map((name) => read(dir, `components/${name}/README.md`));
+    for (const name of exportNames) {
+      if (names.has(name)) continue;
+      const named = new RegExp(`(?<![\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])`);
+      if (!guides.some((text) => named.test(text))) problems.push(`${name} is on window.${NAMESPACE} without a card, and no guide names it`);
     }
   }
-  if (bundleLoads) problems.push(...(await previewProblems(dir, { header, bundle, css, tokens: tokens ?? {}, srcDir, runtimeDir })));
+  // A published file names no folder of the machine that built it (a build's module labels can), and
+  // holds no U+FFFD, which the artifact refuses.
+  const machine = resolve(FRONTEND, '..');
+  const deep = machine.split(sep).filter(Boolean).length >= 2;
+  for (const path of filesUnder(dir)) {
+    const name = relative(dir, path).split(sep).join('/');
+    const text = readFileSync(path, 'utf8');
+    if (deep && text.includes(machine + sep)) problems.push(`${name} holds the build machine's path ${machine}`);
+    if (text.includes(REPLACEMENT_CHARACTER)) problems.push(`${name} holds U+FFFD, which the artifact refuses`);
+  }
+  if (bundleLoads) problems.push(...(await previewProblems(dir, { header, exportNames, bundle, css, srcDir, runtimeDir })));
   return problems;
 }
 
 // Every preview the kit carries, built into the tree and rendered against the built bundle.
-async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runtimeDir }) {
-  const exports = header.components ?? [];
+async function previewProblems(dir, { header, exportNames, bundle, css, srcDir, runtimeDir }) {
+  const named = new Set((header.components ?? []).map((component) => component.name));
+  // A preview may show any export on the namespace; the header must name exactly the previewed ones.
+  const exports = exportNames.map((name) => ({ name }));
   const componentsDir = join(srcDir, 'components');
   let previews;
   try {
@@ -244,6 +290,13 @@ async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runti
     return [error.message];
   }
   const problems = [];
+  const carried = new Set(previews.map((preview) => preview.component));
+  for (const name of named) {
+    if (!carried.has(name)) problems.push(`${name} is in the bundle header but has no preview in the kit`);
+  }
+  for (const name of carried) {
+    if (!named.has(name)) problems.push(`${name} has a preview in the kit but is not in the bundle header`);
+  }
   const libs = LIBRARIES.map((path) => read(dir, path));
   for (const { component, meta } of previews) {
     const guide = `components/${component}/README.md`;
@@ -255,7 +308,7 @@ async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runti
       problems.push(`missing ${path}`);
       continue;
     }
-    const found = await checkPreview({ html: read(dir, path), libs, bundleJs: bundle, bundleCss: css, tokensJson: tokens, expects: meta.expects });
+    const found = await checkPreview({ html: read(dir, path), libs, bundleJs: bundle, bundleCss: css, tokensCssText: read(dir, 'tokens.css'), expects: meta.expects });
     problems.push(...found.map((problem) => `${path}: ${problem}`));
   }
   return problems;

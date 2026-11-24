@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUNDLE_JS_CAP, buildBundle, finishBundleJs, loadInJsdom, parseBundleHeader } from '../design-system/bundle.mjs';
 import { NAMESPACE, collectKitExports } from '../design-system/exports.mjs';
-import { buildPreviews, checkPreview } from '../design-system/previews.mjs';
+import { buildPreviews, checkPreview, kitCards } from '../design-system/previews.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -12,39 +12,54 @@ const exports = [
   { name: 'useThing', kind: 'hook' },
   { name: 'Button', kind: 'component' },
   { name: 'shade', kind: 'helper' },
+  { name: 'CardGroup', kind: 'component' },
   { name: 'Card', kind: 'component' },
   { name: 'Button', kind: 'component' },
 ];
+const cards = ['Card', 'Button'];
 
 describe('finishBundleJs', () => {
-  it('puts the header on line 1, components first, each name once', () => {
-    const out = finishBundleJs('(function(){})();\n', exports);
+  it('puts the header on line 1, naming the cards in export order, each once', () => {
+    const out = finishBundleJs('(function(){})();\n', exports, cards);
     const [line1, ...rest] = out.split('\n');
     expect(line1).toMatch(/^\/\* @ds-bundle: \{.*\} \*\/$/);
     expect(parseBundleHeader(out)).toEqual({
       format: 4,
       namespace: NAMESPACE,
-      components: [{ name: 'Button' }, { name: 'Card' }, { name: 'useThing' }, { name: 'shade' }],
+      components: [{ name: 'Button' }, { name: 'Card' }],
     });
     expect(rest.join('\n')).toBe('(function(){})();\n');
   });
 
+  it('refuses a card that names no export', () => {
+    expect(() => finishBundleJs('(function(){})();\n', exports, ['Button', 'Combobox'])).toThrow('a card names no bundle export: Combobox');
+  });
+
   it('escapes the strings that would end or confuse an inline script, and passes its own check', () => {
-    const out = finishBundleJs('var a="a</script>b",b="x<!--y";\n', exports);
+    const out = finishBundleJs('var a="a</script>b",b="x<!--y";\n', exports, cards);
     expect(out).toContain('var a="a<\\/script>b",b="x<\\!--y";');
     expect(out).not.toContain('</script');
     expect(out).not.toContain('<!--');
-    expect(() => finishBundleJs(out.split('\n').slice(1).join('\n'), exports)).not.toThrow();
+    expect(() => finishBundleJs(out.split('\n').slice(1).join('\n'), exports, cards)).not.toThrow();
+  });
+
+  it('writes U+FFFD as its escape, which the artifact accepts and which means the same', () => {
+    const replacement = String.fromCharCode(0xfffd);
+    const out = finishBundleJs(`var a=\`x${replacement}y\`;\n`, exports, cards);
+    expect(out).not.toContain(replacement);
+    const body = out.split('\n').slice(1).join('\n');
+    // Run the finished statement: the template keeps its value.
+    expect(new Function(`${body}; return a;`)()).toBe(`x${replacement}y`);
   });
 
   it('refuses a bundle over 6 MB', () => {
-    expect(() => finishBundleJs('x'.repeat(BUNDLE_JS_CAP + 1), exports)).toThrow('bundle.js is over 6 MB');
+    expect(() => finishBundleJs('x'.repeat(BUNDLE_JS_CAP + 1), exports, cards)).toThrow('bundle.js is over 6 MB');
   });
 
   it('refuses a module statement', () => {
-    expect(() => finishBundleJs("import { a } from 'b';\na();\n", exports)).toThrow('bundle.js has a top-level import or export');
-    expect(() => finishBundleJs('export default 1;\n', exports)).toThrow('bundle.js has a top-level import or export');
-    expect(() => finishBundleJs('var m=import.meta;import("x");\n', exports)).not.toThrow();
+    expect(() => finishBundleJs("import { a } from 'b';\na();\n", exports, cards)).toThrow('bundle.js has a top-level import or export');
+    expect(() => finishBundleJs('export default 1;\n', exports, cards)).toThrow('bundle.js has a top-level import or export');
+    expect(() => finishBundleJs('var m=import.meta;import("x");\n', exports, cards)).not.toThrow();
   });
 });
 
@@ -55,9 +70,13 @@ describe('built bundle', () => {
   let finished;
   let window;
 
+  let cardNames;
+
   beforeAll(async () => {
     built = await buildBundle({ root });
-    finished = finishBundleJs(built.js, built.exports);
+    const withIcon = [...collectKitExports(`${root}src/components`), { name: 'Icon' }];
+    cardNames = kitCards(root, withIcon).map((card) => card.component);
+    finished = finishBundleJs(built.js, built.exports, cardNames);
     window = loadInJsdom([
       lib('react18/umd/react.production.min.js'),
       lib('react-dom18/umd/react-dom.production.min.js'),
@@ -65,11 +84,16 @@ describe('built bundle', () => {
     ]);
   }, 120_000);
 
-  it('puts every name in the header on the namespace', () => {
+  it('puts every export on the namespace, and names only the cards in the header', () => {
     const header = parseBundleHeader(finished);
-    expect(header.components.length).toBeGreaterThan(50);
+    expect(header.components.map((c) => c.name).sort()).toEqual([...cardNames].sort());
+    expect(header.components.length).toBeGreaterThan(40);
     const namespace = window[NAMESPACE];
-    expect(Object.keys(namespace).sort()).toEqual(header.components.map((c) => c.name).sort());
+    expect(Object.keys(namespace).sort()).toEqual([...new Set(built.exports.map((e) => e.name))].sort());
+    for (const name of ['MenuItem', 'TabPanel', 'useDialog', 'hashColor']) {
+      expect(name in namespace).toBe(true);
+      expect(header.components.some((c) => c.name === name)).toBe(false);
+    }
   });
 
   /** Renders `element` into a fresh container, synchronously, and returns the container. */

@@ -331,3 +331,34 @@ guide at run time; the build and its checks rely only on what is written here.
   partials derive from them.
 - **Canvases moving to React 19** makes the adapter dead weight. It is isolated in the design
   build so removing it is one change.
+
+## Amendment, 2026-11-23: the first sync
+
+Made while doing step 3 (section 6), with the maintainer.
+
+- **Publishing (4.5).** `/design-sync` can publish to a Design System artifact now, but only what its
+  own converter built: its publish step refuses a tree its driver did not build and check, and the
+  converter compiles the kit its own way, without the ref adapter, the `Link` stub or `Icon`. It cannot
+  publish `design:build`'s tree. So 4.5's steps stand, done by hand with the Artifact tool and written
+  down in `docs/agents/frontend.md` ("Publishing to the artifact"). There is no project skill:
+  `.claude/` is git-ignored.
+- **Synced from code.** The index carries `"editing": "code"`. The page is then read-only for everyone,
+  generates no file and appends nothing to the README, and a change to the system is a change to the
+  code and another publish. Section 3's "the page generates `tokens.css`" no longer holds: the build
+  writes `tokens.css`, compiled from `tokens.json` as the format lays it out, with the page's
+  generated first line, and `design:check` requires it to equal `tokens.json` compiled.
+- **What a sync owns (4.6)** gains `tokens.css` and the index's `editing`, and loses `assets/Logos/**`:
+  the build writes no logos, and the marks stay where they are under `assets/`.
+- **The bundle header (4.2, 4.4)** names only the cards, the components with a guide and a preview
+  (42 at the first sync: the kit's 41 folders and `Icon`). The page draws a card for every name in the
+  header, so a companion, hook or helper there was a card saying "No preview yet". Every export stays on
+  the namespace and in `index.d.ts`, and is named in the guide of the component it belongs to.
+  `design:check` fails when the header names a component without a preview in the kit or leaves out one
+  with a preview, and when an export without a card is named in no guide.
+- **The brand book (4.2)** is `frontend/design-system/README.md` (moved from `design/readme.md`), its
+  text taken from the artifact's README of 2026-11-23, which was newer: the design-era file index and
+  the source notes left out, the paths that moved cut, the link colour brought up to the tokens, and a
+  "Using this system" section added, since the page appends no Consuming section to a system synced
+  from code. The build lists the icons in it.
+- **The switch (4.7)** moves the design-era files to `archived/`, as its pull request lists them, and
+  the feature components' folders with them (section 2, non-goals).

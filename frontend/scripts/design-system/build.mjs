@@ -2,7 +2,9 @@
  * `npm run design:build`: the Design System artifact's code-derived files, from the shared kit and
  * its tokens, written to .design-system/project/ laid out as they are published:
  *
+ *   README.md                              readme.mjs, the brand book (design-system/README.md)
  *   tokens.json                            tokens.mjs
+ *   tokens.css                             tokens.mjs, tokens.json compiled
  *   components/bundle.js                   bundle.mjs (the kit, Icon, React from the page)
  *   components/bundle.css                  styles.mjs
  *   components/index.d.ts                  types.mjs
@@ -10,10 +12,11 @@
  *   components/<Name>/preview.html         previews.mjs, from each kit folder's <Folder>.preview.tsx
  *   components/<Name>/README.md            guides.mjs, the README.md beside each preview
  *
- * and .design-system/report.json beside it (exports, icons, tokens carried and kept, sizes, the
- * guides with their size and the previews with their group, height and size, the React 18 test
- * skips, components whose props type has another name). The page generates tokens.css, manifest.json and api/: the build never writes
- * them. Exits 1 on any error.
+ * and .design-system/report.json beside it (exports, the cards the bundle header names, icons,
+ * tokens carried and kept, sizes, the guides with their size and the previews with their group,
+ * height and size, the React 18 test skips, components whose props type has another name). The page
+ * generates manifest.json and api/: the build never writes them. It writes tokens.css because the
+ * page of a system synced from code generates nothing. Exits 1 on any error.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -24,9 +27,10 @@ import { buildBundle, finishBundleJs } from './bundle.mjs';
 import { collectKitExports } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
 import { collectGuides } from './guides.mjs';
-import { buildPreviews, collectPreviews, iconPreview } from './previews.mjs';
+import { buildPreviews, kitCards } from './previews.mjs';
+import { brandBook } from './readme.mjs';
 import { buildCss, kitRulesOf } from './styles.mjs';
-import { buildTokens } from './tokens.mjs';
+import { buildTokens, tokensCss } from './tokens.mjs';
 import { buildTypes, propsNotes } from './types.mjs';
 
 const LIBRARIES = {
@@ -54,8 +58,10 @@ export async function build(root) {
   mkdirSync(join(out, 'components/lib'), { recursive: true });
 
   const kit = collectKitExports(join(root, 'src/components'));
+  const withIcon = [...kit, { name: 'Icon' }];
+  const cards = kitCards(root, withIcon);
   const bundle = await buildBundle({ root });
-  const bundleJs = finishBundleJs(bundle.js, bundle.exports);
+  const bundleJs = finishBundleJs(bundle.js, bundle.exports, cards.map((card) => card.component));
 
   const tokensDir = join(root, 'src/styles/tokens');
   const tokenFiles = readdirSync(tokensDir)
@@ -76,16 +82,15 @@ export async function build(root) {
   const types = await buildTypes({ root, exports: kit });
   const props = propsNotes(types, bundle.exports);
   const previews = await buildPreviews({ root, exports: kit });
-  const withIcon = [...kit, { name: 'Icon' }];
-  const guides = collectGuides(join(root, 'src/components'), [
-    ...collectPreviews(join(root, 'src/components'), withIcon),
-    iconPreview(join(root, 'design-system/runtime'), withIcon),
-  ].filter(Boolean));
+  const guides = collectGuides(join(root, 'src/components'), cards);
+  const icons = collectLucideIcons(join(root, 'src'));
 
+  writeFileSync(join(out, 'README.md'), brandBook(readFileSync(join(root, 'design-system/README.md'), 'utf8'), icons));
   writeFileSync(join(out, 'components/bundle.js'), bundleJs);
   writeFileSync(join(out, 'components/bundle.css'), bundleCss);
   writeFileSync(join(out, 'components/index.d.ts'), types);
   writeFileSync(join(out, 'tokens.json'), `${JSON.stringify(tokens, null, 2)}\n`);
+  writeFileSync(join(out, 'tokens.css'), tokensCss(tokens));
   for (const [name, from] of Object.entries(LIBRARIES)) copyFileSync(join(root, from), join(out, 'components/lib', name));
   for (const { component, html } of previews) {
     mkdirSync(join(out, 'components', component), { recursive: true });
@@ -97,12 +102,13 @@ export async function build(root) {
   }
 
   const sizes = {};
-  for (const path of ['components/bundle.js', 'components/bundle.css', 'components/index.d.ts', 'tokens.json', ...Object.keys(LIBRARIES).map((n) => `components/lib/${n}`)]) {
+  for (const path of ['README.md', 'components/bundle.js', 'components/bundle.css', 'components/index.d.ts', 'tokens.json', 'tokens.css', ...Object.keys(LIBRARIES).map((n) => `components/lib/${n}`)]) {
     sizes[path] = statSync(join(out, path)).size;
   }
   const report = {
     exports: bundle.exports,
-    icons: collectLucideIcons(join(root, 'src')),
+    cards: cards.map((card) => card.component),
+    icons,
     tokens: { carried: [...carried], kept },
     props,
     sizes,
@@ -124,6 +130,7 @@ function summary(report) {
   return [
     'design:build → .design-system/project',
     `  exports: ${report.exports.length} (${count('component')} components, ${count('hook')} hooks, ${count('helper')} helpers)`,
+    `  cards (the bundle header): ${report.cards.length}`,
     `  icons: ${report.icons.length}`,
     `  tokens: ${report.tokens.carried.length} in tokens.json, ${report.tokens.kept.length} kept in bundle.css:`,
     ...report.tokens.kept.map(({ name, reason }) => `    --${name}: ${reason}`),

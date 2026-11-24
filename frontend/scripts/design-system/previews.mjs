@@ -34,6 +34,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { format } from 'node:util';
 import { splitCodeAndComments } from '../ownership.mjs';
 import { NAMESPACE } from './exports.mjs';
+import { tokensCss } from './tokens.mjs';
 
 /** Folders of src/components/ that hold no kit component, so carry no preview. */
 export const PREVIEW_FOLDERS_LEFT_OUT = ['ErrorBoundary', 'hooks', 'icons', '__tests__'];
@@ -162,6 +163,17 @@ export function collectPreviews(componentsDir, exports) {
   return previews;
 }
 
+/**
+ * The cards: every preview the kit carries, Icon's included. Each names a component the bundle
+ * header lists; lint:design and design:check hold each to a guide beside it.
+ * @param {string} root the frontend directory
+ * @param {{ name: string }[]} exports the bundle's exports
+ * @returns {PreviewEntry[]}
+ */
+export function kitCards(root, exports) {
+  return [...collectPreviews(join(root, 'src/components'), exports), iconPreview(join(root, 'design-system/runtime'), exports)].filter(Boolean);
+}
+
 /** Icon's preview, beside it in design-system/runtime/, when there is one. */
 export function iconPreview(runtimeDir, exports) {
   const path = join(runtimeDir, 'Icon.preview.tsx');
@@ -172,7 +184,8 @@ export function iconPreview(runtimeDir, exports) {
 // ── The document ──────────────────────────────────────────────────────────────────────────────────
 
 export const PREVIEW_CAP = 256 * 1024;
-const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
+/** The Google Fonts stylesheet every preview links, and the brand book tells a canvas to add. */
+export const FONTS = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap';
 const FONT_HOSTS = ['https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 const PREVIEW_STYLE = [
   'body { margin: 0; padding: 16px; background: var(--gt-surface); font-family: var(--gt-font-sans); font-size: var(--gt-text-body); line-height: 1.5; color: var(--gt-text-primary); }',
@@ -215,24 +228,6 @@ export function renderPreviewHtml({ meta, script, title }) {
     '</html>',
     '',
   ].join('\n');
-}
-
-/**
- * tokens.json as the `:root` block a frame declares: every token of every family but `type`, an
- * alias (`{gt-gray-0}`) as `var()`.
- * @param {string | object} tokensJson
- */
-export function tokensCss(tokensJson) {
-  const tokens = typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson;
-  const lines = [];
-  for (const [family, value] of Object.entries(tokens)) {
-    if (family === 'type' || !Array.isArray(value?.tokens)) continue;
-    for (const token of value.tokens) {
-      const alias = /^\{(.+)\}$/.exec(String(token.value));
-      lines.push(`  --${token.name}: ${alias ? `var(--${alias[1]})` : token.value};`);
-    }
-  }
-  return `:root {\n${lines.join('\n')}\n}\n`;
 }
 
 // ── The check ─────────────────────────────────────────────────────────────────────────────────────
@@ -295,7 +290,7 @@ async function settle(window) {
 }
 
 /** One render of a preview document in jsdom under a fixed clock: its problems and the body's HTML. */
-async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }) {
+async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, clock }) {
   // Loaded here, not with the module: lint:design reads previews without rendering one.
   const { JSDOM, VirtualConsole } = await import('jsdom');
   const problems = [];
@@ -314,7 +309,8 @@ async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }
       document.head.prepend(element);
     };
     style(bundleCss);
-    style(tokensCss(tokensJson));
+    // The frame preloads the published tokens.css: the tree's own, or tokens.json compiled as the build does.
+    style(tokensCssText ?? tokensCss(typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson));
     window.eval(
       `(() => { const Real = Date; const fixed = Real.parse(${JSON.stringify(clock)});
         class FixedDate extends Real { constructor(...args) { if (args.length === 0) super(fixed); else super(...args); } static now() { return fixed; } }
@@ -343,16 +339,16 @@ async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }
 
 /**
  * The problems that keep a preview document from being published, none when it can be.
- * @param {{ html: string; libs: string[]; bundleJs: string; bundleCss: string; tokensJson: string | object; expects?: string }} options
+ * @param {{ html: string; libs: string[]; bundleJs: string; bundleCss: string; tokensJson?: string | object; tokensCssText?: string; expects?: string }} options
  *   `libs`: React and React DOM 18, in that order, as the frame loads them
  * @returns {Promise<string[]>}
  */
-export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson, expects }) {
+export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, expects }) {
   const problems = documentProblems(html);
   if (problems.length) return problems;
   const renders = [];
   for (const clock of CLOCKS) {
-    const render = await renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock });
+    const render = await renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, clock });
     if (render.window && expects && !render.window.document.querySelector(expects)) {
       render.problems.push(`nothing in the document matches ${expects}`);
     }

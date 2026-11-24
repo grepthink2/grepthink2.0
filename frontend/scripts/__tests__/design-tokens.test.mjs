@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { TOKEN_NAME, buildTokens, parseTokenCss } from '../design-system/tokens.mjs';
+import { TOKEN_NAME, buildTokens, parseTokenCss, tokensCss } from '../design-system/tokens.mjs';
 
 const tokensDir = fileURLToPath(new URL('../../src/styles/tokens/', import.meta.url));
 const meta = { source: 'code' };
@@ -183,5 +183,124 @@ describe('buildTokens', () => {
       expect(tokens[family].tokens.length).toBeLessThanOrEqual(60);
     }
     expect(tokens.type.families.sans).toContain('Poppins');
+  });
+});
+
+describe('tokensCss', () => {
+  const tokens = {
+    name: 'Acme',
+    version: 1,
+    color: {
+      themes: [{ id: 'light', name: 'Light' }],
+      tokens: [
+        { name: 'gt-a', value: '#ffffff', usage: 'Cards.' },
+        { name: 'gt-b', value: '{gt-a}', usage: '' },
+        { name: 'gt-c', value: { light: '#000000', dark: '#111111' }, usage: '' },
+      ],
+    },
+    type: {
+      fonts: [{ family: 'Acme Sans', file: 'Acme Sans.woff2', weight: '400' }],
+      families: { sans: "'Acme Sans', sans-serif" },
+      groups: [{ name: 'Text', family: 'sans', styles: [{ name: 'body', fontSize: '14px', lineHeight: 1.5, fontWeight: 400 }, { name: '2xl', fontSize: '24px' }] }],
+    },
+    spacing: { tokens: [{ name: 'gt-space-1.5', value: '6px', usage: '' }] },
+    shadow: { tokens: [{ name: 'gt-shadow-card', value: '0 0 4px rgba(0,0,0,.08)', usage: '' }] },
+    zIndex: { tokens: [{ name: 'gt-z-modal', value: '1000', usage: '' }] },
+    meta: { source: 'code' },
+  };
+
+  it("lays tokens.json out as the format compiles it, under the page's generated line", () => {
+    expect(tokensCss(tokens).split('\n')).toEqual([
+      '/* Acme — generated from tokens.json */',
+      ':root, [data-theme="light"] {',
+      '  --gt-a: #ffffff;',
+      '  --gt-b: var(--gt-a);',
+      '  --gt-c: #000000;',
+      '  --gt-shadow-card: 0 0 4px rgba(0,0,0,.08);',
+      '}',
+      ':root {',
+      '  --gt-space-1\\.5: 6px;',
+      '  --gt-z-modal: 1000;',
+      "  --font-sans: 'Acme Sans', sans-serif;",
+      '}',
+      '.body {',
+      '  font-family: var(--font-sans);',
+      '  font-size: 14px;',
+      '  line-height: 1.5;',
+      '  font-weight: 400;',
+      '  letter-spacing: 0;',
+      '}',
+      '.\\32 xl {',
+      '  font-family: var(--font-sans);',
+      '  font-size: 24px;',
+      '  line-height: 1.4;',
+      '  font-weight: 400;',
+      '  letter-spacing: 0;',
+      '}',
+      '@font-face {',
+      '  font-family: "Acme Sans";',
+      '  src: url("fonts/Acme%20Sans.woff2") format("woff2");',
+      '  font-weight: 400;',
+      '  font-style: normal;',
+      '  font-display: swap;',
+      '}',
+      '',
+    ]);
+  });
+
+  it('declares a block per further theme, borrows a later value for the first, and makes a bare length px', () => {
+    const themed = {
+      name: 'Acme',
+      color: {
+        themes: [{ id: 'light', name: 'Light' }, { id: 'dark', name: 'Dark' }],
+        tokens: [
+          { name: 'a', value: { light: '#ffffff', dark: '#000000' } },
+          { name: 'b', value: '{a}' },
+          { name: 'c', value: { dark: '#111111' } },
+          { name: 'd', value: '#222222' },
+        ],
+      },
+      type: { fonts: [], families: {}, groups: [{ name: 'Text', styles: [{ name: 'body', fontSize: 14 }] }] },
+      spacing: { tokens: [{ name: 'space-1', value: 4 }] },
+      zIndex: { tokens: [{ name: 'z-top', value: 10 }] },
+    };
+    expect(tokensCss(themed).split('\n')).toEqual([
+      '/* Acme \u2014 generated from tokens.json */',
+      ':root, [data-theme="light"] {',
+      '  --a: #ffffff;',
+      '  --b: var(--a);',
+      '  --c: #111111;',
+      '  --d: #222222;',
+      '}',
+      '[data-theme="dark"] {',
+      '  --a: #000000;',
+      '  --b: var(--a);',
+      '  --c: #111111;',
+      '}',
+      ':root {',
+      '  --space-1: 4px;',
+      '  --z-top: 10;',
+      '}',
+      '.body {',
+      '  font-size: 14px;',
+      '  line-height: 1.4;',
+      '  font-weight: 400;',
+      '  letter-spacing: 0;',
+      '}',
+      '',
+    ]);
+  });
+
+  it('declares every token of the real build, the colours before the rest', () => {
+    const files = readdirSync(tokensDir)
+      .filter((file) => file.endsWith('.css'))
+      .map((file) => ({ path: file, css: readFileSync(join(tokensDir, file), 'utf8') }));
+    const built = buildTokens(files, meta).tokens;
+    const css = tokensCss(built);
+    expect(css.startsWith('/* GrepThink Design System — generated from tokens.json */\n:root, [data-theme="light"] {\n')).toBe(true);
+    for (const [family, { tokens: list }] of Object.entries(built).filter(([key, value]) => key !== 'type' && Array.isArray(value?.tokens))) {
+      for (const { name } of list) expect({ family, declared: css.includes(`  --${name}: `) }).toEqual({ family, declared: true });
+    }
+    expect(css).toContain("  --font-sans: 'Poppins'");
   });
 });
