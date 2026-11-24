@@ -163,6 +163,17 @@ export function collectPreviews(componentsDir, exports) {
   return previews;
 }
 
+/**
+ * The cards: every preview the kit carries, Icon's included. Each names a component the bundle
+ * header lists; lint:design and design:check hold each to a guide beside it.
+ * @param {string} root the frontend directory
+ * @param {{ name: string }[]} exports the bundle's exports
+ * @returns {PreviewEntry[]}
+ */
+export function kitCards(root, exports) {
+  return [...collectPreviews(join(root, 'src/components'), exports), iconPreview(join(root, 'design-system/runtime'), exports)].filter(Boolean);
+}
+
 /** Icon's preview, beside it in design-system/runtime/, when there is one. */
 export function iconPreview(runtimeDir, exports) {
   const path = join(runtimeDir, 'Icon.preview.tsx');
@@ -279,7 +290,7 @@ async function settle(window) {
 }
 
 /** One render of a preview document in jsdom under a fixed clock: its problems and the body's HTML. */
-async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }) {
+async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, clock }) {
   // Loaded here, not with the module: lint:design reads previews without rendering one.
   const { JSDOM, VirtualConsole } = await import('jsdom');
   const problems = [];
@@ -298,8 +309,8 @@ async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }
       document.head.prepend(element);
     };
     style(bundleCss);
-    // The frame preloads the published tokens.css, which the build compiles from tokens.json.
-    style(tokensCss(typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson));
+    // The frame preloads the published tokens.css: the tree's own, or tokens.json compiled as the build does.
+    style(tokensCssText ?? tokensCss(typeof tokensJson === 'string' ? JSON.parse(tokensJson) : tokensJson));
     window.eval(
       `(() => { const Real = Date; const fixed = Real.parse(${JSON.stringify(clock)});
         class FixedDate extends Real { constructor(...args) { if (args.length === 0) super(fixed); else super(...args); } static now() { return fixed; } }
@@ -328,16 +339,16 @@ async function renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock }
 
 /**
  * The problems that keep a preview document from being published, none when it can be.
- * @param {{ html: string; libs: string[]; bundleJs: string; bundleCss: string; tokensJson: string | object; expects?: string }} options
+ * @param {{ html: string; libs: string[]; bundleJs: string; bundleCss: string; tokensJson?: string | object; tokensCssText?: string; expects?: string }} options
  *   `libs`: React and React DOM 18, in that order, as the frame loads them
  * @returns {Promise<string[]>}
  */
-export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson, expects }) {
+export async function checkPreview({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, expects }) {
   const problems = documentProblems(html);
   if (problems.length) return problems;
   const renders = [];
   for (const clock of CLOCKS) {
-    const render = await renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, clock });
+    const render = await renderOnce({ html, libs, bundleJs, bundleCss, tokensJson, tokensCssText, clock });
     if (render.window && expects && !render.window.document.querySelector(expects)) {
       render.problems.push(`nothing in the document matches ${expects}`);
     }

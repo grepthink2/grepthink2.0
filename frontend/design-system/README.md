@@ -29,13 +29,14 @@ stylesheet to your page (on a canvas, in its `<helmet>`):
 
 - **Read a component's guide before you use it.** `components/<Name>/README.md` says when to use it,
   the props that matter, what you supply and what to avoid; `components/index.d.ts` has its props
-  (`<Name>Props`). Companions (`MenuItem`, `TabPanel`, `AvatarGroup` and the like), hooks
+  (usually `<Name>Props`). Companions (`MenuItem`, `TabPanel`, `AvatarGroup` and the like), hooks
   (`useDialog`, `useTableSort`) and helpers (`BADGE_STATUS`, `hashColor`) are on the namespace too,
   each described in the guide of the component it belongs to.
-- **Lay out your own markup with the tokens.** `tokens.css` declares every `--gt-*` custom property,
-  and `tokens.json` lists each with its usage: `background: var(--gt-surface)`,
-  `gap: var(--gt-space-md)`, `border-radius: var(--gt-radius-md)`. Never write a hex value or a size
-  that a token already names.
+- **Lay out your own markup with the tokens.** `tokens.css` declares the `--gt-*` custom properties
+  that `tokens.json` lists with their usage; `components/bundle.css` declares the few it cannot hold
+  (the focus rings, the transitions, the font stacks, one modal shadow). Use them as in
+  `background: var(--gt-surface)`, `gap: var(--gt-space-md)`, `border-radius: var(--gt-radius-md)`.
+  Never write a hex value or a size that a token already names.
 - **Don't restyle the components.** Their classes start with `gt-` (DatePickerField's calendar uses
   `dpf`): put your own class on a wrapper and place the components from there.
 - **Links:** Button and Card take `to`, and a Table row `rowTo`, for an in-app route. There is no

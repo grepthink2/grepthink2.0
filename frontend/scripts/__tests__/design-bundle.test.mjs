@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUNDLE_JS_CAP, buildBundle, finishBundleJs, loadInJsdom, parseBundleHeader } from '../design-system/bundle.mjs';
 import { NAMESPACE, collectKitExports } from '../design-system/exports.mjs';
-import { buildPreviews, checkPreview, collectPreviews, iconPreview } from '../design-system/previews.mjs';
+import { buildPreviews, checkPreview, kitCards } from '../design-system/previews.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -66,9 +66,7 @@ describe('built bundle', () => {
   beforeAll(async () => {
     built = await buildBundle({ root });
     const withIcon = [...collectKitExports(`${root}src/components`), { name: 'Icon' }];
-    cardNames = [...collectPreviews(`${root}src/components`, withIcon), iconPreview(`${root}design-system/runtime`, withIcon)]
-      .filter(Boolean)
-      .map((card) => card.component);
+    cardNames = kitCards(root, withIcon).map((card) => card.component);
     finished = finishBundleJs(built.js, built.exports, cardNames);
     window = loadInJsdom([
       lib('react18/umd/react.production.min.js'),

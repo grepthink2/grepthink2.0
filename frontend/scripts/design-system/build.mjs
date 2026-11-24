@@ -27,7 +27,7 @@ import { buildBundle, finishBundleJs } from './bundle.mjs';
 import { collectKitExports } from './exports.mjs';
 import { collectLucideIcons } from './icons.mjs';
 import { collectGuides } from './guides.mjs';
-import { buildPreviews, collectPreviews, iconPreview } from './previews.mjs';
+import { buildPreviews, kitCards } from './previews.mjs';
 import { brandBook } from './readme.mjs';
 import { buildCss, kitRulesOf } from './styles.mjs';
 import { buildTokens, tokensCss } from './tokens.mjs';
@@ -59,11 +59,7 @@ export async function build(root) {
 
   const kit = collectKitExports(join(root, 'src/components'));
   const withIcon = [...kit, { name: 'Icon' }];
-  // The cards: each component with a preview beside it, and so a guide (collectGuides needs both).
-  const cards = [
-    ...collectPreviews(join(root, 'src/components'), withIcon),
-    iconPreview(join(root, 'design-system/runtime'), withIcon),
-  ].filter(Boolean);
+  const cards = kitCards(root, withIcon);
   const bundle = await buildBundle({ root });
   const bundleJs = finishBundleJs(bundle.js, bundle.exports, cards.map((card) => card.component));
 

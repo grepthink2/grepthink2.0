@@ -13,6 +13,12 @@ describe('brandBook', () => {
     expect(out).toBe('## Iconography\n- Icons:\n  `Bell`, `Trash2`.\n- More.\n');
   });
 
+  it('writes "none" for an empty list, and the check minds only a marker line, not a mention', () => {
+    expect(brandBook(`${ICONS_MARKER}\n`, [])).toBe('none.\n');
+    const mention = `The build fills the \`${ICONS_MARKER}\` line.\n\`\`\`html\n<link rel="stylesheet" href="${FONTS}">\n\`\`\`\n\`Bell\`.\n`;
+    expect(brandBookProblems(mention, ['Bell'])).toEqual([]);
+  });
+
   it('needs exactly one marker', () => {
     expect(() => brandBook('No marker.\n', ['Bell'])).toThrow(`design-system/README.md needs one ${ICONS_MARKER} line, where the build lists the icons; it has 0`);
     expect(() => brandBook(`${ICONS_MARKER}\n${ICONS_MARKER}\n`, ['Bell'])).toThrow('it has 2');

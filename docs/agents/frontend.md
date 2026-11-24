@@ -88,8 +88,9 @@ design copies. In `frontend/`:
   `useEffectEvent` on React 18). `react-router-dom` stays the real package there.
 - `npm run design:check` holds the built tree to the artifact's format, and renders every preview in
   jsdom on React 18 against the built bundle. It also fails when the header names a component without a
-  preview, when an export without a card is named in no guide, when `tokens.css` is not `tokens.json`
-  compiled, or when the brand book misses an icon or the fonts link.
+  preview or leaves out one with a preview, when an export without a card is named in no guide, when
+  `tokens.css` is not `tokens.json` compiled, when the brand book misses an icon or the fonts link, and
+  when a published file holds the build machine's path.
 
 Kit source never changes for React 18: a difference belongs in the adapter or the runtime. A kit test
 that cannot pass on React 18 for a reason the adapter does not cause goes in
@@ -136,7 +137,7 @@ designer or an agent follows (content, visual foundations, the marketing surface
 with no title (the page shows the system's name) and no index of files. Its "Using this system" section
 says what to load and where everything is, since the page of a system synced from code appends nothing.
 The build replaces its `<!-- icons -->` line with the icons `Icon` carries. Name a token, a component or
-a path in it only when the build has it.
+a path in it only when the build has it, or, under `assets/`, when the artifact keeps it.
 
 ### Publishing to the artifact
 

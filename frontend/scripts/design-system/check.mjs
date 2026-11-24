@@ -191,10 +191,20 @@ export async function checkTree(
     problems.push('tokens.json is not valid JSON');
   }
   if (tokens) {
-    problems.push(...tokensProblems(tokens));
+    const shape = tokensProblems(tokens);
+    problems.push(...shape);
     const compiled = read(dir, 'tokens.css');
-    if (compiled !== tokensCss(tokens)) problems.push('tokens.css is not tokens.json compiled: run npm run design:build');
     if (compiled.includes('</style')) problems.push('tokens.css contains </style');
+    // Only a tokens.json of the format's shape compiles; one that is not has its problems listed above.
+    if (!shape.length) {
+      let expected;
+      try {
+        expected = tokensCss(tokens);
+      } catch (error) {
+        problems.push(`tokens.json does not compile to tokens.css: ${error.message}`);
+      }
+      if (expected !== undefined && compiled !== expected) problems.push('tokens.css is not tokens.json compiled: run npm run design:build');
+    }
     const carried = tokenNamesOf(tokens);
     const declared = new Set(parseTokenCss(css).map((token) => token.name));
     const tokensDir = join(srcDir, 'styles/tokens');
@@ -255,16 +265,20 @@ export async function checkTree(
   }
   // A published file names no folder of the machine that built it (a build's module labels can).
   const machine = resolve(FRONTEND, '..');
-  for (const path of filesUnder(dir)) {
-    if (readFileSync(path, 'utf8').includes(machine)) problems.push(`${relative(dir, path).split(sep).join('/')} holds the build machine's path ${machine}`);
+  if (machine.split(sep).filter(Boolean).length >= 2) {
+    for (const path of filesUnder(dir)) {
+      if (readFileSync(path, 'utf8').includes(machine + sep)) problems.push(`${relative(dir, path).split(sep).join('/')} holds the build machine's path ${machine}`);
+    }
   }
-  if (bundleLoads) problems.push(...(await previewProblems(dir, { header, bundle, css, tokens: tokens ?? {}, srcDir, runtimeDir })));
+  if (bundleLoads) problems.push(...(await previewProblems(dir, { header, exportNames, bundle, css, srcDir, runtimeDir })));
   return problems;
 }
 
 // Every preview the kit carries, built into the tree and rendered against the built bundle.
-async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runtimeDir }) {
-  const exports = header.components ?? [];
+async function previewProblems(dir, { header, exportNames, bundle, css, srcDir, runtimeDir }) {
+  const named = new Set((header.components ?? []).map((component) => component.name));
+  // A preview may show any export on the namespace; the header must name exactly the previewed ones.
+  const exports = exportNames.map((name) => ({ name }));
   const componentsDir = join(srcDir, 'components');
   let previews;
   try {
@@ -274,8 +288,11 @@ async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runti
   }
   const problems = [];
   const carried = new Set(previews.map((preview) => preview.component));
-  for (const { name } of exports) {
+  for (const name of named) {
     if (!carried.has(name)) problems.push(`${name} is in the bundle header but has no preview in the kit`);
+  }
+  for (const name of carried) {
+    if (!named.has(name)) problems.push(`${name} has a preview in the kit but is not in the bundle header`);
   }
   const libs = LIBRARIES.map((path) => read(dir, path));
   for (const { component, meta } of previews) {
@@ -288,7 +305,7 @@ async function previewProblems(dir, { header, bundle, css, tokens, srcDir, runti
       problems.push(`missing ${path}`);
       continue;
     }
-    const found = await checkPreview({ html: read(dir, path), libs, bundleJs: bundle, bundleCss: css, tokensJson: tokens, expects: meta.expects });
+    const found = await checkPreview({ html: read(dir, path), libs, bundleJs: bundle, bundleCss: css, tokensCssText: read(dir, 'tokens.css'), expects: meta.expects });
     problems.push(...found.map((problem) => `${path}: ${problem}`));
   }
   return problems;

@@ -214,28 +214,49 @@ const FONT_FORMATS = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'open
 
 /**
  * tokens.css, compiled from tokens.json in the format's layout: the colours and shadows under
- * `:root` and the first theme's `[data-theme]` (an alias `{name}` as `var(--name)`), every other
- * family and each type family (`--font-<key>`) under `:root`, a class per type style, and an
- * `@font-face` per font file. The page generates this file only when someone saves an edit there,
- * and the page of a system synced from code saves nothing, so the build writes it.
+ * `:root` and the first theme's `[data-theme]`, a `[data-theme]` block per further theme (its own
+ * values, and every alias declared again so that it resolves in that theme), every other family and
+ * each type family (`--font-<key>`) under `:root`, a class per type style, and an `@font-face` per
+ * font file. An alias `{name}` is `var(--name)`; a value only a later theme has stands in for the
+ * first; a bare number is px in a length (spacing, radius, a style's size and tracking), and stays a
+ * number anywhere else. The page generates this file only when someone saves an
+ * edit there, and the page of a system synced from code saves nothing, so the build writes it.
  * @param {object} tokens tokens.json
  * @returns {string}
  */
 export function tokensCss(tokens) {
   const out = [tokensCssHead(tokens.name ?? 'Design system')];
-  const theme = tokens.color?.themes?.[0]?.id;
-  const valueOf = (token) => {
-    const value = token.value !== null && typeof token.value === 'object' ? token.value[theme] : token.value;
+  const themes = (tokens.color?.themes ?? []).map((theme) => theme.id);
+  const perTheme = (token) => token.value !== null && typeof token.value === 'object';
+  // A token's value in a theme; in the first, a value only a later theme has.
+  const raw = (token, theme) => {
+    if (!perTheme(token)) return theme === themes[0] || theme === undefined ? token.value : undefined;
+    if (theme !== themes[0] && theme !== undefined) return token.value[theme];
+    return token.value[themes[0]] ?? themes.map((id) => token.value[id]).find((value) => value !== undefined);
+  };
+  const css = (value) => {
     const alias = /^\{(.+)\}$/.exec(String(value));
     return alias ? `var(--${ident(alias[1])})` : String(value);
   };
-  const themed = [...(tokens.color?.tokens ?? []), ...(tokens.shadow?.tokens ?? [])];
+  const isAlias = (value) => /^\{.+\}$/.test(String(value));
+  const length = (value) => (typeof value === 'number' && value !== 0 ? `${value}px` : String(value));
+  const themed = [...(tokens.color?.tokens ?? []), ...(tokens.shadow?.tokens ?? [])].filter((token) => raw(token, themes[0]) !== undefined);
   if (themed.length) {
-    out.push(theme ? `:root, [data-theme="${theme}"] {` : ':root {', ...themed.map((token) => `  --${ident(token.name)}: ${valueOf(token)};`), '}');
+    out.push(themes.length ? `:root, [data-theme="${themes[0]}"] {` : ':root {', ...themed.map((token) => `  --${ident(token.name)}: ${css(raw(token, themes[0]))};`), '}');
+  }
+  for (const theme of themes.slice(1)) {
+    const lines = themed.flatMap((token) => {
+      const own = raw(token, theme);
+      const value = own ?? (isAlias(raw(token, themes[0])) ? raw(token, themes[0]) : undefined);
+      return value === undefined ? [] : [`  --${ident(token.name)}: ${css(value)};`];
+    });
+    if (lines.length) out.push(`[data-theme="${theme}"] {`, ...lines, '}');
   }
   const root = Object.entries(tokens)
     .filter(([key, family]) => !['color', 'shadow', 'type'].includes(key) && Array.isArray(family?.tokens))
-    .flatMap(([, family]) => family.tokens.map((token) => `  --${ident(token.name)}: ${token.value};`));
+    .flatMap(([key, family]) =>
+      family.tokens.map((token) => `  --${ident(token.name)}: ${['spacing', 'radius'].includes(key) ? length(token.value) : String(token.value)};`),
+    );
   for (const [key, stack] of Object.entries(tokens.type?.families ?? {})) root.push(`  --font-${ident(key)}: ${stack};`);
   if (root.length) out.push(':root {', ...root, '}');
   for (const group of tokens.type?.groups ?? []) {
@@ -244,10 +265,10 @@ export function tokensCss(tokens) {
       out.push(
         `.${ident(style.name)} {`,
         ...(family ? [`  font-family: var(--font-${ident(family)});`] : []),
-        `  font-size: ${style.fontSize};`,
+        `  font-size: ${length(style.fontSize)};`,
         `  line-height: ${style.lineHeight ?? 1.4};`,
         `  font-weight: ${style.fontWeight ?? 400};`,
-        `  letter-spacing: ${style.letterSpacing ?? 0};`,
+        `  letter-spacing: ${length(style.letterSpacing ?? 0)};`,
         '}',
       );
     }

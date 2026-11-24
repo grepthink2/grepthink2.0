@@ -248,6 +248,49 @@ describe('tokensCss', () => {
     ]);
   });
 
+  it('declares a block per further theme, borrows a later value for the first, and makes a bare length px', () => {
+    const themed = {
+      name: 'Acme',
+      color: {
+        themes: [{ id: 'light', name: 'Light' }, { id: 'dark', name: 'Dark' }],
+        tokens: [
+          { name: 'a', value: { light: '#ffffff', dark: '#000000' } },
+          { name: 'b', value: '{a}' },
+          { name: 'c', value: { dark: '#111111' } },
+          { name: 'd', value: '#222222' },
+        ],
+      },
+      type: { fonts: [], families: {}, groups: [{ name: 'Text', styles: [{ name: 'body', fontSize: 14 }] }] },
+      spacing: { tokens: [{ name: 'space-1', value: 4 }] },
+      zIndex: { tokens: [{ name: 'z-top', value: 10 }] },
+    };
+    expect(tokensCss(themed).split('\n')).toEqual([
+      '/* Acme \u2014 generated from tokens.json */',
+      ':root, [data-theme="light"] {',
+      '  --a: #ffffff;',
+      '  --b: var(--a);',
+      '  --c: #111111;',
+      '  --d: #222222;',
+      '}',
+      '[data-theme="dark"] {',
+      '  --a: #000000;',
+      '  --b: var(--a);',
+      '  --c: #111111;',
+      '}',
+      ':root {',
+      '  --space-1: 4px;',
+      '  --z-top: 10;',
+      '}',
+      '.body {',
+      '  font-size: 14px;',
+      '  line-height: 1.4;',
+      '  font-weight: 400;',
+      '  letter-spacing: 0;',
+      '}',
+      '',
+    ]);
+  });
+
   it('declares every token of the real build, the colours before the rest', () => {
     const files = readdirSync(tokensDir)
       .filter((file) => file.endsWith('.css'))

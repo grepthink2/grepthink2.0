@@ -352,8 +352,9 @@ Made while doing step 3 (section 6), with the maintainer.
 - **The bundle header (4.2, 4.4)** names only the cards, the components with a guide and a preview
   (42 at the first sync: the kit's 41 folders and `Icon`). The page draws a card for every name in the
   header, so a companion, hook or helper there was a card saying "No preview yet". Every export stays on
-  the namespace and in `index.d.ts`, and is named in the guide of the component it belongs to;
-  `design:check` holds both.
+  the namespace and in `index.d.ts`, and is named in the guide of the component it belongs to.
+  `design:check` fails when the header names a component without a preview in the kit or leaves out one
+  with a preview, and when an export without a card is named in no guide.
 - **The brand book (4.2)** is `frontend/design-system/README.md` (moved from `design/readme.md`), its
   text taken from the artifact's README of 2026-11-23, which was newer: the design-era file index and
   the source notes left out, the paths that moved cut, the link colour brought up to the tokens, and a

@@ -108,6 +108,26 @@ describe('checkTree', () => {
     expect(await check((root) => write(root, 'project/api/Button.json', '{}'))).toEqual(["api is the page's to generate; the build must not write it"]);
   });
 
+  it('lists what is wrong with a tokens.json that cannot compile, rather than throwing', async () => {
+    // tokens.json alone: the build could not have compiled tokens.css from either.
+    const only = (change) => (root) => {
+      const tokens = structuredClone(TOKENS);
+      change(tokens);
+      write(root, 'project/tokens.json', JSON.stringify(tokens));
+    };
+    expect(await check(only((t) => (t.type.fonts = {})))).toEqual(['tokens.json: type.fonts is not a list']);
+    expect(await check(only((t) => (t.color.tokens = { 'gt-a': '#ffffff' })))).toEqual([
+      'tokens.json: color.tokens is not a list',
+      '--gt-a (styles/tokens/colors.css) is neither in tokens.json nor declared in bundle.css',
+      '--gt-b (styles/tokens/colors.css) is neither in tokens.json nor declared in bundle.css',
+    ]);
+    const noFile = structuredClone(TOKENS);
+    noFile.type.fonts = [{ family: 'Acme Sans', weight: '400' }];
+    expect(await check((root) => write(root, 'project/tokens.json', JSON.stringify(noFile)))).toEqual([
+      expect.stringMatching(/^tokens\.json does not compile to tokens\.css: /),
+    ]);
+  });
+
   it('needs tokens.css to be tokens.json compiled', async () => {
     expect(await check((root) => write(root, 'project/tokens.css', ''))).toEqual(['tokens.css is not tokens.json compiled: run npm run design:build']);
     const stale = structuredClone(TOKENS);
@@ -248,6 +268,13 @@ describe('checkTree', () => {
     expect(await check((root) => write(root, 'project/components/Combobox/README.md', 'A combobox.\n'))).toEqual([
       'components/Combobox/ is not in the bundle header',
     ]);
+  });
+
+  it('needs the header to name each component the kit has a preview of', async () => {
+    const unnamed = `${header([])}\n(function(R){window.${NAMESPACE}={Button:function(){return R.createElement("button")}}})(React);\n`;
+    const problems = await check((root) => write(root, 'project/components/bundle.js', unnamed));
+    expect(problems).toContain('Button has a preview in the kit but is not in the bundle header');
+    expect(problems).toContain('components/Button/ is not in the bundle header');
   });
 
   it('names in the header only the components with a preview in the kit', async () => {

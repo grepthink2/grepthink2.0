@@ -24,7 +24,7 @@ export function brandBook(source, icons) {
     throw new Error(`design-system/README.md needs one ${ICONS_MARKER} line, where the build lists the icons; it has ${at.length}`);
   }
   const indent = /^\s*/.exec(lines[at[0]])[0];
-  lines[at[0]] = `${indent}${icons.map((name) => `\`${name}\``).join(', ')}.`;
+  lines[at[0]] = `${indent}${icons.length ? icons.map((name) => `\`${name}\``).join(', ') : 'none'}.`;
   return lines.join('\n');
 }
 
@@ -37,7 +37,7 @@ export function brandBook(source, icons) {
 export function brandBookProblems(text, icons) {
   const problems = [];
   if (Buffer.byteLength(text) > README_CAP) problems.push('README.md is over 200 KB');
-  if (text.includes(ICONS_MARKER)) problems.push(`README.md still holds the ${ICONS_MARKER} line`);
+  if (text.split('\n').some((line) => line.trim() === ICONS_MARKER)) problems.push(`README.md still holds the ${ICONS_MARKER} line`);
   const unlisted = icons.filter((name) => !text.includes(`\`${name}\``));
   if (unlisted.length) problems.push(`README.md does not list the icons ${unlisted.join(', ')}`);
   if (!text.includes(FONTS)) problems.push('README.md does not give the fonts link the previews load');
