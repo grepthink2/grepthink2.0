@@ -164,6 +164,7 @@ const METHODS = [
   'markAllPresent',
   'markConversationRead',
   'markNotificationRead',
+  'markNotificationsRead',
   'moveScrumTask',
   'promoteToTA',
   'queueInvite',

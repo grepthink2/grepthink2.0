@@ -1009,6 +1009,17 @@ def mark_notification_read(notification_id: str, user_id: str) -> None:
         raise HTTPException(status_code=404, detail="Notification not found")
 
 
+def mark_notifications_read(ids: list[str], user_id: str) -> None:
+    """Mark those of ``ids`` that are ``user_id``'s and still unread, read, in one update.
+
+    An id of another user's notification, or of none, changes nothing, and the caller is not
+    told which: the answer is the same either way. A row already read keeps when it was read.
+    """
+    _client().table("notifications").update({"read_at": _now_iso()}).in_("id", sorted(set(ids))).eq(
+        "user_id", user_id
+    ).is_("read_at", "null").execute()
+
+
 def mark_all_read(user_id: str) -> None:
     _client().table("notifications").update(
         {

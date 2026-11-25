@@ -7,5 +7,6 @@ from app.notifications import views
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
 router.get("")(views.list_notifications)
+router.post("/read")(views.mark_notifications_read)
 router.post("/read-all")(views.mark_all_read)
 router.post("/{notification_id}/read")(views.mark_notification_read)

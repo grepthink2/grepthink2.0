@@ -9,7 +9,11 @@ from fastapi import Depends, Query, Response, status
 
 from app.dependencies import require_user
 from app.notifications import controller
-from app.notifications.models import NotificationItem, NotificationsListResponse
+from app.notifications.models import (
+    MarkNotificationsReadRequest,
+    NotificationItem,
+    NotificationsListResponse,
+)
 
 
 def list_notifications(
@@ -38,4 +42,12 @@ def mark_notification_read(
 
 def mark_all_read(user_id: str = Depends(require_user)) -> Response:
     controller.mark_all_read(user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def mark_notifications_read(
+    payload: MarkNotificationsReadRequest,
+    user_id: str = Depends(require_user),
+) -> Response:
+    controller.mark_notifications_read([str(i) for i in payload.ids], user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

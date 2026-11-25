@@ -18,6 +18,14 @@ export const notificationsApi = {
     });
   },
 
+  /** Marks those of `ids` that are the caller's read, in one request (1 to 100 ids). */
+  markNotificationsRead: async (ids: string[]) => {
+    return apiRequest<void>('/api/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  },
+
   markAllNotificationsRead: async () => {
     return apiRequest<void>('/api/notifications/read-all', {
       method: 'POST',

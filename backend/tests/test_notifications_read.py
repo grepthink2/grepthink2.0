@@ -152,3 +152,54 @@ def test_the_list_and_its_unread_count_are_read_in_one_wave(db):
 def test_get_profile_without_a_row_is_empty(db):
     # supabase-py 2.x answers None, not an empty response, when maybe_single() finds no row.
     assert notifications._get_profile("nobody") == {}
+
+
+# ------------------------------------------------- POST /api/notifications/read: several at once
+
+
+def _mark(client, ids, *, headers=None):
+    return client.post(
+        "/api/notifications/read",
+        json={"ids": ids},
+        headers=headers if headers is not None else header_for("mia@ucsc.edu", sub=ME),
+    )
+
+
+def test_several_of_my_notifications_are_marked_read_in_one_update(db, client):
+    res = _mark(client, [N1, N3])
+    assert (res.status_code, res.content) == (204, b"")
+    assert _read_at(db, N1) is not None and _read_at(db, N3) is not None
+    assert [(q["table"], q["op"]) for q in db.queries] == [("notifications", "update")]
+
+
+def test_a_row_already_read_keeps_when_it_was_read(db, client):
+    assert _mark(client, [N2]).status_code == 204
+    assert _read_at(db, N2) == "2026-10-04T00:00:00+00:00"
+
+
+def test_ids_that_are_not_mine_are_ignored_and_the_answer_is_the_same(db, client):
+    """Another user's id, or one that matches nothing, answers like the caller's own: the
+    answer never says whether a notification exists."""
+    mine = _mark(client, [N1])
+    theirs = _mark(client, [N4, GONE])
+    assert (mine.status_code, mine.content) == (theirs.status_code, theirs.content) == (204, b"")
+    assert _read_at(db, N4) is None
+
+
+@pytest.mark.parametrize(
+    "ids",
+    [[], ["nope"], [N1] * 101, None, "not-a-list"],
+    ids=["empty", "not a uuid", "over 100", "null", "a string"],
+)
+def test_a_bad_list_is_422_before_any_query(db, client, ids):
+    assert _mark(client, ids).status_code == 422
+    assert db.executes == 0
+
+
+def test_a_hundred_is_the_most(db, client):
+    assert _mark(client, [N1] * 100).status_code == 204
+
+
+def test_marking_several_read_needs_a_sign_in(db, client):
+    assert _mark(client, [N1], headers={}).status_code == 401
+    assert _read_at(db, N1) is None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,3 +54,9 @@ class NotificationsListResponse(BaseModel):
     notifications: list[NotificationItem]
     unread_count: int
     next_cursor: str | None = None
+
+
+class MarkNotificationsReadRequest(BaseModel):
+    """``POST /api/notifications/read``: the notifications to mark read, 1 to 100 of them."""
+
+    ids: list[UUID] = Field(min_length=1, max_length=100)
