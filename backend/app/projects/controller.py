@@ -810,10 +810,11 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         Dictionary with message and request data
 
     Raises:
-        HTTPException: If project not found, already a member, or pending request exists
+        HTTPException: 404 if the project is not found, 403 if the caller is not enrolled in
+        its class, 400 if already a member or a pending request exists
 
     Every check reads in one concurrent wave: the project, the caller's
-    memberships and any pending row for this project. A rejected request
+    memberships, any pending row for this project and the caller's enrollments. A rejected request
     therefore writes nothing.
     """
     try:
@@ -852,6 +853,15 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                     ).data
                     or []
                 ),
+                "enrolled_in": lambda: (
+                    (
+                        client.table("class_enrollments")
+                        .select("class_id")
+                        .eq("user_id", user_id)
+                        .execute()
+                    ).data
+                    or []
+                ),
             }
         )
 
@@ -859,6 +869,8 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         project = reads["project"][0]
         new_project_name = project.get("name", "the new project")
+        if str(project.get("class_id")) not in {str(e["class_id"]) for e in reads["enrolled_in"]}:
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
         memberships = reads["memberships"]
         if any(str(m.get("project_id")) == pid for m in memberships):
@@ -933,10 +945,13 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
       **owner** / **product owner** / **admin** may accept.
     - **Team invite** (``invited_by`` set): only the invitee (``user_id`` on the row) may accept.
 
+    The user joining must still be enrolled in the project's class (400 otherwise): an enrollment
+    can end while a request or invite waits. It is read alongside the class's projects.
+
     The request row is read with its project and class embedded, the class's
     projects/members are read once and reused for the leave-previous-team
-    step, the scrum-master check and the ``num_members`` write — about 11
-    round trips when the student changes teams, 8 when they do not (was 13-17).
+    step, the scrum-master check and the ``num_members`` write — about 12
+    round trips when the student changes teams, 9 when they do not.
     The writes are still not transactional (see CODE_REVIEW.md #10).
     """
     try:
@@ -981,9 +996,24 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         class_projects: list[dict] = []
         class_members: list[dict] = []
         if class_id:
-            class_projects = (
-                client.table("projects").select("id, name").eq("class_id", str(class_id)).execute()
-            ).data or []
+            reads = fan_out(
+                {
+                    "projects": lambda: (
+                        (
+                            client.table("projects")
+                            .select("id, name")
+                            .eq("class_id", str(class_id))
+                            .execute()
+                        ).data
+                        or []
+                    ),
+                    "enrollment": lambda: authz.get_enrollment_role(client, class_id, new_user),
+                }
+            )
+            # Enrollment can end while a request or invite waits; only the class joins its teams.
+            if reads["enrollment"] is None:
+                raise HTTPException(status_code=400, detail=authz.USER_NOT_ENROLLED)
+            class_projects = reads["projects"]
             class_members = (
                 client.table("project_members")
                 .select("project_id, user_id, role")
@@ -1888,8 +1918,6 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
     )
     if role is None:
         role = ROLE_MEMBER
-    if role not in PROJECT_ROLES:
-        raise HTTPException(status_code=400, detail=INVALID_ROLE_DETAIL)
     try:
         client = get_client()
         pid, tid, rid = str(project_id), str(target_user_id), str(requester_id)
@@ -1915,6 +1943,8 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
                 status_code=403,
                 detail="Only instructors, product owners, and admins can add members",
             )
+        if role not in PROJECT_ROLES:
+            raise HTTPException(status_code=400, detail=INVALID_ROLE_DETAIL)
         # No profile row and no enrollment read the same: nothing here says whether an id exists.
         if authz.get_enrollment_role(client, project["class_id"], tid) is None:
             raise HTTPException(status_code=400, detail=authz.USER_NOT_ENROLLED)

@@ -128,7 +128,7 @@
       "id": "request_join_project", "title": "Request to join a project", "role": "student",
       "method": "POST", "endpoint": "/api/projects/request-join",
       "params": {"project_id": "uuid!", "message": "string"},
-      "note": "The student stays on their current team while the request is pending; acceptance moves them out of any other team in the class and tells its product owner."
+      "note": "Only someone enrolled in the project's class may ask (403 'You are not enrolled in this class' otherwise). The student stays on their current team while the request is pending; acceptance moves them out of any other team in the class and tells its product owner, and is refused (400 'User is not enrolled in this class') if their enrollment ended meanwhile."
     },
     {
       "id": "accept_join_request", "title": "Accept a join request", "role": "owner|product owner|admin|instructor",

@@ -514,7 +514,7 @@ def test_accept_student_request_moves_them_and_notifies_old_product_owner(db):
     assert [n["user_id"] for n in notes] == [S5]  # P2's product owner
     assert notes[0]["type"] == "join_request" and notes[0]["title"] == "Member left your project"
     assert "Beta" in notes[0]["body"] and "Alpha" in notes[0]["body"]
-    assert db.executes <= 11, [q["table"] + ":" + q["op"] for q in db.queries]
+    assert db.executes <= 12, [q["table"] + ":" + q["op"] for q in db.queries]
 
 
 def test_the_product_owner_accepts_a_request_once(db):
@@ -540,6 +540,35 @@ def test_the_invitee_accepts_a_team_invite(db):
     )
     projects.accept_join_request("r2", S4)
     assert S4 in _members(db, P1)
+
+
+def test_nobody_outside_the_class_asks_to_join_a_team(db):
+    with pytest.raises(HTTPException) as exc:
+        projects.request_to_join_project(P1, OUTSIDER, "let me in")
+    assert (exc.value.status_code, exc.value.detail) == (403, "You are not enrolled in this class")
+    assert db.rows("project_join_requests") == []
+
+
+@pytest.mark.parametrize("invited_by", [None, S1])  # a request, and a team invite
+def test_a_request_or_invite_for_someone_no_longer_enrolled_is_not_accepted(db, invited_by):
+    db.rows("project_join_requests").append(
+        {
+            "id": "r9",
+            "project_id": P1,
+            "user_id": S4,
+            "request_status": "pending",
+            "invited_by": invited_by,
+        }
+    )
+    db.rows("class_enrollments")[:] = [
+        e for e in db.rows("class_enrollments") if e["user_id"] != S4
+    ]
+    with pytest.raises(HTTPException) as exc:
+        projects.accept_join_request("r9", S4 if invited_by else S1)
+    assert (exc.value.status_code, exc.value.detail) == (400, "User is not enrolled in this class")
+    assert S4 not in _members(db, P1)
+    assert db.rows("project_join_requests")[0]["request_status"] == "pending"
+    assert _num_members(db, P1) == 2
 
 
 # ------------------------------------------------------------------- delete_project
