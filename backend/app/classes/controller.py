@@ -1855,19 +1855,22 @@ def _remove_dropped_roster_students_from_teams(client, class_id: str) -> int:
         staying = [uid for uid in members_by_project.get(pid, []) if uid not in leavers]
         for uid in sorted(leavers):
             row = dropped_by_user.get(uid, {})
-            display_name = _roster_entry_name(row) or row.get("email") or "A student"
-            body = (
-                f"{display_name} has dropped the course and was removed from "
-                f'"{project_names.get(pid, "Unknown project")}".'
-            )
+            roster_name = _roster_entry_name(row)
+            display_name = roster_name or row.get("email") or "A student"
+            team_name = project_names.get(pid, "Unknown project")
+            body = f'{display_name} has dropped the course and was removed from "{team_name}".'
             notifications.extend(
                 {
                     "user_id": recipient,
                     "type": "member_removed",
-                    "title": "Team member removed",
+                    # A name or "Someone", never the email the body may fall back on.
+                    "title": f"{roster_name or 'Someone'} was removed from {team_name}",
                     "body": body,
                     "entity_type": "project",
                     "entity_id": pid,
+                    "class_id": cid,
+                    "project_id": pid,
+                    "actor_id": uid,
                 }
                 for recipient in staying
             )

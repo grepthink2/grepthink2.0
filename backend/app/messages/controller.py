@@ -143,8 +143,12 @@ def notify_recipients(
     sender_name: str | None,
     conversation_id: str,
     body: str,
+    sender_id: str | None = None,
+    project_id: str | None = None,
+    class_id: str | None = None,
 ) -> None:
-    """Fan out the new-message notification to every other participant."""
+    """Fan out the new-message notification to every other participant. A team channel's
+    notices record its team and class; a direct message's record neither."""
     from app.notifications.controller import notify_new_message
 
     for recipient_id in recipient_ids:
@@ -154,6 +158,9 @@ def notify_recipients(
                 sender_name=sender_name,
                 conversation_id=conversation_id,
                 body=body,
+                sender_id=sender_id,
+                project_id=project_id,
+                class_id=class_id,
             )
         except Exception:
             # Notifications are best-effort: never fail a persisted send,
@@ -195,8 +202,11 @@ def send_message(
             detail=f"Message exceeds {MAX_MESSAGE_CODEPOINTS} character limit",
         )
 
+    project_id = class_id = None  # a direct message belongs to no team
     if conversation_id:
         conv, participant_ids = _require_participant(conversation_id, sender_id)
+        project_id = conv.get("project_id")
+        class_id = (conv.get("projects") or {}).get("class_id")
         if conv["type"] == "dm":
             other_id = conv["user_b"] if conv["user_a"] == sender_id else conv["user_a"]
             if not can_message(sender_id, other_id):
@@ -263,6 +273,9 @@ def send_message(
         sender_name=sender_name,
         conversation_id=conversation_id,
         body=body,
+        sender_id=sender_id,
+        project_id=project_id,
+        class_id=class_id,
     )
 
     return {"conversation_id": conversation_id, "message": message_row}
@@ -302,7 +315,8 @@ def _require_participant(conversation_id: str, caller_id: str) -> tuple[dict, li
         {
             "conversation": lambda: (
                 client.table("conversations")
-                .select("id, type, user_a, user_b, project_id")
+                # A team channel's class too, for its message notifications (sending).
+                .select("id, type, user_a, user_b, project_id, projects(class_id)")
                 .eq("id", conversation_id)
                 .maybe_single()
                 .execute()

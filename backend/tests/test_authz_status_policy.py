@@ -258,6 +258,7 @@ def db(monkeypatch):
         relations={
             ("projects", "classes"): ("class_id", "id", False),
             ("projects", "project_members"): ("id", "project_id", True),
+            ("conversations", "projects"): ("project_id", "id", False),
             ("project_join_requests", "projects"): ("project_id", "id", False),
             ("TSRs", "projects"): ("project_id", "id", False),
             ("TSRs", "assignments"): ("assignment_id", "id", False),

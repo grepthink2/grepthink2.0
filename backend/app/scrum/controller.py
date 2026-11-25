@@ -1672,6 +1672,9 @@ def _fanout_mentions(
             body_md=body_md,
             entity_type=f"scrum_{parent_kind}",
             entity_id=f"{pid}:{parent_id}",
+            author_id=str(author_id),
+            project_id=pid,
+            class_id=reads["project"].get("class_id"),
         )
     except Exception:
         logger.exception(

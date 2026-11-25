@@ -45,6 +45,12 @@ def test_send_to_a_user_inserts_marks_the_sender_read_and_notifies_the_recipient
     assert "conversation_reads" in table_calls
     assert notify.call_args.kwargs["recipient_ids"] == ["bob"]
     assert notify.call_args.kwargs["sender_name"] == "Alice Adams"
+    # A direct message: the sender, and no team or class.
+    assert {k: notify.call_args.kwargs[k] for k in ("sender_id", "project_id", "class_id")} == {
+        "sender_id": "alice",
+        "project_id": None,
+        "class_id": None,
+    }
 
 
 @pytest.mark.parametrize(
@@ -174,7 +180,14 @@ def _wire_insert(client, conv="conv-t"):
 @patch(
     "app.messages.controller._require_participant",
     return_value=(
-        {"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+        {
+            "id": "conv-t",
+            "type": "team_members",
+            "user_a": None,
+            "user_b": None,
+            "project_id": "proj-1",
+            "projects": {"class_id": "class-1"},
+        },
         ["alice", "bob", "carol"],
     ),
 )
@@ -188,6 +201,11 @@ def test_team_channel_send_notifies_others(client, _conv, notify):
     _, kwargs = notify.call_args
     assert sorted(kwargs["recipient_ids"]) == ["bob", "carol"]
     assert kwargs["sender_name"] == "Alice Adams"
+    assert (kwargs["sender_id"], kwargs["project_id"], kwargs["class_id"]) == (
+        "alice",
+        "proj-1",
+        "class-1",
+    )
 
 
 @patch(

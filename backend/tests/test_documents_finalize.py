@@ -221,14 +221,27 @@ def test_finalize_tells_the_meeting_ta_and_the_review_ta(db):
     notes = db.rows("notifications")
     assert sorted(n["user_id"] for n in notes) == sorted([MEETING_TA, REVIEW_TA])
     assert {
-        (n["type"], n["title"], n["body"], n["entity_type"], n["entity_id"]) for n in notes
+        (
+            n["type"],
+            n["title"],
+            n["body"],
+            n["entity_type"],
+            n["entity_id"],
+            n.get("class_id"),
+            n.get("project_id"),
+            n.get("actor_id"),
+        )
+        for n in notes
     } == {
         (
             "document_finalized",
-            "Document finalized",
+            "Trailhead handed in its Sprint 2 report",
             "Trailhead finalized its Sprint 2 report",
             "document",
             doc,
+            CLASS,
+            PID,
+            SM,
         )
     }
     emails = db.rows("email_outbox")

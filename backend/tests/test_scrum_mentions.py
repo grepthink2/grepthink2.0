@@ -79,6 +79,8 @@ def test_a_task_comment_notifies_the_mentioned_teammate(monkeypatch):
     assert row["title"] == "Tony Wu mentioned you on GT-12"
     assert row["body"] == "Trailhead: @Ana can you review?"
     assert (row["entity_type"], row["entity_id"]) == ("scrum_task", f"{PID}:t1")
+    # The author, the team and its class, from the project the fan-out already read.
+    assert (row["actor_id"], row["project_id"], row["class_id"]) == (UID, PID, CLASS)
 
 
 def test_a_story_comment_points_at_the_story(monkeypatch):

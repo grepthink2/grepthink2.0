@@ -668,6 +668,7 @@ def test_a_rejected_address_fails_the_row_and_tells_whoever_queued_it(db, mail, 
         "body": "Your invite to student@ucsc.edu couldn't be delivered (the mail server refused it).",
         "entity_type": "class",
         "entity_id": CLASS,
+        "class_id": CLASS,
     }
     # A mistyped address needs the instructor, not a developer: a warning, no Sentry event.
     assert outbox_logs(caplog) == [
@@ -2418,6 +2419,7 @@ def test_the_notification_names_the_address_and_the_reason(db, class_id, entity)
         class_id=class_id,
         reason="the address was rejected",
     )
+    # The class, when there is one, is also recorded as the notice's class.
     assert note_of(db) == {
         "user_id": INSTRUCTOR,
         "type": "email_undeliverable",
@@ -2425,4 +2427,5 @@ def test_the_notification_names_the_address_and_the_reason(db, class_id, entity)
         "body": "Your invite to a@ucsc.edu couldn't be delivered (the address was rejected).",
         "entity_type": entity[0],
         "entity_id": entity[1],
+        **({"class_id": class_id} if class_id else {}),
     }

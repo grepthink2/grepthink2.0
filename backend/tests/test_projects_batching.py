@@ -441,10 +441,12 @@ def test_reject_student_request_marks_it_rejected_and_notifies_the_requester(db)
         {
             "user_id": S4,
             "type": "join_rejected",
-            "title": "Join request denied",
+            "title": "Alpha declined your request to join",
             "body": 'Your request to join "Alpha" was denied.',
             "entity_type": "project",
             "entity_id": P1,
+            "class_id": CLASS,
+            "project_id": P1,
         }
     ]
 
@@ -505,10 +507,13 @@ def test_request_to_join_creates_a_pending_request_and_notifies_the_owner(db):
         {
             "user_id": S3,  # P2's owner
             "type": "join_request",
-            "title": "New join request",
+            "title": "S6 X asked to join Beta",
             "body": 'S6 X requested to join Beta. "hello team"',
             "entity_type": "project",
             "entity_id": P2,
+            "class_id": CLASS,
+            "project_id": P2,
+            "actor_id": S6,
         }
     ]
 
@@ -526,10 +531,13 @@ def test_a_request_nobody_on_the_team_can_review_goes_to_the_class_instructor(db
         {
             "user_id": INSTR,  # CLASS's instructor
             "type": "join_request_unreviewed",
-            "title": "Join request needs your review",
+            "title": "S6 X's request to join Beta needs your review",
             "body": 'S6 X requested to join Beta, which has no product owner or admin to review it. "hi"',
             "entity_type": "project",
             "entity_id": P2,
+            "class_id": CLASS,
+            "project_id": P2,
+            "actor_id": S6,
         }
     ]
     # the usual path plus one read of the project's class for its instructor
@@ -556,7 +564,7 @@ def test_request_to_join_keeps_the_student_on_their_team_until_it_is_accepted(db
     assert _team_of(db, S2) == {P1}
     assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 2
     assert [(n["user_id"], n["title"]) for n in db.rows("notifications")] == [
-        (S3, "New join request")  # P2's owner; nobody hears that S2 left, because S2 has not
+        (S3, "S2 X asked to join Beta")  # P2's owner; nobody hears that S2 left, because S2 has not
     ]
     assert not any(q["op"] == "delete" for q in db.queries), _trace(db)
 
@@ -566,10 +574,11 @@ def test_accepting_the_request_moves_the_student_and_tells_the_old_product_owner
     projects.accept_join_request(out["request"]["id"], S3)  # P2's owner accepts
     assert _team_of(db, S2) == {P2}
     assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 1
-    left = [n for n in db.rows("notifications") if n["title"] == "Member left your project"]
-    assert [(n["user_id"], n["body"], n["entity_id"]) for n in left] == [
-        (S1, 'S2 X has left "Alpha" to join "Beta".', P1)
-    ]
+    left = [n for n in db.rows("notifications") if n["type"] == "member_removed"]
+    assert [
+        (n["user_id"], n["title"], n["body"], n["entity_id"], n["class_id"], n["actor_id"])
+        for n in left
+    ] == [(S1, "S2 X left Alpha", 'S2 X has left "Alpha" to join "Beta".', P1, CLASS, S2)]
 
 
 @pytest.mark.parametrize("outcome", ["rejected by the owner", "cancelled by the student"])
@@ -617,6 +626,15 @@ def test_create_project_budget(db, waves):
     assert [
         (m["project_id"], m["role"]) for m in db.rows("project_members") if m["user_id"] == S6
     ] == [(gamma["id"], "product owner")]
+    [note] = db.rows("notifications")
+    assert {k: note.get(k) for k in ("user_id", "type", "title", "class_id", "project_id")} == {
+        "user_id": INSTR,
+        "type": "project_created",
+        "title": "S6 X created Gamma",
+        "class_id": CLASS,
+        "project_id": gamma["id"],
+    }
+    assert note.get("actor_id") == S6
     # One wave (the class, S6's enrollment); CLASS's teams and S6's memberships in them; the
     # insert; S6's member row and the recount (a read and a write); the instructor's notification
     # (S6's profile, the insert).

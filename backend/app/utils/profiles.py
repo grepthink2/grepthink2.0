@@ -3,14 +3,18 @@
 PROFILE_SELECT = "id, email, first_name, last_name"
 
 
-def profile_display_name(profile: dict | None) -> str:
-    """Human-friendly label: 'First Last', else email, else empty string."""
+def profile_name(profile: dict | None) -> str:
+    """'First Last', or an empty string: never the email, for a line other people read."""
     if not profile:
         return ""
     first = (profile.get("first_name") or "").strip()
     last = (profile.get("last_name") or "").strip()
-    full = f"{first} {last}".strip()
-    return full or (profile.get("email") or "")
+    return f"{first} {last}".strip()
+
+
+def profile_display_name(profile: dict | None) -> str:
+    """Human-friendly label: 'First Last', else email, else empty string."""
+    return profile_name(profile) or ((profile or {}).get("email") or "")
 
 
 def needs_roster_email(profile: dict) -> bool:
