@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 
 describe('NotificationsProvider', () => {
-  it('lists the unread notifications, as the dropdown shows only those', async () => {
+  it('lists the 50 newest unread notifications, as the dropdown shows only those', async () => {
     render(
       <NotificationsProvider>
         <UnreadCount />
@@ -39,7 +39,8 @@ describe('NotificationsProvider', () => {
     expect(await screen.findByText('4 unread, 0 listed')).toBeInTheDocument();
     await waitFor(() => expect(getNotifications).toHaveBeenCalled());
     for (const call of getNotifications.mock.calls) {
-      expect(call[0]).toEqual({ view: 'unread' });
+      // The dropdown listed 50 before the list took pages (the server's page is 30).
+      expect(call[0]).toEqual({ view: 'unread', limit: 50 });
     }
   });
 });
