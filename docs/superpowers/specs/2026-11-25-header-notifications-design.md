@@ -1,6 +1,6 @@
 # Header notifications: one header family, and a panel that keeps what you have read
 
-**Date:** 2026-11-25 · **Status:** approved by the maintainer, 2026-11-25
+**Date:** 2026-11-25 · **Status:** approved by the maintainer, 2026-11-25 · amended 2026-11-25 (section 12)
 
 ## 1. Why
 
@@ -29,7 +29,7 @@ The 2026-11-19 design round covered this with profile pages. Its brief is
 1. Each notification says its kind, where it is from and who caused it.
 2. The panel has two views, **Unread** and **All** (the last 30 days). A read notification stays in
    All. Nothing is deleted.
-3. A day of messages from one conversation is one row.
+3. A conversation's unread messages are one row that says how many there are.
 4. The bell, the search trigger and the profile button are one family: one height, radius, surface
    and icon size, on desktop and on a phone.
 5. A mention opens its card on the team's board.
@@ -50,6 +50,9 @@ browser notifications, new notification types, and the hover card in Messages.
 - Twelve types (`NOTIFICATION_TYPES`). Fourteen call sites create them, through
   `_insert_notification`, `_insert_notifications` and `_upsert_unread_notification`, all
   best-effort: a failed insert is logged and never raised.
+- A new message does not add a row: it rewrites the one unread `message` row of its conversation
+  with the latest sender and text. So the bell counts conversations, not messages, and a busy
+  channel cannot flood it. Nothing records how many messages the row stands for.
 - "Member left your project" is filed as `join_request`, so it opens Home's join requests.
 - A mention's `entity_id` is `<project id>:<story or task id>`, and the board already opens a card
   from `?task=` or `?story=`.
@@ -69,7 +72,7 @@ existing dropdown keeps working: it asks for the unread view and ignores the new
 **Pull request 2, the header and the panel.** The kit's `raised` icon button, the header family,
 the bell, the panel, the profile menu.
 
-The migration is additive (three nullable columns, and data fixes to existing rows). **It is applied to DEV and then to
+The migration is additive (four nullable columns, and data fixes to existing rows). **It is applied to DEV and then to
 PROD before pull request 1 merges**, so the code never runs against a schema without the columns.
 Old code ignores columns it does not select. The maintainer is asked before the PROD step.
 
@@ -81,8 +84,16 @@ Old code ignores columns it does not select. The maintainer is asked before the 
 ALTER TABLE notifications
   ADD COLUMN class_id   uuid REFERENCES classes(id)  ON DELETE SET NULL,
   ADD COLUMN project_id uuid REFERENCES projects(id) ON DELETE SET NULL,
-  ADD COLUMN actor_id   uuid REFERENCES profiles(id) ON DELETE SET NULL;
+  ADD COLUMN actor_id   uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  ADD COLUMN message_count integer;
 ```
+
+- `message_count` is for `message` rows: how many messages the row stands for. A new message to a
+  conversation whose row is still unread adds one and rewrites the title, body and actor with the
+  latest; once the row is read, the next message starts a new row at 1. Null (every row written
+  before this change, and every other type) reads as 1.
+- The count is read and written back by the same request that rewrites the row. Two messages
+  landing at the same instant can count as one; the row still shows the latest message.
 
 - Ids are stored; names are joined on read, so a renamed team shows its new name.
 - A deleted class, team or account leaves the notification, without that part of its line.
@@ -128,7 +139,8 @@ In the same migration, as data fixes:
     "class": { "id", "name" } | null,
     "team": { "id", "name" } | null,
     "actor": { "id", "name", "image_url" } | null,
-    "conversation": { "id", "kind": "direct" | "team", "name" } | null   // messages only
+    "conversation": { "id", "kind": "direct" | "team", "name" } | null,  // messages only
+    "message_count": 3                                                    // messages only; 1 otherwise
   }],
   "unread_count": 12,
   "next_cursor": "…" | null
@@ -226,10 +238,14 @@ The kit's `Popover`, end-aligned, holding a non-modal dialog labelled by its hea
   `complete_profile`. A row written before this change has none.
 - **When.** In the viewer's zone: "Just now", "12 min ago", "3 h ago" under a day, then a date. The
   full time is the `<time>` element's title.
-- **A group.** Messages from one conversation on one local day are one row: "3 messages from Ravi
-  Patel and Ashton Liu", the latest message with its sender as the body, "Mark 3 messages read".
-  Opening it opens the conversation and marks all of them read. Nothing else is grouped. Grouping
-  is the client's; the API keeps one row a message.
+- **Messages.** A row with one message keeps its title ("New message from Ravi Patel"). With more,
+  the client words it from the count and the conversation: "3 new messages in Trailhead" for a team
+  channel, "3 new messages from Ravi Patel" for a direct message, with the latest message and its
+  sender as the body.
+- **A day of one conversation is one row.** In All, the rows of one conversation on one local day
+  (the unread one and those already read) fold into one, their counts added; its button says "Mark
+  read" while any of them is unread. Opening it opens the conversation and marks all of them read.
+  Nothing else is folded. Folding is the client's.
 - **On a phone** the same panel is a sheet pinned under the header, 8px from each side, with 44px
   rows and controls.
 
@@ -271,6 +287,9 @@ the build is checked before and after.
 
 ## 7. Where this departs from the design handoff
 
+- **Messages are counted, not listed.** The design assumes a row for each message and names every
+  sender ("3 messages from Ravi Patel and Ashton Liu"). The app keeps one unread row a conversation,
+  so the row counts its messages and names the latest sender.
 - **Conversation kinds.** The design has `team`, `direct` and `class`. There is no class channel,
   so the answer has `direct` and `team`.
 - **The Unread view has no 30-day floor.** The design windows both views; then an unread row older
@@ -287,7 +306,8 @@ the build is checked before and after.
 1. Two pull requests: data, then the header and the panel.
 2. The where-line and the actor are stored as ids on the row and joined on read (option A), with a
    backfill of class and team for existing rows.
-3. Messages of one conversation and day are grouped, in the client.
+3. A conversation's unread messages stay one row, which counts them (`message_count`); the client
+   folds a conversation's rows of one day.
 4. Titles are rewritten.
 5. "View profile" goes in the profile menu.
 
@@ -321,3 +341,11 @@ the build is checked before and after.
 - Which lucide icon each kind uses, from the design's `NotificationIcon`.
 - Whether the panel's rows are one component file or two.
 - The exact names of the foreign-key constraints and the index, if one is needed for the cursor.
+
+## 12. Amendments
+
+**2026-11-25, before any code.** The approved text said the API keeps one row a message and the
+client groups a day of them. It does not: a new message rewrites its conversation's one unread row
+(section 3). That is kept, because it is what stops a busy channel flooding the bell. The row gains
+`message_count` (section 5.1), the answer carries it (section 5.4), and the panel words a row from
+it (section 6.4). Sections 2, 3, 5.1, 5.4, 6.4, 7 and 8 are changed in place.
