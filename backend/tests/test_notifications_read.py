@@ -9,6 +9,7 @@ independent reads, run in one wave after the reminders they must see.
 from __future__ import annotations
 
 import threading
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import HTTPException
@@ -41,6 +42,11 @@ def db(monkeypatch):
     """ME's profile is complete and ME owns no class, so a list writes no reminder. ME has
     two unread notifications and a read one; OTHER has one, unread."""
     fake = FakeSupabase(
+        relations={
+            ("notifications", "classes"): ("class_id", "id", False),
+            ("notifications", "projects"): ("project_id", "id", False),
+            ("notifications", "profiles!notifications_actor_id_fkey"): ("actor_id", "id", False),
+        },
         profiles=[
             {
                 "id": ME,
@@ -60,6 +66,8 @@ def db(monkeypatch):
         ],
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    # All lists the last 30 days: a day after the newest row, every row is in it.
+    monkeypatch.setattr(notifications, "_now", lambda: datetime(2026, 10, 6, tzinfo=UTC))
     return fake
 
 
@@ -94,7 +102,7 @@ def test_marking_another_users_notification_read_is_404_and_leaves_it_unread(db)
     assert _read_at(db, N4) is None
 
 
-def test_the_list_and_unread_count_come_back_as_before(db):
+def test_the_list_and_unread_count_come_back_with_each_rows_names(db):
     out = notifications.list_notifications(ME)
     assert [n["id"] for n in out["notifications"]] == [N2, N3, N1]  # newest first
     assert set(out["notifications"][0]) == {
@@ -106,9 +114,15 @@ def test_the_list_and_unread_count_come_back_as_before(db):
         "entity_id",
         "read_at",
         "created_at",
+        "class",
+        "team",
+        "actor",
+        "conversation",
+        "message_count",
     }
     assert out["unread_count"] == 2
     # ME's profile and its reminder's cleanup, the classes ME owns, then the list and the count.
+    # (These rows' conversation ids are not UUIDs, so there is no conversation to read.)
     assert db.executes == 5
 
 

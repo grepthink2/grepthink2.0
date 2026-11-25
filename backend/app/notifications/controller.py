@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
-from datetime import UTC, datetime
+import re
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
@@ -817,25 +822,132 @@ def notify_team_member_dropped_from_roster(
         )
 
 
-def list_notifications(user_id: str, *, limit: int = 50) -> dict:
+#: All lists the last 30 days, read and unread; Unread lists every unread row, whatever its age.
+WINDOW_DAYS = 30
+PAGE_SIZE = 30
+MAX_PAGE_SIZE = 100
+
+_LIST_COLUMNS = (
+    "id, type, title, body, entity_type, entity_id, read_at, created_at, message_count, "
+    "class:classes(id, name), team:projects(id, name), "
+    # notifications has two keys to profiles (user_id is the other), so the actor's names its own.
+    "actor:profiles!notifications_actor_id_fkey(id, first_name, last_name, image_url)"
+)
+_ITEM_KEYS = ("id", "type", "title", "body", "entity_type", "entity_id", "read_at", "created_at")
+_UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+#: What a team channel adds to its team's name: "Trailhead · TAs".
+_CHANNEL_SUFFIX = {"team_ta": "TAs", "team_instructor": "Instructor"}
+
+
+def _now() -> datetime:
+    """The clock the list's 30-day window reads (tests patch it)."""
+    return datetime.now(UTC)
+
+
+def _encode_cursor(created_at: str, id: str) -> str:
+    """The cursor after a row: its ``created_at`` and ``id``, opaque to the client."""
+    return base64.urlsafe_b64encode(f"{created_at}|{id}".encode()).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> tuple[str, str]:
+    """The ``created_at`` (an instant with its zone) and ``id`` (a UUID) a cursor names, both
+    rewritten in their own canonical form before they reach a filter. Anything else is a 422."""
+    try:
+        text = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode()
+        created_at, row_id = text.split("|")
+        when = datetime.fromisoformat(created_at)
+        if when.tzinfo is None:
+            raise ValueError("a cursor's instant names its zone")
+        return when.isoformat(), str(uuid.UUID(row_id))
+    except (ValueError, UnicodeDecodeError, binascii.Error):
+        raise HTTPException(status_code=422, detail="Invalid cursor") from None
+
+
+def _ref(row: dict | None) -> dict | None:
+    return {"id": row["id"], "name": row.get("name") or ""} if row else None
+
+
+def _actor(row: dict | None) -> dict | None:
+    """The person who caused a notice, by name or ``""``: never their email."""
+    if not row:
+        return None
+    return {"id": row["id"], "name": profile_name(row), "image_url": row.get("image_url")}
+
+
+def _conversations(client, rows: list[dict]) -> dict[str, dict]:
+    """The conversations the page's message rows are about, by id, in one read: a direct message
+    is ``direct`` and unnamed (its sender is the row's actor); a team channel is ``team``, named
+    for its team, with "TAs" or "Instructor" for those channels."""
+    ids = sorted(
+        {
+            str(row["entity_id"]).lower()
+            for row in rows
+            if row.get("type") == "message" and _UUID.match(str(row.get("entity_id") or ""))
+        }
+    )
+    if not ids:
+        return {}
+    found = (
+        client.table("conversations")
+        .select("id, type, project_id, projects(name)")
+        .in_("id", ids)
+        .execute()
+    ).data or []
+    out = {}
+    for conv in found:
+        if conv.get("type") == "dm":
+            out[str(conv["id"]).lower()] = {"id": conv["id"], "kind": "direct", "name": ""}
+            continue
+        parts = [(conv.get("projects") or {}).get("name"), _CHANNEL_SUFFIX.get(conv.get("type"))]
+        name = " · ".join(part for part in parts if part)
+        out[str(conv["id"]).lower()] = {"id": conv["id"], "kind": "team", "name": name}
+    return out
+
+
+def list_notifications(
+    user_id: str,
+    *,
+    view: Literal["unread", "all"] = "all",
+    cursor: str | None = None,
+    limit: int = PAGE_SIZE,
+) -> dict:
+    """A page of ``user_id``'s notifications, newest first, with the unread count.
+
+    ``unread`` is every unread row, whatever its age; ``all`` is the last :data:`WINDOW_DAYS`
+    days, read and unread. ``unread_count`` counts every unread row in both views. The cursor
+    is the last row's ``created_at`` and ``id``, so rows that share an instant are neither
+    repeated nor skipped; ``next_cursor`` is ``None`` on the last page. Each row names its class,
+    team and actor (joined on read; ``None`` once deleted), a message row its conversation, and
+    every row the messages it stands for (``message_count``, 1 when it holds none).
+
+    Every read is filtered by ``user_id``. Round trips: the two reminders as before, then the page
+    and the count together, then the page's conversations when it holds messages.
+    """
+    after = _decode_cursor(cursor) if cursor is not None else None
     # The reminders may write notifications, and both reads below must see them.
     ensure_profile_completion_notification(user_id)
     ensure_roster_upload_notifications(user_id)
 
     client = _client()
+
+    def page() -> list[dict]:
+        query = client.table("notifications").select(_LIST_COLUMNS).eq("user_id", user_id)
+        if view == "unread":
+            query = query.is_("read_at", "null")
+        else:
+            floor = _now() - timedelta(days=WINDOW_DAYS)
+            query = query.gte("created_at", floor.isoformat())
+        if after is not None:
+            created_at, row_id = after
+            query = query.or_(
+                f'created_at.lt."{created_at}",and(created_at.eq."{created_at}",id.lt.{row_id})'
+            )
+        query = query.order("created_at", desc=True).order("id", desc=True)
+        return query.limit(limit + 1).execute().data or []
+
     reads = fan_out(
         {
-            "rows": lambda: (
-                (
-                    client.table("notifications")
-                    .select("id, type, title, body, entity_type, entity_id, read_at, created_at")
-                    .eq("user_id", user_id)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                ).data
-                or []
-            ),
+            "rows": page,
             "unread": lambda: (
                 client.table("notifications")
                 .select("id", count="exact")
@@ -846,13 +958,36 @@ def list_notifications(user_id: str, *, limit: int = 50) -> dict:
         }
     )
     rows, unread_res = reads["rows"], reads["unread"]
+    next_cursor = None
+    if len(rows) > limit:
+        rows = rows[:limit]
+        next_cursor = _encode_cursor(rows[-1]["created_at"], rows[-1]["id"])
     unread = (
         unread_res.count
         if unread_res.count is not None
         else sum(1 for r in rows if not r.get("read_at"))
     )
+    conversations = _conversations(client, rows)
 
-    return {"notifications": rows, "unread_count": unread}
+    return {
+        "notifications": [
+            {
+                **{key: row.get(key) for key in _ITEM_KEYS},
+                "class": _ref(row.get("class")),
+                "team": _ref(row.get("team")),
+                "actor": _actor(row.get("actor")),
+                "conversation": (
+                    conversations.get(str(row.get("entity_id") or "").lower())
+                    if row.get("type") == "message"
+                    else None
+                ),
+                "message_count": row.get("message_count") or 1,
+            }
+            for row in rows
+        ],
+        "unread_count": unread,
+        "next_cursor": next_cursor,
+    }
 
 
 def mark_notification_read(notification_id: str, user_id: str) -> None:
