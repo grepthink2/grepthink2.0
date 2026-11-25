@@ -202,3 +202,14 @@ def test_the_comment_survives_a_failing_recipient_lookup(monkeypatch):
     out = _comment("task", _mention(INSTR_U) + _mention(TA_U))
     assert [c["id"] for c in db.rows("scrum_comments")] == [out["id"]]
     assert db.rows("notifications") == []
+
+
+def test_an_author_with_no_name_is_someone_never_their_email(monkeypatch):
+    db = _world(monkeypatch)
+    author = next(p for p in db.rows("profiles") if p["id"] == UID)
+    author.update(first_name=None, last_name=None)
+    _comment("task", f"{_mention(ANA, 'Ana')} can you review?")
+    [row] = db.rows("notifications")
+    assert row["title"] == "Someone mentioned you on GT-12"
+    assert "@" not in row["title"]
+    assert author["email"] not in row["body"]

@@ -17,7 +17,7 @@ from app.core import db as core_db
 from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.utils.mentions import render_mentions_plain
-from app.utils.profiles import needs_roster_email, profile_display_name, profile_name
+from app.utils.profiles import needs_roster_email, profile_name
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,8 @@ def _upsert_unread_notification(
     ``message_count`` goes up by one (a row written before the count existed holds NULL, which
     reads as 1) and it takes the latest title, text and actor, while a new row starts at 1. The
     count is read and written back by this one call, so two messages at the same instant can count
-    as one.
+    as one. The newest unread row is the one rewritten, and only while it is still unread: a row
+    read since the lookup is left as it was read, and this notice starts a new row.
     """
     context = _context(class_id=class_id, project_id=project_id, actor_id=actor_id)
     try:
@@ -255,12 +256,13 @@ def _upsert_unread_notification(
             query = query.eq("entity_id", entity_id)
         else:
             query = query.is_("entity_id", "null")
-        existing = query.limit(1).execute()
+        existing = query.order("created_at", desc=True).limit(1).execute()
 
         if existing.data:
             row = existing.data[0]
+            fields = {"title": title, "body": body, "created_at": _now_iso(), **context}
             if count_messages:
-                context["message_count"] = (row.get("message_count") or 1) + 1
+                fields["message_count"] = (row.get("message_count") or 1) + 1
             # Skip a no-op write. Because list_notifications() calls the
             # ensure_* helpers on every GET, re-writing identical content would
             # emit a realtime change event, which the client's subscription
@@ -268,15 +270,17 @@ def _upsert_unread_notification(
             # when the content actually changed. A message always changes its count.
             elif row.get("title") == title and row.get("body") == body:
                 return
-            client.table("notifications").update(
-                {
-                    "title": title,
-                    "body": body,
-                    "created_at": _now_iso(),
-                    **context,
-                }
-            ).eq("id", row["id"]).execute()
-            return
+            updated = (
+                client.table("notifications")
+                .update(fields)
+                .eq("id", row["id"])
+                .is_("read_at", "null")
+                .select("id")
+                .execute()
+            )
+            if updated.data:
+                return
+            # Read since the lookup: it keeps what it showed when it was read.
 
         _insert_notification(
             user_id=user_id,
@@ -538,7 +542,7 @@ def notify_join_request(
                 return
 
         profile = _get_profile(requester_id)
-        requester_name = profile_display_name(profile) or "A student"
+        requester_name = profile_name(profile) or "A student"
         name = profile_name(profile) or "Someone"
         clean_message = message.strip() if isinstance(message, str) else ""
         quote = f' "{clean_message}"' if clean_message else ""
@@ -735,7 +739,7 @@ def notify_project_created_by_student(
         user_id=instructor_id,
         type="project_created",
         title=f"{profile_name(profile) or 'Someone'} created {project_name}",
-        body=f'{profile_display_name(profile) or "A student"} created project "{project_name}".',
+        body=f'{profile_name(profile) or "A student"} created project "{project_name}".',
         entity_type="project",
         entity_id=project_id,
         class_id=class_id,
@@ -772,56 +776,6 @@ def notify_join_request_rejected(
         )
 
 
-def notify_team_member_dropped_from_roster(
-    *,
-    project_id: str,
-    project_name: str,
-    removed_user_id: str,
-    removed_user_name: str,
-    recipient_ids: list[str] | None = None,
-) -> None:
-    """Notify remaining project members that a teammate was dropped from the course."""
-    try:
-        if recipient_ids is None:
-            client = _client()
-            members_res = (
-                client.table("project_members")
-                .select("user_id")
-                .eq("project_id", project_id)
-                .execute()
-            )
-            recipient_ids = [
-                str(row["user_id"])
-                for row in (members_res.data or [])
-                if row.get("user_id") and str(row["user_id"]) != str(removed_user_id)
-            ]
-        else:
-            recipient_ids = [
-                str(uid) for uid in recipient_ids if uid and str(uid) != str(removed_user_id)
-            ]
-
-        if not recipient_ids:
-            return
-
-        title = "Team member removed"
-        body = f'{removed_user_name} has dropped the course and was removed from "{project_name}".'
-        for user_id in recipient_ids:
-            _insert_notification(
-                user_id=user_id,
-                type="member_removed",
-                title=title,
-                body=body,
-                entity_type="project",
-                entity_id=project_id,
-            )
-    except Exception:
-        logger.exception(
-            "notify_team_member_dropped_from_roster failed | project_id=%s removed_user=%s",
-            project_id,
-            removed_user_id,
-        )
-
-
 #: All lists the last 30 days, read and unread; Unread lists every unread row, whatever its age.
 WINDOW_DAYS = 30
 PAGE_SIZE = 30
@@ -851,15 +805,17 @@ def _encode_cursor(created_at: str, id: str) -> str:
 
 def _decode_cursor(cursor: str) -> tuple[str, str]:
     """The ``created_at`` (an instant with its zone) and ``id`` (a UUID) a cursor names, both
-    rewritten in their own canonical form before they reach a filter. Anything else is a 422."""
+    rewritten in a canonical form before they reach a filter: the instant in UTC, the id in its
+    hyphenated lower-case spelling (any spelling ``uuid.UUID`` reads is accepted). Anything else,
+    an instant with no UTC equivalent among them, is a 422."""
     try:
         text = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode()
         created_at, row_id = text.split("|")
         when = datetime.fromisoformat(created_at)
         if when.tzinfo is None:
             raise ValueError("a cursor's instant names its zone")
-        return when.isoformat(), str(uuid.UUID(row_id))
-    except (ValueError, UnicodeDecodeError, binascii.Error):
+        return when.astimezone(UTC).isoformat(), str(uuid.UUID(row_id))
+    except (ValueError, OverflowError, UnicodeDecodeError, binascii.Error):
         raise HTTPException(status_code=422, detail="Invalid cursor") from None
 
 
@@ -920,13 +876,16 @@ def list_notifications(
     team and actor (joined on read; ``None`` once deleted), a message row its conversation, and
     every row the messages it stands for (``message_count``, 1 when it holds none).
 
-    Every read is filtered by ``user_id``. Round trips: the two reminders as before, then the page
-    and the count together, then the page's conversations when it holds messages.
+    Every read is filtered by ``user_id``. Round trips: on the first page the two reminders as
+    before, then the page and the count together, then the page's conversations when it holds
+    messages; a later page (a ``cursor``) runs no reminders.
     """
     after = _decode_cursor(cursor) if cursor is not None else None
-    # The reminders may write notifications, and both reads below must see them.
-    ensure_profile_completion_notification(user_id)
-    ensure_roster_upload_notifications(user_id)
+    if after is None:
+        # The reminders are the first page's: they may write notifications, and both reads below
+        # must see them. A later page is the page and the count.
+        ensure_profile_completion_notification(user_id)
+        ensure_roster_upload_notifications(user_id)
 
     client = _client()
 

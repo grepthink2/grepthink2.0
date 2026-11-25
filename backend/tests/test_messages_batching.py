@@ -530,14 +530,23 @@ def test_send_to_a_channel_with_no_one_else_writes_no_notification(send_db):
 
 
 @pytest.mark.parametrize(
-    ("sender", "title"),
+    "sender",
     [
-        pytest.param(S2, "New message from bea@ucsc.edu", id="no-names-so-the-email"),
-        pytest.param(ORPHAN, "New message from Someone", id="no-profile-row"),
+        pytest.param(S2, id="no-names-and-never-the-email"),
+        pytest.param(ORPHAN, id="no-profile-row"),
     ],
 )
-def test_send_by_a_sender_without_names_uses_the_display_name_fallback(send_db, sender, title):
+def test_send_by_a_sender_without_names_is_from_someone(send_db, sender):
     out = messages.send_message(sender_id=sender, body="hi", to_user_id=S1)
 
-    assert _titles(send_db) == {S1: title}
+    assert _titles(send_db) == {S1: "New message from Someone"}
     assert "sender" not in out["message"]
+
+
+def test_a_sender_with_no_name_is_someone_never_their_email(send_db):
+    sender = next(p for p in send_db.rows("profiles") if p["id"] == S1)
+    sender.update(first_name=None, last_name=None, email="sam@ucsc.edu")
+    messages.send_message(sender_id=S1, body="standup at 10", conversation_id=CONV_CHANNEL)
+    notes = send_db.rows("notifications")
+    assert {n["title"] for n in notes} == {"New message from Someone"}
+    assert not any("@" in n["title"] + n["body"] for n in notes)

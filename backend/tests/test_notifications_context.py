@@ -177,7 +177,8 @@ def test_a_requester_with_no_name_is_someone_never_their_email(monkeypatch):
     )
     row = db.rows("notifications")[0]
     assert row["title"] == "Someone asked to join Trailhead"
-    assert "@" not in row["title"]
+    assert row["body"] == "A student requested to join Trailhead."
+    assert "@" not in row["title"] + row["body"]
 
 
 def test_a_declined_request_names_the_team_and_no_actor(monkeypatch):
@@ -479,3 +480,106 @@ def test_a_writer_that_fails_never_raises(monkeypatch, write):
     _failing_writes(db, monkeypatch)
     write()  # never raises
     assert db.rows("notifications") == []
+
+
+def test_a_student_with_no_name_who_created_a_team_is_someone_never_their_email(monkeypatch):
+    db = _install(monkeypatch)
+    notifications.notify_project_created_by_student(
+        instructor_id=INSTR,
+        student_id=NONAME,
+        project_id=TEAM,
+        project_name="Trailhead",
+        class_id=CLASS,
+    )
+    row = db.rows("notifications")[0]
+    assert (row["title"], row["body"]) == (
+        "Someone created Trailhead",
+        'A student created project "Trailhead".',
+    )
+    assert "@" not in row["title"] + row["body"]
+
+
+# -------------------------------------------------- the unread row a message counts on
+
+
+def _read_after_the_lookup(db: FakeSupabase, monkeypatch) -> None:
+    """The recipient reads the conversation's row just after a message looked it up."""
+    real = db.table
+
+    def table(name):
+        query = real(name)
+        if name == "notifications":
+            run = query.execute
+
+            def execute():
+                result = run()
+                if query._op == "select":
+                    for row in db.rows("notifications"):
+                        row["read_at"] = row.get("read_at") or "2026-11-25T10:00:00+00:00"
+                return result
+
+            query.execute = execute
+        return query
+
+    monkeypatch.setattr(db, "table", table)
+
+
+def test_a_message_that_lands_as_its_row_is_read_starts_a_new_row(monkeypatch):
+    db = _install(monkeypatch)
+    _message(SAM, "hello")
+    _read_after_the_lookup(db, monkeypatch)
+    db.reset_counter()
+    _message(DIEGO, "standup at 10")
+    read, unread = sorted(db.rows("notifications"), key=lambda r: r.get("read_at") is None)
+    assert (read["body"], read["message_count"], read["actor_id"]) == ("hello", 1, SAM)
+    assert unread.get("read_at") is None
+    assert (unread["body"], unread["message_count"], unread["actor_id"]) == (
+        "standup at 10",
+        1,
+        DIEGO,
+    )
+    assert db.executes == 3  # the lookup, the update that found the row read, the insert
+
+
+def _unread_message_row(row_id: str, created_at: str, body: str) -> dict:
+    return {
+        "id": row_id,
+        "user_id": OWNER,
+        "type": "message",
+        "title": "New message from Sam Okafor",
+        "body": body,
+        "entity_type": "conversation",
+        "entity_id": CONV,
+        "read_at": None,
+        "created_at": created_at,
+        "message_count": 1,
+    }
+
+
+def test_with_two_unread_rows_for_a_conversation_the_newest_takes_the_message(monkeypatch):
+    db = _install(
+        monkeypatch,
+        notifications=[
+            _unread_message_row("n-older", "2026-11-20T10:00:00+00:00", "old"),
+            _unread_message_row("n-newer", "2026-11-21T10:00:00+00:00", "new"),
+        ],
+    )
+    _message(DIEGO, "latest")
+    rows = {row["id"]: row for row in db.rows("notifications")}
+    assert (rows["n-older"]["body"], rows["n-older"]["message_count"]) == ("old", 1)
+    assert (rows["n-newer"]["body"], rows["n-newer"]["message_count"]) == ("latest", 2)
+
+
+def test_every_notifier_has_a_caller():
+    """A notifier nothing calls keeps text nobody maintains: every ``notify_*`` here is called
+    from somewhere else in the app."""
+    import re
+    from pathlib import Path
+
+    module = Path(notifications.__file__).resolve()
+    names = re.findall(r"^def (notify_\w+)\(", module.read_text(), re.M)
+    elsewhere = "\n".join(
+        path.read_text() for path in module.parents[1].rglob("*.py") if path != module
+    )
+    assert names
+    assert [name for name in names if not re.search(rf"\b{name}\b", elsewhere)] == []

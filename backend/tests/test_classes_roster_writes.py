@@ -191,18 +191,19 @@ def test_dropped_students_leave_their_teams_and_only_those_who_stay_hear_about_i
         for n in db.rows("notifications")
         if n["user_id"] == S7
     ) == [
-        # no name on the roster row: the body's email stands in, the title never names one
         (
             "Sara Two was removed from Beta",
             'Sara Two has dropped the course and was removed from "Beta".',
             S2,
         ),
+        # no name on the roster row: "Someone" and "A student", never the row's email
         (
             "Someone was removed from Beta",
-            's5@ucsc.edu has dropped the course and was removed from "Beta".',
+            'A student has dropped the course and was removed from "Beta".',
             S5,
         ),
     ]
+    assert not any("@" in n["title"] + n["body"] for n in db.rows("notifications"))
     # S2 and S5 both left Beta. Only S7, who stays, is told (about each of them).
     assert _notified(db, P2) == Counter({S7: 2})
 

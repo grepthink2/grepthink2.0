@@ -49,7 +49,7 @@ from app.scrum.schedule import (
     sprint_windows,
 )
 from app.utils.mentions import extract_mention_ids
-from app.utils.profiles import profile_display_name
+from app.utils.profiles import profile_display_name, profile_name
 
 logger = logging.getLogger(__name__)
 
@@ -1707,7 +1707,8 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create comment")
     comment = res.data[0]
-    author_name = _display_name(comment.pop("author", None))
+    author = comment.pop("author", None)
+    author_name = _display_name(author)
     _fanout_mentions(
         client,
         project_id=parent["project_id"],
@@ -1715,7 +1716,8 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
         parent_id=parent_id,
         parent_key=parent.get("key", ""),
         author_id=user_id,
-        author_name=author_name,
+        # The notice names the author by name or "Someone", never by email.
+        author_name=profile_name(author) or "Someone",
         body_md=body_md,
     )
     return {**comment, "author_name": author_name}

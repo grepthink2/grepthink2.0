@@ -15,7 +15,7 @@ from datetime import UTC
 from fastapi import HTTPException
 
 from app.core.db import fan_out, get_client
-from app.utils.profiles import profile_display_name
+from app.utils.profiles import profile_name
 
 logger = logging.getLogger(__name__)
 
@@ -231,8 +231,9 @@ def send_message(
         recipient_ids = [to_user_id]
 
     client = get_client()
-    # The insert answers with the sender's profile, for the notifications' title. Those five
-    # columns are all of the table's: with the embed popped, the row is the whole message.
+    # The insert answers with the sender's name, for the notifications' title (never their email:
+    # a sender with no name is "Someone"). Those five columns are all of the table's: with the
+    # embed popped, the row is the whole message.
     inserted = (
         client.table("messages")
         .insert(
@@ -244,12 +245,12 @@ def send_message(
         )
         .select(
             "id, conversation_id, sender_id, body, created_at, "
-            "sender:profiles!messages_sender_id_fkey(first_name, last_name, email)"
+            "sender:profiles!messages_sender_id_fkey(first_name, last_name)"
         )
         .execute()
     )
     message_row = inserted.data[0]
-    sender_name = profile_display_name(message_row.pop("sender", None))
+    sender_name = profile_name(message_row.pop("sender", None))
 
     # Sender is implicitly "read" through their own latest send.
     client.table("conversation_reads").upsert(

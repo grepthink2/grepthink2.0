@@ -332,3 +332,68 @@ def test_the_list_costs_the_reminders_the_page_and_the_count_and_one_more_for_me
     notifications.list_notifications(ME)
     assert db.executes == 6  # and the page's conversations
     assert [q["table"] for q in db.queries][-1] == "conversations"
+
+
+# ------------------------------------------------------------ what a cursor writes into a filter
+
+
+def _cursor_terms(db) -> list:
+    """The cursor's terms in the page read, as the fake recorded the ``or`` filter."""
+    [terms] = [
+        f[1]
+        for q in db.queries
+        if q["table"] == "notifications" and q["op"] == "select"
+        for f in q["filters"]
+        if f[0] == "or"
+    ]
+    return terms
+
+
+@pytest.mark.parametrize(
+    ("stamp", "utc"),
+    [
+        ("2026-11-24T12:00:00+23:59", "2026-11-23T12:01:00+00:00"),  # the widest offset there is
+        ("2026-11-24T12:00:00+00:00:30", "2026-11-24T11:59:30+00:00"),  # an offset with seconds
+        ("2026-11-24T04:00:00-08:00", "2026-11-24T12:00:00+00:00"),
+    ],
+)
+def test_a_cursors_instant_reaches_the_filter_in_utc(client, db, stamp, utc):
+    res = _get(client, cursor=_b64(f"{stamp}|{_id(1)}"))
+    assert res.status_code == 200, res.text
+    assert _cursor_terms(db) == [
+        ("created_at", "lt", utc),
+        ("and", [("created_at", "eq", utc), ("id", "lt", _id(1))]),
+    ]
+
+
+@pytest.mark.parametrize("stamp", ["0001-01-01T00:00:00+23:59", "9999-12-31T23:59:59-23:59"])
+def test_a_cursors_instant_with_no_utc_equivalent_is_422(client, db, stamp):
+    res = _get(client, cursor=_b64(f"{stamp}|{_id(1)}"))
+    assert (res.status_code, res.json()["detail"]) == (422, "Invalid cursor")
+    assert db.executes == 0
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    ["{" + _id(1) + "}", "urn:uuid:" + _id(1), _id(1).replace("-", ""), _id(1).upper()],
+    ids=["braces", "urn", "no hyphens", "upper case"],
+)
+def test_a_cursors_id_reaches_the_filter_in_its_canonical_form(client, db, spelling):
+    """Any spelling Python reads as a UUID is accepted on purpose, and the filter only ever
+    sees the canonical one."""
+    res = _get(client, cursor=_b64(f"2026-11-24T12:00:00+00:00|{spelling}"))
+    assert res.status_code == 200, res.text
+    assert _cursor_terms(db)[1] == (
+        "and",
+        [("created_at", "eq", "2026-11-24T12:00:00+00:00"), ("id", "lt", _id(1))],
+    )
+
+
+def test_a_later_page_runs_no_reminders(db):
+    """The reminders are written for the first page; a later one is the page and the count."""
+    db.rows("notifications").extend(_row(n, f"2026-11-24T1{n}:00:00+00:00") for n in range(1, 4))
+    first = notifications.list_notifications(ME, limit=2)
+    db.reset_counter()
+    notifications.list_notifications(ME, limit=2, cursor=first["next_cursor"])
+    assert db.executes == 2
+    assert {(q["table"], q["op"]) for q in db.queries} == {("notifications", "select")}

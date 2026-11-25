@@ -92,10 +92,14 @@ Read this before changing anything under `backend/`. The root [AGENTS.md](../../
   the ids of the class, the team and the person who caused it (`class_id`, `project_id`,
   `actor_id`) when its notice has them, and the list joins their names on read; a call site passes
   ids it already holds, or takes the class from the project row it already loads, rather than add a
-  read. A notice's title names the actor by `profile_name` ("Someone" without one), never by email.
-  A new message rewrites its conversation's one unread row with the latest sender and text and
-  counts on it (`message_count`); once that row is read, the next message starts a new row at 1.
-  Writers are best-effort: a failed insert is logged with ids and never raised.
+  read. A notice's title and body name a person by their name (`profile_name`, or a roster row's
+  first and last name), never by their email: one with no name is "Someone" in a title and
+  "A student" in a body, and the list's actor is `""`. (An undeliverable invite's notice shows the
+  address it was sent to: the address is what it is about, not a name.)
+  A new message rewrites its conversation's newest unread row with the latest sender and text and
+  counts on it (`message_count`), and only while that row is still unread: once it is read, even
+  between the lookup and the write, the next message starts a new row at 1. Writers are
+  best-effort: a failed insert is logged with ids and never raised.
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
