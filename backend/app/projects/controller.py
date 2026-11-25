@@ -23,6 +23,12 @@ ROLE_ADMIN = "admin"
 ROLE_SCRUM_MASTER = "scrum master"
 ROLE_MEMBER = "member"
 
+#: Every value ``project_members.role`` may hold.
+PROJECT_ROLES = frozenset(
+    (ROLE_OWNER, ROLE_PRODUCT_OWNER, ROLE_ADMIN, ROLE_SCRUM_MASTER, ROLE_MEMBER)
+)
+INVALID_ROLE_DETAIL = "Invalid project role"
+
 # The "elevated" set used by most write actions on a project.
 ELEVATED_ROLES = (ROLE_OWNER, ROLE_PRODUCT_OWNER, ROLE_ADMIN)
 
@@ -1478,21 +1484,33 @@ def remove_admin(project_id: UUID, requester_id: str, target_user_id: str) -> di
     return _role_endpoint("remove admin", go)
 
 
-def get_project_members(project_id: UUID) -> list:
+#: Who may see a member's school email (``profiles.edu_email``) besides the member: the class
+#: instructor and the class's TAs. Classmates see the login email, which the members panel uses
+#: for its mail link and "Copy all emails".
+_SCHOOL_EMAIL_VIEWERS = (authz.ROLE_INSTRUCTOR, authz.ROLE_TA)
+
+
+def get_project_members(project_id: UUID, user_id: str) -> list:
     """
-    Get all members of a project with their profile fields — one embedded read.
+    Members of a project with their public profile fields, for anyone who can see its class.
+
+    The project, its class owner and its members come in one embedded read; a caller who is not
+    the class instructor costs one more read for their enrollment. Each member carries the login
+    ``email``; ``edu_email`` goes only to the class instructor, the class's TAs and the member
+    themselves. The account role (``profiles.role``) is not returned.
 
     Raises:
-        HTTPException: 404 if the project does not exist; 500 on database error.
+        HTTPException: 404 if the project does not exist; 403 if the caller is neither the class
+        instructor nor enrolled in the class; 500 on database error.
     """
     try:
         client = get_client()
         res = (
             client.table("projects")
             .select(
-                "id, project_members(user_id, role, created_at, "
-                "profiles(id, email, role, first_name, last_name, linkedin, github, "
-                "image_url, edu_email))"
+                "id, class_id, classes(created_by), project_members(user_id, role, created_at, "
+                "profiles(id, email, first_name, last_name, linkedin, github, image_url, "
+                "edu_email))"
             )
             .eq("id", str(project_id))
             .limit(1)
@@ -1500,25 +1518,36 @@ def get_project_members(project_id: UUID) -> list:
         )
         if not res.data:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
+        project = res.data[0]
+        class_row = project.get("classes")
+        if str(_class_owner(project)) == str(user_id):
+            viewer_role = authz.ROLE_INSTRUCTOR
+        else:
+            viewer_role = (
+                authz.get_enrollment_role(client, project["class_id"], user_id)
+                if class_row
+                else None
+            )
+            _require_class_access(class_row, viewer_role, user_id)
+        sees_school_emails = viewer_role in _SCHOOL_EMAIL_VIEWERS
 
         result = []
-        for member in res.data[0].get("project_members") or []:
+        for member in project.get("project_members") or []:
             user_info = member.get("profiles") or {}
-            result.append(
-                {
-                    "user_id": member["user_id"],
-                    "email": user_info.get("email"),
-                    "user_role": user_info.get("role"),
-                    "project_role": member.get("role"),
-                    "joined_at": member.get("created_at"),
-                    "first_name": user_info.get("first_name"),
-                    "last_name": user_info.get("last_name"),
-                    "linkedin": user_info.get("linkedin"),
-                    "github": user_info.get("github"),
-                    "image_url": user_info.get("image_url"),
-                    "edu_email": user_info.get("edu_email"),
-                }
-            )
+            row = {
+                "user_id": member["user_id"],
+                "email": user_info.get("email"),
+                "project_role": member.get("role"),
+                "joined_at": member.get("created_at"),
+                "first_name": user_info.get("first_name"),
+                "last_name": user_info.get("last_name"),
+                "linkedin": user_info.get("linkedin"),
+                "github": user_info.get("github"),
+                "image_url": user_info.get("image_url"),
+            }
+            if sees_school_emails or str(member["user_id"]) == str(user_id):
+                row["edu_email"] = user_info.get("edu_email")
+            result.append(row)
         return result
     except HTTPException:
         raise
@@ -1834,15 +1863,21 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
       creates a **pending team invitation**; the user must accept via the same
       accept-request endpoint used for join requests.
 
-    Two reads (project with its class owner embedded, the project's members)
-    decide authorisation, whether the target is already a member, whether a
-    scrum master exists and the new ``num_members`` value; then 1-3 writes.
+    ``role`` must be one of :data:`PROJECT_ROLES` (``None`` means ``member``), and the target
+    must be enrolled in the project's class (as a student or a TA). A target with no account
+    gets the same refusal as one outside the class.
+
+    Two reads (the project with its class owner and members embedded, then the
+    target's enrollment) decide authorisation, whether the target is already a
+    member, whether a scrum master exists and the new ``num_members`` value;
+    then 1-3 writes.
 
     Returns one of three shapes: ``Changed roles`` (existing member),
     ``Invitation sent`` (elevated member adding a member), ``Added member``.
 
     Raises:
-        HTTPException: 404 missing project, 403 no permission, 400 duplicate invite.
+        HTTPException: 404 missing project, 403 no permission, 400 invalid role,
+        target not enrolled, or duplicate invite.
     """
     logger.debug(
         "instructor_add_member called | project_id=%s requester=%s target=%s role=%r",
@@ -1851,15 +1886,22 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
         target_user_id,
         role,
     )
+    if role is None:
+        role = ROLE_MEMBER
+    if role not in PROJECT_ROLES:
+        raise HTTPException(status_code=400, detail=INVALID_ROLE_DETAIL)
     try:
         client = get_client()
         pid, tid, rid = str(project_id), str(target_user_id), str(requester_id)
         project = authz.load_project(
-            client, pid, columns="id, class_id", class_columns="created_by"
+            client,
+            pid,
+            columns="id, class_id, project_members(user_id, role)",
+            class_columns="created_by",
         )
         is_instructor = str(_class_owner(project)) == rid
 
-        members = _project_member_rows(client, pid)
+        members = project.get("project_members") or []
         roles = {str(m["user_id"]): m.get("role") for m in members}
         if not is_instructor and roles.get(rid) not in ELEVATED_ROLES:
             logger.warning(
@@ -1873,6 +1915,9 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
                 status_code=403,
                 detail="Only instructors, product owners, and admins can add members",
             )
+        # No profile row and no enrollment read the same: nothing here says whether an id exists.
+        if authz.get_enrollment_role(client, project["class_id"], tid) is None:
+            raise HTTPException(status_code=400, detail=authz.USER_NOT_ENROLLED)
 
         if tid in roles:  # already a member: change their role
             response = (

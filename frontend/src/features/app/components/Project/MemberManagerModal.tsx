@@ -408,11 +408,6 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                             <div className="member-manager__card-main">
                               <span className="member-manager__name">{name}</span>
                               <span className="member-manager__email">{m.email}</span>
-                              {m.user_role && (
-                                <div className="member-manager__skills">
-                                  <span className="member-manager__skill-tag">{m.user_role}</span>
-                                </div>
-                              )}
                             </div>
                             <div className="member-manager__card-right">
                               <span className="member-manager__role-tag">{roleLabel}</span>
