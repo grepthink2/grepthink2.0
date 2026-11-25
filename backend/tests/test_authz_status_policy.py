@@ -950,7 +950,7 @@ CASES = {
         NOT_CLASS_MEMBER,
     ),
     "projects.members/missing-project": (
-        lambda db: projects.get_project_members(MISSING_PROJECT),
+        lambda db: projects.get_project_members(MISSING_PROJECT, INSTR),
         404,
         PROJECT_NOT_FOUND,
     ),

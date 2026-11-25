@@ -1051,7 +1051,8 @@ def assign_user(
     Raises:
         HTTPException 404 — class / project not found.
         HTTPException 403 — caller is not the class instructor.
-        HTTPException 400 — project belongs to a different class.
+        HTTPException 400 — project belongs to a different class, or the user
+        is not enrolled in the class (the same answer for an account that does not exist).
     """
     _require_class_instructor(user_id, class_id)
     client = get_client()
@@ -1069,6 +1070,10 @@ def assign_user(
             "user_id": tid,
             "project_id": pid,
         }
+
+    # Only someone enrolled in the class goes on one of its teams; a missing account reads the same.
+    if authz.get_enrollment_role(client, class_id, tid) is None:
+        raise HTTPException(status_code=400, detail=authz.USER_NOT_ENROLLED)
 
     team = [m for m in members if str(m["project_id"]) == pid]
     try:

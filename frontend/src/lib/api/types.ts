@@ -462,7 +462,6 @@ export interface ApiProjectPendingInvite {
 export interface ApiProjectMember {
   user_id: string;
   email?: string;
-  user_role?: string;
   project_role: string;
   joined_at: string;
   first_name?: string;
@@ -470,6 +469,7 @@ export interface ApiProjectMember {
   linkedin?: string;
   github?: string;
   image_url?: string;
+  /** The school email: only for the class instructor, the class's TAs and the member's own row. */
   edu_email?: string | null;
 }
 

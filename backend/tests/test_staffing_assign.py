@@ -122,6 +122,16 @@ def test_assign_already_on_that_team_is_a_cheap_noop(db):
     assert db.executes <= 3
 
 
+@pytest.mark.parametrize("target", ["outsider", "no-such-account"])
+def test_assign_refuses_someone_not_enrolled_in_the_class(db, target):
+    db.rows("profiles").append(_profile("outsider"))
+    with pytest.raises(HTTPException) as exc:
+        staffing.assign_user(INSTR, CLASS, target, P2)
+    assert (exc.value.status_code, exc.value.detail) == (400, "User is not enrolled in this class")
+    assert _members(db, P2) == {}
+    assert _num_members(db, P2) == 0
+
+
 def test_assign_rejects_a_project_of_another_class(db):
     with pytest.raises(HTTPException) as wrong:
         staffing.assign_user(INSTR, CLASS, S2, P_OTHER)

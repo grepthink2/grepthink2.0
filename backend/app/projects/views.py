@@ -147,7 +147,13 @@ def get_project_pending_invites(project_id: UUID, user_id: str = Depends(require
 
 
 def get_project_members(project_id: UUID, user_id: str = Depends(require_user)):
-    members = controller.get_project_members(project_id)
+    """
+    Members of a project, for the class instructor and anyone enrolled in its class.
+
+    Each member has the login ``email``; ``edu_email`` is included only for the class instructor,
+    the class's TAs and the member's own row.
+    """
+    members = controller.get_project_members(project_id, user_id)
     return {"members": members}
 
 

@@ -541,15 +541,15 @@ def test_a_request_nobody_on_the_team_can_review_goes_to_the_class_instructor(db
         }
     ]
     # the usual path plus one read of the project's class for its instructor
-    assert db.executes <= 8, _trace(db)
+    assert db.executes <= 9, _trace(db)
 
 
 def test_request_to_join_budget(db, waves):
     projects.request_to_join_project(P2, S6)
-    # one wave (project, memberships, pending row) + the insert, then
+    # one wave (project, memberships, pending row, enrollments) + the insert, then
     # notify_join_request: owners, requester profile, one insert per owner
-    assert waves == [3], waves
-    assert db.executes <= 7, _trace(db)
+    assert waves == [4], waves
+    assert db.executes <= 8, _trace(db)
 
 
 def _team_of(db, uid, class_projects=(P1, P2)) -> set[str]:

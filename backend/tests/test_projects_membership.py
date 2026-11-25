@@ -23,6 +23,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.projects import controller as projects
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR = "instr"
@@ -213,6 +214,43 @@ def test_elevated_member_can_add_with_a_non_member_role_directly(db):
     assert db.rows("project_join_requests") == []
 
 
+NOT_ENROLLED_DETAIL = "User is not enrolled in this class"
+
+
+@pytest.mark.parametrize("requester", [INSTR, S1])  # S1 = product owner (invites)
+@pytest.mark.parametrize("target", [OUTSIDER, "no-such-account"])
+def test_nobody_outside_the_class_is_added_or_invited(db, requester, target):
+    with pytest.raises(HTTPException) as exc:
+        projects.instructor_add_member(P1, requester, target, role="member")
+    # an account outside the class and a missing account get the same answer
+    assert (exc.value.status_code, exc.value.detail) == (400, NOT_ENROLLED_DETAIL)
+    assert target not in _members(db, P1)
+    assert db.rows("project_join_requests") == []
+    assert _num_members(db, P1) == 2
+
+
+def test_the_class_instructor_is_not_added_to_a_team(db):
+    with pytest.raises(HTTPException) as exc:
+        projects.instructor_add_member(P1, INSTR, INSTR, role="admin")
+    assert (exc.value.status_code, exc.value.detail) == (400, NOT_ENROLLED_DETAIL)
+
+
+@pytest.mark.parametrize("role", ["superuser", "Admin", "", "instructor"])
+@pytest.mark.parametrize("target", [S4, S2])  # a newcomer and an existing member
+def test_only_the_stored_project_roles_are_accepted(db, role, target):
+    before = dict(_members(db, P1))
+    with pytest.raises(HTTPException) as exc:
+        projects.instructor_add_member(P1, INSTR, target, role=role)
+    assert (exc.value.status_code, exc.value.detail) == (400, "Invalid project role")
+    assert _members(db, P1) == before
+
+
+def test_a_missing_role_means_member(db):
+    out = projects.instructor_add_member(P2, INSTR, S4, role=None)
+    assert out["role"] == "member"
+    assert _members(db, P2)[S4] == "member"
+
+
 # --------------------------------------------------------- instructor_remove_member
 
 
@@ -388,15 +426,16 @@ def test_my_projects_without_class_filter(db):
 # --------------------------------------------------------------- get_project_members
 
 
-def test_project_members_in_one_query_with_full_shape(db):
-    out = projects.get_project_members(P1)
-    assert db.executes == 1
+def _member(out, uid):
+    return next(m for m in out if m["user_id"] == uid)
+
+
+def test_a_teammate_sees_login_emails_but_no_school_email_or_account_role(db):
+    out = projects.get_project_members(P1, S2)
     assert {m["user_id"] for m in out} == {S1, S2}
-    s1 = next(m for m in out if m["user_id"] == S1)
-    assert s1 == {
+    assert _member(out, S1) == {
         "user_id": S1,
         "email": "s1@ucsc.edu",
-        "user_role": "student",
         "project_role": "product owner",
         "joined_at": "2026-01-03T00:00:00+00:00",
         "first_name": "S1",
@@ -404,13 +443,51 @@ def test_project_members_in_one_query_with_full_shape(db):
         "linkedin": None,
         "github": None,
         "image_url": None,
-        "edu_email": "s1@ucsc.edu",
     }
+    # their own row carries their school email
+    assert _member(out, S2)["edu_email"] == "s2@ucsc.edu"
+    assert all("user_role" not in m for m in out)
+    assert db.executes <= 2, [q["table"] + ":" + q["op"] for q in db.queries]
+
+
+def test_a_classmate_on_another_team_sees_the_same_fields_as_a_teammate(db):
+    out = projects.get_project_members(P1, S3)
+    assert all("edu_email" not in m and "user_role" not in m for m in out)
+    assert _member(out, S1)["email"] == "s1@ucsc.edu"
+
+
+@pytest.mark.parametrize("viewer", [INSTR, TA1])
+def test_class_staff_see_school_emails(db, viewer):
+    out = projects.get_project_members(P1, viewer)
+    assert _member(out, S1)["edu_email"] == "s1@ucsc.edu"
+    assert all("user_role" not in m for m in out)
+    assert db.executes <= 2, [q["table"] + ":" + q["op"] for q in db.queries]
+
+
+def test_the_members_route_refuses_someone_outside_the_class(db, client):
+    pid = "00000000-0000-4000-8000-0000000000a1"  # the route takes a UUID
+    db.rows("projects").append({"id": pid, "class_id": CLASS, "name": "Gamma"})
+    db.rows("project_members").append(
+        {"id": "m-g", "project_id": pid, "user_id": S1, "role": "owner", "created_at": None}
+    )
+    res = client.get(
+        f"/api/projects/{pid}/members",
+        headers={"Authorization": f"Bearer {make_token(sub=OUTSIDER)}"},
+    )
+    assert res.status_code == 403
+    assert "s1@ucsc.edu" not in res.text
+
+
+def test_someone_outside_the_class_cannot_read_a_team(db):
+    with pytest.raises(HTTPException) as exc:
+        projects.get_project_members(P1, OUTSIDER)
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "You do not have access to this class"
 
 
 def test_an_empty_team_has_no_members(db):
     db.rows("projects").append({"id": "p-empty", "class_id": CLASS, "name": "Empty"})
-    assert projects.get_project_members("p-empty") == []
+    assert projects.get_project_members("p-empty", INSTR) == []
 
 
 # ------------------------------------------------------------- accept_join_request
@@ -443,7 +520,7 @@ def test_accept_student_request_moves_them_and_notifies_old_product_owner(db):
     }
     assert notes[0].get("actor_id") == S3
     assert "Beta" in notes[0]["body"] and "Alpha" in notes[0]["body"]
-    assert db.executes <= 11, [q["table"] + ":" + q["op"] for q in db.queries]
+    assert db.executes <= 12, [q["table"] + ":" + q["op"] for q in db.queries]
 
 
 def test_the_product_owner_accepts_a_request_once(db):
@@ -469,6 +546,35 @@ def test_the_invitee_accepts_a_team_invite(db):
     )
     projects.accept_join_request("r2", S4)
     assert S4 in _members(db, P1)
+
+
+def test_nobody_outside_the_class_asks_to_join_a_team(db):
+    with pytest.raises(HTTPException) as exc:
+        projects.request_to_join_project(P1, OUTSIDER, "let me in")
+    assert (exc.value.status_code, exc.value.detail) == (403, "You are not enrolled in this class")
+    assert db.rows("project_join_requests") == []
+
+
+@pytest.mark.parametrize("invited_by", [None, S1])  # a request, and a team invite
+def test_a_request_or_invite_for_someone_no_longer_enrolled_is_not_accepted(db, invited_by):
+    db.rows("project_join_requests").append(
+        {
+            "id": "r9",
+            "project_id": P1,
+            "user_id": S4,
+            "request_status": "pending",
+            "invited_by": invited_by,
+        }
+    )
+    db.rows("class_enrollments")[:] = [
+        e for e in db.rows("class_enrollments") if e["user_id"] != S4
+    ]
+    with pytest.raises(HTTPException) as exc:
+        projects.accept_join_request("r9", S4 if invited_by else S1)
+    assert (exc.value.status_code, exc.value.detail) == (400, "User is not enrolled in this class")
+    assert S4 not in _members(db, P1)
+    assert db.rows("project_join_requests")[0]["request_status"] == "pending"
+    assert _num_members(db, P1) == 2
 
 
 # ------------------------------------------------------------------- delete_project

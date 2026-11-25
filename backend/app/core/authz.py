@@ -75,6 +75,9 @@ NOT_ENROLLED = "You are not enrolled in this class"
 NOT_LATE_WINDOW_EDITOR = "Only the instructor or a TA with permission may change the late window"
 #: 403: the caller's ``profiles.role`` is not ``instructor``.
 INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
+#: 400: the user a request would put on a team is not enrolled in the project's class. A missing
+#: account gets the same answer, so the refusal does not tell a caller which account ids exist.
+USER_NOT_ENROLLED = "User is not enrolled in this class"
 #: 404: the project does not exist.
 PROJECT_NOT_FOUND = "Project not found"
 #: 403: the caller has no ``project_members`` row on the project.
