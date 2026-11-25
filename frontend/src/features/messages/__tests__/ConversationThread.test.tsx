@@ -40,4 +40,17 @@ describe('ConversationThread header', () => {
     expect(screen.getByRole('heading', { name: 'Unknown' })).toBeInTheDocument();
     expect(container.querySelector('.messages-thread__header .gt-avatar')).toHaveTextContent(/^\?$/);
   });
+
+  it('lets its host draw the title, inside the heading', () => {
+    const sam = { id: 'u2', email: 'sam@ucsc.edu', name: 'Sam Lee', image_url: null };
+    render(
+      <ConversationThread
+        conversation={dm(sam)}
+        renderTitle={(conversation, title) => <a href={`/people/${conversation.other_user?.id}`}>{title}</a>}
+      />,
+    );
+    const heading = screen.getByRole('heading', { name: 'Sam Lee' });
+    expect(heading).toHaveClass('messages-thread__title');
+    expect(heading.querySelector('a')).toHaveAttribute('href', '/people/u2');
+  });
 });

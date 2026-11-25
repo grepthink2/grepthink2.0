@@ -1,0 +1,50 @@
+// PersonLink and PersonHoverCard: a person's name as the link to /app/people/:userId, and the small
+// card a resting mouse pointer opens. The name keeps the colour of the text around it, never the
+// accent blue: `inline` (inside a sentence) keeps a quiet underline at rest, so it is not told apart
+// by colour alone; `plain` (a table cell, a list row, a heading) underlines on hover and focus. The
+// card sits in a small Popover: a 48px avatar, two lines and "View profile".
+
+.gt-person-link {
+  color: inherit; font: inherit; text-decoration-line: none; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  border-radius: 2px; cursor: pointer; overflow-wrap: anywhere;
+}
+.gt-person-link--inline { text-decoration-line: underline; text-decoration-color: var(--gt-border-strong); }
+.gt-person-link:hover { text-decoration-line: underline; text-decoration-color: currentColor; }
+.gt-person-link:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); text-decoration-line: underline; }
+
+// The wrap and the Popover's anchor may shrink, so a long name ends in an ellipsis in a cell that
+// does not wrap, as plain text there does.
+.gt-person-link-wrap { display: inline-flex; max-width: 100%; min-width: 0; vertical-align: baseline; }
+.gt-person-link-wrap > .gt-popover-anchor { max-width: 100%; min-width: 0; }
+.gt-person-link-wrap .gt-person-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+// Against the window (PersonLink.tsx writes top and left), so a table cell or a card that clips
+// its contents cannot cut the card off. Two classes, to beat .gt-popover wherever its sheet loads.
+.gt-popover.gt-person-link__popover { position: fixed; width: 280px; max-width: calc(100vw - 16px); }
+
+// Its own text settings: a table cell's nowrap, weight or case must not reach into the card.
+.gt-person-card {
+  display: flex; flex-direction: column; gap: 10px; padding: 6px; font-family: var(--gt-font-sans); text-align: left;
+  white-space: normal; text-transform: none; letter-spacing: normal; font-style: normal; cursor: default;
+}
+.gt-person-card__top { display: flex; align-items: center; gap: 12px; }
+.gt-person-card__text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gt-person-card__name {
+  margin: 0; font-size: 15px; font-weight: var(--gt-weight-semibold); line-height: var(--gt-leading-snug);
+  color: var(--gt-text-primary); overflow-wrap: anywhere;
+}
+.gt-person-card__line {
+  margin: 0; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-regular); line-height: var(--gt-leading-snug);
+  color: var(--gt-text-secondary); overflow-wrap: anywhere;
+}
+.gt-person-card__view {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 2px;
+  border-radius: 3px; font-size: 13px; font-weight: var(--gt-weight-medium); color: var(--gt-primary); text-decoration-line: none;
+}
+.gt-person-card__view:hover { color: var(--gt-primary-hover); text-decoration-line: underline; text-underline-offset: 3px; }
+.gt-person-card__view:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-person-card__view svg { flex-shrink: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-person-link,
+  .gt-person-card__view { transition: none; }
+}

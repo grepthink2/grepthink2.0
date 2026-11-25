@@ -1,6 +1,7 @@
 /** The Roster page lists the class's TAs apart from its students. */
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiRosterStudent } from '@/lib/api';
 
@@ -60,7 +61,7 @@ const tasTable = () => screen.queryByRole('table', { name: 'TAs' });
 
 async function openRoster() {
   const user = userEvent.setup();
-  render(<Roster />);
+  render(<Roster />, { wrapper: MemoryRouter });
   await screen.findByRole('table', { name: 'Students' });
   return user;
 }

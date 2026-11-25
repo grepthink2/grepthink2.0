@@ -1,6 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useConversations } from '../hooks/useConversations';
+import { useMessageUser } from '../hooks/useMessageUser';
 
 interface Props {
   /** Profile id of the user to message. */
@@ -16,9 +15,8 @@ interface Props {
  * (project detail "Message owner", per-member buttons, my-project per-
  * requester buttons, instructor view per-student buttons).
  *
- * If a conversation with this user already exists in the inbox cache,
- * navigate straight to it. Otherwise navigate to /app/messages/compose
- * which will create the conversation on first send.
+ * Where it leads is `useMessageUser`'s: the conversation the two already
+ * have, or the compose view.
  */
 export const MessageButton: React.FC<Props> = ({
   toUserId,
@@ -26,21 +24,8 @@ export const MessageButton: React.FC<Props> = ({
   className,
   children,
 }) => {
-  const navigate = useNavigate();
-  const { conversations } = useConversations();
-
-  const handleClick = () => {
-    // DM-only affordance by design: other_user is null on team channels, so
-    // they can never match here — do not "fix" this to scan participants.
-    const existing = conversations.find(c => c.other_user?.id === toUserId);
-    if (existing) {
-      navigate(`/app/messages/${existing.id}`, { viewTransition: true });
-      return;
-    }
-    const params = new URLSearchParams({ to: toUserId });
-    if (toUserName) params.set('name', toUserName);
-    navigate(`/app/messages/compose?${params.toString()}`, { viewTransition: true });
-  };
+  const message = useMessageUser();
+  const handleClick = () => message(toUserId, toUserName);
 
   return (
     <button

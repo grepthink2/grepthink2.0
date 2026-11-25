@@ -13,7 +13,7 @@ import secrets
 
 from fastapi import HTTPException
 
-from app.core.db import get_client
+from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseConflictError, DatabaseError, DatabaseUnavailableError
 from app.institutions.controller import is_school_email
 from app.utils.email import send_email
@@ -78,45 +78,206 @@ def get_profile(user_id: str, *, token_email: str | None = None) -> dict:
     return profile
 
 
-def _user_has_class_access(client, user_id: str, class_id: str, created_by: str) -> bool:
-    """True if the user is the class instructor or enrolled as a student."""
-    if user_id == created_by:
+#: 404: no such person, or nobody the caller shares a class with. One answer for both, so the
+#: endpoint never confirms that an account exists.
+PROFILE_NOT_FOUND = "Profile not found"
+
+# What another person may be shown of a profile. Never ``email`` or ``role``.
+_PERSON_FIELDS = "id, first_name, last_name, image_url, github, linkedin, edu_email"
+# Never ``course_code``: that is the code a student joins the class with, not a label for it.
+_SHARED_CLASS_FIELDS = "id, name, term, year, status, created_by, institutions(id, name)"
+# Each member comes with the classes they are enrolled in: a team can hold someone from outside
+# its class, and that person is no teammate to show (see ``_team_of``).
+_TEAM_FIELDS = (
+    "id, name, class_id, "
+    "project_members(user_id, role, "
+    "profiles(id, first_name, last_name, image_url, class_enrollments(class_id)))"
+)
+_STAFF_ROLES = frozenset({"ta", "instructor"})
+# The one spelling of an id that is read. ``uuid.UUID`` also takes braces, a URN and no dashes.
+_PLAIN_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+def _full_name(profile: dict) -> str:
+    """'First Last', or '' for someone who has entered no name: never their email."""
+    first = (profile.get("first_name") or "").strip()
+    last = (profile.get("last_name") or "").strip()
+    return f"{first} {last}".strip()
+
+
+def _class_roles(owned: list[dict], enrolled: list[dict]) -> dict[str, dict[str, str]]:
+    """Each person's role in each of their classes, as ``{user_id: {class_id: role}}``.
+
+    The instructor of a class who is also enrolled in it is its instructor.
+    """
+    roles: dict[str, dict[str, str]] = {}
+    for row in enrolled:
+        role = row.get("enrollment_role") or "student"
+        roles.setdefault(str(row["user_id"]), {})[str(row["class_id"])] = role
+    for row in owned:
+        roles.setdefault(str(row["created_by"]), {})[str(row["id"])] = "instructor"
+    return roles
+
+
+def _in_class(profile: dict, class_id: str, instructor_id: str | None) -> bool:
+    """Whether the person is the class's instructor or enrolled in it."""
+    if str(profile["id"]) == instructor_id:
         return True
-    enrollment = (
-        client.table("class_enrollments")
-        .select("id")
-        .eq("class_id", class_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-    return bool(enrollment.data)
+    return any(str(e.get("class_id")) == class_id for e in profile.get("class_enrollments") or [])
 
 
-def get_profile_for_class_member(viewer_id: str, target_user_id: str, class_id: str) -> dict:
+def _team_of(person_id: str, projects: list[dict], instructors: dict[str, str]) -> dict[str, dict]:
+    """The person's team in each class, as ``{class_id: team}``, with their teammates.
+
+    A teammate is listed only if they are in the team's class (``instructors`` maps a class to
+    who teaches it). Nothing stops a team from holding someone from outside it, and the viewer
+    shares no class with that person.
     """
-    Return a profile visible to another member of the same class.
+    teams: dict[str, dict] = {}
+    for project in sorted(projects, key=lambda p: (p.get("name") or "", str(p["id"]))):
+        members = project.get("project_members") or []
+        own = next((m for m in members if str(m.get("user_id")) == person_id), None)
+        class_id = str(project["class_id"])
+        if own is None or class_id in teams:
+            continue
+        mates = [
+            {
+                "id": m["profiles"]["id"],
+                "name": _full_name(m["profiles"]),
+                "image_url": m["profiles"].get("image_url"),
+            }
+            for m in members
+            # A member whose profile row is gone has nothing to show.
+            if str(m.get("user_id")) != person_id
+            and m.get("profiles")
+            and _in_class(m["profiles"], class_id, instructors.get(class_id))
+        ]
+        teams[class_id] = {
+            "project_id": project["id"],
+            "name": project.get("name"),
+            "project_role": own.get("role"),
+            "members": sorted(mates, key=lambda m: (m["name"], str(m["id"]))),
+        }
+    return teams
 
-    Both viewer and target must belong to the class (instructor via created_by,
-    student via class_enrollments).
+
+def get_person_profile(viewer_id: str, target_user_id: str) -> dict:
+    """One person, as ``viewer_id`` may see them.
+
+    The two must share a class: each is its instructor or enrolled in it, the rule for who may
+    message whom. Everyone may read their own. The answer holds the name, the avatar and the
+    links, the classes shared (all of them, on a person's own page) with each one's role, school
+    and team, and ``is_self``. ``school_email`` is in ``person`` only for the person themself and
+    for staff of a shared class in which the person is a student, as the roster shows it. The
+    login email and the account role are never read.
+
+    Raises 404 :data:`PROFILE_NOT_FOUND` for an id that is not a plainly spelled UUID (lower or
+    upper case, with its dashes), for one that names nobody
+    and for someone the viewer shares no class with: the same answer for all three.
+
+    Round trips: two concurrent waves, three reads and then two.
     """
+    target_id = str(target_user_id).lower()
+    if not _PLAIN_UUID.fullmatch(target_id):
+        raise HTTPException(status_code=404, detail=PROFILE_NOT_FOUND)
+    viewer = str(viewer_id)
+    is_self = target_id == viewer
+    people = sorted({viewer, target_id})
+
     client = get_client()
-    class_result = client.table("classes").select("id, created_by").eq("id", class_id).execute()
-    if not class_result.data:
-        raise HTTPException(status_code=404, detail="Class not found")
+    reads = fan_out(
+        {
+            "owned": lambda: (
+                client.table("classes")
+                .select("id, created_by")
+                .in_("created_by", people)
+                .execute()
+                .data
+                or []
+            ),
+            "enrolled": lambda: (
+                client.table("class_enrollments")
+                .select("class_id, user_id, enrollment_role")
+                .in_("user_id", people)
+                .execute()
+                .data
+                or []
+            ),
+            "person": lambda: (
+                client.table("profiles")
+                .select(_PERSON_FIELDS)
+                .eq("id", target_id)
+                .limit(1)
+                .execute()
+                .data
+                or []
+            ),
+        }
+    )
+    roles = _class_roles(reads["owned"], reads["enrolled"])
+    theirs = roles.get(target_id, {})
+    mine = roles.get(viewer, {})
+    shared_ids = sorted(set(theirs) & set(mine))
+    if not reads["person"] or (not is_self and not shared_ids):
+        raise HTTPException(status_code=404, detail=PROFILE_NOT_FOUND)
+    row = reads["person"][0]
 
-    created_by = class_result.data[0]["created_by"]
-    if not _user_has_class_access(client, viewer_id, class_id, created_by):
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have access to this class",
+    details: dict[str, list[dict]] = {"classes": [], "projects": []}
+    if shared_ids:
+        details = fan_out(
+            {
+                "classes": lambda: (
+                    client.table("classes")
+                    .select(_SHARED_CLASS_FIELDS)
+                    .in_("id", shared_ids)
+                    .execute()
+                    .data
+                    or []
+                ),
+                "projects": lambda: (
+                    client.table("projects")
+                    .select(_TEAM_FIELDS)
+                    .in_("class_id", shared_ids)
+                    .execute()
+                    .data
+                    or []
+                ),
+            }
         )
-    if not _user_has_class_access(client, target_user_id, class_id, created_by):
-        raise HTTPException(status_code=404, detail="User is not in this class")
+    instructors = {str(c["id"]): str(c.get("created_by")) for c in details["classes"]}
+    teams = _team_of(target_id, details["projects"], instructors)
 
-    profile = get_profile(target_user_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
+    shared = []
+    for cls in sorted(details["classes"], key=lambda c: (c.get("name") or "", str(c["id"]))):
+        class_id = str(cls["id"])
+        school = cls.get("institutions")
+        shared.append(
+            {
+                "class_id": cls["id"],
+                "class_name": cls.get("name"),
+                "term": cls.get("term"),
+                "year": cls.get("year"),
+                "status": cls.get("status"),
+                "institution": {"id": school["id"], "name": school["name"]} if school else None,
+                "role": theirs[class_id],
+                "viewer_role": mine[class_id],
+                "team": teams.get(class_id),
+            }
+        )
+
+    person = {
+        "id": row["id"],
+        "name": _full_name(row),
+        "image_url": row.get("image_url"),
+        "github": row.get("github"),
+        "linkedin": row.get("linkedin"),
+    }
+    staff_of_their_class = any(
+        entry["viewer_role"] in _STAFF_ROLES and entry["role"] == "student" for entry in shared
+    )
+    if is_self or staff_of_their_class:
+        person["school_email"] = row.get("edu_email")
+    return {"person": person, "shared": shared, "is_self": is_self}
 
 
 def update_profile(user_id: str, data: dict) -> dict:

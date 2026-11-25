@@ -73,11 +73,15 @@ Read this before changing anything under `backend/`. The root [AGENTS.md](../../
 - **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
   sits on the auth routes, contact, the issue form, `GET /api/institutions`, message sending, the
   `/api/email` dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts,
-  stats, analytics, the search index, and a document's save and finalize. The search index's and the
-  documents' limits are per signed-in user (`key_func=_search_rate_key` in `app/search/views.py`,
-  `_documents_rate_key` in `app/documents/views.py`): on Vercel every request arrives from the
-  proxy's address, so a limit keyed by address is one bucket for everybody. Add one to any new
-  public or abuse-prone endpoint.
+  stats, analytics, the search index, a document's save and finalize, and a person's profile. The
+  search index's, the documents' and the profile's limits are per signed-in user
+  (`key_func=_search_rate_key` in `app/search/views.py`, `_documents_rate_key` in
+  `app/documents/views.py`, `_profiles_rate_key` in `app/profiles/views.py`): on Vercel every request
+  arrives from the proxy's address, so a limit keyed by address is one bucket for everybody. Add one
+  to any new public or abuse-prone endpoint.
+- **`classes.course_code` is the code that joins a class**, the instructor's "Access Code". It is
+  not a label: a class is called by its `name` ("CSE 115A"). Never show `course_code` as the class's
+  name, and send it only where joining is the point.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses

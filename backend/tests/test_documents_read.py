@@ -279,6 +279,8 @@ def test_the_documents_tab_lists_every_slot_made_or_not(db):
         "finalized_revision": None,
         "edited_since": False,
         "updated_at": slots["Sprint 2 report"]["document"]["updated_at"],
+        # The head revision's saver: the id leads to their page, the name is what the row shows.
+        "saved_by": SM,
         "saved_by_name": "Sam Master",
     }
     assert slots["Release summary"]["document"] | {"updated_at": None} == {
@@ -288,6 +290,7 @@ def test_the_documents_tab_lists_every_slot_made_or_not(db):
         "finalized_revision": 2,
         "edited_since": True,
         "updated_at": None,
+        "saved_by": UID,
         "saved_by_name": "Tony Wu",
     }
     assert slots["Test plan and report"]["document"] is None

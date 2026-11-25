@@ -14,6 +14,7 @@ import { interestApi } from '../api/interest';
 import { mcpApi } from '../api/mcp';
 import { messagesApi } from '../api/messages';
 import { notificationsApi } from '../api/notifications';
+import { profilesApi } from '../api/profiles';
 import { projectsApi } from '../api/projects';
 import { scheduleApi } from '../api/schedule';
 import { scrumApi } from '../api/scrum';
@@ -34,6 +35,7 @@ const DOMAINS: Record<string, object> = {
   mcpApi,
   messagesApi,
   notificationsApi,
+  profilesApi,
   projectsApi,
   scheduleApi,
   scrumApi,
@@ -130,6 +132,7 @@ const METHODS = [
   'getMyTeamSchedule',
   'getNotifications',
   'getPendingTeamInvites',
+  'getPersonProfile',
   'getProject',
   'getProjectDocuments',
   'getProjectJoinRequests',

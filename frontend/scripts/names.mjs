@@ -135,6 +135,12 @@ export const NAMES_ALLOWLIST = [
     reason: "ProfileMenu's home beside the app header (see the ProfileMenu entry).",
   },
   {
+    path: 'src/components/PersonLink',
+    reason:
+      'PersonLink and PersonHoverCard were designed in the 2026-11-19 round, after the design manifest was ' +
+      'frozen, so no export there names them.',
+  },
+  {
     path: 'src/components/ErrorBoundary',
     reason: 'The error boundary App.tsx puts around the routes has no design counterpart.',
   },

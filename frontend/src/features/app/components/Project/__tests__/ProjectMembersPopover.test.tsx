@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import type { ApiProjectTA } from '@/lib/api';
 import type { ProjectMember } from '../projectMembers';
 
@@ -30,7 +31,7 @@ type Props = ComponentProps<typeof ProjectMembersPopover>;
 const baseProps: Props = { members: [ana, ben], tas: [tara], teamSize: 5, copyEmails: [] };
 
 function renderPopover(overrides: Partial<Props> = {}) {
-  return render(<ProjectMembersPopover {...baseProps} {...overrides} />);
+  return render(<ProjectMembersPopover {...baseProps} {...overrides} />, { wrapper: MemoryRouter });
 }
 
 /** The "x/y members" trigger; its name follows the props. */
@@ -43,6 +44,27 @@ function openPanel() {
 }
 
 describe('ProjectMembersPopover', () => {
+  it('leads from each name to that person, and opens no second panel on it', () => {
+    vi.useFakeTimers();
+    try {
+      renderPopover({ members: [ana, { displayName: 'Dee Imported', roleLabel: 'Member' }] });
+      const panel = within(openPanel());
+      const link = panel.getByRole('link', { name: 'Ana Lopez' });
+      expect(link).toHaveAttribute('href', '/app/people/u-ana');
+      expect(link).toHaveClass('gt-person-link--plain');
+      expect(panel.getByRole('link', { name: 'Tara Singh' })).toHaveAttribute('href', '/app/people/u-ta');
+      // Someone with no account id has no page to lead to.
+      expect(panel.getByText('Dee Imported')).toBeInTheDocument();
+      expect(panel.queryByRole('link', { name: 'Dee Imported' })).toBeNull();
+
+      fireEvent.pointerEnter(link, { pointerType: 'mouse' });
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.queryByRole('link', { name: 'View profile' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('sums up the team on the trigger', () => {
     const { rerender } = renderPopover();
     expect(screen.getByRole('button', { name: '2/5 members · 1 TA' })).toBeInTheDocument();

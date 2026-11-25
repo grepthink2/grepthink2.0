@@ -5,6 +5,8 @@ import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/ico
 import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
 import { useInstitutions } from '@/lib/institutions';
+import type { SettingsSection } from '@/lib/openSettings';
+import { announceProfileSaved } from '@/lib/profileSaved';
 import { isSchoolEmail } from '@/lib/schoolEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
@@ -17,12 +19,12 @@ import './Settings.scss';
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  /** The section to open on. @default 'profile' */
+  initialSection?: SettingsSection;
 }
 
-type SettingsSection = 'profile' | 'email' | 'apps';
-
 /** The open Settings modal: mounted each time Settings opens (see `Settings` below). */
-const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const SettingsModal: React.FC<{ onClose: () => void; initialSection: SettingsSection }> = ({ onClose, initialSection }) => {
   const { user, canCreateClasses } = useAuth();
   const { classes } = useClass();
   // undefined while loading, null when it could not load: either way not known yet.
@@ -35,7 +37,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   // The Profile fields and their save state live here, not in the section, so edits survive a
   // look at another section.
-  const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -181,6 +183,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         method: 'PATCH',
         body: JSON.stringify(updateData),
       });
+      // The name, photo and links are saved, whatever happens to a new school email below.
+      announceProfileSaved();
 
       if (eduEmailChanged && newEduEmail) {
         const sent = await apiRequest<{ delivery?: 'email' | 'log' }>(
@@ -208,6 +212,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const handleEduVerified = () => {
     if (verifyingEduEmail) originalEduEmailRef.current = verifyingEduEmail;
     setSaveStatus('success');
+    // The school email changed only now, with the code.
+    announceProfileSaved();
   };
 
   const handleEduVerifyClosed = () => {
@@ -502,7 +508,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
  * from the saved profile and reads the schools list again: a list that could not load at one
  * opening is asked for again at the next (a list that loaded is kept for the page load).
  */
-const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) =>
-  isOpen ? <SettingsModal onClose={onClose} /> : null;
+const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, initialSection = 'profile' }) =>
+  isOpen ? <SettingsModal onClose={onClose} initialSection={initialSection} /> : null;
 
 export default Settings;

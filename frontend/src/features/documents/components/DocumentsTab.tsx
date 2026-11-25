@@ -13,6 +13,7 @@ import { sprintDates, STATUS_LABELS } from '@features/scrum/utils/sprints';
 import { formatDate } from '../utils/dates';
 import { documentPath } from '../utils/documentLinks';
 import { documentState, STATE_BADGE } from '../utils/documentStatus';
+import { PersonName } from './PersonName';
 import '../documents.scss';
 
 /** The API's answer when the team made the document first. */
@@ -124,9 +125,17 @@ export default function DocumentsTab({ projectId, canStart, projectName }: Docum
       key: 'saved',
       label: 'Last saved',
       className: 'documents-tab__saved',
-      render: (row) => (row.document
-        ? `${formatDate(row.document.updated_at)}${row.document.saved_by_name ? ` by ${row.document.saved_by_name}` : ''}`
-        : ''),
+      render: (row) => (row.document ? (
+        <>
+          {formatDate(row.document.updated_at)}
+          {row.document.saved_by_name && (
+            <>
+              {' by '}
+              <PersonName id={row.document.saved_by} name={row.document.saved_by_name} />
+            </>
+          )}
+        </>
+      ) : ''),
     },
   ];
   if (canStart) {

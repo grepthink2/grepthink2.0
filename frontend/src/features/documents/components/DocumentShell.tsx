@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Copy, Download, History, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Badge } from '@components/Badge/Badge';
@@ -10,6 +10,7 @@ import type { ApiProjectDocument } from '@/lib/api';
 import { sprintDates } from '@features/scrum/utils/sprints';
 import { formatDate, formatWhen } from '../utils/dates';
 import { documentState, STATE_BADGE } from '../utils/documentStatus';
+import { PersonName } from './PersonName';
 
 interface DocumentShellProps {
   doc: ApiProjectDocument;
@@ -33,32 +34,50 @@ interface DocumentShellProps {
   onRevisions: () => void;
 }
 
-/** "Saved Nov 17, 2026 at 3:05 PM by Alex Kim": a revision's line. */
-function savedLine(doc: ApiProjectDocument): string {
+/** "Saved Nov 17, 2026 at 3:05 PM by Alex Kim": a revision's line. The name leads to the person. */
+function savedLine(doc: ApiProjectDocument): ReactNode {
   const { revision } = doc;
   const verb = revision.source === 'seed' ? 'Started' : 'Saved';
-  const who = revision.saved_by_name ? ` by ${revision.saved_by_name}` : '';
-  return `${verb} ${formatWhen(revision.saved_at)}${who}`;
+  return (
+    <>
+      {verb} {formatWhen(revision.saved_at)}
+      {revision.saved_by_name && (
+        <>
+          {' by '}
+          <PersonName id={revision.saved_by} name={revision.saved_by_name} />
+        </>
+      )}
+    </>
+  );
 }
 
 /**
  * The hand-in line of a final document: "Handed in Nov 20, 2026 by Sam Lee, revision 5" on the revision
  * handed in, the same about the latest hand-in on a draft saved since, and the date alone on an older
- * hand-in, whose finalizer the API does not name.
+ * hand-in, whose finalizer the API does not name. The name leads to the person.
  */
-function handInLine(doc: ApiProjectDocument): string | null {
+function handInLine(doc: ApiProjectDocument): ReactNode {
   const info = doc.document;
   if (info.status !== 'final' || info.finalized_revision == null) return null;
   const onScreen = doc.revision.number;
   if (doc.revision.finalized_at && onScreen !== info.finalized_revision) {
     return `Handed in ${formatDate(doc.revision.finalized_at)}, revision ${onScreen}`;
   }
-  const by = info.finalized_by_name ? ` by ${info.finalized_by_name}` : '';
-  const line = `Handed in ${formatDate(info.finalized_at)}${by}, revision ${info.finalized_revision}`;
   // The head of a document saved again since the hand-in is a draft beyond it.
-  return onScreen === info.head_revision && onScreen !== info.finalized_revision
-    ? `${line}. This draft has changes since.`
-    : line;
+  const changedSince = onScreen === info.head_revision && onScreen !== info.finalized_revision;
+  return (
+    <>
+      Handed in {formatDate(info.finalized_at)}
+      {info.finalized_by_name && (
+        <>
+          {' by '}
+          <PersonName id={info.finalized_by} name={info.finalized_by_name} />
+        </>
+      )}
+      , revision {info.finalized_revision}
+      {changedSince && '. This draft has changes since.'}
+    </>
+  );
 }
 
 /**

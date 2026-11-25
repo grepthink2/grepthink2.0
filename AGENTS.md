@@ -154,6 +154,8 @@ backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_su
 
 frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
+  features/people/    # a person's page (/app/people/:userId): PersonPage (a lazy route), its header, teams and
+                      # staff links, and peopleModel.ts (labels, paths, link checks, who sees what)
   features/releases/  # release notes: notes/<version>.md (the newest = package.json's version), parser, version,
                       # seenStore + useWhatsNew (the per-browser dot), WhatsNewModal (its feed is a lazy chunk)
   features/schedule/  # schedule model + rows; Home's schedule card, the week from today (HomeScheduleCard lazy-loads
@@ -166,6 +168,8 @@ frontend/src/
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
+  lib/openSettings.ts # openSettings(section): the shell opens Settings on that section
+  lib/profileSaved.ts # announceProfileSaved(): Settings saved a profile, so a page showing it asks again
   components/         # the shared UI kit, each component with its README.md guide and <Folder>.preview.tsx
                       # (what it holds and its rules: docs/agents/frontend.md)
   styles/             # design tokens (@use '@styles/index.scss' as *)

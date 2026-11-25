@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Copy, Mail, MessageCircleMore, User, Users } from 'lucide-react';
 import { Popover } from '@/components/Popover/Popover';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/BrandIcons';
+import { PersonLink } from '@/components/PersonLink/PersonLink';
 import { MessageButton } from '@features/messages/components/MessageButton';
 import type { ApiProjectTA } from '@/lib/api';
 import type { ProjectMember } from './projectMembers';
@@ -37,7 +38,10 @@ function MemberRow({ member, currentUserId }: { member: ProjectMember; currentUs
         {imageUrl ? <img src={imageUrl} alt="" /> : <User size={18} aria-hidden="true" />}
       </span>
       <span className="project-members__info">
-        <span className="project-members__name">{displayName}</span>
+        {/* No hover card here: this panel is itself opened by hover. */}
+        <span className="project-members__name">
+          {id ? <PersonLink person={{ id, name: displayName }} /> : displayName}
+        </span>
         <span className="project-members__role">{roleLabel}</span>
       </span>
       <span className="project-members__links">

@@ -1,0 +1,471 @@
+@use '@styles/index.scss' as *;
+
+// A person's page: .gt-profile (the page), .gt-profile-header, .gt-profile-teams and
+// .gt-profile-team, .gt-profile-staff. Tokens only. The kit's blocks (Card, Tag, Badge, Avatar,
+// Button, EmptyState) are adjusted from these classes, never re-declared.
+
+// ── The page ──────────────────────────────────────────────
+.gt-profile {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+  max-width: 1040px;
+  padding: var(--gt-space-lg);
+  font-family: var(--gt-font-sans);
+  color: var(--gt-text-primary);
+  @include bottom-clearance-for-message-widget(24px);
+}
+
+.gt-profile__head .gt-card__body {
+  padding: var(--gt-space-lg);
+}
+
+.gt-profile__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--gt-space-lg);
+  align-items: start;
+}
+
+// The staff links sit beside Teams once the page itself is 860px wide. A container query,
+// because the sidebar and the window both narrow the page.
+@container (min-width: 860px) {
+  .gt-profile__body--staff {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.gt-profile__nudge {
+  margin: var(--gt-space-md) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--gt-radius-sm);
+  background: var(--gt-surface-muted);
+  font-size: 13px;
+  line-height: var(--gt-leading-normal);
+  color: var(--gt-text-secondary);
+}
+
+.gt-profile__nudge-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring-tight);
+    border-radius: 2px;
+  }
+}
+
+.gt-profile__visibility {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.gt-profile__ghost-head {
+  display: flex;
+  gap: var(--gt-space-md);
+  align-items: center;
+}
+
+.gt-profile__ghost-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gt-profile__ghost-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gt-profile-section__title {
+  margin: 0 0 12px;
+  font-size: var(--gt-text-body-lg);
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-text-primary);
+}
+
+// ── The header ────────────────────────────────────────────
+.gt-profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gt-space-md);
+}
+
+.gt-profile-header__avatar {
+  flex-shrink: 0;
+}
+
+.gt-profile-header__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gt-profile-header__name {
+  margin: 0;
+  font-size: var(--gt-text-h2);
+  font-weight: var(--gt-weight-semibold);
+  line-height: var(--gt-leading-tight);
+  letter-spacing: var(--gt-tracking-tight);
+  overflow-wrap: anywhere;
+}
+
+.gt-profile-header__school {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--gt-text-body);
+  color: var(--gt-text-secondary);
+
+  svg {
+    flex-shrink: 0;
+    color: var(--gt-text-tertiary);
+  }
+}
+
+.gt-profile-header__roles,
+.gt-profile-header__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+// A long class name or address shrinks to the card's width and ends in an ellipsis; without
+// these a flex item is as wide as its text, and the page scrolls sideways on a phone.
+.gt-profile-header__roles li,
+.gt-profile-header__links li {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gt-profile-header__roles .gt-tag {
+  max-width: 100%;
+}
+
+.gt-profile-header__links {
+  gap: 6px 16px;
+  margin-top: 6px;
+}
+
+.gt-profile-header__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: var(--gt-weight-medium);
+  color: var(--gt-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: var(--gt-border-strong);
+  text-underline-offset: 3px;
+  border-radius: 3px;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg {
+    flex-shrink: 0;
+    color: var(--gt-text-tertiary);
+  }
+
+  &:hover {
+    color: var(--gt-text-primary);
+    text-decoration-color: currentColor;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring-tight);
+  }
+}
+
+.gt-profile-header__link--mono span {
+  font-family: var(--gt-font-mono);
+  font-size: 12.5px;
+}
+
+.gt-profile-header__nolinks {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--gt-text-tertiary);
+}
+
+.gt-profile-header__actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--gt-space-sm);
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// ── Teams ─────────────────────────────────────────────────
+.gt-profile-teams__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gt-space-md);
+}
+
+.gt-profile-teams__none {
+  margin: 0;
+  font-size: var(--gt-text-body);
+  color: var(--gt-text-tertiary);
+}
+
+.gt-profile-team {
+  background: var(--gt-surface);
+}
+
+.gt-profile-team__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gt-profile-team__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.gt-profile-team__name {
+  font-size: 15px;
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-text-primary);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  border-radius: 3px;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring-tight);
+  }
+}
+
+.gt-profile-team__mates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gt-profile-team__count {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+}
+
+.gt-profile-team__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  min-height: 24px;
+  font-size: 13px;
+  font-weight: var(--gt-weight-medium);
+  color: var(--gt-primary);
+  text-decoration: none;
+  border-radius: 3px;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    color: var(--gt-primary-hover);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring-tight);
+  }
+}
+
+.gt-profile-team__empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gt-text-tertiary);
+}
+
+// ── For staff ─────────────────────────────────────────────
+.gt-profile-staff .gt-card__header {
+  padding: var(--gt-space-md) var(--gt-space-lg);
+}
+
+.gt-profile-staff .gt-card__title {
+  font-size: var(--gt-text-body-lg);
+  letter-spacing: 0;
+}
+
+.gt-profile-staff .gt-card__body {
+  padding: 6px 8px 8px;
+}
+
+.gt-profile-staff__group + .gt-profile-staff__group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--gt-border-subtle);
+}
+
+.gt-profile-staff__class {
+  margin: 6px 8px 2px;
+  font-size: 11px;
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: var(--gt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--gt-text-tertiary);
+}
+
+.gt-profile-staff__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gt-profile-staff__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border-radius: var(--gt-radius-sm);
+  color: var(--gt-text-primary);
+  text-decoration: none;
+  transition: background-color var(--gt-transition-fast);
+
+  &:hover {
+    background: var(--gt-surface-muted);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
+  }
+
+  > svg {
+    flex-shrink: 0;
+    color: var(--gt-text-tertiary);
+  }
+}
+
+.gt-profile-staff__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--gt-radius-sm);
+  background: var(--gt-surface-sunken);
+  color: var(--gt-text-secondary);
+}
+
+.gt-profile-staff__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gt-profile-staff__label {
+  font-size: var(--gt-text-body);
+  font-weight: var(--gt-weight-medium);
+}
+
+.gt-profile-staff__detail {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ── Phones ────────────────────────────────────────────────
+@media (max-width: 767px) {
+  .gt-profile {
+    gap: var(--gt-space-md);
+    padding: var(--gt-space-md);
+  }
+
+  .gt-profile__head .gt-card__body {
+    padding: var(--gt-space-md);
+  }
+
+  .gt-profile-header {
+    flex-wrap: wrap;
+  }
+
+  .gt-profile-header__main {
+    flex-basis: calc(100% - 80px);
+  }
+
+  .gt-profile-header__name {
+    font-size: var(--gt-text-h3);
+  }
+
+  .gt-profile-header__actions {
+    flex-basis: 100%;
+
+    .gt-button {
+      flex: 1 1 auto;
+    }
+  }
+
+  .gt-profile-header__link,
+  .gt-profile-team__open,
+  .gt-profile-team__name {
+    min-height: 44px;
+  }
+
+  .gt-profile-team__name {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .gt-profile-teams__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-profile-staff__link {
+    transition: none;
+  }
+}

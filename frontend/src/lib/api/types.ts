@@ -355,6 +355,50 @@ export interface ApiProfile {
   edu_email?: string;
 }
 
+/** Someone as a profile page or a list names them: `name` is '' for a person who has entered none. */
+export interface ApiPersonRef {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+/** A person's team in one class, with their teammates (not the person). */
+export interface ApiPersonTeam {
+  project_id: string;
+  name: string;
+  /** The stored `project_members.role` ('product owner'), or null. */
+  project_role: string | null;
+  members: ApiPersonRef[];
+}
+
+/** A class the viewer and the person are both in, with each one's role there. */
+export interface ApiPersonSharedClass {
+  class_id: string;
+  /** The class's name ("CSE 115A"). Its `course_code` is the code that joins it, and is never sent. */
+  class_name: string;
+  term: string | null;
+  year: number | null;
+  status: 'active' | 'complete';
+  /** The class's school; null when it has none. */
+  institution: { id: string; name: string } | null;
+  /** The person's role in the class. */
+  role: ClassRole;
+  /** The viewer's own role in the class. */
+  viewer_role: ClassRole;
+  team: ApiPersonTeam | null;
+}
+
+/**
+ * GET /api/profiles/{user_id}: one person as the viewer may see them. The server decides every
+ * field: `school_email` is absent unless the viewer is the person, or staff of a shared class in
+ * which the person is a student. `shared` is every class of the person's on their own page.
+ */
+export interface ApiPersonProfile {
+  person: ApiPersonRef & { github: string | null; linkedin: string | null; school_email?: string | null };
+  shared: ApiPersonSharedClass[];
+  is_self: boolean;
+}
+
 export interface ApiProject {
   id: string;
   class_id: string;
@@ -1151,7 +1195,8 @@ export interface ApiDocumentSummary {
   /** Final, and saved again after its finalized revision. */
   edited_since: boolean;
   updated_at: string;
-  /** Who saved the head revision. */
+  /** Who saved the head revision: their id, and their name as the row shows it. */
+  saved_by: string | null;
   saved_by_name: string | null;
 }
 

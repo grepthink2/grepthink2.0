@@ -119,7 +119,7 @@ export function makeDocument<K extends ApiDocumentKind>(kind: K, over: DocumentO
 
 export const makeSummary = (over: Partial<ApiDocumentSummary> = {}): ApiDocumentSummary => ({
   id: 'd1', status: 'draft', head_revision: 3, finalized_revision: null, edited_since: false,
-  updated_at: '2026-11-16T22:05:00Z', saved_by_name: 'Alex Kim', ...over,
+  updated_at: '2026-11-16T22:05:00Z', saved_by: 'u2', saved_by_name: 'Alex Kim', ...over,
 });
 
 export const makeSlot = (over: Partial<ApiDocumentSlot> = {}): ApiDocumentSlot => ({

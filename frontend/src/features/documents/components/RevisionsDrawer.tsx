@@ -12,6 +12,7 @@ import { formatWhen } from '../utils/dates';
 import { diffBodies } from '../utils/diff';
 import { SOURCE_BADGE } from '../utils/documentStatus';
 import ChangeList from './ChangeList';
+import { PersonName } from './PersonName';
 
 interface RevisionsDrawerProps {
   open: boolean;
@@ -159,7 +160,8 @@ export default function RevisionsDrawer({ open, onClose, documentId, kind, compa
               <li key={r.number} className="document-revisions__item">
                 <span className="document-revisions__number">Revision {r.number}</span>{' '}
                 <span className="document-revisions__who">
-                  {r.saved_by_name ?? 'Someone'} · {formatWhen(r.saved_at)}
+                  {r.saved_by_name ? <PersonName id={r.saved_by} name={r.saved_by_name} /> : 'Someone'} ·{' '}
+                  {formatWhen(r.saved_at)}
                 </span>{' '}
                 <span className="document-revisions__badges">
                   <Badge size="sm" status={SOURCE_BADGE[r.source]} />

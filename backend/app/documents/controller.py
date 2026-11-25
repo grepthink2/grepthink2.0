@@ -342,7 +342,7 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
         }
     )
     documents = [d for d in reads["documents"] if d["kind"] in KINDS]
-    savers: dict[str, str | None] = {}
+    savers: dict[str, dict] = {}
     if documents:
         heads = ",".join(
             f"and(document_id.eq.{d['id']},number.eq.{d['head_revision']})" for d in documents
@@ -353,12 +353,13 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
             .or_(heads)
             .execute()
         ).data or []
-        savers = {str(r["document_id"]): _saver_name(r) for r in rows}
+        savers = {str(r["document_id"]): r for r in rows}
 
     by_slot = {(d["kind"], d.get("sprint_id")): d for d in documents}
 
     def slot(kind: Kind, sprint: dict | None) -> dict:
         found = by_slot.get((kind.name, sprint["id"] if sprint else None))
+        head = savers.get(str(found["id"]), {}) if found else {}
         return {
             "kind": kind.name,
             "title": title_of(kind, sprint),
@@ -372,7 +373,8 @@ def list_project_documents(project_id: UUID, user_id: str) -> dict:
                 "finalized_revision": found.get("finalized_revision"),
                 "edited_since": _edited_since(found),
                 "updated_at": found.get("updated_at"),
-                "saved_by_name": savers.get(str(found["id"])),
+                "saved_by": head.get("saved_by"),
+                "saved_by_name": _saver_name(head),
             },
         }
 
