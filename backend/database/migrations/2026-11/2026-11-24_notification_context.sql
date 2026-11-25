@@ -1,4 +1,4 @@
--- 2026-11-25 — notifications record their class, team, actor and message count
+-- 2026-11-24 — notifications record their class, team, actor and message count
 --
 -- A notification says what it is about (entity_type, entity_id) but not where it happened or who did it,
 -- so the header's panel could not name the person, the team and the class ("Sam Okafor asked to join
@@ -42,7 +42,7 @@
 --    WHERE table_schema = 'public' AND table_name = 'notifications'
 --      AND column_name IN ('class_id', 'project_id', 'actor_id', 'message_count');
 --
--- Applied: DEV — 2026-11-25   PROD —
+-- Applied: DEV — 2026-11-24   PROD —
 
 -- Fail fast rather than queue live traffic: the column changes lock notifications until the transaction
 -- ends, and adding the foreign keys locks classes, projects and profiles against writes.

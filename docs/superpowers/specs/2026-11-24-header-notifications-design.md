@@ -1,6 +1,6 @@
 # Header notifications: one header family, and a panel that keeps what you have read
 
-**Date:** 2026-11-25 · **Status:** approved by the maintainer, 2026-11-25 · amended 2026-11-25 (section 12)
+**Date:** 2026-11-24 · **Status:** approved by the maintainer, 2026-11-24 · amended 2026-11-24 (section 12)
 
 ## 1. Why
 
@@ -94,6 +94,8 @@ ALTER TABLE notifications
   before this change, and every other type) reads as 1.
 - The count is read and written back by the same request that rewrites the row. Two messages
   landing at the same instant can count as one; the row still shows the latest message.
+- The row is rewritten only while it is still unread. A message that lands as its row is being
+  marked read starts a new row.
 
 - Ids are stored; names are joined on read, so a renamed team shows its new name.
 - A deleted class, team or account leaves the notification, without that part of its line.
@@ -157,11 +159,13 @@ In the same migration, as data fixes:
   `conversation` is one more read, only when the page holds messages. `kind` is `direct` for a
   `dm` and `team` otherwise; `name` is the team's name, with "TAs" or "Instructor" for those
   channels.
-- **A name is never an email.** An actor with no name is `""`, as on a profile.
+- **A name is never an email.** An actor with no name is `""`, as on a profile. The same holds for
+  every title and body a notification is written with: a person with no name is "Someone" or "A
+  student". The one exception is an undeliverable invite, which shows the address it was sent to.
 - **Authorization.** Every read and write is filtered by the caller's `user_id`. The joined names
   are of things the notification was already about; the list adds no lookup by a caller-supplied id.
-- **Round trips**, pinned by a test: the two reminders as today, then the page and the count
-  together, then the conversations when there are messages.
+- **Round trips**, pinned by a test: the two reminders (on the first page only), then the page and
+  the count together, then the conversations when there are messages.
 
 ### 5.5 Marking read
 
@@ -344,8 +348,21 @@ the build is checked before and after.
 
 ## 12. Amendments
 
-**2026-11-25, before any code.** The approved text said the API keeps one row a message and the
+**2026-11-24, before any code.** The approved text said the API keeps one row a message and the
 client groups a day of them. It does not: a new message rewrites its conversation's one unread row
 (section 3). That is kept, because it is what stops a busy channel flooding the bell. The row gains
 `message_count` (section 5.1), the answer carries it (section 5.4), and the panel words a row from
 it (section 6.4). Sections 2, 3, 5.1, 5.4, 6.4, 7 and 8 are changed in place.
+
+**2026-11-24, after the reviews of pull request 1.** Changed in place in sections 5.1 and 5.4:
+
+- No email stands in for a person's name in any notification's title or body, not only in the
+  list's `actor`.
+- The reminders run on the first page of the list only.
+- A message never lands on a row that was read meanwhile.
+- A cursor's instant is written into the query in UTC; one that cannot be is refused (422).
+
+Accepted as it is: **names are live.** A notification written before someone left a class or a team
+stays theirs, and now shows that class's, team's and actor's current name and photo, where before
+it showed only the text frozen when it was written. Nothing is shown that the reader could not see
+when the notification was written. Closing it would cost an enrollment read on every page.
