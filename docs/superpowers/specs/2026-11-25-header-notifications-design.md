@@ -1,6 +1,6 @@
 # Header notifications: one header family, and a panel that keeps what you have read
 
-**Date:** 2026-11-25 · **Status:** draft, for the maintainer's review
+**Date:** 2026-11-25 · **Status:** approved by the maintainer, 2026-11-25
 
 ## 1. Why
 
