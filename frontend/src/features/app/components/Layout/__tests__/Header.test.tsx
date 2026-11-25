@@ -198,6 +198,11 @@ describe('Header — opening a join-request notification', () => {
       entity_id: 'p2',
       read_at: null,
       created_at: '2026-10-09T10:00:00Z',
+      class: null,
+      team: null,
+      actor: null,
+      conversation: null,
+      message_count: 1,
     };
   }
 
@@ -227,6 +232,11 @@ describe('Header — a document finalized', () => {
         entity_id: 'd1',
         read_at: null,
         created_at: '2026-11-17T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       },
     ];
     renderAt('/app/dashboard');
@@ -250,6 +260,11 @@ describe('Header — a late window opened', () => {
         entity_id: 'beta',
         read_at: null,
         created_at: '2026-11-17T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       },
     ];
     renderAt('/app/dashboard');
@@ -271,6 +286,11 @@ describe('Header — a late window opened', () => {
         entity_id: 'gamma',
         read_at: null,
         created_at: '2026-11-17T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       },
     ];
     renderAt('/app/dashboard');
@@ -297,6 +317,11 @@ describe('Header — a message notification', () => {
         entity_id: 'c1',
         read_at: null,
         created_at: '2026-10-11T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       },
     ];
     renderAt('/app/dashboard');

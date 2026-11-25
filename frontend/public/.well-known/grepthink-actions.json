@@ -360,7 +360,15 @@
     },
     {
       "id": "list_notifications", "title": "List my notifications", "role": "any",
-      "method": "GET", "endpoint": "/api/notifications"
+      "method": "GET", "endpoint": "/api/notifications",
+      "params": {"view": "enum(unread|all) (unread: every unread notification, whatever its age; all, the default: the last 30 days, read and unread)", "cursor": "string (next_cursor of the page before)", "limit": "int (1-100; default 30)"},
+      "note": "Newest first. Answers {notifications, unread_count, next_cursor}. Each notification names its class and team ({id, name}) and who caused it (actor: {id, name, image_url}; a name is never an email, so one without a name is \"\"), each null when it has none or it was deleted since; a message also names its conversation ({id, kind: direct|team, name}, the team's name with TAs or Instructor for those channels) and message_count, how many of the conversation's messages it stands for (1 for every other notification). unread_count counts every unread notification in both views; next_cursor is null on the last page. 422 'Invalid cursor' for a cursor the list did not give."
+    },
+    {
+      "id": "mark_notifications_read", "title": "Mark several of my notifications read", "role": "any",
+      "method": "POST", "endpoint": "/api/notifications/read",
+      "params": {"ids": "uuid[]! (1-100)"},
+      "note": "One update; a notification already read keeps when it was read. Answers 204 whatever the ids: one of someone else's notifications, or of none, changes nothing and is not reported."
     },
     {
       "id": "search_index", "title": "Load my search index (everything I can open, for the ⌘K palette)", "role": "any",

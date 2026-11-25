@@ -283,6 +283,11 @@ describe('opening a notification for another class', () => {
         entity_id: 'B',
         read_at: null,
         created_at: '2026-09-25T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       } as unknown as ApiNotification,
     ];
     await start('/app/ta-review', [cls('A', 'Alpha', 'ta'), cls('B', 'Beta', 'instructor')]);
@@ -304,6 +309,11 @@ describe('opening a notification for another class', () => {
         entity_id: 'B',
         read_at: null,
         created_at: '2026-09-30T10:00:00Z',
+        class: null,
+        team: null,
+        actor: null,
+        conversation: null,
+        message_count: 1,
       } satisfies ApiNotification,
     ];
     await start('/app/ta-review', [cls('A', 'Alpha', 'ta'), cls('B', 'Beta', 'instructor')]);
