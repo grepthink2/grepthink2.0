@@ -2029,7 +2029,11 @@ CREATE TABLE IF NOT EXISTS "public"."notifications" (
     "entity_type" "text",
     "entity_id" "text",
     "read_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "class_id" "uuid",
+    "project_id" "uuid",
+    "actor_id" "uuid",
+    "message_count" integer
 );
 
 ALTER TABLE ONLY "public"."notifications" REPLICA IDENTITY FULL;
@@ -3069,6 +3073,18 @@ CREATE INDEX "messages_conv_created_id_idx" ON "public"."messages" USING "btree"
 
 
 
+CREATE INDEX "notifications_actor_idx" ON "public"."notifications" USING "btree" ("actor_id") WHERE ("actor_id" IS NOT NULL);
+
+
+
+CREATE INDEX "notifications_class_idx" ON "public"."notifications" USING "btree" ("class_id") WHERE ("class_id" IS NOT NULL);
+
+
+
+CREATE INDEX "notifications_project_idx" ON "public"."notifications" USING "btree" ("project_id") WHERE ("project_id" IS NOT NULL);
+
+
+
 CREATE INDEX "notifications_user_created_idx" ON "public"."notifications" USING "btree" ("user_id", "created_at" DESC);
 
 
@@ -3522,6 +3538,21 @@ ALTER TABLE ONLY "public"."messages"
 
 ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."notifications"
+    ADD CONSTRAINT "notifications_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
 
 
 
