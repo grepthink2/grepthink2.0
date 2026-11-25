@@ -756,13 +756,55 @@ export interface ApiNotification {
     | 'member_removed'
     | 'email_undeliverable'
     | 'document_finalized'
-    | 'late_window_opened';
+    | 'late_window_opened'
+    | 'mention';
   title: string;
   body: string;
   entity_type: string | null;
   entity_id: string | null;
   read_at: string | null;
   created_at: string;
+  /** The class it happened in; null for a direct message or a profile reminder, or once deleted. */
+  class: ApiNotificationRef | null;
+  /** The team it is about; null when it is about no team, or once the team is deleted. */
+  team: ApiNotificationRef | null;
+  /** Who caused it; null where nobody is named (or the account is gone). */
+  actor: ApiNotificationActor | null;
+  /** The conversation a `message` is about; null for every other type, or once deleted. */
+  conversation: ApiNotificationConversation | null;
+  /** How many messages a `message` row stands for: its conversation's unread ones. 1 otherwise. */
+  message_count: number;
+}
+
+/** A class or a team a notification names, by its current name. */
+export interface ApiNotificationRef {
+  id: string;
+  name: string;
+}
+
+/** Who caused a notification. `name` is "" when they have none: never their email. */
+export interface ApiNotificationActor {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
+/**
+ * The conversation a message notification is about: `direct` (unnamed: the actor is the sender) or
+ * `team` (its team's name, with "TAs" or "Instructor" for those channels: "Trailhead · TAs").
+ */
+export interface ApiNotificationConversation {
+  id: string;
+  kind: 'direct' | 'team';
+  name: string;
+}
+
+/** GET /api/notifications: a page, newest first, and every unread notification's count. */
+export interface ApiNotificationsPage {
+  notifications: ApiNotification[];
+  unread_count: number;
+  /** Pass as `cursor` for the next page; null on the last one. */
+  next_cursor: string | null;
 }
 
 // ----- Email preferences and unsubscribe -----------------------------------

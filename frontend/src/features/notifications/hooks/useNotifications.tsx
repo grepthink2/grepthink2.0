@@ -48,7 +48,7 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
   const refetch = useCallback(
     () =>
       api
-        .getNotifications()
+        .getNotifications({ view: 'unread', limit: 50 })
         .then((res) => {
           if (cancelled.current) return;
           setNotifications(res.notifications);

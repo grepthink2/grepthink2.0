@@ -435,7 +435,13 @@ def test_accept_student_request_moves_them_and_notifies_old_product_owner(db):
     assert req["request_status"] == "approved" and req["reviewer_id"] == INSTR
     notes = db.rows("notifications")
     assert [n["user_id"] for n in notes] == [S5]  # P2's product owner
-    assert notes[0]["type"] == "join_request" and notes[0]["title"] == "Member left your project"
+    assert {key: notes[0].get(key) for key in ("type", "title", "class_id", "project_id")} == {
+        "type": "member_removed",
+        "title": "S3 X left Beta",
+        "class_id": CLASS,
+        "project_id": P2,
+    }
+    assert notes[0].get("actor_id") == S3
     assert "Beta" in notes[0]["body"] and "Alpha" in notes[0]["body"]
     assert db.executes <= 11, [q["table"] + ":" + q["op"] for q in db.queries]
 

@@ -14,7 +14,7 @@ from app.core.db import fan_out, get_client
 from app.database.client import retry_on_disconnect
 from app.scrum.controller import ensure_project_sprints
 from app.scrum.schedule import Schedule
-from app.utils.profiles import profile_display_name
+from app.utils.profiles import profile_name
 
 # Project member roles. Keep in sync with the DB CHECK constraint on project_members.role.
 ROLE_OWNER = "owner"
@@ -299,6 +299,7 @@ def create_project(
                     student_id=user_id,
                     project_id=project["id"],
                     project_name=name,
+                    class_id=str(class_id),
                 )
 
         # Ids only: the team's name is its students' own text (AGENTS.md, Sentry).
@@ -769,9 +770,8 @@ def _leave_current_project_in_class(
         .limit(1)
         .execute()
     )
-    leaver_name = profile_display_name(profile_res.data[0] if profile_res.data else None) or (
-        "A student"
-    )
+    # Their name or nothing, never their email: the notifier says "Someone" or "A student".
+    leaver_name = profile_name(profile_res.data[0] if profile_res.data else None)
 
     from app.notifications.controller import notify_member_departure  # avoids import cycle
 
@@ -783,6 +783,8 @@ def _leave_current_project_in_class(
                 old_project_id=pid,
                 old_project_name=siblings[pid].get("name") or "Unknown project",
                 new_project_name=new_project_name,
+                leaver_id=str(user_id),
+                class_id=str(class_id),
             )
 
 
@@ -897,6 +899,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                 request_id=str(request_id),
                 requester_id=user_id,
                 message=clean_message,
+                class_id=project.get("class_id"),
             )
 
         logger.info(
@@ -1102,6 +1105,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
                 requester_id=join_request["user_id"],
                 project_id=str(join_request["project_id"]),
                 project_name=(project or {}).get("name") or "the project",
+                class_id=(project or {}).get("class_id"),
             )
 
         logger.info(

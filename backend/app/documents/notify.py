@@ -95,6 +95,9 @@ def notify_finalized(
                 project_name=payload["project_name"],
                 document_title=document_title,
                 document_id=str(document_id),
+                project_id=str(project["id"]),
+                class_id=project.get("class_id"),
+                finalizer_id=str(finalizer_id),
             )
         }
         if emails:

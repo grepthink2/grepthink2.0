@@ -79,6 +79,8 @@ def test_a_task_comment_notifies_the_mentioned_teammate(monkeypatch):
     assert row["title"] == "Tony Wu mentioned you on GT-12"
     assert row["body"] == "Trailhead: @Ana can you review?"
     assert (row["entity_type"], row["entity_id"]) == ("scrum_task", f"{PID}:t1")
+    # The author, the team and its class, from the project the fan-out already read.
+    assert (row["actor_id"], row["project_id"], row["class_id"]) == (UID, PID, CLASS)
 
 
 def test_a_story_comment_points_at_the_story(monkeypatch):
@@ -200,3 +202,14 @@ def test_the_comment_survives_a_failing_recipient_lookup(monkeypatch):
     out = _comment("task", _mention(INSTR_U) + _mention(TA_U))
     assert [c["id"] for c in db.rows("scrum_comments")] == [out["id"]]
     assert db.rows("notifications") == []
+
+
+def test_an_author_with_no_name_is_someone_never_their_email(monkeypatch):
+    db = _world(monkeypatch)
+    author = next(p for p in db.rows("profiles") if p["id"] == UID)
+    author.update(first_name=None, last_name=None)
+    _comment("task", f"{_mention(ANA, 'Ana')} can you review?")
+    [row] = db.rows("notifications")
+    assert row["title"] == "Someone mentioned you on GT-12"
+    assert "@" not in row["title"]
+    assert author["email"] not in row["body"]

@@ -409,6 +409,7 @@ def test_a_failed_email_bounces_its_row_suppresses_the_address_and_tells_the_ins
         "body": f"Your invite to {STUDENT} couldn't be delivered (the address bounced).",
         "entity_type": "class",
         "entity_id": CLASS,
+        "class_id": CLASS,
     }
 
 

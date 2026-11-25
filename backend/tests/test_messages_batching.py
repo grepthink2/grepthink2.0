@@ -89,7 +89,11 @@ def db(monkeypatch):
             {"id": C3, "created_by": INSTR},
             {"id": C4, "created_by": THIRD},
         ],
-        relations=CONTACT_RELATIONS,
+        relations={
+            **CONTACT_RELATIONS,
+            # The participant check reads a team channel's class with the conversation.
+            ("conversations", "projects"): ("project_id", "id", False),
+        },
     )
     for uid, role in ((TA, "ta"), (OTHER_INSTR, "ta"), (S1, "student"), (S2, "student")):
         _enroll(fake, uid, C1, role)
@@ -314,6 +318,8 @@ def conv_db(monkeypatch):
             }
             for i in range(5)
         ],
+        projects=[{"id": "proj-1", "class_id": C1}],
+        relations={("conversations", "projects"): ("project_id", "id", False)},
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
@@ -370,6 +376,7 @@ def test_require_participant_returns_the_conversation_and_its_participants(conv_
         "user_a": None,
         "user_b": None,
         "project_id": "proj-1",
+        "projects": {"class_id": C1},  # the channel's class, for its message notifications
     }
     assert participant_ids == [S1, S3, TA]
     assert conv_db.executes <= 2, _trace(conv_db)
@@ -430,6 +437,7 @@ def test_list_messages_pages_newest_first_with_the_keyset_cursor(conv_db):
 # ---------------------------------------------------------------- send_message
 
 CONV_CHANNEL, CONV_SOLO = "conv-channel", "conv-solo"
+TEAM = "team-1"  # the team both channels belong to, in C1
 
 
 def _message_defaults(_db, row) -> None:
@@ -444,10 +452,23 @@ def send_db(db):
     db.relations[("messages", "profiles!messages_sender_id_fkey")] = ("sender_id", "id", False)
     db.triggers[("messages", "insert")] = _message_defaults
     db.store.update(
+        projects=[{"id": TEAM, "class_id": C1, "name": "Trailhead"}],
         conversations=[
             {"id": CONV_DM, "type": "dm", "user_a": S1, "user_b": S2, "project_id": None},
-            {"id": CONV_CHANNEL, "type": "team_ta", "user_a": None, "user_b": None},
-            {"id": CONV_SOLO, "type": "team_members", "user_a": None, "user_b": None},
+            {
+                "id": CONV_CHANNEL,
+                "type": "team_ta",
+                "user_a": None,
+                "user_b": None,
+                "project_id": TEAM,
+            },
+            {
+                "id": CONV_SOLO,
+                "type": "team_members",
+                "user_a": None,
+                "user_b": None,
+                "project_id": TEAM,
+            },
         ],
         conversation_participants=[
             {"conversation_id": CONV_DM, "user_id": S1, "role": "member"},
@@ -469,6 +490,13 @@ def _titles(db) -> dict[str, str]:
     return {n["user_id"]: n["title"] for n in db.rows("notifications")}
 
 
+def _context(db) -> set[tuple]:
+    return {
+        (n.get("class_id"), n.get("project_id"), n.get("actor_id"), n.get("message_count"))
+        for n in db.rows("notifications")
+    }
+
+
 def test_send_reply_in_a_dm_reads_the_participants_once(send_db):
     out = messages.send_message(sender_id=S1, body="hello", conversation_id=CONV_DM)
 
@@ -476,6 +504,7 @@ def test_send_reply_in_a_dm_reads_the_participants_once(send_db):
     # The sender's profile came back with the insert, and stays out of the answer.
     assert set(out["message"]) == {"id", "conversation_id", "sender_id", "body", "created_at"}
     assert _titles(send_db) == {S2: "New message from Sam Stone"}
+    assert _context(send_db) == {(None, None, S1, 1)}  # a direct message has no team or class
     assert [q["table"] for q in send_db.queries].count("conversation_participants") == 1
     # The conversation and its participants, the two can_message reads, the insert, the
     # sender's read mark, and the recipient's notification lookup and insert.
@@ -486,6 +515,8 @@ def test_send_to_a_team_channel_costs_two_per_recipient(send_db):
     messages.send_message(sender_id=S1, body="standup at 10", conversation_id=CONV_CHANNEL)
 
     assert _titles(send_db) == dict.fromkeys((S2, S3, TA), "New message from Sam Stone")
+    # The team and its class came with the conversation's read: no request of their own.
+    assert _context(send_db) == {(C1, TEAM, S1, 1)}
     # The conversation and its participants, the insert and the read mark, then a
     # notification lookup and insert for each of the three recipients.
     assert send_db.executes == 10, _trace(send_db)
@@ -499,14 +530,23 @@ def test_send_to_a_channel_with_no_one_else_writes_no_notification(send_db):
 
 
 @pytest.mark.parametrize(
-    ("sender", "title"),
+    "sender",
     [
-        pytest.param(S2, "New message from bea@ucsc.edu", id="no-names-so-the-email"),
-        pytest.param(ORPHAN, "New message from Someone", id="no-profile-row"),
+        pytest.param(S2, id="no-names-and-never-the-email"),
+        pytest.param(ORPHAN, id="no-profile-row"),
     ],
 )
-def test_send_by_a_sender_without_names_uses_the_display_name_fallback(send_db, sender, title):
+def test_send_by_a_sender_without_names_is_from_someone(send_db, sender):
     out = messages.send_message(sender_id=sender, body="hi", to_user_id=S1)
 
-    assert _titles(send_db) == {S1: title}
+    assert _titles(send_db) == {S1: "New message from Someone"}
     assert "sender" not in out["message"]
+
+
+def test_a_sender_with_no_name_is_someone_never_their_email(send_db):
+    sender = next(p for p in send_db.rows("profiles") if p["id"] == S1)
+    sender.update(first_name=None, last_name=None, email="sam@ucsc.edu")
+    messages.send_message(sender_id=S1, body="standup at 10", conversation_id=CONV_CHANNEL)
+    notes = send_db.rows("notifications")
+    assert {n["title"] for n in notes} == {"New message from Someone"}
+    assert not any("@" in n["title"] + n["body"] for n in notes)

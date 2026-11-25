@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
-from datetime import UTC, datetime
+import re
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
@@ -12,7 +17,7 @@ from app.core import db as core_db
 from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.utils.mentions import render_mentions_plain
-from app.utils.profiles import needs_roster_email, profile_display_name
+from app.utils.profiles import needs_roster_email, profile_name
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +57,21 @@ def _client():
     return get_client()
 
 
+def _text(value) -> str | None:
+    """An id as text: a ``UUID`` would not survive the request's JSON encoding."""
+    return None if value is None else str(value)
+
+
+def _context(*, class_id=None, project_id=None, actor_id=None, message_count=None) -> dict:
+    """The columns that say where a notice happened and who did it, leaving out the ones it does
+    not have, so a notice without them writes exactly what it wrote before they existed."""
+    ids = {"class_id": class_id, "project_id": project_id, "actor_id": actor_id}
+    out = {key: str(value) for key, value in ids.items() if value}
+    if message_count is not None:
+        out["message_count"] = message_count
+    return out
+
+
 def _insert_notification(
     *,
     user_id: str,
@@ -60,6 +80,10 @@ def _insert_notification(
     body: str,
     entity_type: str | None = None,
     entity_id: str | None = None,
+    class_id: str | None = None,
+    project_id: str | None = None,
+    actor_id: str | None = None,
+    message_count: int | None = None,
 ) -> None:
     if type not in NOTIFICATION_TYPES:
         logger.warning("Unknown notification type %r — skipping", type)
@@ -72,7 +96,13 @@ def _insert_notification(
                 "title": title,
                 "body": body,
                 "entity_type": entity_type,
-                "entity_id": entity_id,
+                "entity_id": _text(entity_id),
+                **_context(
+                    class_id=class_id,
+                    project_id=project_id,
+                    actor_id=actor_id,
+                    message_count=message_count,
+                ),
             }
         ).execute()
     except Exception:
@@ -87,7 +117,8 @@ def _insert_notifications(rows: list[dict]) -> None:
     """Best-effort bulk insert of several notification rows in one round trip.
 
     Rows whose ``type`` is not in :data:`NOTIFICATION_TYPES` are dropped (logged),
-    mirroring :func:`_insert_notification`. Never raises.
+    mirroring :func:`_insert_notification`. A row's ``class_id``, ``project_id``, ``actor_id``
+    and ``message_count`` are written when it has them. Never raises.
     """
     valid = []
     for row in rows:
@@ -101,7 +132,13 @@ def _insert_notifications(rows: list[dict]) -> None:
                 "title": row["title"],
                 "body": row["body"],
                 "entity_type": row.get("entity_type"),
-                "entity_id": row.get("entity_id"),
+                "entity_id": _text(row.get("entity_id")),
+                **_context(
+                    class_id=row.get("class_id"),
+                    project_id=row.get("project_id"),
+                    actor_id=row.get("actor_id"),
+                    message_count=row.get("message_count"),
+                ),
             }
         )
     if not valid:
@@ -119,22 +156,30 @@ def notify_member_departure(
     old_project_id: str,
     old_project_name: str,
     new_project_name: str,
+    leaver_id: str | None = None,
+    class_id: str | None = None,
 ) -> None:
-    """Tell each product owner of ``old_project`` that a member left for another team.
+    """Tell each product owner of ``old_project`` that a member left for another team, e.g.
+    "Diego Ramos left Trailhead". ``leaver_name`` is their display name, or empty.
 
     Sent when the move happens: a reviewer accepted the member's join request, or the
-    member accepted another team's invitation.
+    member accepted another team's invitation. A ``member_removed`` notice, which opens the team.
     """
-    body = f'{leaver_name} has left "{old_project_name}" to join "{new_project_name}".'
+    body = (
+        f'{leaver_name or "A student"} has left "{old_project_name}" to join "{new_project_name}".'
+    )
     _insert_notifications(
         [
             {
                 "user_id": rid,
-                "type": "join_request",
-                "title": "Member left your project",
+                "type": "member_removed",
+                "title": f"{leaver_name or 'Someone'} left {old_project_name}",
                 "body": body,
                 "entity_type": "project",
                 "entity_id": old_project_id,
+                "class_id": class_id,
+                "project_id": old_project_id,
+                "actor_id": leaver_id,
             }
             for rid in recipient_ids
         ]
@@ -160,6 +205,7 @@ def notify_email_undeliverable(
             body=f"Your invite to {to_email} couldn't be delivered ({reason}).",
             entity_type="class" if class_id else None,
             entity_id=str(class_id) if class_id else None,
+            class_id=class_id,
         )
     except DatabaseError:  # an HTTPException too, so caught first: this one is worth an event
         logger.error(
@@ -181,16 +227,27 @@ def _upsert_unread_notification(
     body: str,
     entity_type: str | None,
     entity_id: str | None,
+    class_id: str | None = None,
+    project_id: str | None = None,
+    actor_id: str | None = None,
+    count_messages: bool = False,
 ) -> None:
     """Update an existing unread notification for the same entity, or insert.
 
-    ``entity_id=None`` matches only a notification that has no entity either.
+    ``entity_id=None`` matches only a notification that has no entity either. With
+    ``count_messages`` (a conversation's message row) every call counts: the unread row's
+    ``message_count`` goes up by one (a row written before the count existed holds NULL, which
+    reads as 1) and it takes the latest title, text and actor, while a new row starts at 1. The
+    count is read and written back by this one call, so two messages at the same instant can count
+    as one. The newest unread row is the one rewritten, and only while it is still unread: a row
+    read since the lookup is left as it was read, and this notice starts a new row.
     """
+    context = _context(class_id=class_id, project_id=project_id, actor_id=actor_id)
     try:
         client = _client()
         query = (
             client.table("notifications")
-            .select("id, title, body")
+            .select("id, title, body, message_count")
             .eq("user_id", user_id)
             .eq("type", type)
             .is_("read_at", "null")
@@ -199,25 +256,31 @@ def _upsert_unread_notification(
             query = query.eq("entity_id", entity_id)
         else:
             query = query.is_("entity_id", "null")
-        existing = query.limit(1).execute()
+        existing = query.order("created_at", desc=True).limit(1).execute()
 
         if existing.data:
             row = existing.data[0]
+            fields = {"title": title, "body": body, "created_at": _now_iso(), **context}
+            if count_messages:
+                fields["message_count"] = (row.get("message_count") or 1) + 1
             # Skip a no-op write. Because list_notifications() calls the
             # ensure_* helpers on every GET, re-writing identical content would
             # emit a realtime change event, which the client's subscription
             # turns back into another GET — an endless refetch loop. Only write
-            # when the content actually changed.
-            if row.get("title") == title and row.get("body") == body:
+            # when the content actually changed. A message always changes its count.
+            elif row.get("title") == title and row.get("body") == body:
                 return
-            client.table("notifications").update(
-                {
-                    "title": title,
-                    "body": body,
-                    "created_at": _now_iso(),
-                }
-            ).eq("id", row["id"]).execute()
-            return
+            updated = (
+                client.table("notifications")
+                .update(fields)
+                .eq("id", row["id"])
+                .is_("read_at", "null")
+                .select("id")
+                .execute()
+            )
+            if updated.data:
+                return
+            # Read since the lookup: it keeps what it showed when it was read.
 
         _insert_notification(
             user_id=user_id,
@@ -226,6 +289,8 @@ def _upsert_unread_notification(
             body=body,
             entity_type=entity_type,
             entity_id=entity_id,
+            message_count=1 if count_messages else None,
+            **context,
         )
     except HTTPException:
         raise
@@ -409,6 +474,7 @@ def ensure_roster_upload_notifications(user_id: str) -> None:
                 ),
                 entity_type="class",
                 entity_id=class_id,
+                class_id=class_id,
             )
 
 
@@ -438,8 +504,10 @@ def notify_join_request(
     request_id: str,
     requester_id: str,
     message: str | None = None,
+    class_id: str | None = None,
 ) -> None:
-    """Notify project owners/admins when someone requests to join.
+    """Notify project owners/admins when someone requests to join, e.g. "Sam Okafor asked to
+    join Trailhead".
 
     When nobody on the team can review it (no member is left, or none holds a
     reviewing role), the class instructor is the only reviewer, so they get a
@@ -473,25 +541,29 @@ def notify_join_request(
             if not instructor_id or instructor_id == requester_id:
                 return
 
-        requester_name = profile_display_name(_get_profile(requester_id)) or "A student"
+        profile = _get_profile(requester_id)
+        requester_name = profile_name(profile) or "A student"
+        name = profile_name(profile) or "Someone"
         clean_message = message.strip() if isinstance(message, str) else ""
         quote = f' "{clean_message}"' if clean_message else ""
+        context = {"class_id": class_id, "project_id": project_id, "actor_id": requester_id}
 
         if instructor_id:
             _insert_notification(
                 user_id=instructor_id,
                 type="join_request_unreviewed",
-                title="Join request needs your review",
+                title=f"{name}'s request to join {project_name} needs your review",
                 body=(
                     f"{requester_name} requested to join {project_name}, which has no "
                     f"product owner or admin to review it.{quote}"
                 ),
                 entity_type="project",
                 entity_id=project_id,
+                **context,
             )
             return
 
-        title = "New join request"
+        title = f"{name} asked to join {project_name}"
         body = f"{requester_name} requested to join {project_name}.{quote}"
         for owner_id in owner_ids:
             _insert_notification(
@@ -501,6 +573,7 @@ def notify_join_request(
                 body=body,
                 entity_type="project",
                 entity_id=project_id,
+                **context,
             )
     except Exception:
         logger.exception(
@@ -516,12 +589,19 @@ def notify_new_message(
     sender_name: str | None,
     conversation_id: str,
     body: str,
+    sender_id: str | None = None,
+    project_id: str | None = None,
+    class_id: str | None = None,
 ) -> None:
     """Notify a participant when they receive a new message.
 
     ``sender_name`` comes with the send (the message insert returns it); without
     one the title says "Someone". All roles get message notifications — TA/instructor
-    channels mean staff must hear replies (changed 2026-07-14; was students-only)."""
+    channels mean staff must hear replies (changed 2026-07-14; was students-only).
+
+    The conversation keeps one unread row, which counts its messages and shows the latest
+    (:func:`_upsert_unread_notification`). A team channel's row records its team and class; a
+    direct message's records neither."""
     preview = body.strip()
     if len(preview) > 120:
         preview = preview[:117] + "..."
@@ -533,6 +613,10 @@ def notify_new_message(
         body=preview or "You have a new message.",
         entity_type="conversation",
         entity_id=conversation_id,
+        class_id=class_id,
+        project_id=project_id,
+        actor_id=sender_id,
+        count_messages=True,
     )
 
 
@@ -545,6 +629,9 @@ def notify_mention(
     body_md: str,
     entity_type: str,
     entity_id: str,
+    author_id: str | None = None,
+    project_id: str | None = None,
+    class_id: str | None = None,
 ) -> None:
     """Tell each of ``recipient_ids`` that ``author_name`` mentioned them on ``label``
     (a card key such as ``GT-12``).
@@ -565,6 +652,9 @@ def notify_mention(
                 body=body,
                 entity_type=entity_type,
                 entity_id=entity_id,
+                class_id=class_id,
+                project_id=project_id,
+                actor_id=author_id,
             )
     except Exception:
         logger.exception("notify_mention failed | entity_type=%s", entity_type)
@@ -576,18 +666,24 @@ def notify_document_finalized(
     project_name: str,
     document_title: str,
     document_id: str,
+    project_id: str | None = None,
+    class_id: str | None = None,
+    finalizer_id: str | None = None,
 ) -> None:
     """Tell each of ``recipient_ids`` (the team's TAs) that the team finalized a document, e.g.
-    "Trailhead finalized its Sprint 2 report". One insert for all of them; never raises."""
+    "Trailhead handed in its Sprint 2 report". One insert for all of them; never raises."""
     _insert_notifications(
         [
             {
                 "user_id": user_id,
                 "type": "document_finalized",
-                "title": "Document finalized",
+                "title": f"{project_name} handed in its {document_title}",
                 "body": f"{project_name} finalized its {document_title}",
                 "entity_type": "document",
                 "entity_id": document_id,
+                "class_id": class_id,
+                "project_id": project_id,
+                "actor_id": finalizer_id,
             }
             for user_id in recipient_ids
         ]
@@ -621,6 +717,7 @@ def notify_late_window_opened(
                 "body": body,
                 "entity_type": "class",
                 "entity_id": class_id,
+                "class_id": class_id,
             }
             for user_id in recipient_ids
         ]
@@ -633,16 +730,21 @@ def notify_project_created_by_student(
     student_id: str,
     project_id: str,
     project_name: str,
+    class_id: str | None = None,
 ) -> None:
-    """Notify the class instructor when a student creates a project."""
-    student_name = profile_display_name(_get_profile(student_id)) or "A student"
+    """Notify the class instructor when a student creates a project, e.g. "Sam Okafor created
+    Trailhead"."""
+    profile = _get_profile(student_id)
     _insert_notification(
         user_id=instructor_id,
         type="project_created",
-        title="New student project",
-        body=f'{student_name} created project "{project_name}".',
+        title=f"{profile_name(profile) or 'Someone'} created {project_name}",
+        body=f'{profile_name(profile) or "A student"} created project "{project_name}".',
         entity_type="project",
         entity_id=project_id,
+        class_id=class_id,
+        project_id=project_id,
+        actor_id=student_id,
     )
 
 
@@ -651,16 +753,20 @@ def notify_join_request_rejected(
     requester_id: str,
     project_id: str,
     project_name: str,
+    class_id: str | None = None,
 ) -> None:
-    """Notify the requesting student when their join request is denied."""
+    """Notify the requesting student when their join request is denied, e.g. "Trailhead
+    declined your request to join". Who declined it is not said."""
     try:
         _insert_notification(
             user_id=requester_id,
             type="join_rejected",
-            title="Join request denied",
+            title=f"{project_name} declined your request to join",
             body=f'Your request to join "{project_name}" was denied.',
             entity_type="project",
             entity_id=project_id,
+            class_id=class_id,
+            project_id=project_id,
         )
     except Exception:
         logger.exception(
@@ -670,75 +776,137 @@ def notify_join_request_rejected(
         )
 
 
-def notify_team_member_dropped_from_roster(
-    *,
-    project_id: str,
-    project_name: str,
-    removed_user_id: str,
-    removed_user_name: str,
-    recipient_ids: list[str] | None = None,
-) -> None:
-    """Notify remaining project members that a teammate was dropped from the course."""
+#: All lists the last 30 days, read and unread; Unread lists every unread row, whatever its age.
+WINDOW_DAYS = 30
+PAGE_SIZE = 30
+MAX_PAGE_SIZE = 100
+
+_LIST_COLUMNS = (
+    "id, type, title, body, entity_type, entity_id, read_at, created_at, message_count, "
+    "class:classes(id, name), team:projects(id, name), "
+    # notifications has two keys to profiles (user_id is the other), so the actor's names its own.
+    "actor:profiles!notifications_actor_id_fkey(id, first_name, last_name, image_url)"
+)
+_ITEM_KEYS = ("id", "type", "title", "body", "entity_type", "entity_id", "read_at", "created_at")
+_UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+#: What a team channel adds to its team's name: "Trailhead · TAs".
+_CHANNEL_SUFFIX = {"team_ta": "TAs", "team_instructor": "Instructor"}
+
+
+def _now() -> datetime:
+    """The clock the list's 30-day window reads (tests patch it)."""
+    return datetime.now(UTC)
+
+
+def _encode_cursor(created_at: str, id: str) -> str:
+    """The cursor after a row: its ``created_at`` and ``id``, opaque to the client."""
+    return base64.urlsafe_b64encode(f"{created_at}|{id}".encode()).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> tuple[str, str]:
+    """The ``created_at`` (an instant with its zone) and ``id`` (a UUID) a cursor names, both
+    rewritten in a canonical form before they reach a filter: the instant in UTC, the id in its
+    hyphenated lower-case spelling (any spelling ``uuid.UUID`` reads is accepted). Anything else,
+    an instant with no UTC equivalent among them, is a 422."""
     try:
-        if recipient_ids is None:
-            client = _client()
-            members_res = (
-                client.table("project_members")
-                .select("user_id")
-                .eq("project_id", project_id)
-                .execute()
-            )
-            recipient_ids = [
-                str(row["user_id"])
-                for row in (members_res.data or [])
-                if row.get("user_id") and str(row["user_id"]) != str(removed_user_id)
-            ]
-        else:
-            recipient_ids = [
-                str(uid) for uid in recipient_ids if uid and str(uid) != str(removed_user_id)
-            ]
-
-        if not recipient_ids:
-            return
-
-        title = "Team member removed"
-        body = f'{removed_user_name} has dropped the course and was removed from "{project_name}".'
-        for user_id in recipient_ids:
-            _insert_notification(
-                user_id=user_id,
-                type="member_removed",
-                title=title,
-                body=body,
-                entity_type="project",
-                entity_id=project_id,
-            )
-    except Exception:
-        logger.exception(
-            "notify_team_member_dropped_from_roster failed | project_id=%s removed_user=%s",
-            project_id,
-            removed_user_id,
-        )
+        text = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode()
+        created_at, row_id = text.split("|")
+        when = datetime.fromisoformat(created_at)
+        if when.tzinfo is None:
+            raise ValueError("a cursor's instant names its zone")
+        return when.astimezone(UTC).isoformat(), str(uuid.UUID(row_id))
+    except (ValueError, OverflowError, UnicodeDecodeError, binascii.Error):
+        raise HTTPException(status_code=422, detail="Invalid cursor") from None
 
 
-def list_notifications(user_id: str, *, limit: int = 50) -> dict:
-    # The reminders may write notifications, and both reads below must see them.
-    ensure_profile_completion_notification(user_id)
-    ensure_roster_upload_notifications(user_id)
+def _ref(row: dict | None) -> dict | None:
+    return {"id": row["id"], "name": row.get("name") or ""} if row else None
+
+
+def _actor(row: dict | None) -> dict | None:
+    """The person who caused a notice, by name or ``""``: never their email."""
+    if not row:
+        return None
+    return {"id": row["id"], "name": profile_name(row), "image_url": row.get("image_url")}
+
+
+def _conversations(client, rows: list[dict]) -> dict[str, dict]:
+    """The conversations the page's message rows are about, by id, in one read: a direct message
+    is ``direct`` and unnamed (its sender is the row's actor); a team channel is ``team``, named
+    for its team, with "TAs" or "Instructor" for those channels."""
+    ids = sorted(
+        {
+            str(row["entity_id"]).lower()
+            for row in rows
+            if row.get("type") == "message" and _UUID.match(str(row.get("entity_id") or ""))
+        }
+    )
+    if not ids:
+        return {}
+    found = (
+        client.table("conversations")
+        .select("id, type, project_id, projects(name)")
+        .in_("id", ids)
+        .execute()
+    ).data or []
+    out = {}
+    for conv in found:
+        if conv.get("type") == "dm":
+            out[str(conv["id"]).lower()] = {"id": conv["id"], "kind": "direct", "name": ""}
+            continue
+        parts = [(conv.get("projects") or {}).get("name"), _CHANNEL_SUFFIX.get(conv.get("type"))]
+        name = " · ".join(part for part in parts if part)
+        out[str(conv["id"]).lower()] = {"id": conv["id"], "kind": "team", "name": name}
+    return out
+
+
+def list_notifications(
+    user_id: str,
+    *,
+    view: Literal["unread", "all"] = "all",
+    cursor: str | None = None,
+    limit: int = PAGE_SIZE,
+) -> dict:
+    """A page of ``user_id``'s notifications, newest first, with the unread count.
+
+    ``unread`` is every unread row, whatever its age; ``all`` is the last :data:`WINDOW_DAYS`
+    days, read and unread. ``unread_count`` counts every unread row in both views. The cursor
+    is the last row's ``created_at`` and ``id``, so rows that share an instant are neither
+    repeated nor skipped; ``next_cursor`` is ``None`` on the last page. Each row names its class,
+    team and actor (joined on read; ``None`` once deleted), a message row its conversation, and
+    every row the messages it stands for (``message_count``, 1 when it holds none).
+
+    Every read is filtered by ``user_id``. Round trips: on the first page the two reminders as
+    before, then the page and the count together, then the page's conversations when it holds
+    messages; a later page (a ``cursor``) runs no reminders.
+    """
+    after = _decode_cursor(cursor) if cursor is not None else None
+    if after is None:
+        # The reminders are the first page's: they may write notifications, and both reads below
+        # must see them. A later page is the page and the count.
+        ensure_profile_completion_notification(user_id)
+        ensure_roster_upload_notifications(user_id)
 
     client = _client()
+
+    def page() -> list[dict]:
+        query = client.table("notifications").select(_LIST_COLUMNS).eq("user_id", user_id)
+        if view == "unread":
+            query = query.is_("read_at", "null")
+        else:
+            floor = _now() - timedelta(days=WINDOW_DAYS)
+            query = query.gte("created_at", floor.isoformat())
+        if after is not None:
+            created_at, row_id = after
+            query = query.or_(
+                f'created_at.lt."{created_at}",and(created_at.eq."{created_at}",id.lt.{row_id})'
+            )
+        query = query.order("created_at", desc=True).order("id", desc=True)
+        return query.limit(limit + 1).execute().data or []
+
     reads = fan_out(
         {
-            "rows": lambda: (
-                (
-                    client.table("notifications")
-                    .select("id, type, title, body, entity_type, entity_id, read_at, created_at")
-                    .eq("user_id", user_id)
-                    .order("created_at", desc=True)
-                    .limit(limit)
-                    .execute()
-                ).data
-                or []
-            ),
+            "rows": page,
             "unread": lambda: (
                 client.table("notifications")
                 .select("id", count="exact")
@@ -749,13 +917,36 @@ def list_notifications(user_id: str, *, limit: int = 50) -> dict:
         }
     )
     rows, unread_res = reads["rows"], reads["unread"]
+    next_cursor = None
+    if len(rows) > limit:
+        rows = rows[:limit]
+        next_cursor = _encode_cursor(rows[-1]["created_at"], rows[-1]["id"])
     unread = (
         unread_res.count
         if unread_res.count is not None
         else sum(1 for r in rows if not r.get("read_at"))
     )
+    conversations = _conversations(client, rows)
 
-    return {"notifications": rows, "unread_count": unread}
+    return {
+        "notifications": [
+            {
+                **{key: row.get(key) for key in _ITEM_KEYS},
+                "class": _ref(row.get("class")),
+                "team": _ref(row.get("team")),
+                "actor": _actor(row.get("actor")),
+                "conversation": (
+                    conversations.get(str(row.get("entity_id") or "").lower())
+                    if row.get("type") == "message"
+                    else None
+                ),
+                "message_count": row.get("message_count") or 1,
+            }
+            for row in rows
+        ],
+        "unread_count": unread,
+        "next_cursor": next_cursor,
+    }
 
 
 def mark_notification_read(notification_id: str, user_id: str) -> None:
@@ -775,6 +966,17 @@ def mark_notification_read(notification_id: str, user_id: str) -> None:
     )
     if not res.data:
         raise HTTPException(status_code=404, detail="Notification not found")
+
+
+def mark_notifications_read(ids: list[str], user_id: str) -> None:
+    """Mark those of ``ids`` that are ``user_id``'s and still unread, read, in one update.
+
+    An id of another user's notification, or of none, changes nothing, and the caller is not
+    told which: the answer is the same either way. A row already read keeps when it was read.
+    """
+    _client().table("notifications").update({"read_at": _now_iso()}).in_("id", sorted(set(ids))).eq(
+        "user_id", user_id
+    ).is_("read_at", "null").execute()
 
 
 def mark_all_read(user_id: str) -> None:
